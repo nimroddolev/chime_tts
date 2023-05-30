@@ -1,0 +1,16 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Required: Long-Lived Access Token",
+                "description": "Chime TTS requires a 'long-lived token' to access TTS audio files from your system.\n\nPlease complete the following steps:\n\n 1. Click on your profile from the bottom of the side menu, and scroll to the bottom of your profile page.\n 2. Select 'CREATE TOKEN' under the 'Long-Lived Access Tokens' section.\n 3. Copy the token text, and paste it below:",
+                "data": {
+                    "HTTP_BEARER_AUTHENTICATION": "Long-Lived Access Token"
+                }
+            }
+        },
+        "error": {
+            "empty_token": "Please enter a valid token string."
+        }
+    }
+}

@@ -1,0 +1,140 @@
+say:
+  name: "Say"
+  description: "Play an audio file before TTS audio"
+  fields:
+    chime_path:
+      name: "Chime Path"
+      description: "A preset or custom audio file to be played before TTS audio"
+      example: "custom_components/chime_tts/mp3s/bells.mp3"
+      default: "custom_components/chime_tts/mp3s/bells.mp3"
+      selector:
+        select:
+          options:
+            - label: "- None -"
+              value: ""
+            - label: Bells
+              value: custom_components/chime_tts/mp3s/bells.mp3
+            - label: Bells 2
+              value: custom_components/chime_tts/mp3s/bells_2.mp3
+            - label: Bright
+              value: custom_components/chime_tts/mp3s/bright.mp3
+            - label: Choir
+              value: custom_components/chime_tts/mp3s/choir.mp3
+            - label: Chord
+              value: custom_components/chime_tts/mp3s/chord.mp3
+            - label: Classical
+              value: custom_components/chime_tts/mp3s/classical.mp3
+            - label: Ding Dong
+              value: custom_components/chime_tts/mp3s/ding_dong.mp3
+            - label: Drum Roll
+              value: custom_components/chime_tts/mp3s/drumroll.mp3
+            - label: Error
+              value: custom_components/chime_tts/mp3s/error.mp3
+            - label: Glockenspiel
+              value: custom_components/chime_tts/mp3s/glockenspiel.mp3
+            - label: Marimba
+              value: custom_components/chime_tts/mp3s/marimba.mp3
+            - label: Ta-da!
+              value: custom_components/chime_tts/mp3s/tada.mp3
+            - label: "Custom (Replace this text with local file path)"
+              value: ""
+          multiple: false
+          custom_value: true
+          mode: dropdown
+    end_chime_path:
+      name: "End Chime Path"
+      description: "A preset or custom audio file to be played after TTS audio"
+      example: "custom_components/chime_tts/mp3s/tada.mp3"
+      default: ""
+      selector:
+        select:
+          options:
+            - label: "- None -"
+              value: ""
+            - label: Bells
+              value: custom_components/chime_tts/mp3s/bells.mp3
+            - label: Bells 2
+              value: custom_components/chime_tts/mp3s/bells_2.mp3
+            - label: Bright
+              value: custom_components/chime_tts/mp3s/bright.mp3
+            - label: Choir
+              value: custom_components/chime_tts/mp3s/choir.mp3
+            - label: Chord
+              value: custom_components/chime_tts/mp3s/chord.mp3
+            - label: Classical
+              value: custom_components/chime_tts/mp3s/classical.mp3
+            - label: Ding Dong
+              value: custom_components/chime_tts/mp3s/ding_dong.mp3
+            - label: Drum Roll
+              value: custom_components/chime_tts/mp3s/drumroll.mp3
+            - label: Error
+              value: custom_components/chime_tts/mp3s/error.mp3
+            - label: Glockenspiel
+              value: custom_components/chime_tts/mp3s/glockenspiel.mp3
+            - label: Marimba
+              value: custom_components/chime_tts/mp3s/marimba.mp3
+            - label: Ta-da!
+              value: custom_components/chime_tts/mp3s/tada.mp3
+            - label: "Custom (Replace this text with local file path)"
+              value: ""
+          multiple: false
+          custom_value: true
+          mode: dropdown
+    message:
+      name: Message
+      description: "Text to speak on devices"
+      example: "Hello world!"
+      required: true
+      selector:
+        text:
+    tts_platform:
+      name: "TTS Platform"
+      description: "TTS platform to use to create TTS audio"
+      example: "google_translate"
+      required: true
+      selector:
+        select:
+          options:
+            - label: "Amazon Polly"
+              value: "amazon_polly"
+            - label: "Baidu"
+              value: "baidu"
+            - label: "Google Cloud"
+              value: "google_cloud"
+            - label: "Google Translate"
+              value: "google_translate"
+            - label: "IBM Watson TTS"
+              value: "watson_tts"
+            - label: "MaryTTS"
+              value: "marytts"
+            - label: "Microsoft Text-to-Speech (TTS)"
+              value: "microsoft"
+            - label: "Pico TTS"
+              value: "picotts"
+            - label: "VoiceRSS"
+              value: "voicerss"
+            - label: "Yandex TTS"
+              value: "yandextts"
+          multiple: false
+          custom_value: true
+          mode: dropdown
+    entity_id:
+      name: Media Player Entity Id
+      description: "Media player to play the joined audio"
+      example: "media_player.living_room"
+      required: true
+      selector:
+        entity:
+          domain: media_player
+    volume_level:
+      name: Volume Level
+      description: "Set the media player's volume level before playing the TTS audio"
+      required: false
+      default: 1.0
+      selector:
+        number:
+          min: 0.0
+          max: 1.0
+          step: 0.01
+          mode: slider
+      example: 0.75

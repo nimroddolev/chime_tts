@@ -1,0 +1,77 @@
+{
+  "domain": "chime_tts",
+  "name": "Chime TTS",
+  "codeowners": [
+    "@nimroddolev"
+  ],
+  "config_flow": true,
+  "after_dependencies": ["http", "api"],
+  "requirements": ["pydub"],
+  "documentation": "https://www.example.com",
+  "iot_class": "local_push",
+  "integration_type": "service",
+  "version": "0.1.0",
+  "services": [
+    {
+      "name": "Say",
+      "description": "Join a chime MP3 file with TTS audio and play it on a media player",
+      "target": {
+        "component": "chime_tts",
+        "service": "say"
+      },
+      "fields": [
+        {
+          "name": "chime_path",
+          "description": "A preset or custom audio file to be played before TTS audio",
+          "example": "custom_components/chime_tts/mp3s/bells.mp3",
+          "selector": {
+            "text": {}
+          }
+        },
+        {
+          "name": "end_chime_path",
+          "description": "A preset or custom audio file to be played after TTS audio",
+          "example": "custom_components/chime_tts/mp3s/bells.mp3",
+          "selector": {
+            "text": {}
+          }
+        },
+        
+        {
+          "name": "message",
+          "description": "Text to speak on devices",
+          "example": "Hello world!",
+          "selector": {
+            "text": {}
+          }
+        },
+        {
+          "name": "tts_platform",
+          "description": "Name of TTS platform to use to create TTS audio",
+          "example": "amazon_polly",
+          "selector": {
+            "text": {}
+          }
+        },
+        {
+          "name": "entity_id",
+          "description": "Media player to play the joined audio",
+          "example": "media_player.living_room",
+          "selector": {
+            "entity": {
+              "domain": "media_player"
+            }
+          }
+        },
+        {
+          "name": "volume_level",
+          "description": "The volume to set the media player to for the TTS audio",
+          "example": 0.75,
+          "selector": {
+            "number": 0.75
+          }
+        }
+      ]
+    }
+  ]
+}
