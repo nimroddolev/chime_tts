@@ -1,7 +1,6 @@
 # Chime TTS
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/custom-components/hacs)
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 ![version](https://img.shields.io/github/v/release/nimroddolev/chime_tts)
-[![Community Forum][forum-shield]][forum]
 
 Have you ever missed the start of a TTS messages from Home Assistant because you didn't realize it had already started playing?
 
@@ -27,7 +26,7 @@ This integration supports [TTS platform integrations in Home Assistant](https://
 
 ## Why do I need to enter a long-lived token?
 
-Chime TTS uses the [tts_get_url](https://www.home-assistant.io/integrations/tts/#post-apitts_get_url) Home Assistant API (to generate TTS audio files and locate the filepath) which requires a long-lived token. 
+Chime TTS uses the [tts_get_url](https://www.home-assistant.io/integrations/tts/#post-apitts_get_url) Home Assistant API (to generate TTS audio files and locate the filepath) which requires a long-lived token.
 
 ## Configuration
 The service options below are all optional:
