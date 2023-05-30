@@ -10,13 +10,6 @@ from homeassistant.const import (
 )
 from .const import DOMAIN, NAME, DESCRIPTION, LOGGER
 
-# from .api import (
-#     TTSChimeApiClient,
-#     TTSChimeApiClientAuthenticationError,
-#     TTSChimeApiClientCommunicationError,
-#     TTSChimeApiClientError,
-# )
-
 
 class TTSChimeFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for TTS Chime."""
@@ -30,7 +23,7 @@ class TTSChimeFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self,
         user_input: dict | None = None,
     ) -> config_entries.FlowResult:
-        """Request input of long-lived bearer token for REST API"""
+        """Request input of long-lived bearer token for REST API."""
         _errors = {}
         if user_input is not None:
             if user_input[HTTP_BEARER_AUTHENTICATION] is not None:
