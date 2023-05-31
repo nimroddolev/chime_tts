@@ -43,14 +43,14 @@ Volume Level | A value between 0 - 1 to set the media player to before playing t
 
 ### From the UI
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/nimroddolev/chime_tts/images/call_service_from_ui-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/nimroddolev/chime_tts/images/call_service_from_ui-light.png">
-  <img alt="Screenshot of the parameters for the Chime TTS service in the UI" src="https://github.com/nimroddolev/chime_tts/images/call_service_from_ui-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light.png">
+  <img alt="Screenshot of the parameters for the Chime TTS service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light">
 </picture>
 
 ### From YAML
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/nimroddolev/chime_tts/images/call_service_from_yaml-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/nimroddolev/chime_tts/images/call_service_from_yaml-light.png">
-  <img alt="Sreenshot of the parameters for the Chime TTS service in YAML" src="https://github.com/nimroddolev/chime_tts/images/call_service_from_yaml-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-light.png">
+  <img alt="Sreenshot of the parameters for the Chime TTS service in YAML" src=https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-light.png">
 </picture>
