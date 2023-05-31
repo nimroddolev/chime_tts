@@ -43,14 +43,14 @@ Volume Level | A value between 0 - 1 to set the media player to before playing t
 
 ### From the UI
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/nimroddolev/chime_tts/assets/1849295/27941d62-410f-4bf6-ad73-853d706a1369">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/nimroddolev/chime_tts/assets/1849295/b86457ff-d18f-4e11-95ca-add52046f23d">
-  <img alt="Screenshot of the parameters for the Chime TTS service in the UI" src="https://github.com/nimroddolev/chime_tts/assets/1849295/b86457ff-d18f-4e11-95ca-add52046f23d">
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/nimroddolev/chime_tts/images/call_service_from_ui-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/nimroddolev/chime_tts/images/call_service_from_ui-light.png">
+  <img alt="Screenshot of the parameters for the Chime TTS service in the UI" src="https://github.com/nimroddolev/chime_tts/images/call_service_from_ui-light.png">
 </picture>
 
 ### From YAML
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/nimroddolev/chime_tts/assets/1849295/2748f21c-f6c1-4e34-9475-1460e3f8d999">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/nimroddolev/chime_tts/assets/1849295/44db83ac-6678-4dec-9065-55d732bc861e">
-  <img alt="Sreenshot of the parameters for the Chime TTS service in YAML" src="https://github.com/nimroddolev/chime_tts/assets/1849295/44db83ac-6678-4dec-9065-55d732bc861e">
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/nimroddolev/chime_tts/images/call_service_from_yaml-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/nimroddolev/chime_tts/images/call_service_from_yaml-light.png">
+  <img alt="Sreenshot of the parameters for the Chime TTS service in YAML" src="https://github.com/nimroddolev/chime_tts/images/call_service_from_yaml-light.png">
 </picture>
