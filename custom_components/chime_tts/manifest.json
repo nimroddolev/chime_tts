@@ -1,20 +1,20 @@
 {
   "domain": "chime_tts",
   "name": "Chime TTS",
+  "after_dependencies": [
+    "api",
+    "http"
+  ],
   "codeowners": [
     "@nimroddolev"
   ],
   "config_flow": true,
-  "after_dependencies": [
-    "http",
-    "api"
-  ],
-  "requirements": [
-    "pydub"
-  ],
   "documentation": "https://www.example.com",
   "iot_class": "local_push",
   "integration_type": "service",
-  "version": "0.1.0",
-  "issue_tracker": "https://github.com/nimroddolev/chime_tts/issues"
+  "issue_tracker": "https://github.com/nimroddolev/chime_tts/issues",
+  "requirements": [
+    "pydub"
+  ],
+  "version": "0.1.0"
 }
