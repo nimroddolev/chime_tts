@@ -1,56 +1,78 @@
 # Chime TTS
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 ![version](https://img.shields.io/github/v/release/nimroddolev/chime_tts)
+[![Community Forum][forum-shield]][forum]
 
-Have you ever missed the start of a TTS messages from Home Assistant because you didn't realize it had already started playing?
+Chime TTS is a custom integration for Home Assistant that combines audio files with Text-to-Speech (TTS) audio locally, creating seamless playback without any lag or timing issues caused by cloud TTS processing and networking delays - perfect for playing a notification sound with a TTS notification.
 
-Chime TTS adds a Home Assistant service to locally add audio **before** and/or **after** your TTS audio into a single file, allowing you to hear them seamlessly without any delay in between.
+[Discussion on Home Assistant Community Forum](https://community.home-assistant.io/t/chime-tts-play-audio-before-after-tts-audio-lag-free/578430)
 
-## Quick start
+# Features
 
-1. Go to the "Integrations" section on HACS, click "Explore and download repositories", search for "Chime TTS", select it and then click "Download".
-2. Restart Home Assistant
-3. Create a new "Long-Lived Token" (used to retrieve TTS audio files from your Home Assistant instance - [see below](https://github.com/nimroddolev/chime_tts#why-do-i-need-to-enter-a-long-lived-token)):
-   - Navigate to your profile (the bottom item in the left side-menu)
-   - Scroll to the bottom and select 'CREATE TOKEN' under the 'Long-Lived Access Tokens' section.
-   - Enter a name (eg: Chime TTS) and copy the token text (you'll only have access to it once)
-4. Go to Settings -> Devices and Services -> Add Integration, and type: Chime TTS. If integration not found, try to empty your browser cache and reload page.
-5. Paste in yout token string from step 3 and click Submit
-6. To use Chiem TTS, go to Developer Tools -> Services, type `chime` and select  `Chime TTS: say`.
-7. Enter your selections and then press the Call Service button to hear your message!
+Chime TTS offers the following enhancements for TTS audio playback:
 
-Refer to the [Configuration section](https://github.com/nimroddolev/chime_tts#configuration) for further fine-tuning.
+* **No lag or timing issues:** Cloud TTS processing and network delays are eliminated, ensuring precise timing between audio files.
 
-## TTS Platforms
-This integration supports [TTS platform integrations in Home Assistant](https://www.home-assistant.io/integrations/#text-to-speech) which need to be configured independently, as Chime TTS itself does not generate TTS audio.
+* **Customizable audio cues:** Choose from preset audio options or use your own custom files played before and/or after the TTS message, creating a single file with seamless playback.
 
-## Why do I need to enter a long-lived token?
+* **Flexible TTS platform selection:** Chime TTS supports [TTS platform integrations in Home Assistant](https://www.home-assistant.io/integrations/#text-to-speech).
 
-Chime TTS uses the [tts_get_url](https://www.home-assistant.io/integrations/tts/#post-apitts_get_url) Home Assistant API (to generate TTS audio files and locate the filepath) which requires a long-lived token.
+* **Easy service invocation:** The Chime TTS service can be used in automations, scripts, and other Home Assistant components.
 
-## Configuration
-The service options below are all optional:
-Parameter | Description | Default
------------- | ------------- | -------------
-Chime Path | The preset option or full local path to the audio file to be played **before** the TTS message. | Bells
-End Chime Path | The preset option or full local path to the audio file to be played **after** the TTS message. | None
-Message | The text to be converted into speach by a TTS platform | None
-TTS Platform | The name of the TTS platform to use to create TTS audio. **Note:** you need to configure one or more [TTS platforms](https://www.home-assistant.io/integrations/#text-to-speech) in order to select them from the list.| None
-Media Player Entity Id | The entity_id for the media player to play the audio | None
-Volume Level | A value between 0 - 1 to set the media player to before playing the audio | 1
+* **Set media player notification volume:** Set the volume of the media player for the notification, and restore it back once completed.
 
-## Calling Service from Home Assistant
+# Quick start
 
-### From the UI
+## Installation
+
+It is recommended to use the [HACS Home Assistant Community Store](https://hacs.xyz/) to install Chime TTS:
+1. Once HACS is installed, click on `HACS` -> select `Integrations` -> ⋮ -> `Custom repositories`.
+2. Enter `https://github.com/nimroddolev/chime_tts` as the `Repository` -> select "Integration" from the `Category` menu -> select `ADD`.
+3. Select `EXPLORE & DOWNLOAD REPOSITORIES` -> search for *Chime TTS* -> Select it -> Select `Download` to install.
+4. Restart Home Assistant
+
+## Adding the integration
+
+Chime TTS uses Home Assistant's [tts_get_url](https://www.home-assistant.io/integrations/tts/#post-apitts_get_url) API in order to generate and locate TTS audio files. Use of the API requires a long-lived token.
+1. Navigate to your profile (found at the bottom of Home Assistant's left-hand-side navigation bar).
+2. Scroll to the bottom and select `CREATE TOKEN` under the 'Long-Lived Access Tokens' section.
+3. Enter a name (eg: *Chime TTS*) and copy the token string
+4. Go to Home Assistant's `Settings` -> `Devices and Services` -> `Add Integration`, and type: *Chime TTS* (if it does not appear empty your browser cache and reload the page).
+5. Paste in your token and click `Submit`.
+
+# Configuration
+
+The following service options are all optional:
+Option | Parameter | Description | Default
+------------ | ------------- | ------------- | -------------
+Chime Path | ```chime_path``` | The audio file to be played **before** the TTS message. You can use either a preset option or a local file path. | Bells
+End Chime Path | ```end_chime_path``` | The audio file to be played **after** the TTS message. You can use either a preset option or a local file path. | None
+Message | ```message``` | The text to be converted into TTS audio | None
+TTS Platform | ```tts_platform``` | TTS platform to be used to create TTS audio. **Note:** the [TTS platforms](https://www.home-assistant.io/integrations/#text-to-speech) must be installed separately.| None
+Media Player Entity Id | ```media_player``` | The entity_id for the media player to play the audio | None
+Volume Level | ```volume_level``` | The volume level (between 0.0 - 1.0) to play the audio. The original value will be restored after playback. | 1
+
+# Calling Service from Home Assistant
+
+## From the UI
+
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light.png">
-  <img alt="Screenshot of the parameters for the Chime TTS service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light">
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-dark.png">
+<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light.png">
+<img alt="Screenshot of the parameters for the Chime TTS service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light">
 </picture>
 
-### From YAML
+## From YAML
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-light.png">
-  <img alt="Sreenshot of the parameters for the Chime TTS service in YAML" src=https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-light.png">
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-dark.png">
+<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-light.png">
+<img alt="Screenshot of the parameters for the Chime TTS service in YAML" src=https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-light.png">
 </picture>
+
+[forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=popout
+[forum]: https://community.home-assistant.io/t/chime-tts-play-audio-before-after-tts-audio-lag-free/578430
+
+Show your support 👍
+
+<a href="https://www.buymeacoffee.com/nimroddolev" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 40px !important;width: 140px !important;" ></a>
