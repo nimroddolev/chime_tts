@@ -36,10 +36,11 @@ It is recommended to use the [HACS Home Assistant Community Store](https://hacs.
 
 Chime TTS uses Home Assistant's [tts_get_url](https://www.home-assistant.io/integrations/tts/#post-apitts_get_url) API in order to generate and locate TTS audio files. Use of the API requires a long-lived token.
 1. Navigate to your profile (found at the bottom of Home Assistant's left-hand-side navigation bar).
-2. Scroll to the bottom and select `CREATE TOKEN` under the 'Long-Lived Access Tokens' section.
-3. Enter a name (eg: *Chime TTS*) and copy the token string
-4. Go to Home Assistant's `Settings` -> `Devices and Services` -> `Add Integration`, and type: *Chime TTS* (if it does not appear empty your browser cache and reload the page).
-5. Paste in your token and click `Submit`.
+2. Make sure `Advanced Mode` is enabled
+3. Scroll to the bottom and select `CREATE TOKEN` under the 'Long-Lived Access Tokens' section.
+4. Enter a name (eg: *Chime TTS*) and copy the token string
+5. Go to Home Assistant's `Settings` -> `Devices and Services` -> `Add Integration`, and type: *Chime TTS* (if it does not appear empty your browser cache and reload the page).
+6. Paste in your token and click `Submit`.
 
 # Configuration
 
