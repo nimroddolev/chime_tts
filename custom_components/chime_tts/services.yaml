@@ -18,6 +18,8 @@ say:
               value: custom_components/chime_tts/mp3s/bells_2.mp3
             - label: Bright
               value: custom_components/chime_tts/mp3s/bright.mp3
+            - label: Chirp
+              value: custom_components/chime_tts/mp3s/chirp.mp3
             - label: Choir
               value: custom_components/chime_tts/mp3s/choir.mp3
             - label: Chord
@@ -32,10 +34,16 @@ say:
               value: custom_components/chime_tts/mp3s/error.mp3
             - label: Glockenspiel
               value: custom_components/chime_tts/mp3s/glockenspiel.mp3
+            - label: Hail
+              value: custom_components/chime_tts/mp3s/hail.mp3
             - label: Marimba
               value: custom_components/chime_tts/mp3s/marimba.mp3
+            - label: Mario Coin
+              value: custom_components/chime_tts/mp3s/mario_coin.mp3
             - label: Ta-da!
               value: custom_components/chime_tts/mp3s/tada.mp3
+            - label: Twenty Four
+              value: custom_components/chime_tts/mp3s/twenty_four.mp3
             - label: "Custom (Replace this text with local file path)"
               value: ""
           multiple: false
@@ -57,6 +65,8 @@ say:
               value: custom_components/chime_tts/mp3s/bells_2.mp3
             - label: Bright
               value: custom_components/chime_tts/mp3s/bright.mp3
+            - label: Chirp
+              value: custom_components/chime_tts/mp3s/chirp.mp3
             - label: Choir
               value: custom_components/chime_tts/mp3s/choir.mp3
             - label: Chord
@@ -71,10 +81,16 @@ say:
               value: custom_components/chime_tts/mp3s/error.mp3
             - label: Glockenspiel
               value: custom_components/chime_tts/mp3s/glockenspiel.mp3
+            - label: Hail
+              value: custom_components/chime_tts/mp3s/hail.mp3
             - label: Marimba
               value: custom_components/chime_tts/mp3s/marimba.mp3
+            - label: Mario Coin
+              value: custom_components/chime_tts/mp3s/mario_coin.mp3
             - label: Ta-da!
               value: custom_components/chime_tts/mp3s/tada.mp3
+            - label: Twenty Four
+              value: custom_components/chime_tts/mp3s/twenty_four.mp3
             - label: "Custom (Replace this text with local file path)"
               value: ""
           multiple: false
