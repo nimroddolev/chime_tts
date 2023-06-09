@@ -19,7 +19,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.network import get_url
 
-from .const import DOMAIN, SERVICE_SAY
+from .const import DOMAIN, SERVICE_SAY, PAUSE_DURATION_MS
 
 _LOGGER = logging.getLogger(__name__)
 _data = {}
@@ -37,8 +37,9 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     def tts_platform(service):
         chime_path = service.data.get("chime_path", "")
-        message = service.data.get("message", "")
         end_chime_path = service.data.get("end_chime_path", "")
+        delay = service.data.get("delay", PAUSE_DURATION_MS)
+        message = service.data.get("message", "")
         tts_platform = service.data.get("tts_platform", "")
         entity_id = service.data.get(CONF_ENTITY_ID, "")
         initial_volume_level = get_initial_volume_level(hass, entity_id)
@@ -46,7 +47,11 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Create audio file to play on media player
         audio_dict = init_playback_audio(
-            chime_path, end_chime_path, tts_platform, message
+            chime_path,
+            end_chime_path,
+            delay,
+            tts_platform,
+            message
         )
         if audio_dict is False:
             return False
@@ -63,17 +68,21 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         return True
 
-    def get_audio_from_path(path):
+    def get_audio_from_path(path, delay=0, audio=None):
         if path and len(path) > 0:
-            return AudioSegment.from_mp3(path)
-        else:
-            return None
+            audio_from_path = AudioSegment.from_mp3(path)
+            if audio_from_path is not None:
+                if audio is None:
+                    return audio_from_path
+                else:
+                    return audio + (AudioSegment.silent(duration=delay) + audio_from_path)
+            else:
+                _LOGGER.warn("Unable to find audio at path: %s", path)
+        return audio
 
-    def init_playback_audio(chime_path, end_chime_path, tts_platform, message):
-        output_path = tempfile.NamedTemporaryFile(suffix=".mp3").name
-
+    def init_playback_audio(chime_path, end_chime_path, delay, tts_platform, message):
         # Load chime audio
-        audio_arr = [get_audio_from_path(chime_path)]
+        output_audio = get_audio_from_path(chime_path)
 
         # Load TTS audio
         if message and len(message) > 0:
@@ -84,23 +93,15 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             }
             tts_audio_path = get_tts_audio_path(tts_data)
             if tts_audio_path is not False:
-                audio_arr.append(get_audio_from_path(tts_audio_path))
+                output_audio = get_audio_from_path(tts_audio_path, delay, output_audio)
             else:
                 _LOGGER.warn("Unable to create/locate TTS audio file path")
 
         # Load end chime audio
-        audio_arr.append(get_audio_from_path(end_chime_path))
-
-        # Assemble audio
-        output_audio = None
-        for audio in audio_arr:
-            if audio:
-                if output_audio is None:
-                    output_audio = audio
-                else:
-                    output_audio = output_audio + audio
+        output_audio = get_audio_from_path(end_chime_path, delay, output_audio)
 
         # Save temporary MP3 file
+        output_path = tempfile.NamedTemporaryFile(suffix=".mp3").name
         output_audio.export(output_path, format="mp3")
         output_length = float(len(output_audio) / 1000.0)
 

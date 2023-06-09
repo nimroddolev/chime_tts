@@ -96,6 +96,19 @@ say:
           multiple: false
           custom_value: true
           mode: dropdown
+    delay:
+      name: Delay
+      description: "Delay (ms) between the chime and the TTS message"
+      example: 450
+      required: false
+      default: 450
+      selector:
+        number:
+          mode: box
+          min: 0
+          max: 10
+          step: 0.1
+          unit_of_measurement: ms
     message:
       name: Message
       description: "Text to speak on devices"
