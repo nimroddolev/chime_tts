@@ -61,7 +61,16 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         set_volume_level(entity_id, volume_level)
 
         # Play the audio on the media player
-        play_chime_tts_audio(entity_id, audio_path)
+        hass.services.call(
+            "media_player",
+            "play_media",
+            {
+                ATTR_MEDIA_CONTENT_ID: audio_path,
+                ATTR_MEDIA_CONTENT_TYPE: MEDIA_TYPE_MUSIC,
+                CONF_ENTITY_ID: entity_id,
+            },
+            False,
+        )
 
         # Reset media player volume level
         set_volume_level(entity_id, initial_volume_level, audio_length)
@@ -69,6 +78,7 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return True
 
     def get_audio_from_path(path, delay=0, audio=None):
+        """Add audio from a given file path to existing audio (optional) with delay (optional)."""
         if path and len(path) > 0:
             audio_from_path = AudioSegment.from_mp3(path)
             if audio_from_path is not None:
@@ -81,6 +91,7 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return audio
 
     def init_playback_audio(chime_path, end_chime_path, delay, tts_platform, message):
+        """Initialise audio to play on  media player entity."""
         # Load chime audio
         output_audio = get_audio_from_path(chime_path)
 
@@ -93,7 +104,8 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             }
             tts_audio_path = get_tts_audio_path(tts_data)
             if tts_audio_path is not False:
-                output_audio = get_audio_from_path(tts_audio_path, delay, output_audio)
+                output_audio = get_audio_from_path(
+                    tts_audio_path, delay, output_audio)
             else:
                 _LOGGER.warn("Unable to create/locate TTS audio file path")
 
@@ -107,26 +119,15 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         return {"output_path": output_path, "output_length": output_length}
 
-    def play_chime_tts_audio(entity_id, audio_path):
-        hass.services.call(
-            "media_player",
-            "play_media",
-            {
-                ATTR_MEDIA_CONTENT_ID: audio_path,
-                ATTR_MEDIA_CONTENT_TYPE: MEDIA_TYPE_MUSIC,
-                CONF_ENTITY_ID: entity_id,
-            },
-            False,
-        )
-
     def get_tts_audio_path(tts_data):
+        """Request TTS audio and return local file path to TTS audio file."""
         message = str(tts_data["message"])
         tts_platform = str(tts_data["tts_platform"])
         if message is False or message == "":
-            _LOGGER.warn("No text provided for TTS audio")
+            _LOGGER.warn("No message text provided for TTS audio")
             return False
         if tts_platform is False or tts_platform == "":
-            _LOGGER.warn("No TTS platform was provided")
+            _LOGGER.warn("No TTS platform selected")
             return False
 
         hass = tts_data["hass"]
@@ -152,22 +153,23 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             temp_string = response_json["path"]
             arr = temp_string.split("/")
             path = "/config/tts/" + arr[len(arr) - 1]
+            _LOGGER.info("TTS retrieved. Path: %s", path)
             return path
         else:
             _LOGGER.warn(
-                'tts_get_url request failed. Response: "' + str(response.text) + '"'
-            )
+                'tts_get_url request failed. Response: "%s"', str(response.text))
             return False
 
     def get_initial_volume_level(hass, entity_id):
+        """Get the current volume level of a given media player entity."""
         entity = hass.states.get(entity_id)
         if entity is None:
-            _LOGGER.error("Media player entity: '" + entity_id + "' was not found")
+            _LOGGER.error('Media player entity: "%s" not found', entity_id)
             return -1
 
         # Ensure media player is on
         if entity.state == "off":
-            _LOGGER.info("Turning on media player '" + entity_id + "'")
+            _LOGGER.info('Turning on media player entity: "%s"', entity_id)
             hass.services.call(
                 "media_player", "turn_on", {CONF_ENTITY_ID: entity_id}, False
             )
@@ -180,11 +182,11 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 return volume_level
             else:
                 _LOGGER.warn(
-                    "Unable to get current volume for media player '" + entity_id + "'"
-                )
+                    'Unable to get current volume for media player entity: "%s"', entity_id)
                 return -1
 
     def set_volume_level(entity_id, volume_level, delay=0):
+        """Set the volume_level for a given media player entity."""
         if volume_level is None or volume_level < 0:
             return False
 
