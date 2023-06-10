@@ -8,19 +8,23 @@ Chime TTS is a custom integration for Home Assistant that combines audio files w
 
 [Discussion on Home Assistant Community Forum](https://community.home-assistant.io/t/chime-tts-play-audio-before-after-tts-audio-lag-free/578430)
 
+
 # Features
 
 Chime TTS offers the following enhancements for TTS audio playback:
 
 * **No lag or timing issues:** Cloud TTS processing and network delays are eliminated, ensuring precise timing between audio files.
 
-* **Customizable audio cues:** Choose from preset audio options or use your own custom files played before and/or after the TTS message, creating a single file with seamless playback.
+* **Customizable audio cues:** Play preset audio options or your own custom files before and/or after the TTS message, creating a single file with seamless playback.
 
 * **Flexible TTS platform selection:** Chime TTS supports [TTS platform integrations in Home Assistant](https://www.home-assistant.io/integrations/#text-to-speech).
 
 * **Easy service invocation:** The Chime TTS service can be used in automations, scripts, and other Home Assistant components.
 
 * **Set media player notification volume:** Set the volume of the media player for the notification, and restore it back once completed.
+
+* **Configurable delay:** Set a custom delay period between audio files and TTS audio.
+
 
 # Quick start
 
@@ -45,14 +49,16 @@ Chime TTS uses Home Assistant's [tts_get_url](https://www.home-assistant.io/inte
 # Configuration
 
 The following service options are all optional:
-Option | Parameter | Description | Default
------------- | ------------- | ------------- | -------------
-Chime Path | ```chime_path``` | The audio file to be played **before** the TTS message. You can use either a preset option or a local file path. | Bells
-End Chime Path | ```end_chime_path``` | The audio file to be played **after** the TTS message. You can use either a preset option or a local file path. | None
-Message | ```message``` | The text to be converted into TTS audio | None
-TTS Platform | ```tts_platform``` | TTS platform to be used to create TTS audio. **Note:** the [TTS platforms](https://www.home-assistant.io/integrations/#text-to-speech) must be installed separately.| None
-Media Player Entity Id | ```media_player``` | The entity_id for the media player to play the audio | None
-Volume Level | ```volume_level``` | The volume level (between 0.0 - 1.0) to play the audio. The original value will be restored after playback. | 1
+| Option                 | Parameter            | Description                                                                                                                                                          | Default |
+| ---------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Chime Path             | ```chime_path```     | The audio file to be played **before** the TTS message. You can use either a preset option or a local file path.                                                     | Bells   |
+| End Chime Path         | ```end_chime_path``` | The audio file to be played **after** the TTS message. You can use either a preset option or a local file path.                                                      | None    |
+| Delay                  | ```delay```          | Delay (ms) between chime audio and the TTS message                                                                                                                   | 450ms   |
+| Message                | ```message```        | The text to be converted into TTS audio                                                                                                                              | None    |
+| TTS Platform           | ```tts_platform```   | TTS platform to be used to create TTS audio. **Note:** the [TTS platforms](https://www.home-assistant.io/integrations/#text-to-speech) must be installed separately. | None    |
+| Media Player Entity Id | ```media_player```   | The entity_id for the media player to play the audio                                                                                                                 | None    |
+| Volume Level           | ```volume_level```   | The volume level (between 0.0 - 1.0) to play the audio. The original value will be restored after playback.                                                          | 1       |
+
 
 # Calling Service from Home Assistant
 
@@ -71,9 +77,10 @@ Volume Level | ```volume_level``` | The volume level (between 0.0 - 1.0) to play
 <img alt="Screenshot of the parameters for the Chime TTS service in YAML" src=https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-light.png">
 </picture>
 
-[forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=popout
-[forum]: https://community.home-assistant.io/t/chime-tts-play-audio-before-after-tts-audio-lag-free/578430
 
-Show your support 👍
+# Show your support 👍
 
 <a href="https://www.buymeacoffee.com/nimroddolev" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 40px !important;width: 140px !important;" ></a>
+
+[forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=popout
+[forum]: https://community.home-assistant.io/t/chime-tts-play-audio-before-after-tts-audio-lag-free/578430
