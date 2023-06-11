@@ -46,18 +46,17 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         volume_level = service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
 
         # Create audio file to play on media player
-        audio_dict = init_playback_audio(
+        audio_path = get_playback_audio_path(
             chime_path,
             end_chime_path,
             delay,
             tts_platform,
             message
         )
-        if audio_dict is False:
+        if audio_path is False:
             return False
-        audio_path = audio_dict["output_path"]
-        audio_length = audio_dict["output_length"]
 
+        # Set volume to desired level
         set_volume_level(entity_id, volume_level)
 
         # Play the audio on the media player
@@ -69,11 +68,13 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 ATTR_MEDIA_CONTENT_TYPE: MEDIA_TYPE_MUSIC,
                 CONF_ENTITY_ID: entity_id,
             },
-            False,
+            True,
         )
+        delay = _data["delay"]
+        time.sleep(delay)
 
         # Reset media player volume level
-        set_volume_level(entity_id, initial_volume_level, audio_length)
+        set_volume_level(entity_id, initial_volume_level)
 
         return True
 
@@ -90,8 +91,8 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 _LOGGER.warn("Unable to find audio at path: %s", path)
         return audio
 
-    def init_playback_audio(chime_path, end_chime_path, delay, tts_platform, message):
-        """Initialise audio to play on  media player entity."""
+    def get_playback_audio_path(chime_path, end_chime_path, delay, tts_platform, message):
+        """Create audio to play on media player entity."""
         # Load chime audio
         output_audio = get_audio_from_path(chime_path)
 
@@ -111,13 +112,12 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Load end chime audio
         output_audio = get_audio_from_path(end_chime_path, delay, output_audio)
+        _data["delay"] = float(len(output_audio) / 1000.0)
 
         # Save temporary MP3 file
         output_path = tempfile.NamedTemporaryFile(suffix=".mp3").name
         output_audio.export(output_path, format="mp3")
-        output_length = float(len(output_audio) / 1000.0)
-
-        return {"output_path": output_path, "output_length": output_length}
+        return output_path
 
     def get_tts_audio_path(tts_data):
         """Request TTS audio and return local file path to TTS audio file."""
@@ -171,9 +171,8 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if entity.state == "off":
             _LOGGER.info('Turning on media player entity: "%s"', entity_id)
             hass.services.call(
-                "media_player", "turn_on", {CONF_ENTITY_ID: entity_id}, False
+                "media_player", "turn_on", {CONF_ENTITY_ID: entity_id}, True
             )
-            time.sleep(1.5)
 
         # Get current volume level
         if hasattr(entity, "attributes"):
@@ -185,20 +184,18 @@ def setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     'Unable to get current volume for media player entity: "%s"', entity_id)
                 return -1
 
-    def set_volume_level(entity_id, volume_level, delay=0):
+    def set_volume_level(entity_id, new_volume_level):
         """Set the volume_level for a given media player entity."""
-        if volume_level is None or volume_level < 0:
-            return False
-
-        time.sleep(max(0, delay))
-
-        hass.services.call(
-            "media_player",
-            "volume_set",
-            {ATTR_MEDIA_VOLUME_LEVEL: volume_level, CONF_ENTITY_ID: entity_id},
-            False,
-        )
-        return True
+        if new_volume_level >= 0:
+            hass.services.call(
+                "media_player",
+                "volume_set",
+                {ATTR_MEDIA_VOLUME_LEVEL: new_volume_level,
+                    CONF_ENTITY_ID: entity_id},
+                True,
+            )
+            return True
+        return False
 
     hass.services.register(DOMAIN, SERVICE_SAY, tts_platform)
     return True
