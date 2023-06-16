@@ -131,11 +131,12 @@ async def async_setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 ### Retrieve TTS Audio Functions ###
 ####################################
 
-async def async_request_tts_audio_filepath(hass, tts_platform, message):
+async def async_request_tts_audio_filepath(hass: HomeAssistant, tts_platform: str, message: str):
     """Send an API request for TTS audio and return the audio file's local filepath."""
     # Data validation
     _LOGGER.debug(
-        'async_request_tts_audio_filepath(hass, tts_platform="%s", message="%s")', tts_platform, message)
+        'async_request_tts_audio_filepath(hass, tts_platform="%s", message="%s")',
+        tts_platform, message)
     if message is False or message == "":
         _LOGGER.warning("No message text provided for TTS audio")
         return None
@@ -201,7 +202,7 @@ def post_request(url, headers, data, timeout):
 ### Audio Helper Functions ###
 ##############################
 
-async def async_get_playback_audio_path(params):
+async def async_get_playback_audio_path(params: dict):
     """Create audio to play on media player entity."""
     hass = params["hass"]
     chime_path = params["chime_path"]
@@ -212,7 +213,7 @@ async def async_get_playback_audio_path(params):
     _data["delay"] = 0
 
     _LOGGER.debug(
-        'async_get_playback_audio_path(params={hass: hass, chime_path: "%s", end_chime_path: "%s", delay: %s, tts_platform: "%s", message: "%s"})', chime_path, end_chime_path, str(delay), tts_platform, message)
+        'async_get_playback_audio_path(params=%s)', str(params))
     # Load chime audio
     output_audio = get_audio_from_path(chime_path)
 
@@ -253,7 +254,7 @@ async def async_get_playback_audio_path(params):
     return None
 
 
-def get_audio_from_path(filepath, delay=0, audio=None):
+def get_audio_from_path(filepath: str, delay=0, audio=None):
     """Add audio from a given file path to existing audio (optional) with delay (optional)."""
     filepath = str(filepath)
     _LOGGER.debug('get_audio_from_path("%s", %s, audio)', filepath, str(delay))
@@ -283,7 +284,7 @@ async def async_set_volume_level(hass: HomeAssistant, entity_id: str, new_volume
                   entity_id, str(new_volume_level))
     if new_volume_level >= 0:
         _LOGGER.debug(' - Seting volume_level of media player "%s" to: %s',
-                      entity_id, str(new_volume_level)),
+                      entity_id, str(new_volume_level))
         await hass.services.async_call(
             "media_player",
             "volume_set",
@@ -304,11 +305,9 @@ async def async_set_volume_level(hass: HomeAssistant, entity_id: str, new_volume
 async def async_init_stored_data(hass: HomeAssistant):
     """Retrieve the stored data for the integration."""
     store = storage.Store(hass, 1, DATA_STORAGE_KEY)
-    await store.async_load()
-    if store._data is None:
+    _data[DATA_STORAGE_KEY] = await store.async_load()
+    if _data[DATA_STORAGE_KEY] is None:
         _data[DATA_STORAGE_KEY] = {}
-    else:
-        _data[DATA_STORAGE_KEY] = dict(store._data)
 
 
 async def async_store_data(hass: HomeAssistant, key: str, value: str):
@@ -336,7 +335,7 @@ async def async_save_data(hass: HomeAssistant):
     await store.async_save(_data[DATA_STORAGE_KEY])
 
 
-async def async_get_tts_cache_path(base64_filename):
+async def async_get_tts_cache_path(base64_filename: str):
     """Return the valid filepath for TTS audio previously stored in the filesystem's cache."""
     _LOGGER.debug(
         "async_get_tts_cache_path('%s')", base64_filename)
