@@ -145,7 +145,7 @@ async def async_request_tts_audio_filepath(hass: HomeAssistant, tts_platform: st
         return None
 
     # Send API request for TTS Audio
-    instance_url = str(get_url(hass)).replace('http:', 'https:')
+    instance_url = str(get_url(hass))
     url = instance_url + TTS_API
     bearer_token = _data[HTTP_BEARER_AUTHENTICATION]
 
