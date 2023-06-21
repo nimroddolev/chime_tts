@@ -159,7 +159,7 @@ say:
           domain: media_player
     volume_level:
       name: Volume Level
-      description: "Set the media player's volume level before playing the TTS audio"
+      description: "The volume level to set the media player before playing audio"
       required: false
       default: 1.0
       selector:
@@ -169,3 +169,29 @@ say:
           step: 0.01
           mode: slider
       example: 0.75
+    language:
+      name: Language
+      description: "The speech language to use (suppored by Google Translate and Nabu Casa Cloud TTS)"
+      example: "'en' (for Google Translate) or 'en-US' (for Nabu Casa Cloud TTS)"
+      required: false
+      selector:
+        text:
+    tld:
+      name: TLD
+      description: "Dialect Domain (suppored by Google Translate)"
+      example: "com.uk"
+      required: false
+      selector:
+        text:
+    gender:
+      name: Gender
+      description: "Use a male or female voice (Nabu Casa)"
+      example: "'male' or 'female'"
+      required: false
+      selector:
+        select:
+          options:
+            - label: "Male"
+              value: "male"
+            - label: "Female"
+              value: "female"

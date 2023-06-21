@@ -25,9 +25,19 @@ from .const import (
     PAUSE_DURATION_MS,
     DATA_STORAGE_KEY,
     TTS_API,
-    TIMEOUT
+    TIMEOUT,
+    # AMAZON_POLLY,
+    # BAIDU,
+    # GOOGLE_CLOUD,
+    GOOGLE_TRANSLATE,
+    # IBM_WATSON_TTS,
+    # MARYTTS,
+    # MICROSOFT_TTS,
+    NABU_CASA,
+    # PICOTTS,
+    # VOICE_RSS,
+    # YANDEX_TTS,
 )
-
 _LOGGER = logging.getLogger(__name__)
 _data = {}
 
@@ -55,6 +65,9 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         tts_platform = str(service.data.get("tts_platform", ""))
         entity_id = str(service.data.get(CONF_ENTITY_ID, ""))
         volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
+        language = service.data.get("language", None)
+        tld = service.data.get("tld", None)
+        gender = service.data.get("gender", None)
 
         # Validate media player entity_id
         entity = hass.states.get(entity_id)
@@ -90,7 +103,10 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             "end_chime_path": end_chime_path,
             "delay": delay,
             "tts_platform": tts_platform,
-            "message": message
+            "message": message,
+            "language": language,
+            "tld": tld,
+            "gender": gender
         }
         audio_path = await async_get_playback_audio_path(params)
         if audio_path is None:
@@ -148,12 +164,17 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
 ### Retrieve TTS Audio Functions ###
 ####################################
 
-async def async_request_tts_audio_filepath(hass: HomeAssistant, tts_platform: str, message: str):
+async def async_request_tts_audio_filepath(hass: HomeAssistant,
+                                           tts_platform: str,
+                                           message: str,
+                                           language: str = None,
+                                           tld: str = None,
+                                           gender: str = None):
     """Send an API request for TTS audio and return the audio file's local filepath."""
     # Data validation
     _LOGGER.debug(
-        'async_request_tts_audio_filepath(hass, tts_platform="%s", message="%s")',
-        tts_platform, message)
+        'async_request_tts_audio_filepath(hass, tts_platform="%s", message="%s", language="%s", tld="%s", gender="%s")',
+        tts_platform, message, str(language), str(tld), str(gender))
     if message is False or message == "":
         _LOGGER.warning("No message text provided for TTS audio")
         return None
@@ -165,18 +186,48 @@ async def async_request_tts_audio_filepath(hass: HomeAssistant, tts_platform: st
     instance_url = str(get_url(hass))
     url = instance_url + TTS_API
     bearer_token = _data[HTTP_BEARER_AUTHENTICATION]
+    data = {
+        "message": str(message),
+        "platform": str(tts_platform),
+        "cache": True
+    }
+
+    # Additional language parameters
+    # if tts_platform == AMAZON_POLLY:
+    # if tts_platform == BAIDU:
+    # if tts_platform == GOOGLE_CLOUD:
+
+    # Google Translate https://www.home-assistant.io/integrations/google_translate/
+    if tts_platform == GOOGLE_TRANSLATE:
+        if language is not None:
+            data["language"] = language
+        if tld is not None:
+            data["options"] = {
+                "tld": tld
+            }
+
+    # if tts_platform == IBM_WATSON_TTS:
+    # if tts_platform == MARYTTS:
+    # if tts_platform == MICROSOFT_TTS:
+
+    # Nabu Casa Cloud TTS https://www.nabucasa.com/config/tts/
+    if tts_platform == NABU_CASA:
+        if language is not None:
+            data["language"] = language
+        if gender is not None:
+            data["options"] = {
+                "gender": gender
+            }
+
+    # if tts_platform == PICOTTS:
+    # if tts_platform == VOICE_RSS:
+    # if tts_platform == YANDEX_TTS:
 
     headers = {
         "Authorization": "Bearer " + str(bearer_token),
         "Content-Type": "application/json",
     }
-    data = (
-        '{"message": '
-        + json.dumps(str(message))
-        + ', "platform": "'
-        + str(tts_platform)
-        + '", "cache": true}'
-    )
+    data_string = str(json.dumps(data)).replace(": True", ": true")
 
     # Redact bearer_token before writing log message
     if len(bearer_token) <= 10:
@@ -186,13 +237,13 @@ async def async_request_tts_audio_filepath(hass: HomeAssistant, tts_platform: st
             '#'*10 + bearer_token[-5:]
     redacted_headers = str(headers).replace(
         bearer_token, redacted_bearer_token)
-    _LOGGER.debug(' - Requesting TTS audio:')
-    _LOGGER.debug('  - url     = %s', url)
-    _LOGGER.debug('  - headers = %s', redacted_headers)
-    _LOGGER.debug('  - data    = %s', str(data))
-    _LOGGER.debug('  - timeout = %s', str(TIMEOUT))
+    _LOGGER.debug('Requesting TTS audio:')
+    _LOGGER.debug(' * url     = %s', url)
+    _LOGGER.debug(' * headers = %s', redacted_headers)
+    _LOGGER.debug(' * data    = %s', data_string)
+    _LOGGER.debug(' * timeout = %s', str(TIMEOUT))
 
-    response = await hass.async_add_executor_job(post_request, url, headers, data, TIMEOUT)
+    response = await hass.async_add_executor_job(post_request, url, headers, data_string, TIMEOUT)
     _LOGGER.debug(' - Repsonse status_code: "%s"', response.status_code)
     _LOGGER.debug(' - Repsonse received: "%s"', response.text)
     if response is not None:
@@ -227,6 +278,9 @@ async def async_get_playback_audio_path(params: dict):
     delay = params["delay"]
     tts_platform = params["tts_platform"]
     message = params["message"]
+    language = params["language"]
+    tld = params["tld"]
+    gender = params["gender"]
     _data["delay"] = 0
 
     _LOGGER.debug(
@@ -238,16 +292,27 @@ async def async_get_playback_audio_path(params: dict):
 
     # Check if TTS file file exists in cache
     filename = tts_platform + "-" + message
+    if gender is not None:
+        filename = filename.replace(tts_platform, tts_platform + "-" + gender)
+    if tld is not None:
+        filename = filename.replace(tts_platform, tts_platform + "-" + tld)
+    if language is not None:
+        filename = filename.replace(
+            tts_platform, tts_platform + "-" + language)
     filename_bytes = filename.encode('ascii')
     base64_bytes = base64.b64encode(filename_bytes)
     base64_filename = base64_bytes.decode('ascii')
     tts_audio_path = await async_get_tts_cache_path(base64_filename)
 
     if tts_audio_path is None:
-        # tts_audio_path = request_tts_audio_filepath(hass, tts_platform, message)
-        tts_audio_path = await async_request_tts_audio_filepath(hass, tts_platform, message)
+        tts_audio_path = await async_request_tts_audio_filepath(hass,
+                                                                tts_platform,
+                                                                message,
+                                                                language,
+                                                                tld,
+                                                                gender)
         _LOGGER.debug(
-            " - %s REST API request returned tts_audio_path: '%s'", TTS_API, tts_audio_path)
+            " - REST API request to %s returned audio path: '%s'", TTS_API, tts_audio_path)
         if tts_audio_path is not None:
             await async_store_data(hass, base64_filename, tts_audio_path)
     else:

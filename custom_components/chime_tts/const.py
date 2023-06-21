@@ -14,3 +14,16 @@ DATA_STORAGE_KEY = "chime_tts_integration_data"
 TTS_API = "/api/tts_get_url"
 HTTP_BEARER_AUTHENTICATION = "HTTP_BEARER_AUTHENTICATION"
 TIMEOUT = 10
+
+# TTS Platforms
+AMAZON_POLLY = "amazon_polly"
+BAIDU = "baidu"
+GOOGLE_CLOUD = "google_cloud"
+GOOGLE_TRANSLATE = "google_translate"
+IBM_WATSON_TTS = "watson_tts"
+MARYTTS = "MaryTTS"
+MICROSOFT_TTS = "microsoft"
+NABU_CASA = "cloud_say"
+PICOTTS = "picotts"
+VOICE_RSS = "voicerss"
+YANDEX_TTS = "yandextts"
