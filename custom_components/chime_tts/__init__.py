@@ -32,14 +32,16 @@ _LOGGER = logging.getLogger(__name__)
 _data = {}
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up an entry."""
     await async_init_stored_data(hass)
-    _data[HTTP_BEARER_AUTHENTICATION] = entry.data[HTTP_BEARER_AUTHENTICATION]
+    _data[HTTP_BEARER_AUTHENTICATION] = config_entry.data[HTTP_BEARER_AUTHENTICATION]
+    config_entry.async_on_unload(
+        config_entry.add_update_listener(async_reload_entry))
     return True
 
 
-async def async_setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up the Chime TTS integration."""
     _LOGGER.info("The Chime TTS integration is set up.")
 
@@ -125,6 +127,19 @@ async def async_setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_SAY, async_say)
 
     return True
+
+
+async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+    """Handle removal of an entry."""
+    return True
+
+
+async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    """Reload the Chime TTS config entry."""
+    _LOGGER.debug("Reloading integration")
+    await async_unload_entry(hass, config_entry)
+    await async_setup_entry(hass, config_entry)
+    await async_setup(hass, config_entry)
 
 
 ####################################
@@ -260,7 +275,7 @@ def get_audio_from_path(filepath: str, delay=0, audio=None):
     _LOGGER.debug('get_audio_from_path("%s", %s, audio)', filepath, str(delay))
 
     if (filepath is None) or (filepath == "None") or (len(filepath) == 0):
-        _LOGGER.warning('No filepath provided')
+        _LOGGER.debug('No filepath provided')
         return audio
     if not os.path.exists(filepath):
         _LOGGER.warning('Audio filepath does not exist: "%s"', str(filepath))
@@ -273,7 +288,7 @@ def get_audio_from_path(filepath: str, delay=0, audio=None):
         if audio is None:
             return audio_from_path
         return (audio + (AudioSegment.silent(duration=delay) + audio_from_path))
-    _LOGGER.warning("..unable to find audio at filepath")
+    _LOGGER.warning("...unable to find audio from filepath")
     return audio
 
 
