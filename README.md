@@ -57,17 +57,23 @@ Chime TTS uses Home Assistant's [tts_get_url](https://www.home-assistant.io/inte
 
 # Configuration
 
-The following service options are all optional:
-| Option                 | Parameter            | Description                                                                                                                                                          | Default |
-| ---------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| Chime Path             | ```chime_path```     | The audio file to be played **before** the TTS message. You can use either a preset option or a local file path.                                                     | Bells   |
-| End Chime Path         | ```end_chime_path``` | The audio file to be played **after** the TTS message. You can use either a preset option or a local file path.                                                      | None    |
-| Delay                  | ```delay```          | Delay (ms) between chime audio and the TTS message                                                                                                                   | 450ms   |
-| Message                | ```message```        | The text to be converted into TTS audio                                                                                                                              | None    |
-| TTS Platform           | ```tts_platform```   | TTS platform to be used to create TTS audio. **Note:** the [TTS platforms](https://www.home-assistant.io/integrations/#text-to-speech) must be installed separately. | None    |
-| Media Player Entity Id | ```media_player```   | The entity_id for the media player to play the audio                                                                                                                 | None    |
-| Volume Level           | ```volume_level```   | The volume level (between 0.0 - 1.0) to play the audio. The original value will be restored after playback.                                                          | 1       |
+## Standard parameters
+| Option                 | Parameter        | Required? | Description                                                                                                                                                          | Default |
+| ---------------------- | ---------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Chime Path             | `chime_path`     |           | Either an audio preset or a local audio file path to be played **before** the TTS message.                                                                           | Bells   |
+| End Chime Path         | `end_chime_path` |           | Either an audio preset or a local audio file path to be played **after** the TTS message.                                                                            | None    |
+| Delay                  | `delay`          |           | Delay (ms) between chime audio and the TTS message                                                                                                                   | 450ms   |
+| Message                | `message`        | Required  | The text to be converted into TTS audio                                                                                                                              | None    |
+| TTS Platform           | `tts_platform`   | Required  | TTS platform to be used to create TTS audio. **Note:** the [TTS platforms](https://www.home-assistant.io/integrations/#text-to-speech) must be installed separately. | None    |
+| Media Player Entity Id | `media_player`   | Required  | The entity_id of the media player to play the audio.                                                                                                                 | None    |
+| Volume Level           | `volume_level`   |           | The volume level (between 0.0 - 1.0) to play the audio. The original value will be restored after playback.                                                          | 1       |
 
+## Additional parameters (not supported by all TTS platforms)
+| Option   | Parameter  | Required? | Description                | Supported TTS Platforms                                                                                                                       | Default |
+| -------- | ---------- | --------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Language | `language` |           | The speech language to use | [Google Translate](https://www.home-assistant.io/integrations/google_translate/), [Nabu Casa Cloud TTS](https://www.nabucasa.com/config/tts/) | None    |
+| TLD      | `tld`      |           | The dialect domain         | [Google Translate](https://www.home-assistant.io/integrations/google_translate/)                                                              | None    |
+| Gender   | `gender`   |           | Use a male or female voice | [Nabu Casa Cloud TTS](https://www.nabucasa.com/config/tts/)                                                                                   | None    |
 
 # Calling Service from Home Assistant
 
