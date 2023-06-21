@@ -80,16 +80,16 @@ Chime TTS uses Home Assistant's [tts_get_url](https://www.home-assistant.io/inte
 ## From the UI
 
 <picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-dark.png">
-<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light.png">
-<img alt="Screenshot of the parameters for the Chime TTS service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light">
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-dark.png?v=1">
+<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light.png?v=1">
+<img alt="Screenshot of the parameters for the Chime TTS service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light?v=1">
 </picture>
 
 ## From YAML
 <picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-dark.png">
-<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-light.png">
-<img alt="Screenshot of the parameters for the Chime TTS service in YAML" src=https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-light.png">
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-dark.png?v=1">
+<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-light.png?v=1">
+<img alt="Screenshot of the parameters for the Chime TTS service in YAML" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_yaml-light.png?v=1">
 </picture>
 
 
