@@ -299,9 +299,9 @@ async def async_get_playback_audio_path(params: dict):
     if language is not None:
         filename = filename.replace(
             tts_platform, tts_platform + "-" + language)
-    filename_bytes = filename.encode('ascii')
+    filename_bytes = filename.encode('utf-8')
     base64_bytes = base64.b64encode(filename_bytes)
-    base64_filename = base64_bytes.decode('ascii')
+    base64_filename = base64_bytes.decode('utf-8')
     tts_audio_path = await async_get_tts_cache_path(base64_filename)
 
     if tts_audio_path is None:
