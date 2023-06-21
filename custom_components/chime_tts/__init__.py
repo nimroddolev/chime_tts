@@ -69,18 +69,19 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                 "media_player", "turn_on", {CONF_ENTITY_ID: entity_id}, True
             )
 
-        # Get media player's current volume level
+        # Store media player's current volume level
         initial_volume_level = -1
-        if hasattr(entity, "attributes") and ATTR_MEDIA_VOLUME_LEVEL in dict(entity.attributes):
-            if entity.attributes.get(ATTR_MEDIA_VOLUME_LEVEL) > 0:
-                initial_volume_level = entity.attributes.get(
-                    ATTR_MEDIA_VOLUME_LEVEL)
+        if volume_level >= 0:
+            if hasattr(entity, "attributes") and ATTR_MEDIA_VOLUME_LEVEL in dict(entity.attributes):
+                if entity.attributes.get(ATTR_MEDIA_VOLUME_LEVEL) > 0:
+                    initial_volume_level = entity.attributes.get(
+                        ATTR_MEDIA_VOLUME_LEVEL)
+                else:
+                    _LOGGER.warning(
+                        'Unable to get volume for media player entity: "%s"', entity_id)
             else:
                 _LOGGER.warning(
-                    'Unable to get volume for media player entity: "%s"', entity_id)
-        else:
-            _LOGGER.warning(
-                'Media player entity "%s" does not have attributes', entity_id)
+                    'Media player entity "%s" does not have attributes', entity_id)
 
         # Create audio file to play on media player
         params = {
@@ -120,7 +121,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         await hass.async_add_executor_job(sleep, _data["delay"])
 
         # Reset media player volume level
-        await async_set_volume_level(hass, entity_id, initial_volume_level)
+        if initial_volume_level != -1:
+            await async_set_volume_level(hass, entity_id, initial_volume_level)
 
         return True
 
@@ -309,7 +311,7 @@ async def async_set_volume_level(hass: HomeAssistant, entity_id: str, new_volume
         )
         _LOGGER.debug(' - async_set_volume_level: completed')
         return True
-    _LOGGER.debug(' - async_set_volume_level: slipped')
+    _LOGGER.debug(' - async_set_volume_level: Skipped setting volume')
     return False
 
 
