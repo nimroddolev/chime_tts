@@ -98,7 +98,7 @@ say:
           mode: dropdown
     delay:
       name: Delay
-      description: "Delay (ms) between the chime and the TTS message"
+      description: "Delay (ms) between the chime/s and the TTS message"
       example: 450
       required: false
       default: 450
@@ -111,14 +111,14 @@ say:
           unit_of_measurement: ms
     message:
       name: Message
-      description: "Text to speak on devices"
+      description: "Text converted into TTS audio"
       example: "Hello world!"
       required: true
       selector:
         text:
     tts_platform:
       name: "TTS Platform"
-      description: "TTS platform to use to create TTS audio"
+      description: "TTS platform used to generate TTS audio"
       example: "google_translate"
       required: true
       selector:
@@ -149,6 +149,19 @@ say:
           multiple: false
           custom_value: true
           mode: dropdown
+    tts_playback_speed:
+      name: TTS Playback Speed
+      description: "Playback speed of the TTS audio, between 100% - 200%"
+      example: 125
+      required: false
+      default: 100
+      selector:
+        number:
+          mode: slider
+          min: 100
+          max: 200
+          step: 5
+          unit_of_measurement: '%'
     entity_id:
       name: Media Player Entity Id
       description: "Media player to play the joined audio"
@@ -159,7 +172,7 @@ say:
           domain: media_player
     volume_level:
       name: Volume Level
-      description: "The volume level to set the media player before playing audio"
+      description: "The volume to use when playing audio"
       required: false
       default: 1.0
       selector:
@@ -171,14 +184,14 @@ say:
       example: 0.75
     language:
       name: Language
-      description: "The speech language to use (suppored by Google Translate and Nabu Casa Cloud TTS)"
+      description: "The TTS language (suppored by Google Translate and Nabu Casa Cloud TTS)"
       example: "'en' (for Google Translate) or 'en-US' (for Nabu Casa Cloud TTS)"
       required: false
       selector:
         text:
     tld:
       name: TLD
-      description: "Dialect Domain (suppored by Google Translate)"
+      description: "The dialect Domain (suppored by Google Translate)"
       example: "com.uk"
       required: false
       selector:

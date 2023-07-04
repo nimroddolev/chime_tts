@@ -6,8 +6,11 @@ import time
 import json
 import os
 import base64
+
 from requests import post
 from pydub import AudioSegment
+from datetime import datetime
+
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_CONTENT_ID,
     ATTR_MEDIA_CONTENT_TYPE,
@@ -57,12 +60,15 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
     async def async_say(service):
         """Play TTS audio with local chime MP3 audio."""
-        _LOGGER.debug('async_say(service)')
+        start_time = datetime.now()
+        _LOGGER.debug('----- Chime TTS Say Called -----')
+
         chime_path = str(service.data.get("chime_path", ""))
         end_chime_path = str(service.data.get("end_chime_path", ""))
         delay = float(service.data.get("delay", PAUSE_DURATION_MS))
         message = str(service.data.get("message", ""))
         tts_platform = str(service.data.get("tts_platform", ""))
+        tts_playback_speed = float(service.data.get("tts_playback_speed", 100))
         entity_id = str(service.data.get(CONF_ENTITY_ID, ""))
         volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
         language = service.data.get("language", None)
@@ -103,6 +109,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             "end_chime_path": end_chime_path,
             "delay": delay,
             "tts_platform": tts_platform,
+            "tts_playback_speed": tts_playback_speed,
             "message": message,
             "language": language,
             "tld": tld,
@@ -139,6 +146,11 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         # Reset media player volume level
         if initial_volume_level != -1:
             await async_set_volume_level(hass, entity_id, initial_volume_level)
+
+        end_time = datetime.now()
+        elapsed_time = (end_time - start_time).total_seconds() * 1000
+        _LOGGER.debug(
+            '----- Chime TTS Say Completed in %s ms -----', str(elapsed_time))
 
         return True
 
@@ -277,12 +289,12 @@ async def async_get_playback_audio_path(params: dict):
     end_chime_path = params["end_chime_path"]
     delay = params["delay"]
     tts_platform = params["tts_platform"]
+    tts_playback_speed = params["tts_playback_speed"]
     message = params["message"]
     language = params["language"]
     tld = params["tld"]
     gender = params["gender"]
     _data["delay"] = 0
-
     _LOGGER.debug(
         'async_get_playback_audio_path(params=%s)', str(params))
     # Load chime audio
@@ -319,7 +331,7 @@ async def async_get_playback_audio_path(params: dict):
         _LOGGER.debug(" - Using cached TTS mp3 filepath")
 
     output_audio = get_audio_from_path(
-        tts_audio_path, delay, output_audio)
+        tts_audio_path, delay, output_audio, tts_playback_speed)
 
     # Load end chime audio
     output_audio = get_audio_from_path(end_chime_path, delay, output_audio)
@@ -336,7 +348,7 @@ async def async_get_playback_audio_path(params: dict):
     return None
 
 
-def get_audio_from_path(filepath: str, delay=0, audio=None):
+def get_audio_from_path(filepath: str, delay=0, audio=None, tts_playback_speed=100):
     """Add audio from a given file path to existing audio (optional) with delay (optional)."""
     filepath = str(filepath)
     _LOGGER.debug('get_audio_from_path("%s", %s, audio)', filepath, str(delay))
@@ -352,6 +364,12 @@ def get_audio_from_path(filepath: str, delay=0, audio=None):
     audio_from_path = AudioSegment.from_file(filepath)
     if audio_from_path is not None:
         _LOGGER.debug(' - ...audio retrieved successfully')
+        if tts_playback_speed != 100:
+            _LOGGER.debug(" - Changing TTS playback speed to %s percent",
+                          str(tts_playback_speed))
+            playback_speed = float(tts_playback_speed / 100)
+            audio_from_path = audio_from_path.speedup(
+                playback_speed=playback_speed)
         if audio is None:
             return audio_from_path
         return (audio + (AudioSegment.silent(duration=delay) + audio_from_path))
