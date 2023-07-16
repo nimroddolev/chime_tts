@@ -195,7 +195,30 @@ say:
       example: "com.uk"
       required: false
       selector:
-        text:
+        select:
+          options:
+            - label: com
+              value: com
+            - label: co.uk
+              value: co.uk
+            - label: com.au
+              value: com.au
+            - label: ca
+              value: ca
+            - label: co.in
+              value: co.in
+            - label: ie
+              value: ie
+            - label: co.za
+              value: co.za
+            - label: fr
+              value: fr
+            - label: com.br
+              value: com.br
+            - label: pt
+              value: pt
+            - label: es
+              value: es
     gender:
       name: Gender
       description: "Use a male or female voice (Nabu Casa)"
