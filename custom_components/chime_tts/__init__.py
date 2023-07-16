@@ -5,7 +5,7 @@ import tempfile
 import time
 import json
 import os
-import base64
+import hashlib
 
 from datetime import datetime
 from requests import post
@@ -27,6 +27,7 @@ from .const import (
     SERVICE_SAY,
     PAUSE_DURATION_MS,
     DATA_STORAGE_KEY,
+    TEMP_PATH,
     TTS_API,
     TIMEOUT,
     # AMAZON_POLLY,
@@ -71,6 +72,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         tts_playback_speed = float(service.data.get("tts_playback_speed", 100))
         entity_id = str(service.data.get(CONF_ENTITY_ID, ""))
         volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
+        cache = str(service.data.get("cache", False))
         language = service.data.get("language", None)
         tld = service.data.get("tld", None)
         gender = service.data.get("gender", None)
@@ -110,6 +112,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             "delay": delay,
             "tts_platform": tts_platform,
             "tts_playback_speed": tts_playback_speed,
+            "cache": cache,
             "message": message,
             "language": language,
             "tld": tld,
@@ -139,13 +142,20 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         )
         _LOGGER.debug('...media finished playback:')
 
-        # Wait for audio to finish playing
-        # time.sleep(_data["delay"])
-        await hass.async_add_executor_job(sleep, _data["delay"])
+        # Save generated temp mp3 file to cache
+        if cache and _data["is_save_generated"] is True:
+            _LOGGER.debug("Saving generated mp3 file to cache")
+            filename = _data["generated_filename"]
+            filepath_hash = get_filename_hash(TEMP_PATH + filename)
+            await async_store_data(hass, filepath_hash, audio_path)
 
-        # Reset media player volume level
+        # Reset media player volume level once finish playing
         if initial_volume_level != -1:
+            _LOGGER.debug("Waiting %ss until returning volume level to %s...", str(
+                _data["delay"]), initial_volume_level)
+            await hass.async_add_executor_job(sleep, _data["delay"])
             await async_set_volume_level(hass, entity_id, initial_volume_level)
+            _LOGGER.debug("...volume level restored")
 
         end_time = datetime.now()
         elapsed_time = (end_time - start_time).total_seconds() * 1000
@@ -183,9 +193,11 @@ async def async_request_tts_audio_filepath(hass: HomeAssistant,
                                            tld: str = None,
                                            gender: str = None):
     """Send an API request for TTS audio and return the audio file's local filepath."""
+    debug_string = 'hass, tts_platform="' + tts_platform + '", message="' + message + \
+        '", language="' + str(language) + '", tld="' + \
+        str(tld) + '", gender="' + str(gender) + '")'
     _LOGGER.debug(
-        'async_request_tts_audio_filepath(hass, tts_platform="%s", message="%s", language="%s", tld="%s", gender="%s")',
-        tts_platform, message, str(language), str(tld), str(gender))
+        'async_request_tts_audio_filepath(%s)', debug_string)
     # Data validation
     if message is False or message == "":
         _LOGGER.warning("No message text provided for TTS audio")
@@ -290,32 +302,50 @@ async def async_get_playback_audio_path(params: dict):
     delay = params["delay"]
     tts_platform = params["tts_platform"]
     tts_playback_speed = params["tts_playback_speed"]
+    cache = params["cache"]
     message = params["message"]
     language = params["language"]
     tld = params["tld"]
     gender = params["gender"]
     _data["delay"] = 0
+    _data["is_save_generated"] = False
     _LOGGER.debug(
         'async_get_playback_audio_path(params=%s)', str(params))
+
+    # TTS filename string
+    tts_filename = get_tts_filename(params)
+
+    # Load previously generated audio from cache
+    if cache:
+        _LOGGER.debug("Attempting to retrieve generated mp3 file from cache")
+        _data["generated_filename"] = get_generated_filename(params)
+        filepath_hash = get_filename_hash(
+            TEMP_PATH + _data["generated_filename"])
+        filepath = await async_get_cache_path(filepath_hash)
+        if filepath is not None:
+            if os.path.exists(str(filepath)):
+                _LOGGER.debug("Using previously generated mp3 saved in cache")
+                return filepath
+            else:
+                _LOGGER.warning(
+                    "Could not find previosuly cached generated mp3 file")
+        else:
+            _LOGGER.debug("No previously generated mp3 file found")
+
     # Load chime audio
     output_audio = get_audio_from_path(chime_path)
 
     # Load TTS audio
+    tts_audio_path = None
 
     # Check if TTS file file exists in cache
-    filename = tts_platform + "-" + message
-    if gender is not None:
-        filename = filename.replace(tts_platform, tts_platform + "-" + gender)
-    if tld is not None:
-        filename = filename.replace(tts_platform, tts_platform + "-" + tld)
-    if language is not None:
-        filename = filename.replace(
-            tts_platform, tts_platform + "-" + language)
-    filename_bytes = filename.encode('utf-8')
-    base64_bytes = base64.b64encode(filename_bytes)
-    base64_filename = base64_bytes.decode('utf-8')
-    tts_audio_path = await async_get_tts_cache_path(base64_filename)
+    tts_filepath_hash = get_filename_hash(tts_filename)
+    if cache:
+        tts_audio_path = await async_get_cache_path(tts_filepath_hash)
+        if tts_audio_path is None:
+            _LOGGER.debug(" - Cached TTS mp3 file not found")
 
+    # Request TTS audio
     if tts_audio_path is None:
         tts_audio_path = await async_request_tts_audio_filepath(hass,
                                                                 tts_platform,
@@ -326,9 +356,7 @@ async def async_get_playback_audio_path(params: dict):
         _LOGGER.debug(
             " - REST API request to %s returned audio path: '%s'", TTS_API, tts_audio_path)
         if tts_audio_path is not None:
-            await async_store_data(hass, base64_filename, tts_audio_path)
-    else:
-        _LOGGER.debug(" - Using cached TTS mp3 filepath")
+            await async_store_data(hass, tts_filepath_hash, tts_audio_path)
 
     output_audio = get_audio_from_path(
         tts_audio_path, delay, output_audio, tts_playback_speed)
@@ -338,10 +366,16 @@ async def async_get_playback_audio_path(params: dict):
     if output_audio is not None:
         duration = float(len(output_audio) / 1000.0)
         _data["delay"] = duration
-        _LOGGER.debug(" - Final audio created with duration = %ss", duration)
+        _LOGGER.debug(" - Final audio created:")
+        _LOGGER.debug("   - Duration = %ss", duration)
 
         # Save temporary MP3 file
-        output_path = tempfile.NamedTemporaryFile(suffix=".mp3").name
+        if os.path.exists(TEMP_PATH) is False:
+            os.makedirs(TEMP_PATH)
+        with tempfile.NamedTemporaryFile(prefix=TEMP_PATH, suffix=".mp3") as temp_filename_obj:
+            output_path = temp_filename_obj.name
+        _LOGGER.debug("   - Filepath = '%s'", output_path)
+        _data["is_save_generated"] = True
         output_audio.export(output_path, format="mp3")
         return output_path
 
@@ -435,23 +469,54 @@ async def async_save_data(hass: HomeAssistant):
     await store.async_save(_data[DATA_STORAGE_KEY])
 
 
-async def async_get_tts_cache_path(base64_filename: str):
+async def async_get_cache_path(filepath_hash: str):
     """Return the valid filepath for TTS audio previously stored in the filesystem's cache."""
     _LOGGER.debug(
-        "async_get_tts_cache_path('%s')", base64_filename)
-    cached_path = await async_retrieve_data(base64_filename)
+        "async_get_cache_path('%s')", filepath_hash)
+    cached_path = await async_retrieve_data(filepath_hash)
     if cached_path is not None:
         _LOGGER.debug(
-            " - async_get_tts_cache_path('%s') returned value: '%s'", base64_filename, cached_path)
-        return cached_path
+            " - async_get_cache_path('%s') returned value: '%s'", filepath_hash, cached_path)
+        return str(cached_path)
     else:
-        _LOGGER.debug(" - TTS file does not exist in cache.")
+        _LOGGER.debug(" - File does not exist in cache.")
     return None
 
 
 ##############################
 ### Misc. Helper Functions ###
 ##############################
+
+def get_filename(params: dict, is_generated: bool):
+    """Generate a unique filename based on specific parameters."""
+    filename = ""
+    relevant_params = ["message", "tts_platform", "gender", "tld", "language"]
+    if is_generated is True:
+        relevant_params.extend(
+            ["chime_path", "end_chime_path", "delay", "tts_playback_speed"])
+    for param in relevant_params:
+        if params[param] is not None:
+            filename = filename + "-" + str(params[param])
+    return filename
+
+
+def get_tts_filename(params: dict):
+    """Generate a unique TTS filename based on specific parameters."""
+    return get_filename(params, False)
+
+
+def get_generated_filename(params: dict):
+    """Generate a unique generated filename based on specific parameters."""
+    return get_filename(params, True)
+
+
+def get_filename_hash(string: str):
+    """Generate a hash from a filename string."""
+    hash_object = hashlib.sha256()
+    hash_object.update(string.encode('utf-8'))
+    hash_value = str(hash_object.hexdigest())
+    return hash_value
+
 
 def sleep(duration: float):
     """Make a synchronous time.sleep call."""

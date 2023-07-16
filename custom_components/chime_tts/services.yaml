@@ -6,96 +6,90 @@ say:
       name: "Chime Path"
       description: "A preset or custom audio file to be played before TTS audio"
       example: "custom_components/chime_tts/mp3s/bells.mp3"
-      default: "custom_components/chime_tts/mp3s/bells.mp3"
+      default: ""
+      required: false
       selector:
         select:
-          options:
-            - label: "- None -"
-              value: ""
-            - label: Bells
-              value: custom_components/chime_tts/mp3s/bells.mp3
-            - label: Bells 2
-              value: custom_components/chime_tts/mp3s/bells_2.mp3
-            - label: Bright
-              value: custom_components/chime_tts/mp3s/bright.mp3
-            - label: Chirp
-              value: custom_components/chime_tts/mp3s/chirp.mp3
-            - label: Choir
-              value: custom_components/chime_tts/mp3s/choir.mp3
-            - label: Chord
-              value: custom_components/chime_tts/mp3s/chord.mp3
-            - label: Classical
-              value: custom_components/chime_tts/mp3s/classical.mp3
-            - label: Ding Dong
-              value: custom_components/chime_tts/mp3s/ding_dong.mp3
-            - label: Drum Roll
-              value: custom_components/chime_tts/mp3s/drumroll.mp3
-            - label: Error
-              value: custom_components/chime_tts/mp3s/error.mp3
-            - label: Glockenspiel
-              value: custom_components/chime_tts/mp3s/glockenspiel.mp3
-            - label: Hail
-              value: custom_components/chime_tts/mp3s/hail.mp3
-            - label: Marimba
-              value: custom_components/chime_tts/mp3s/marimba.mp3
-            - label: Mario Coin
-              value: custom_components/chime_tts/mp3s/mario_coin.mp3
-            - label: Ta-da!
-              value: custom_components/chime_tts/mp3s/tada.mp3
-            - label: Twenty Four
-              value: custom_components/chime_tts/mp3s/twenty_four.mp3
-            - label: "Custom (Replace this text with local file path)"
-              value: ""
           multiple: false
           custom_value: true
           mode: dropdown
+          options:
+            - label: "Bells"
+              value: "custom_components/chime_tts/mp3s/bells.mp3"
+            - label: "Bells 2"
+              value: "custom_components/chime_tts/mp3s/bells_2.mp3"
+            - label: "Bright"
+              value: "custom_components/chime_tts/mp3s/bright.mp3"
+            - label: "Chirp"
+              value: "custom_components/chime_tts/mp3s/chirp.mp3"
+            - label: "Choir"
+              value: "custom_components/chime_tts/mp3s/choir.mp3"
+            - label: "Chord"
+              value: "custom_components/chime_tts/mp3s/chord.mp3"
+            - label: "Classical"
+              value: "custom_components/chime_tts/mp3s/classical.mp3"
+            - label: "Ding Dong"
+              value: "custom_components/chime_tts/mp3s/ding_dong.mp3"
+            - label: "Drum Roll"
+              value: "custom_components/chime_tts/mp3s/drumroll.mp3"
+            - label: "Error"
+              value: "custom_components/chime_tts/mp3s/error.mp3"
+            - label: "Glockenspiel"
+              value: "custom_components/chime_tts/mp3s/glockenspiel.mp3"
+            - label: "Hail"
+              value: "custom_components/chime_tts/mp3s/hail.mp3"
+            - label: "Marimba"
+              value: "custom_components/chime_tts/mp3s/marimba.mp3"
+            - label: "Mario Coin"
+              value: "custom_components/chime_tts/mp3s/mario_coin.mp3"
+            - label: "Ta-da!"
+              value: "custom_components/chime_tts/mp3s/tada.mp3"
+            - label: "Twenty Four"
+              value: "custom_components/chime_tts/mp3s/twenty_four.mp3"
     end_chime_path:
       name: "End Chime Path"
       description: "A preset or custom audio file to be played after TTS audio"
       example: "custom_components/chime_tts/mp3s/tada.mp3"
       default: ""
+      required: false
       selector:
         select:
-          options:
-            - label: "- None -"
-              value: ""
-            - label: Bells
-              value: custom_components/chime_tts/mp3s/bells.mp3
-            - label: Bells 2
-              value: custom_components/chime_tts/mp3s/bells_2.mp3
-            - label: Bright
-              value: custom_components/chime_tts/mp3s/bright.mp3
-            - label: Chirp
-              value: custom_components/chime_tts/mp3s/chirp.mp3
-            - label: Choir
-              value: custom_components/chime_tts/mp3s/choir.mp3
-            - label: Chord
-              value: custom_components/chime_tts/mp3s/chord.mp3
-            - label: Classical
-              value: custom_components/chime_tts/mp3s/classical.mp3
-            - label: Ding Dong
-              value: custom_components/chime_tts/mp3s/ding_dong.mp3
-            - label: Drum Roll
-              value: custom_components/chime_tts/mp3s/drumroll.mp3
-            - label: Error
-              value: custom_components/chime_tts/mp3s/error.mp3
-            - label: Glockenspiel
-              value: custom_components/chime_tts/mp3s/glockenspiel.mp3
-            - label: Hail
-              value: custom_components/chime_tts/mp3s/hail.mp3
-            - label: Marimba
-              value: custom_components/chime_tts/mp3s/marimba.mp3
-            - label: Mario Coin
-              value: custom_components/chime_tts/mp3s/mario_coin.mp3
-            - label: Ta-da!
-              value: custom_components/chime_tts/mp3s/tada.mp3
-            - label: Twenty Four
-              value: custom_components/chime_tts/mp3s/twenty_four.mp3
-            - label: "Custom (Replace this text with local file path)"
-              value: ""
           multiple: false
           custom_value: true
           mode: dropdown
+          options:
+            - label: "Bells"
+              value: "custom_components/chime_tts/mp3s/bells.mp3"
+            - label: "Bells 2"
+              value: "custom_components/chime_tts/mp3s/bells_2.mp3"
+            - label: "Bright"
+              value: "custom_components/chime_tts/mp3s/bright.mp3"
+            - label: "Chirp"
+              value: "custom_components/chime_tts/mp3s/chirp.mp3"
+            - label: "Choir"
+              value: "custom_components/chime_tts/mp3s/choir.mp3"
+            - label: "Chord"
+              value: "custom_components/chime_tts/mp3s/chord.mp3"
+            - label: "Classical"
+              value: "custom_components/chime_tts/mp3s/classical.mp3"
+            - label: "Ding Dong"
+              value: "custom_components/chime_tts/mp3s/ding_dong.mp3"
+            - label: "Drum Roll"
+              value: "custom_components/chime_tts/mp3s/drumroll.mp3"
+            - label: "Error"
+              value: "custom_components/chime_tts/mp3s/error.mp3"
+            - label: "Glockenspiel"
+              value: "custom_components/chime_tts/mp3s/glockenspiel.mp3"
+            - label: "Hail"
+              value: "custom_components/chime_tts/mp3s/hail.mp3"
+            - label: "Marimba"
+              value: "custom_components/chime_tts/mp3s/marimba.mp3"
+            - label: "Mario Coin"
+              value: "custom_components/chime_tts/mp3s/mario_coin.mp3"
+            - label: "Ta-da!"
+              value: "custom_components/chime_tts/mp3s/tada.mp3"
+            - label: "Twenty Four"
+              value: "custom_components/chime_tts/mp3s/twenty_four.mp3"
     delay:
       name: Delay
       description: "Delay (ms) between the chime/s and the TTS message"
@@ -123,6 +117,9 @@ say:
       required: true
       selector:
         select:
+          multiple: false
+          custom_value: true
+          mode: dropdown
           options:
             - label: "Amazon Polly"
               value: "amazon_polly"
@@ -146,9 +143,6 @@ say:
               value: "voicerss"
             - label: "Yandex TTS"
               value: "yandextts"
-          multiple: false
-          custom_value: true
-          mode: dropdown
     tts_playback_speed:
       name: TTS Playback Speed
       description: "Playback speed of the TTS audio, between 100% - 200%"
@@ -182,6 +176,13 @@ say:
           step: 0.01
           mode: slider
       example: 0.75
+    cache:
+      name: Cache
+      description: "Whether or not to save the generated audio file in a local cache"
+      example: "True"
+      required: false
+      selector:
+        boolean:
     language:
       name: Language
       description: "The TTS language (suppored by Google Translate and Nabu Casa Cloud TTS)"
