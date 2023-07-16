@@ -25,9 +25,11 @@ from homeassistant.helpers import storage
 from .const import (
     DOMAIN,
     SERVICE_SAY,
+    SERVICE_CLEAR_CACHE,
     PAUSE_DURATION_MS,
     DATA_STORAGE_KEY,
     TEMP_PATH,
+    TTS_PATH,
     TTS_API,
     TIMEOUT,
     # AMAZON_POLLY,
@@ -58,6 +60,49 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up the Chime TTS integration."""
     _LOGGER.info("The Chime TTS integration is set up.")
+
+    async def async_clear_cache(service):
+        """Play TTS audio with local chime MP3 audio."""
+        _LOGGER.debug('----- Chime TTS Clear Cache Called -----')
+        start_time = datetime.now()
+        cache_dict = dict(_data[DATA_STORAGE_KEY])
+
+        # Delete generated mp3 files
+        _LOGGER.debug('Deleting generated mp3 cache files.')
+        deleted_keys = []
+        for key, value in cache_dict.items():
+            if str(value).startswith(TEMP_PATH):
+                if os.path.exists(value):
+                    os.remove(str(value))
+                    _LOGGER.debug(
+                        " - Cached file '%s' deleted successfully.", str(value))
+                else:
+                    _LOGGER.debug(
+                        " - Unable to delete cached file '%s'.", str(value))
+                deleted_keys.append(key)
+            if str(value).startswith(TTS_PATH):
+                _LOGGER.debug(
+                    " - Path to TTS file '%s' deleted successfully.", str(value))
+            deleted_keys.append(key)
+
+        # Remove key/values from storage
+        if len(deleted_keys) > 0:
+            _LOGGER.debug('Updating cache data.')
+            for p_key in deleted_keys:
+                if p_key in cache_dict:
+                    cache_dict.pop(p_key)
+            _data[DATA_STORAGE_KEY] = cache_dict
+            await async_save_data(hass)
+        else:
+            _LOGGER.debug('Cache data unchanged.')
+
+        elapsed_time = (datetime.now() - start_time).total_seconds() * 1000
+        _LOGGER.debug(
+            '----- Chime TTS Clear Cache Completed in %s ms -----', str(elapsed_time))
+        return True
+
+    hass.services.async_register(
+        DOMAIN, SERVICE_CLEAR_CACHE, async_clear_cache)
 
     async def async_say(service):
         """Play TTS audio with local chime MP3 audio."""

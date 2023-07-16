@@ -9,9 +9,11 @@ DESCRIPTION = "A custom Home Assistant integration to play audio with text-to-sp
 VERSION = "0.0.1"
 
 SERVICE_SAY = "say"
+SERVICE_CLEAR_CACHE = "clear_cache"
 PAUSE_DURATION_MS = 450
 DATA_STORAGE_KEY = "chime_tts_integration_data"
 TEMP_PATH = "/media/sounds/temp/chime_tts/"
+TTS_PATH = "/config/tts/"
 TTS_API = "/api/tts_get_url"
 HTTP_BEARER_AUTHENTICATION = "HTTP_BEARER_AUTHENTICATION"
 TIMEOUT = 10

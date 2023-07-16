@@ -1,3 +1,7 @@
+clear_cache:
+  name: "Clear Cache"
+  description: "Removes all locally cached TTS audio files created from Chime TTS"
+
 say:
   name: "Say"
   description: "Play an audio file before TTS audio"
