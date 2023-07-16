@@ -7,9 +7,9 @@ import json
 import os
 import base64
 
+from datetime import datetime
 from requests import post
 from pydub import AudioSegment
-from datetime import datetime
 
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_CONTENT_ID,
@@ -183,10 +183,10 @@ async def async_request_tts_audio_filepath(hass: HomeAssistant,
                                            tld: str = None,
                                            gender: str = None):
     """Send an API request for TTS audio and return the audio file's local filepath."""
-    # Data validation
     _LOGGER.debug(
         'async_request_tts_audio_filepath(hass, tts_platform="%s", message="%s", language="%s", tld="%s", gender="%s")',
         tts_platform, message, str(language), str(tld), str(gender))
+    # Data validation
     if message is False or message == "":
         _LOGGER.warning("No message text provided for TTS audio")
         return None
