@@ -27,6 +27,8 @@ Chime TTS offers the following enhancements for TTS audio playback:
 
 * **Configurable delay:** Set a custom delay period between audio files and TTS audio.
 
+* **Caching:** Audio created by Chime TTS can be cached for faster playback in future service calls.
+
 
 # Quick start
 
@@ -57,12 +59,15 @@ Chime TTS uses Home Assistant's [tts_get_url](https://www.home-assistant.io/inte
 5. Navigate to: `Settings` -> `Devices and Services` -> `Add Integration`, and then type: *Chime TTS* (if it does not appear empty your browser cache and reload the page).
 6. Paste in your token and then click `Submit`.
 
-# Configuration
+# Services
 
-## Standard parameters
+## chime_tts.say
+
+The `chime_tts.say` service supports the following parameters:
+
 | Name                   | YAML Key             | Required? | Description                                                                                                                                                          | Default |
 | ---------------------- | -------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| Chime Path             | `chime_path`         |           | Either an audio preset or a local audio file path to be played **before** the TTS message.                                                                           | Bells   |
+| Chime Path             | `chime_path`         |           | Either an audio preset or a local audio file path to be played **before** the TTS message.                                                                           | None    |
 | End Chime Path         | `end_chime_path`     |           | Either an audio preset or a local audio file path to be played **after** the TTS message.                                                                            | None    |
 | Delay                  | `delay`              |           | Delay (ms) between chime audio and the TTS message                                                                                                                   | 450ms   |
 | Message                | `message`            | Required  | The text to be converted into TTS audio                                                                                                                              | None    |
@@ -70,25 +75,24 @@ Chime TTS uses Home Assistant's [tts_get_url](https://www.home-assistant.io/inte
 | TTS Playback Speed     | `tts_playback_speed` |           | The desired playback speed for the TTS audio, anywhere from 100% - 200%                                                                                              | 100     |
 | Media Player Entity Id | `media_player`       | Required  | The entity_id of the media player to play the audio.                                                                                                                 | None    |
 | Volume Level           | `volume_level`       |           | The volume level (between 0.0 - 1.0) to play the audio. The original value will be restored after playback.                                                          | 1       |
+| Cache                  | `cache`              |           | Save generated audio to the cache for reuse in future service calls.                                                                                                 | False   |
 
-## Additional parameters (not supported by all TTS platforms)
+### Additional parameters (not supported by all TTS platforms)
 | Name     | Parameter  | Required? | Description                | Supported TTS Platforms                                                                                                                       | Default |
 | -------- | ---------- | --------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | Language | `language` |           | The speech language to use | [Google Translate](https://www.home-assistant.io/integrations/google_translate/), [Nabu Casa Cloud TTS](https://www.nabucasa.com/config/tts/) | None    |
 | TLD      | `tld`      |           | The dialect domain         | [Google Translate](https://www.home-assistant.io/integrations/google_translate/)                                                              | None    |
 | Gender   | `gender`   |           | Use a male or female voice | [Nabu Casa Cloud TTS](https://www.nabucasa.com/config/tts/)                                                                                   | None    |
 
-# Calling Service from Home Assistant
-
-## From the UI
+### From the UI
 
 <picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-dark.png?v=2">
-<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light.png?v=2">
-<img alt="Screenshot of the parameters for the Chime TTS service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light?v=2">
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-dark.png?v=3">
+<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light.png?v=3">
+<img alt="Screenshot of the parameters for the Chime TTS say service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light?v=3">
 </picture>
 
-## From YAML
+### From YAML
 
 ```
 service: chime_tts.say
@@ -98,9 +102,29 @@ data:
   tts_platform: google_translate
   tts_playback_speed: 120
   entity_id: media_player.homepod_mini
+  volume_level: 0.7
+  cache: true
   language: en
   tld: co.uk
-  volume_level: 0.7
+```
+
+## chime_tts.clear_cache
+
+The `chime_tts.clear_cache` service removes all genenrated audio cache files & referennces to cached TTS audio.
+
+### From the UI
+
+
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_clear_cache_from_ui-dark.png">
+<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_clear_cache_from_ui-light.png">
+<img alt="Screenshot of the parameters for the Chime TTS clear cache service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_clear_cache_from_ui-light.pnng">
+</picture>
+
+### From YAML
+
+```
+service: chime_tts.clear_cache
 ```
 
 # Show your support 👍
