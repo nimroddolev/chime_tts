@@ -191,11 +191,15 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         _LOGGER.debug('...media finished playback:')
 
         # Save generated temp mp3 file to cache
-        if cache and _data["is_save_generated"] is True:
-            _LOGGER.debug("Saving generated mp3 file to cache")
-            filename = _data["generated_filename"]
-            filepath_hash = get_filename_hash(TEMP_PATH + filename)
-            await async_store_data(hass, filepath_hash, audio_path)
+        if cache:
+            if _data["is_save_generated"] is True:
+                _LOGGER.debug("Saving generated mp3 file to cache")
+                filename = _data["generated_filename"]
+                filepath_hash = get_filename_hash(TEMP_PATH + filename)
+                await async_store_data(hass, filepath_hash, audio_path)
+        else:
+            if os.path.exists(audio_path):
+                os.remove(audio_path)
 
         # Reset media player volume level once finish playing
         if initial_volume_level != -1:
