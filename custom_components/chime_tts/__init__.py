@@ -425,7 +425,8 @@ def get_audio_from_path(filepath: str, delay=0, audio=None, tts_playback_speed=1
     _LOGGER.debug('Retrieving audio from path: "%s"...', filepath)
     audio_from_path = AudioSegment.from_file(filepath)
     if audio_from_path is not None:
-        _LOGGER.debug(' - ...audio retrieved successfully')
+        duration = float(len(audio_from_path) / 1000.0)
+        _LOGGER.debug(' - ...audio with duration %ss retrieved successfully', str(duration))
         if tts_playback_speed != 100:
             _LOGGER.debug(" - Changing TTS playback speed to %s percent",
                           str(tts_playback_speed))
@@ -439,7 +440,10 @@ def get_audio_from_path(filepath: str, delay=0, audio=None, tts_playback_speed=1
     return audio
 
 
-async def async_set_volume_level(hass: HomeAssistant, entity_id: str, new_volume_level=0, current_volume_level=0):
+async def async_set_volume_level(hass: HomeAssistant,
+                                 entity_id: str,
+                                 new_volume_level=0,
+                                 current_volume_level=0):
     """Set the volume_level for a given media player entity."""
     new_volume_level = float(new_volume_level)
     current_volume_level = float(current_volume_level)

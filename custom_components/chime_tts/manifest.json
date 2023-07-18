@@ -3,7 +3,8 @@
   "name": "Chime TTS",
   "after_dependencies": [
     "api",
-    "http"
+    "http",
+    "media_source"
   ],
   "codeowners": [
     "@nimroddolev"
