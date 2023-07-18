@@ -143,6 +143,8 @@ say:
               value: "cloud_say"
             - label: "Pico TTS"
               value: "picotts"
+            - label: "Piper"
+              value: "tts.piper"
             - label: "VoiceRSS"
               value: "voicerss"
             - label: "Yandex TTS"
