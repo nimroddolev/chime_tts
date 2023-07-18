@@ -14,6 +14,7 @@ from pydub import AudioSegment
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_CONTENT_ID,
     ATTR_MEDIA_CONTENT_TYPE,
+    ATTR_MEDIA_ANNOUNCE,
     ATTR_MEDIA_VOLUME_LEVEL,
     MEDIA_TYPE_MUSIC,
 )
@@ -94,6 +95,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         entity_id = str(service.data.get(CONF_ENTITY_ID, ""))
         volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
         cache = service.data.get("cache", False)
+        announce = service.data.get("announce", True)
         language = service.data.get("language", None)
         tld = service.data.get("tld", None)
         gender = service.data.get("gender", None)
@@ -160,6 +162,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                 ATTR_MEDIA_CONTENT_ID: media_path,
                 ATTR_MEDIA_CONTENT_TYPE: MEDIA_TYPE_MUSIC,
                 CONF_ENTITY_ID: entity_id,
+                ATTR_MEDIA_ANNOUNCE: announce
             },
             True,
         )

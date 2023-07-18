@@ -189,6 +189,13 @@ say:
       required: false
       selector:
         boolean:
+    announce:
+      name: Announce
+      description: "Stops current media during the announcement and then resume (on supported devices)"
+      example: "True"
+      required: false
+      selector:
+        boolean:
     language:
       name: Language
       description: "The TTS language (suppored by Google Translate and Nabu Casa Cloud TTS)"
