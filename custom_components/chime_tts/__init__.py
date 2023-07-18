@@ -158,7 +158,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             "media_player",
             "play_media",
             {
-                ATTR_MEDIA_CONTENT_ID: audio_path,
+                ATTR_MEDIA_CONTENT_ID: media_path,
                 ATTR_MEDIA_CONTENT_TYPE: MEDIA_TYPE_MUSIC,
                 CONF_ENTITY_ID: entity_id,
             },
