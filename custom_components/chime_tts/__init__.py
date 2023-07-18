@@ -69,32 +69,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         # Delete generated mp3 files
         _LOGGER.debug('Deleting generated mp3 cache files.')
-        deleted_keys = []
-        for key, value in cache_dict.items():
-            if str(value).startswith(TEMP_PATH):
-                if os.path.exists(value):
-                    os.remove(str(value))
-                    _LOGGER.debug(
-                        " - Cached file '%s' deleted successfully.", str(value))
-                else:
-                    _LOGGER.debug(
-                        " - Unable to delete cached file '%s'.", str(value))
-                deleted_keys.append(key)
-            if str(value).startswith(TTS_PATH):
-                _LOGGER.debug(
-                    " - Path to TTS file '%s' deleted successfully.", str(value))
-            deleted_keys.append(key)
-
-        # Remove key/values from storage
-        if len(deleted_keys) > 0:
-            _LOGGER.debug('Updating cache data.')
-            for p_key in deleted_keys:
-                if p_key in cache_dict:
-                    cache_dict.pop(p_key)
-            _data[DATA_STORAGE_KEY] = cache_dict
-            await async_save_data(hass)
-        else:
-            _LOGGER.debug('Cache data unchanged.')
+        for key in cache_dict.items():
+            await async_remove_cached_path(hass, key)
 
         elapsed_time = (datetime.now() - start_time).total_seconds() * 1000
         _LOGGER.debug(
@@ -117,7 +93,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         tts_playback_speed = float(service.data.get("tts_playback_speed", 100))
         entity_id = str(service.data.get(CONF_ENTITY_ID, ""))
         volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
-        cache = str(service.data.get("cache", False))
+        cache = service.data.get("cache", False)
         language = service.data.get("language", None)
         tld = service.data.get("tld", None)
         gender = service.data.get("gender", None)
@@ -191,7 +167,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         _LOGGER.debug('...media finished playback:')
 
         # Save generated temp mp3 file to cache
-        if cache:
+        if cache is True:
             if _data["is_save_generated"] is True:
                 _LOGGER.debug("Saving generated mp3 file to cache")
                 filename = _data["generated_filename"]
@@ -364,23 +340,19 @@ async def async_get_playback_audio_path(params: dict):
     _LOGGER.debug(
         'async_get_playback_audio_path(params=%s)', str(params))
 
-    # TTS filename string
-    tts_filename = get_tts_filename(params)
-
     # Load previously generated audio from cache
-    if cache:
+    if cache is True:
         _LOGGER.debug("Attempting to retrieve generated mp3 file from cache")
         _data["generated_filename"] = get_generated_filename(params)
         filepath_hash = get_filename_hash(
             TEMP_PATH + _data["generated_filename"])
-        filepath = await async_get_cache_path(filepath_hash)
+        filepath = await async_get_cached_path(hass, filepath_hash)
         if filepath is not None:
             if os.path.exists(str(filepath)):
                 _LOGGER.debug("Using previously generated mp3 saved in cache")
                 return filepath
-            else:
-                _LOGGER.warning(
-                    "Could not find previosuly cached generated mp3 file")
+            _LOGGER.warning(
+                "Could not find previosuly cached generated mp3 file")
         else:
             _LOGGER.debug("No previously generated mp3 file found")
 
@@ -389,15 +361,16 @@ async def async_get_playback_audio_path(params: dict):
 
     # Load TTS audio
     tts_audio_path = None
-
-    # Check if TTS file file exists in cache
+    tts_filename = get_tts_filename(params)
     tts_filepath_hash = get_filename_hash(tts_filename)
-    if cache:
-        tts_audio_path = await async_get_cache_path(tts_filepath_hash)
+
+    # Retrieve TTS audio file from cache
+    if cache is True:
+        tts_audio_path = await async_get_cached_path(hass, tts_filepath_hash)
         if tts_audio_path is None:
             _LOGGER.debug(" - Cached TTS mp3 file not found")
 
-    # Request TTS audio
+    # Request new TTS audio file
     if tts_audio_path is None:
         tts_audio_path = await async_request_tts_audio_filepath(hass,
                                                                 tts_platform,
@@ -407,7 +380,7 @@ async def async_get_playback_audio_path(params: dict):
                                                                 gender)
         _LOGGER.debug(
             " - REST API request to %s returned audio path: '%s'", TTS_API, tts_audio_path)
-        if tts_audio_path is not None:
+        if tts_audio_path is not None and cache is True:
             await async_store_data(hass, tts_filepath_hash, tts_audio_path)
 
     output_audio = get_audio_from_path(
@@ -521,18 +494,37 @@ async def async_save_data(hass: HomeAssistant):
     await store.async_save(_data[DATA_STORAGE_KEY])
 
 
-async def async_get_cache_path(filepath_hash: str):
+async def async_get_cached_path(hass: HomeAssistant, filepath_hash: str):
     """Return the valid filepath for TTS audio previously stored in the filesystem's cache."""
     _LOGGER.debug(
-        "async_get_cache_path('%s')", filepath_hash)
+        "async_get_cached_path('%s')", filepath_hash)
     cached_path = await async_retrieve_data(filepath_hash)
     if cached_path is not None:
-        _LOGGER.debug(
-            " - async_get_cache_path('%s') returned value: '%s'", filepath_hash, cached_path)
-        return str(cached_path)
+        if os.path.exists(str(cached_path)):
+            _LOGGER.debug("Returning cached filepath: '%s'", cached_path)
+            return str(cached_path)
+        _LOGGER.debug(" - Cached filepath does not exist.")
     else:
-        _LOGGER.debug(" - File does not exist in cache.")
+        _LOGGER.debug(" - Filepath not found in cache.")
+    await async_remove_cached_path(hass, filepath_hash)
     return None
+
+
+async def async_remove_cached_path(hass: HomeAssistant, filepath_hash: str):
+    """Remove filepath key/value from Chime TTS cache and delete filepath from filesystem."""
+    cached_path = await async_retrieve_data(filepath_hash)
+    if cached_path is not None:
+        if str(cached_path).startswith(TEMP_PATH) or str(cached_path).startswith(TTS_PATH):
+            if os.path.exists(cached_path):
+                os.remove(str(cached_path))
+                _LOGGER.debug(
+                    " - Cached file '%s' deleted successfully.", str(cached_path))
+            else:
+                _LOGGER.debug(
+                    " - Unable to delete cached file '%s'.", str(cached_path))
+        _data[DATA_STORAGE_KEY].pop(filepath_hash)
+
+        await async_save_data(hass)
 
 
 ##############################
