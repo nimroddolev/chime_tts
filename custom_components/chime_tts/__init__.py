@@ -141,14 +141,13 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         }
         audio_path = await async_get_playback_audio_path(params)
         if audio_path is None:
-            _LOGGER.error("Unable to create audio for playback")
+            _LOGGER.error("Unable to generate audio for playback")
             return False
 
         # Set volume to desired level
         await async_set_volume_level(hass, entity_id, volume_level, initial_volume_level)
 
         # Play the audio on the media player
-        # Convert path to media-source
         media_path = audio_path.replace(
             "/media/", "media-source://media_source/local/")
         _LOGGER.debug('Playing media...')
@@ -388,6 +387,8 @@ async def async_get_playback_audio_path(params: dict):
 
     # Load end chime audio
     output_audio = get_audio_from_path(end_chime_path, delay, output_audio)
+
+    # Save generated audio file
     if output_audio is not None:
         duration = float(len(output_audio) / 1000.0)
         _data["delay"] = duration
@@ -413,7 +414,6 @@ def get_audio_from_path(filepath: str, delay=0, audio=None, tts_playback_speed=1
     _LOGGER.debug('get_audio_from_path("%s", %s, audio)', filepath, str(delay))
 
     if (filepath is None) or (filepath == "None") or (len(filepath) == 0):
-        _LOGGER.debug('No filepath provided')
         return audio
     if not os.path.exists(filepath):
         _LOGGER.warning('Audio filepath does not exist: "%s"', str(filepath))
@@ -452,9 +452,9 @@ async def async_set_volume_level(hass: HomeAssistant, entity_id: str, new_volume
                 CONF_ENTITY_ID: entity_id},
             True,
         )
-        _LOGGER.debug(' - async_set_volume_level: completed')
+        _LOGGER.debug(' - Completed')
         return True
-    _LOGGER.debug(' - async_set_volume_level: Skipped setting volume')
+    _LOGGER.debug(' - Skipped setting volume')
     return False
 
 
