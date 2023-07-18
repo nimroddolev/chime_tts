@@ -145,7 +145,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             return False
 
         # Set volume to desired level
-        await async_set_volume_level(hass, entity_id, volume_level)
+        await async_set_volume_level(hass, entity_id, volume_level, initial_volume_level)
 
         # Play the audio on the media player
         # Convert path to media-source
@@ -182,7 +182,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             _LOGGER.debug("Waiting %ss until returning volume level to %s...", str(
                 _data["delay"]), initial_volume_level)
             await hass.async_add_executor_job(sleep, _data["delay"])
-            await async_set_volume_level(hass, entity_id, initial_volume_level)
+            await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
             _LOGGER.debug("...volume level restored")
 
         end_time = datetime.now()
@@ -436,12 +436,13 @@ def get_audio_from_path(filepath: str, delay=0, audio=None, tts_playback_speed=1
     return audio
 
 
-async def async_set_volume_level(hass: HomeAssistant, entity_id: str, new_volume_level=0):
+async def async_set_volume_level(hass: HomeAssistant, entity_id: str, new_volume_level=0, current_volume_level=0):
     """Set the volume_level for a given media player entity."""
     new_volume_level = float(new_volume_level)
+    current_volume_level = float(current_volume_level)
     _LOGGER.debug(' - async_set_volume_level("%s", %s)',
                   entity_id, str(new_volume_level))
-    if new_volume_level >= 0:
+    if new_volume_level >= 0 and new_volume_level != current_volume_level:
         _LOGGER.debug(' - Seting volume_level of media player "%s" to: %s',
                       entity_id, str(new_volume_level))
         await hass.services.async_call(
