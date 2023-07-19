@@ -21,6 +21,7 @@ from homeassistant.components.media_player.const import (
 from homeassistant.const import HTTP_BEARER_AUTHENTICATION, CONF_ENTITY_ID
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.core import State
 from homeassistant.helpers.network import get_url
 from homeassistant.helpers import storage
 from .const import (
@@ -115,17 +116,16 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         # Store media player's current volume level
         initial_volume_level = -1
-        if volume_level >= 0:
-            if hasattr(entity, "attributes") and ATTR_MEDIA_VOLUME_LEVEL in dict(entity.attributes):
-                if entity.attributes.get(ATTR_MEDIA_VOLUME_LEVEL) > 0:
-                    initial_volume_level = entity.attributes.get(
-                        ATTR_MEDIA_VOLUME_LEVEL)
-                else:
-                    _LOGGER.warning(
-                        'Unable to get volume for media player entity: "%s"', entity_id)
+        volume_supported = get_supported_feature(entity, ATTR_MEDIA_VOLUME_LEVEL)
+        if volume_supported:
+            if volume_level >= 0:
+                initial_volume_level = float(entity.attributes.get(
+                    ATTR_MEDIA_VOLUME_LEVEL, -1))
             else:
                 _LOGGER.warning(
-                    'Media player entity "%s" does not have attributes', entity_id)
+                    'Unable to get volume for media player entity: "%s"', entity_id)
+        else:
+            _LOGGER.warning('Media player entity "%s" does not support changing its volume level', entity_id)
 
         # Create audio file to play on media player
         params = {
@@ -147,7 +147,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             return False
 
         # Set volume to desired level
-        await async_set_volume_level(hass, entity_id, volume_level, initial_volume_level)
+        if volume_supported is True and volume_level >= 0:
+            await async_set_volume_level(hass, entity_id, volume_level, initial_volume_level)
 
         # Play the audio on the media player
         media_path = audio_path.replace(
@@ -180,7 +181,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                 os.remove(audio_path)
 
         # Reset media player volume level once finish playing
-        if initial_volume_level != -1:
+        if volume_supported and initial_volume_level != -1:
             _LOGGER.debug("Waiting %ss until returning volume level to %s...", str(
                 _data["delay"]), initial_volume_level)
             await hass.async_add_executor_job(sleep, _data["delay"])
@@ -440,23 +441,21 @@ def get_audio_from_path(filepath: str, delay=0, audio=None, tts_playback_speed=1
     return audio
 
 
-async def async_set_volume_level(hass: HomeAssistant,
-                                 entity_id: str,
-                                 new_volume_level=0,
-                                 current_volume_level=0):
+async def async_set_volume_level(hass: HomeAssistant, entity_id: str, new_volume_level=-1, current_volume_level=-1):
     """Set the volume_level for a given media player entity."""
     new_volume_level = float(new_volume_level)
     current_volume_level = float(current_volume_level)
     _LOGGER.debug(' - async_set_volume_level("%s", %s)',
                   entity_id, str(new_volume_level))
     if new_volume_level >= 0 and new_volume_level != current_volume_level:
-        _LOGGER.debug(' - Seting volume_level of media player "%s" to: %s',
-                      entity_id, str(new_volume_level))
+        _LOGGER.debug(' - Seting volume_level of media player "%s" to: %s', entity_id, str(new_volume_level))
         await hass.services.async_call(
             "media_player",
             "volume_set",
-            {ATTR_MEDIA_VOLUME_LEVEL: new_volume_level,
-                CONF_ENTITY_ID: entity_id},
+            {
+                ATTR_MEDIA_VOLUME_LEVEL: new_volume_level,
+                CONF_ENTITY_ID: entity_id
+            },
             True,
         )
         _LOGGER.debug(' - Completed')
@@ -535,9 +534,9 @@ async def async_remove_cached_path(hass: HomeAssistant, filepath_hash: str):
         await async_save_data(hass)
 
 
-##############################
-### Misc. Helper Functions ###
-##############################
+################################
+### Audio Filename Functions ###
+################################
 
 def get_filename(params: dict, is_generated: bool):
     """Generate a unique filename based on specific parameters."""
@@ -569,6 +568,18 @@ def get_filename_hash(string: str):
     hash_value = str(hash_object.hexdigest())
     return hash_value
 
+##############################
+### Misc. Helper Functions ###
+##############################
+
+def get_supported_feature(entity: State, feature: str):
+    """Whether a feature is supported by the media_player device."""
+    if entity is None or entity.attributes is None:
+        return False
+    supported_features = entity.attributes.get('supported_features', 0)
+    if feature is ATTR_MEDIA_VOLUME_LEVEL:
+        return bool(supported_features & 2)
+    return False
 
 def sleep(duration: float):
     """Make a synchronous time.sleep call."""
