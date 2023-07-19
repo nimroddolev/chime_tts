@@ -156,15 +156,23 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         _LOGGER.debug('Playing media...')
         _LOGGER.debug('  - media_path = "%s"', media_path)
         _LOGGER.debug('  - entity_id = "%s"', entity_id)
+
+        service_data = {
+                ATTR_MEDIA_CONTENT_ID: media_path,
+                ATTR_MEDIA_CONTENT_TYPE: MEDIA_TYPE_MUSIC,
+                CONF_ENTITY_ID: entity_id
+        }
+
+        if announce is True and get_supported_feature(entity, ATTR_MEDIA_ANNOUNCE):
+            _LOGGER.warning('Enabling the announce feature')
+            service_data[ATTR_MEDIA_ANNOUNCE] = announce
+        else:
+            _LOGGER.warning('Media player entity "%s" does not support the announce feature', entity_id)
+
         await hass.services.async_call(
             "media_player",
             "play_media",
-            {
-                ATTR_MEDIA_CONTENT_ID: media_path,
-                ATTR_MEDIA_CONTENT_TYPE: MEDIA_TYPE_MUSIC,
-                CONF_ENTITY_ID: entity_id,
-                ATTR_MEDIA_ANNOUNCE: announce
-            },
+            service_data,
             True,
         )
         _LOGGER.debug('...media finished playback:')
@@ -579,6 +587,8 @@ def get_supported_feature(entity: State, feature: str):
     supported_features = entity.attributes.get('supported_features', 0)
     if feature is ATTR_MEDIA_VOLUME_LEVEL:
         return bool(supported_features & 2)
+    if feature is ATTR_MEDIA_ANNOUNCE:
+        return bool(supported_features & 128)
     return False
 
 def sleep(duration: float):
