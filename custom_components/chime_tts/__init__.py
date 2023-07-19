@@ -43,6 +43,7 @@ from .const import (
     # MICROSOFT_TTS,
     NABU_CASA,
     # PICOTTS,
+    # PIPER,
     # VOICE_RSS,
     # YANDEX_TTS,
 )
@@ -283,6 +284,7 @@ async def async_request_tts_audio_filepath(hass: HomeAssistant,
             }
 
     # if tts_platform == PICOTTS:
+    # if tts_platform == PIPER:
     # if tts_platform == VOICE_RSS:
     # if tts_platform == YANDEX_TTS:
 
