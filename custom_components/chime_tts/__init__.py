@@ -64,24 +64,9 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up the Chime TTS integration."""
     _LOGGER.info("The Chime TTS integration is set up.")
 
-    async def async_clear_cache(service):
-        """Play TTS audio with local chime MP3 audio."""
-        _LOGGER.debug('----- Chime TTS Clear Cache Called -----')
-        start_time = datetime.now()
-        cache_dict = dict(_data[DATA_STORAGE_KEY])
-
-        # Delete generated mp3 files
-        _LOGGER.debug('Deleting generated mp3 cache files.')
-        for key in cache_dict.items():
-            await async_remove_cached_path(hass, key)
-
-        elapsed_time = (datetime.now() - start_time).total_seconds() * 1000
-        _LOGGER.debug(
-            '----- Chime TTS Clear Cache Completed in %s ms -----', str(elapsed_time))
-        return True
-
-    hass.services.async_register(
-        DOMAIN, SERVICE_CLEAR_CACHE, async_clear_cache)
+    ###############
+    # Say Service #
+    ###############
 
     async def async_say(service):
         """Play TTS audio with local chime MP3 audio."""
@@ -101,6 +86,24 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         language = service.data.get("language", None)
         tld = service.data.get("tld", None)
         gender = service.data.get("gender", None)
+
+        params = {
+            "hass": hass,
+            "chime_path": chime_path,
+            "end_chime_path": end_chime_path,
+            "delay": delay,
+            "message": message,
+            "tts_platform": tts_platform,
+            "tts_playback_speed": tts_playback_speed,
+            "entity_id": entity_id,
+            "volume_level": volume_level,
+            "cache": cache,
+            "language": language,
+            "tld": tld,
+            "gender": gender
+        }
+        for key, value in params.items():
+            _LOGGER.debug(' * %s = %s', key, str(value))
 
         # Validate media player entity_id
         entity = hass.states.get(entity_id)
@@ -130,19 +133,6 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             _LOGGER.warning('Media player "%s" does not support volume level', entity_id)
 
         # Create audio file to play on media player
-        params = {
-            "hass": hass,
-            "chime_path": chime_path,
-            "end_chime_path": end_chime_path,
-            "delay": delay,
-            "tts_platform": tts_platform,
-            "tts_playback_speed": tts_playback_speed,
-            "cache": cache,
-            "message": message,
-            "language": language,
-            "tld": tld,
-            "gender": gender
-        }
         audio_path = await async_get_playback_audio_path(params)
         if audio_path is None:
             _LOGGER.error("Unable to generate audio for playback")
@@ -154,10 +144,6 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         # Play the audio on the media player
         media_path = audio_path.replace("/media/", "media-source://media_source/local/")
-        _LOGGER.debug('Playing media...')
-        _LOGGER.debug('  - media_path = "%s"', media_path)
-        _LOGGER.debug('  - entity_id = "%s"', entity_id)
-
         service_data = {
                 ATTR_MEDIA_CONTENT_ID: media_path,
                 ATTR_MEDIA_CONTENT_TYPE: MEDIA_TYPE_MUSIC,
@@ -165,10 +151,13 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         }
 
         if announce is True and get_supported_feature(entity, ATTR_MEDIA_ANNOUNCE):
-            _LOGGER.warning('Enabling the announce feature')
             service_data[ATTR_MEDIA_ANNOUNCE] = announce
         else:
-            _LOGGER.warning('Media player entity "%s" does not support the announce feature', entity_id)
+            _LOGGER.warning('Media player "%s" does not support announce', entity_id)
+
+        _LOGGER.debug('Calling media_player.play_media service with data:')
+        for key, value in service_data.items():
+            _LOGGER.debug(' - %s: %s', str(key), str(value))
 
         await hass.services.async_call(
             "media_player",
@@ -205,6 +194,30 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         return True
 
     hass.services.async_register(DOMAIN, SERVICE_SAY, async_say)
+
+
+    #######################
+    # Clear Cahce Service #
+    #######################
+
+    async def async_clear_cache(service):
+        """Play TTS audio with local chime MP3 audio."""
+        _LOGGER.debug('----- Chime TTS Clear Cache Called -----')
+        start_time = datetime.now()
+        cache_dict = dict(_data[DATA_STORAGE_KEY])
+
+        # Delete generated mp3 files
+        _LOGGER.debug('Deleting generated mp3 cache files.')
+        for key in cache_dict.items():
+            await async_remove_cached_path(hass, key)
+
+        elapsed_time = (datetime.now() - start_time).total_seconds() * 1000
+        _LOGGER.debug(
+            '----- Chime TTS Clear Cache Completed in %s ms -----', str(elapsed_time))
+        return True
+
+    hass.services.async_register(
+        DOMAIN, SERVICE_CLEAR_CACHE, async_clear_cache)
 
     return True
 
@@ -483,14 +496,18 @@ def get_audio_from_path(filepath: str, delay=0, audio=None, tts_playback_speed=1
     return audio
 
 
-async def async_set_volume_level(hass: HomeAssistant, entity_id: str, new_volume_level=-1, current_volume_level=-1):
+async def async_set_volume_level(hass: HomeAssistant,
+                                 entity_id: str,
+                                 new_volume_level=-1,
+                                 current_volume_level=-1):
     """Set the volume_level for a given media player entity."""
     new_volume_level = float(new_volume_level)
     current_volume_level = float(current_volume_level)
     _LOGGER.debug(' - async_set_volume_level("%s", %s)',
                   entity_id, str(new_volume_level))
     if new_volume_level >= 0 and new_volume_level != current_volume_level:
-        _LOGGER.debug(' - Seting volume_level of media player "%s" to: %s', entity_id, str(new_volume_level))
+        _LOGGER.debug(' - Seting volume_level of media player "%s" to: %s',
+                       entity_id, str(new_volume_level))
         await hass.services.async_call(
             "media_player",
             "volume_set",
