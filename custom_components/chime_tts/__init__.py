@@ -152,8 +152,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             await async_set_volume_level(hass, entity_id, volume_level, initial_volume_level)
 
         # Play the audio on the media player
-        media_path = audio_path.replace(
-            "/media/", "media-source://media_source/local/")
+        media_path = audio_path.replace("/media/", "media-source://media_source/local/")
         _LOGGER.debug('Playing media...')
         _LOGGER.debug('  - media_path = "%s"', media_path)
         _LOGGER.debug('  - entity_id = "%s"', entity_id)
@@ -176,7 +175,15 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             service_data,
             True,
         )
-        _LOGGER.debug('...media finished playback:')
+        _LOGGER.debug('...media_player.play_media completed.')
+
+        # Reset media player volume level once finish playing
+        if volume_supported and initial_volume_level != -1:
+            _LOGGER.debug("Waiting %ss until returning volume level to %s...", str(
+                _data["delay"]), initial_volume_level)
+            await hass.async_add_executor_job(sleep, _data["delay"])
+            await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
+            _LOGGER.debug("...volume level restored")
 
         # Save generated temp mp3 file to cache
         if cache is True:
@@ -188,14 +195,6 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         else:
             if os.path.exists(audio_path):
                 os.remove(audio_path)
-
-        # Reset media player volume level once finish playing
-        if volume_supported and initial_volume_level != -1:
-            _LOGGER.debug("Waiting %ss until returning volume level to %s...", str(
-                _data["delay"]), initial_volume_level)
-            await hass.async_add_executor_job(sleep, _data["delay"])
-            await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
-            _LOGGER.debug("...volume level restored")
 
         end_time = datetime.now()
         elapsed_time = (end_time - start_time).total_seconds() * 1000
@@ -317,7 +316,7 @@ async def async_request_tts_audio_filepath(hass: HomeAssistant,
             temp_string = response_json["path"]
             arr = temp_string.split("/")
             filename = "/config/tts/" + arr[len(arr) - 1]
-            return filename
+            return {"path": filename, "url": response_json["url"]}
         else:
             _LOGGER.warning(
                 "TTS Audio request unsuccessful: '%s'", response.text)
@@ -372,29 +371,60 @@ async def async_get_playback_audio_path(params: dict):
     # Load chime audio
     output_audio = get_audio_from_path(chime_path)
 
-    # Load TTS audio
+    # TTS audio
     tts_audio_path = None
     tts_filename = get_tts_filename(params)
     tts_filepath_hash = get_filename_hash(tts_filename)
 
     # Retrieve TTS audio file from cache
     if cache is True:
+        _LOGGER.debug("Cached TTS mp3 file exists?")
         tts_audio_path = await async_get_cached_path(hass, tts_filepath_hash)
         if tts_audio_path is None:
             _LOGGER.debug(" - Cached TTS mp3 file not found")
 
     # Request new TTS audio file
     if tts_audio_path is None:
-        tts_audio_path = await async_request_tts_audio_filepath(hass,
+        returned_paths = await async_request_tts_audio_filepath(hass,
                                                                 tts_platform,
                                                                 message,
                                                                 language,
                                                                 tld,
                                                                 gender)
-        _LOGGER.debug(
-            " - REST API request to %s returned audio path: '%s'", TTS_API, tts_audio_path)
-        if tts_audio_path is not None and cache is True:
-            await async_store_data(hass, tts_filepath_hash, tts_audio_path)
+        if returned_paths is not None:
+            _LOGGER.debug(" - TTS filepaths = %s", str(returned_paths))
+
+            # Workaround: Wait up to 1.0s while HA saves the TTS audio to the filesystem
+            retry_count = 0
+            max_retries = 100
+            delay_ms = 10
+            while retry_count < max_retries:
+                # Try the local path first, then the full URL.
+                for path in [returned_paths["path"], returned_paths["url"]]:
+                    if os.path.exists(path):
+                        tts_audio_path = path
+                        break
+                if tts_audio_path is not None:
+                    if retry_count > 0:
+                        _LOGGER.debug("TTS file %s found after %sms",
+                                       path, str(retry_count * delay_ms))
+                    break
+
+                if retry_count > 0:
+                    _LOGGER.debug("...waiting for TTS file for %sms", str(retry_count * delay_ms))
+                await hass.async_add_executor_job(sleep, float(delay_ms / 1000))
+                retry_count += 1
+
+            # Unable to find file
+            if tts_audio_path is None:
+                _LOGGER.debug("TTS file not found on filesystem after waiting %sms",
+                               str(retry_count * delay_ms))
+            else:
+                if cache is True:
+                    await async_store_data(hass, tts_filepath_hash, tts_audio_path)
+        else:
+            _LOGGER.debug(" - No TTS filepaths returned")
+
 
     output_audio = get_audio_from_path(
         tts_audio_path, delay, output_audio, tts_playback_speed)
@@ -417,6 +447,7 @@ async def async_get_playback_audio_path(params: dict):
         _LOGGER.debug("   - Filepath = '%s'", output_path)
         _data["is_save_generated"] = True
         output_audio.export(output_path, format="mp3")
+        _LOGGER.debug("   - File saved successfully")
         return output_path
 
     return None
