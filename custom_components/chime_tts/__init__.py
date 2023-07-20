@@ -122,11 +122,12 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             if volume_level >= 0:
                 initial_volume_level = float(entity.attributes.get(
                     ATTR_MEDIA_VOLUME_LEVEL, -1))
-            else:
-                _LOGGER.warning(
-                    'Unable to get volume for media player entity: "%s"', entity_id)
+                if initial_volume_level is volume_level:
+                    _LOGGER.debug("%s's volume_level is already %s", entity_id, str(volume_level))
+                    volume_level = -1
+                    initial_volume_level = -1
         else:
-            _LOGGER.warning('Media player entity "%s" does not support changing its volume level', entity_id)
+            _LOGGER.warning('Media player "%s" does not support volume level', entity_id)
 
         # Create audio file to play on media player
         params = {
