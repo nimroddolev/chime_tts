@@ -694,7 +694,9 @@ def get_supported_feature(entity: State, feature: str):
     if feature is ATTR_MEDIA_VOLUME_LEVEL:
         return bool(supported_features & 2)
     if feature is ATTR_MEDIA_ANNOUNCE:
-        return bool(supported_features & 128)
+        # Announce support detection feature not yet supporting in HA
+        # return bool(supported_features & 128)
+        return True
     return False
 
 def sleep(duration: float):
