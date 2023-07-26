@@ -202,7 +202,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         if cache is True:
             if _data["is_save_generated"] is True:
                 _LOGGER.debug("Saving generated mp3 file to cache")
-                filepath_hash = get_filename_hash(TEMP_PATH + audio_path)
+                filepath_hash = get_filename_hash(_data["generated_filename"])
                 await async_store_data(hass, filepath_hash, audio_dict)
         else:
             if os.path.exists(audio_path):
@@ -389,12 +389,12 @@ async def async_get_playback_audio_path(params: dict):
     _data["is_save_generated"] = False
     _LOGGER.debug('async_get_playback_audio_path')
 
+    _data["generated_filename"] = get_generated_filename(params)
+
     # Load previously generated audio from cache
     if cache is True:
         _LOGGER.debug("Attempting to retrieve generated mp3 file from cache")
-        _data["generated_filename"] = get_generated_filename(params)
-        filepath_hash = get_filename_hash(
-            TEMP_PATH + _data["generated_filename"])
+        filepath_hash = get_filename_hash(_data["generated_filename"])
         audio_dict = await async_get_cached_audio_data(hass, filepath_hash)
         if audio_dict is not None:
             filepath = audio_dict[AUDIO_PATH_KEY]
