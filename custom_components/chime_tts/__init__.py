@@ -509,7 +509,7 @@ def get_audio_from_path(hass: HomeAssistant, filepath: str, delay=0, audio=None,
     _LOGGER.debug('get_audio_from_path("%s", %s, audio)', filepath, str(delay))
 
     filepath = get_file_path(hass, filepath)
-    if (filepath is None) or (filepath == "None") or (len(filepath) == 0):
+    if (filepath is None) or (filepath == "None") or (len(filepath) <= 5):
         return audio
 
     _LOGGER.debug('Retrieving audio from path: "%s"...', filepath)
