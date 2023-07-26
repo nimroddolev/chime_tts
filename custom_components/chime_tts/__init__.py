@@ -410,7 +410,7 @@ async def async_get_playback_audio_path(params: dict):
 
     # Load chime audio
     if chime_path is not None:
-        output_audio = get_audio_from_path(chime_path)
+        output_audio = get_audio_from_path(hass, chime_path)
 
 
     # TTS audio
@@ -438,48 +438,28 @@ async def async_get_playback_audio_path(params: dict):
         if returned_paths is not None:
             _LOGGER.debug(" - TTS filepaths = %s", str(returned_paths))
 
-            # Workaround: Wait up to 1.0s while HA saves the TTS audio to the filesystem
-            retry_count = 0
-            max_retries = 100
-            delay_ms = 10
-            while retry_count < max_retries:
-                # Try the local path first, then the full URL.
-                for filepath in [returned_paths["path"], returned_paths["url"]]:
-                    if os.path.exists(filepath):
-                        tts_audio_path = filepath
-                        break
-                if tts_audio_path is not None:
-                    if retry_count > 0:
-                        _LOGGER.debug("TTS file %s found after %sms",
-                                       tts_audio_path, str(retry_count * delay_ms))
-                    break
-
-                if retry_count > 0:
-                    _LOGGER.debug("...waiting for TTS file for %sms", str(retry_count * delay_ms))
-                await hass.async_add_executor_job(sleep, float(delay_ms / 1000))
-                retry_count += 1
-
-            # Unable to find file
-            if tts_audio_path is None:
-                _LOGGER.debug("TTS file not found on filesystem after waiting %sms",
-                               str(retry_count * delay_ms))
-            else:
+            # Test the path to the file
+            tts_audio_path = get_file_path(hass, returned_paths["path"])
+            if tts_audio_path is not None:
+                _LOGGER.debug(" - TTS file path found: %s", tts_audio_path)
                 if cache is True:
                     tts_audio_dict = {
                         AUDIO_PATH_KEY: tts_audio_path,
                         AUDIO_DURATION_KEY: None
                     }
                     await async_store_data(hass, tts_filepath_hash, tts_audio_dict)
+            else:
+                _LOGGER.debug(" - TTS file path not found on filesystem.")
         else:
             _LOGGER.debug(" - No TTS filepaths returned")
 
     if tts_audio_path is not None:
         output_audio = get_audio_from_path(
-            tts_audio_path, delay, output_audio, tts_playback_speed)
+            hass, tts_audio_path, delay, output_audio, tts_playback_speed)
 
     # Load end chime audio
     if end_chime_path is not None:
-        output_audio = get_audio_from_path(end_chime_path, delay, output_audio)
+        output_audio = get_audio_from_path(hass, end_chime_path, delay, output_audio)
 
     # Save generated audio file
     if output_audio is not None:
@@ -489,31 +469,47 @@ async def async_get_playback_audio_path(params: dict):
         _LOGGER.debug("   - Duration = %ss", duration)
 
         # Save temporary MP3 file
-        if os.path.exists(TEMP_PATH) is False:
-            os.makedirs(TEMP_PATH)
-        with tempfile.NamedTemporaryFile(prefix=TEMP_PATH, suffix=".mp3") as temp_filename_obj:
-            output_path = temp_filename_obj.name
-        _LOGGER.debug("   - Filepath = '%s'", output_path)
-        _data["is_save_generated"] = True
-        output_audio.export(output_path, format="mp3")
-        _LOGGER.debug("   - File saved successfully")
-        return {
-            AUDIO_PATH_KEY: output_path,
-            AUDIO_DURATION_KEY: duration
-        }
+        _LOGGER.debug("Create temporary mp3 file")
+        temp_folder_path = (hass.config.path("").replace("/config", "") + TEMP_PATH).replace("//", "/")
+        _LOGGER.debug("Temp folder exists?")
+        if os.path.exists(temp_folder_path) is False:
+            _LOGGER.debug("Creating missing folder: %s", temp_folder_path)
+            try:
+                os.makedirs(temp_folder_path)
+            except OSError as error:
+                _LOGGER.debug("An error occurred while creating the folder '%s': %s",
+                                temp_folder_path, error)
+            except Exception as error:
+                _LOGGER.debug("An error occurred when creating the folder: %s",
+                                error)
+
+        _LOGGER.debug("Creating temporary mp3 file...")
+        try:
+            with tempfile.NamedTemporaryFile(prefix=temp_folder_path, suffix=".mp3") as temp_filename_obj:
+                _LOGGER.debug("temp_filename_obj = %s", str(temp_filename_obj))
+                output_path = temp_filename_obj.name
+            _LOGGER.debug("   - Filepath = '%s'", output_path)
+            _data["is_save_generated"] = True
+            output_audio.export(output_path, format="mp3")
+            _LOGGER.debug("   - File saved successfully")
+            return {
+                AUDIO_PATH_KEY: output_path,
+                AUDIO_DURATION_KEY: duration
+            }
+        except Exception as error:
+            _LOGGER.debug("An error occurred when creating the temp mp3 file: %s",
+                          error)
 
     return None
 
 
-def get_audio_from_path(filepath: str, delay=0, audio=None, tts_playback_speed=100):
+def get_audio_from_path(hass: HomeAssistant, filepath: str, delay=0, audio=None, tts_playback_speed=100):
     """Add audio from a given file path to existing audio (optional) with delay (optional)."""
     filepath = str(filepath)
     _LOGGER.debug('get_audio_from_path("%s", %s, audio)', filepath, str(delay))
 
+    filepath = get_file_path(hass, filepath)
     if (filepath is None) or (filepath == "None") or (len(filepath) == 0):
-        return audio
-    if not os.path.exists(filepath):
-        _LOGGER.warning('Audio filepath does not exist: "%s"', str(filepath))
         return audio
 
     _LOGGER.debug('Retrieving audio from path: "%s"...', filepath)
@@ -615,7 +611,7 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
             _LOGGER.debug(" - Cached audio data found")
             if audio_dict[AUDIO_DURATION_KEY] is None:
                 # Add duration data if audio_dict is old format
-                audio = get_audio_from_path(cached_path)
+                audio = get_audio_from_path(hass, cached_path)
                 if audio is not None:
                     audio_dict[AUDIO_DURATION_KEY] = float(len(audio) / 1000.0)
                     await async_store_data(hass, filepath_hash, audio_dict)
@@ -702,3 +698,18 @@ def get_supported_feature(entity: State, feature: str):
 def sleep(duration: float):
     """Make a synchronous time.sleep call."""
     return time.sleep(duration)
+
+def get_file_path(hass: HomeAssistant, p_filepath: str=""):
+    """Return a valid file path string."""
+    absolute_path = (hass.config.path("").replace("/config", "") + p_filepath).replace("//", "/")
+    filepaths = [p_filepath]
+    if p_filepath is not absolute_path:
+        filepaths.append(absolute_path)
+
+    for filepath in filepaths:
+        # The second path is a fallback for docker instances
+        if os.path.exists(filepath) is True:
+            return filepath
+
+    _LOGGER.debug('File not found at path: "%s"', p_filepath)
+    return None
