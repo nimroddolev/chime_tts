@@ -132,7 +132,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                     ATTR_MEDIA_VOLUME_LEVEL, -1))
                 if float(initial_volume_level) == float(volume_level / 100):
                     _LOGGER.debug("%s's volume_level is already %s",
-                                  entity_id, str(volume_level))
+                                entity_id, str(volume_level))
                 else:
                     should_change_volume = True
         else:
@@ -407,7 +407,7 @@ async def async_get_playback_audio_path(params: dict):
                 _LOGGER.warning(
                     "Could not find previosuly cached generated mp3 file")
         else:
-            _LOGGER.debug("No previously generated mp3 file found")
+            _LOGGER.debug(" - No previously generated mp3 file found")
 
     # Load chime audio
     if chime_path is not None:
@@ -470,25 +470,29 @@ async def async_get_playback_audio_path(params: dict):
         _LOGGER.debug("   - Duration = %ss", duration)
 
         # Save temporary MP3 file
-        _LOGGER.debug("Create temporary mp3 file")
-        temp_folder_path = (hass.config.path("").replace("/config", "") + TEMP_PATH).replace("//", "/")
-        _LOGGER.debug("Temp folder exists?")
+        _LOGGER.debug("Creating final audio file")
+        root_path = hass.config.path("").replace("/config", "")
+        temp_folder_path = (root_path + TEMP_PATH).replace("//", "/")
         if os.path.exists(temp_folder_path) is False:
-            _LOGGER.debug("Creating missing folder: %s", temp_folder_path)
+            _LOGGER.debug(" - Creating temp folder: %s", temp_folder_path)
             try:
                 os.makedirs(temp_folder_path)
+                _LOGGER.debug("   - Temp folder created")
             except OSError as error:
-                _LOGGER.debug("An error occurred while creating the folder '%s': %s",
+                _LOGGER.warning("   - An error occurred while creating the folder '%s': %s",
                                 temp_folder_path, error)
             except Exception as error:
-                _LOGGER.debug("An error occurred when creating the folder: %s",
+                _LOGGER.warning("   - An error occurred when creating the folder: %s",
                                 error)
+        else:
+            _LOGGER.debug("   - Temp folder exists: %s", temp_folder_path)
 
-        _LOGGER.debug("Creating temporary mp3 file...")
+
+        _LOGGER.debug(" - Creating temporary mp3 file...")
         try:
-            with tempfile.NamedTemporaryFile(prefix=temp_folder_path, suffix=".mp3") as temp_filename_obj:
-                _LOGGER.debug("temp_filename_obj = %s", str(temp_filename_obj))
-                output_path = temp_filename_obj.name
+            with tempfile.NamedTemporaryFile(prefix=temp_folder_path, suffix=".mp3") as temp_obj:
+                _LOGGER.debug("   - temp_obj = %s", str(temp_obj))
+                output_path = temp_obj.name
             _LOGGER.debug("   - Filepath = '%s'", output_path)
             _data["is_save_generated"] = True
             output_audio.export(output_path, format="mp3")
@@ -498,28 +502,32 @@ async def async_get_playback_audio_path(params: dict):
                 AUDIO_DURATION_KEY: duration
             }
         except Exception as error:
-            _LOGGER.debug("An error occurred when creating the temp mp3 file: %s",
+            _LOGGER.warning("An error occurred when creating the temp mp3 file: %s",
                           error)
 
     return None
 
 
-def get_audio_from_path(hass: HomeAssistant, filepath: str, delay=0, audio=None, tts_playback_speed=100):
+def get_audio_from_path(hass: HomeAssistant,
+                        filepath: str,
+                        delay=0,
+                        audio=None,
+                        tts_playback_speed=100):
     """Add audio from a given file path to existing audio (optional) with delay (optional)."""
     filepath = str(filepath)
     _LOGGER.debug('get_audio_from_path("%s", %s, audio)', filepath, str(delay))
 
-    filepath = get_file_path(hass, filepath)
     if (filepath is None) or (filepath == "None") or (len(filepath) <= 5):
         return audio
 
-    _LOGGER.debug('Retrieving audio from path: "%s"...', filepath)
+    filepath = get_file_path(hass, filepath)
+    _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
     audio_from_path = AudioSegment.from_file(filepath)
     if audio_from_path is not None:
         duration = float(len(audio_from_path) / 1000.0)
-        _LOGGER.debug(' - ...audio with duration %ss retrieved successfully', str(duration))
+        _LOGGER.debug('   - ...audio with duration %ss retrieved successfully', str(duration))
         if tts_playback_speed != 100:
-            _LOGGER.debug(" - Changing TTS playback speed to %s percent",
+            _LOGGER.debug("   - Changing TTS playback speed to %s percent",
                           str(tts_playback_speed))
             playback_speed = float(tts_playback_speed / 100)
             audio_from_path = audio_from_path.speedup(
@@ -527,7 +535,7 @@ def get_audio_from_path(hass: HomeAssistant, filepath: str, delay=0, audio=None,
         if audio is None:
             return audio_from_path
         return (audio + (AudioSegment.silent(duration=delay) + audio_from_path))
-    _LOGGER.warning("...unable to find audio from filepath")
+    _LOGGER.warning("   - ...unable to find audio from filepath")
     return audio
 
 
@@ -552,7 +560,7 @@ async def async_set_volume_level(hass: HomeAssistant,
             },
             True,
         )
-        _LOGGER.debug(' - Completed')
+        _LOGGER.debug(' - Volume set')
         return True
     _LOGGER.debug(' - Skipped setting volume')
     return False
@@ -573,8 +581,8 @@ async def async_init_stored_data(hass: HomeAssistant):
 async def async_store_data(hass: HomeAssistant, key: str, value: str):
     """Store a key/value pair in the integration's stored data."""
     _LOGGER.debug("Saving to chime_tts storage:")
-    _LOGGER.debug('key:   "%s"', key)
-    _LOGGER.debug('value: "%s"', value)
+    _LOGGER.debug(' - key:   "%s"', key)
+    _LOGGER.debug(' - value: "%s"', value)
     _data[DATA_STORAGE_KEY][key] = value
     await async_save_data(hass)
 
@@ -702,15 +710,21 @@ def sleep(duration: float):
 
 def get_file_path(hass: HomeAssistant, p_filepath: str=""):
     """Return a valid file path string."""
-    absolute_path = (hass.config.path("").replace("/config", "") + p_filepath).replace("//", "/")
+    ret_value = None
+    root_path = hass.config.path("").replace("/config/", "")
+    root_path = root_path.replace("/config", "")
+    absolute_path = root_path + p_filepath
+
     filepaths = [p_filepath]
+    # The second path is a fallback for docker instances
     if p_filepath is not absolute_path:
         filepaths.append(absolute_path)
 
+    # Test each filepath
     for filepath in filepaths:
-        # The second path is a fallback for docker instances
         if os.path.exists(filepath) is True:
-            return filepath
+            ret_value = filepath
+        if ret_value is None:
+            _LOGGER.debug("File not found at path: %s", filepath)
 
-    _LOGGER.debug('File not found at path: "%s"', p_filepath)
-    return None
+    return ret_value
