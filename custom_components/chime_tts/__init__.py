@@ -164,7 +164,10 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             await async_set_volume_level(hass, entity_id, volume_level, initial_volume_level)
 
         # Play the audio on the media player
-        media_path = audio_path.replace("/media/", "media-source://media_source/local/")
+        media_path = audio_path
+        media_index = media_path.find("/media/")
+        if media_index != -1:
+            media_path = "media-source://media_source/local/" + media_path[media_index + len("/media/"):]
         service_data = {
                 ATTR_MEDIA_CONTENT_ID: media_path,
                 ATTR_MEDIA_CONTENT_TYPE: MEDIA_TYPE_MUSIC,
