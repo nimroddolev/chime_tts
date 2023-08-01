@@ -189,14 +189,15 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         )
         _LOGGER.debug('...media_player.play_media completed.')
 
+        # Delay by audio playback duration
+        delay_duration = float(audio_duration)
+        _LOGGER.debug("Waiting %ss for audio playback to complete...", str(delay_duration))
+        await hass.async_add_executor_job(sleep, delay_duration)
+
         # Reset media player volume level once finish playing
         if should_change_volume and initial_volume_level >= 0:
-            duration = float(audio_duration)
-            _LOGGER.debug("Returning volume level to %s in %ss...",
-                           initial_volume_level, str(duration))
-            await hass.async_add_executor_job(sleep, duration)
+            _LOGGER.debug("Returning volume level to %s", initial_volume_level)
             await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
-            _LOGGER.debug("...volume level restored")
 
         # Save generated temp mp3 file to cache
         if cache is True:
