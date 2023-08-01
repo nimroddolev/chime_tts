@@ -35,7 +35,17 @@ Chime TTS offers the following enhancements for TTS audio playback:
 ## 1. Installation
 
 ### Via HACS (Recommended)
-It is recommended to use the [HACS Home Assistant Community Store](https://hacs.xyz/) to install Chime TTS:
+
+It is recommended to use the [HACS Home Assistant Community Store](https://hacs.xyz/) to install Chime TTS.
+
+Either:
+
+1. Once HACS is installed, add the Chime TTS repository to HACS: <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=nimroddolev&repository=chime_tts&category=integration" title="Chime TTS HACS repository"><div class="badge"><img loading="lazy" src="https://my.home-assistant.io/badges/hacs_repository.svg"></div></a></div>
+2. Click `ADD` and then `DOWNLOAD`
+3. Restart Home Assistant.
+
+or
+
 1. Once HACS is installed, click on `HACS` -> select `Integrations` -> ⋮ -> `Custom repositories`.
 2. Enter `https://github.com/nimroddolev/chime_tts` as the `Repository` -> select "Integration" from the `Category` menu -> select `ADD`.
 3. Select `EXPLORE & DOWNLOAD REPOSITORIES` -> search for *Chime TTS* -> Select it -> Select `Download` to install.
