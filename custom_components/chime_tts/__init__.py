@@ -714,12 +714,12 @@ def sleep(duration: float):
 def get_file_path(hass: HomeAssistant, p_filepath: str=""):
     """Return a valid file path string."""
     ret_value = None
-    root_path = hass.config.path("").replace("/config/", "")
-    root_path = root_path.replace("/config", "")
-    absolute_path = root_path + p_filepath
 
     filepaths = [p_filepath]
-    # The second path is a fallback for docker instances
+
+    # Test a second path as a fallback for docker/virtual instances
+    root_path = hass.config.path("")
+    absolute_path = (root_path + p_filepath).replace("/config", "")
     if p_filepath is not absolute_path:
         filepaths.append(absolute_path)
 
