@@ -717,9 +717,9 @@ def get_file_path(hass: HomeAssistant, p_filepath: str=""):
 
     filepaths = [p_filepath]
 
-    # Test a second path as a fallback for docker/virtual instances
+    # Test for docker/virtual instances filepath
     root_path = hass.config.path("")
-    absolute_path = (root_path + p_filepath).replace("/config", "")
+    absolute_path = (root_path + p_filepath).replace("/config", "").replace("//", "/")
     if p_filepath is not absolute_path:
         filepaths.append(absolute_path)
 
