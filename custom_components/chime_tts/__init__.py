@@ -106,8 +106,10 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             "tld": tld,
             "gender": gender
         }
+
         for key, value in params.items():
-            _LOGGER.debug(' * %s = %s', key, str(value))
+            if value is not None and len(str(value)) > 0:
+                _LOGGER.debug(' * %s = %s', key, str(value))
         _LOGGER.debug('------')
 
         media_players_dict = await async_initialize_media_players(hass, entity_ids, volume_level)
@@ -129,8 +131,10 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                         return False
                 else:
                     _LOGGER.error("async_get_playback_audio_path --> Audio has no duration data")
+                    return False
             else:
                 _LOGGER.error("async_get_playback_audio_path --> Audio has no file path data")
+                return False
         else:
             _LOGGER.error("async_get_playback_audio_path --> Unable to generate audio for playback")
             return False
@@ -143,10 +147,12 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             if should_change_volume:
                 await async_set_volume_level(hass, entity_id, volume_level, initial_volume_level)
 
+        # Prepare data for play_media service call
         media_path = audio_path
         media_index = media_path.find("/media/")
         if media_index != -1:
-            media_path = "media-source://media_source/local/" + media_path[media_index + len("/media/"):]
+            media_prefix = "media-source://media_source/local/"
+            media_path = media_prefix + media_path[media_index + len("/media/"):]
         service_data = {
                 ATTR_MEDIA_CONTENT_ID: media_path,
                 ATTR_MEDIA_CONTENT_TYPE: MEDIA_TYPE_MUSIC,
@@ -708,7 +714,7 @@ def get_filename(params: dict, is_generated: bool):
         relevant_params.extend(
             ["chime_path", "end_chime_path", "delay", "tts_playback_speed"])
     for param in relevant_params:
-        if params[param] is not None:
+        if params[param] is not None and len(str(params[param])) > 0:
             filename = filename + "-" + str(params[param])
     return filename
 

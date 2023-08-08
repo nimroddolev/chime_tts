@@ -6,7 +6,6 @@ LOGGER: Logger = getLogger(__package__)
 DOMAIN = "chime_tts"
 NAME = "Chime TTS"
 DESCRIPTION = "A custom Home Assistant integration to play audio with text-to-speech (TTS) messages"
-VERSION = "0.0.1"
 
 SERVICE_SAY = "say"
 SERVICE_CLEAR_CACHE = "clear_cache"
