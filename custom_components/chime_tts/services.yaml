@@ -5,6 +5,11 @@ clear_cache:
 say:
   name: "Say"
   description: "Play an audio file before TTS audio"
+  target:
+    entity:
+      domain: media_player
+      supported_features:
+        - media_player.MediaPlayerEntityFeature.PLAY_MEDIA
   fields:
     chime_path:
       name: "Chime Path"
@@ -162,14 +167,6 @@ say:
           max: 200
           step: 5
           unit_of_measurement: '%'
-    entity_id:
-      name: Media Player Entity Id
-      description: "Media player to play the joined audio"
-      example: "media_player.living_room"
-      required: true
-      selector:
-        entity:
-          domain: media_player
     volume_level:
       name: Volume Level
       description: "The volume to use when playing audio"
