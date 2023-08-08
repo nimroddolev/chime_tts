@@ -32,6 +32,7 @@ from .const import (
     DATA_STORAGE_KEY,
     AUDIO_PATH_KEY,
     AUDIO_DURATION_KEY,
+    BLANK_MP3_PATH,
     TEMP_PATH,
     TTS_PATH,
     TTS_API,
@@ -491,7 +492,8 @@ async def async_get_playback_audio_path(params: dict):
             hass, tts_audio_path, delay, output_audio, tts_playback_speed)
 
     # Load end chime audio
-    if end_chime_path is not None:
+    if end_chime_path is None:
+        end_chime_path = BLANK_MP3_PATH
         output_audio = get_audio_from_path(hass, end_chime_path, delay, output_audio)
 
     # Save generated audio file
@@ -547,7 +549,8 @@ def get_audio_from_path(hass: HomeAssistant,
                         tts_playback_speed=100):
     """Add audio from a given file path to existing audio (optional) with delay (optional)."""
     filepath = str(filepath)
-    _LOGGER.debug('get_audio_from_path("%s", %s, audio)', filepath, str(delay))
+    if filepath is not BLANK_MP3_PATH:
+        _LOGGER.debug('get_audio_from_path("%s", %s, audio)', filepath, str(delay))
 
     if (filepath is None) or (filepath == "None") or (len(filepath) <= 5):
         return audio
