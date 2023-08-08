@@ -260,12 +260,12 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         """Play TTS audio with local chime MP3 audio."""
         _LOGGER.debug('----- Chime TTS Clear Cache Called -----')
         start_time = datetime.now()
-        cache_dict = dict(_data[DATA_STORAGE_KEY])
+        cached_dicts = dict(_data[DATA_STORAGE_KEY])
 
         # Delete generated mp3 files
         _LOGGER.debug('Deleting generated mp3 cache files.')
-        for key in cache_dict.items():
-            await async_remove_cached_audio_data(hass, key)
+        for key in cached_dicts:
+            await async_remove_cached_audio_data(hass, str(key))
 
         elapsed_time = (datetime.now() - start_time).total_seconds() * 1000
         _LOGGER.debug(
@@ -483,7 +483,7 @@ async def async_get_playback_audio_path(params: dict):
                     }
                     await async_store_data(hass, tts_filepath_hash, tts_audio_dict)
             else:
-                _LOGGER.debug(" - TTS file path not found on filesystem.")
+                _LOGGER.warning(" - TTS file path not found on filesystem.")
         else:
             _LOGGER.debug(" - No TTS filepaths returned")
 
@@ -675,17 +675,25 @@ async def async_remove_cached_audio_data(hass: HomeAssistant, filepath_hash: str
         if AUDIO_PATH_KEY not in audio_dict:
             audio_dict = {AUDIO_PATH_KEY: audio_dict}
         cached_path = audio_dict[AUDIO_PATH_KEY]
-        if str(cached_path).startswith(TEMP_PATH) or str(cached_path).startswith(TTS_PATH):
+        if os.path.exists(cached_path):
+            os.remove(str(cached_path))
             if os.path.exists(cached_path):
-                os.remove(str(cached_path))
-                _LOGGER.debug(
-                    " - Cached file '%s' deleted successfully.", str(cached_path))
+                _LOGGER.warning(
+                    " - Unable to delete cached file '%s'.", str(cached_path))
             else:
                 _LOGGER.debug(
-                    " - Unable to delete cached file '%s'.", str(cached_path))
+                    " - Cached file '%s' deleted successfully.", str(cached_path))
+        else:
+            _LOGGER.debug(
+                " - Cached file '%s' not found.", str(cached_path))
         _data[DATA_STORAGE_KEY].pop(filepath_hash)
 
+
         await async_save_data(hass)
+    else:
+        _LOGGER.warning(
+            " - filepath_hash %s does not exist in the cache.", str(filepath_hash))
+
 
 
 ################################
