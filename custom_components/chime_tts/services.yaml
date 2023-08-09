@@ -112,6 +112,19 @@ say:
           max: 10
           step: 0.1
           unit_of_measurement: ms
+    final_delay:
+      name: Final Delay
+      description: "Final delay (ms) added to the end of the audio"
+      example: 100
+      required: false
+      default: 0
+      selector:
+        number:
+          mode: box
+          min: 0
+          max: 10
+          step: 0.1
+          unit_of_measurement: ms
     message:
       name: Message
       description: "Text converted into TTS audio"
