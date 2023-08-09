@@ -4,10 +4,11 @@
 ![version](https://img.shields.io/github/v/release/nimroddolev/chime_tts)
 [![Community Forum][forum-shield]][forum]
 
+<img src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/icon.png" width=80>
+
 Chime TTS is a custom integration for Home Assistant that combines audio files with Text-to-Speech (TTS) audio locally, creating seamless playback without any lag or timing issues caused by cloud TTS processing and networking delays - perfect for playing a notification sound with a TTS notification.
 
 [Discussion on Home Assistant Community Forum](https://community.home-assistant.io/t/chime-tts-play-audio-before-after-tts-audio-lag-free/578430)
-
 
 # Features
 
@@ -107,15 +108,15 @@ The `chime_tts.say` service can play to multiple `media_player` targets and supp
 ```
 service: chime_tts.say
 data:
+  chime_path: custom_components/chime_tts/mp3s/tada.mp3
   message: The washing's done!
   tts_platform: google_translate
-  cache: true
-  language: en
-  tld: com.au
-  chime_path: custom_components/chime_tts/mp3s/tada.mp3
   tts_playback_speed: 120
   volume_level: 0.7
+  cache: true
   announce: true
+  language: en
+  tld: com.au
 target:
   entity_id:
     - media_player.homepod_mini
@@ -131,7 +132,7 @@ The `chime_tts.clear_cache` service removes all genenrated audio cache files & r
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_clear_cache_from_ui-dark.png">
 <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_clear_cache_from_ui-light.png">
-<img alt="Screenshot of the parameters for the Chime TTS clear cache service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_clear_cache_from_ui-light.pnng">
+<img alt="Screenshot of the parameters for the Chime TTS clear cache service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_clear_cache_from_ui-light.png">
 </picture>
 
 ### From YAML
