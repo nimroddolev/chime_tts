@@ -1,5 +1,6 @@
 """The Chime TTS integration."""
 
+import asyncio
 import logging
 import tempfile
 import time
@@ -51,6 +52,7 @@ from .const import (
 )
 _LOGGER = logging.getLogger(__name__)
 _data = {}
+service_call_queue = asyncio.Queue()
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
@@ -71,6 +73,12 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     ###############
 
     async def async_say(service):
+        """Queue the TTS service call."""
+        await service_call_queue.put(service)
+
+    hass.services.async_register(DOMAIN, SERVICE_SAY, async_say)
+
+    async def async_say_execute(service):
         """Play TTS audio with local chime MP3 audio."""
         start_time = datetime.now()
         _LOGGER.debug('----- Chime TTS Say Called -----')
@@ -200,64 +208,19 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         return True
 
-    hass.services.async_register(DOMAIN, SERVICE_SAY, async_say)
+    #######################
+    # Queue Service Calls #
+    #######################
 
+    async def handle_service_calls():
+        """Handle the queued service calls."""
+        while True:
+            service_data = await service_call_queue.get()
+            await async_say_execute(service_data)
+            service_call_queue.task_done()
 
-    async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume_level: float):
-        if type(entity_ids) is str:
-            entity_ids = entity_ids.split(',')
-        entity_found = False
-        media_players_dict = []
-        for entity_id in entity_ids:
-            # Validate media player entity_id
-            entity = hass.states.get(entity_id)
-            if entity is None:
-                _LOGGER.warning('Media player entity: "%s" not found', entity_id)
-                break
-            else:
-                entity_found = True
-
-            # Ensure media player is turned on
-            if entity.state == "off":
-                _LOGGER.info('Media player entity "%s" is turned off. Turning on...', entity_id)
-                await hass.services.async_call(
-                    "media_player", "turn_on", {CONF_ENTITY_ID: entity_id}, True
-                )
-
-            # Store media player's current volume level
-            should_change_volume = False
-            initial_volume_level = -1
-            volume_supported = get_supported_feature(entity, ATTR_MEDIA_VOLUME_LEVEL)
-            if volume_level >= 0:
-                if volume_supported:
-                    initial_volume_level = float(entity.attributes.get(
-                        ATTR_MEDIA_VOLUME_LEVEL, -1))
-                    if float(initial_volume_level) == float(volume_level / 100):
-                        _LOGGER.debug("%s's volume_level is already %s",
-                                    entity_id, str(volume_level))
-                    else:
-                        should_change_volume = True
-                else:
-                    _LOGGER.warning('Media player "%s" does not support volume level', entity_id)
-
-            media_players_dict.append({
-                "entity_id": entity_id,
-                "should_change_volume": should_change_volume,
-                "initial_volume_level": initial_volume_level
-            })
-        if entity_found is False:
-            _LOGGER.error('No valid media player found')
-            return False
-        return media_players_dict
-
-    async def async_reset_media_players(hass: HomeAssistant, media_players_dict, volume_level: float):
-        for media_player_dict in media_players_dict:
-            entity_id = media_player_dict["entity_id"]
-            should_change_volume = media_player_dict["should_change_volume"]
-            initial_volume_level = media_player_dict["initial_volume_level"]
-            if should_change_volume and initial_volume_level >= 0:
-                _LOGGER.debug("Returning volume level to %s", initial_volume_level)
-                await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
+    # Start the service call handler
+    hass.loop.create_task(handle_service_calls())
 
     #######################
     # Clear Cahce Service #
@@ -296,6 +259,69 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     await async_unload_entry(hass, config_entry)
     await async_setup_entry(hass, config_entry)
     await async_setup(hass, config_entry)
+
+
+##############################
+### Media Player Functions ###
+##############################
+
+async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume_level: float):
+    """Initialize media player entities."""
+    if type(entity_ids) is str:
+        entity_ids = entity_ids.split(',')
+    entity_found = False
+    media_players_dict = []
+    for entity_id in entity_ids:
+        # Validate media player entity_id
+        entity = hass.states.get(entity_id)
+        if entity is None:
+            _LOGGER.warning('Media player entity: "%s" not found', entity_id)
+            break
+        else:
+            entity_found = True
+
+        # Ensure media player is turned on
+        if entity.state == "off":
+            _LOGGER.info('Media player entity "%s" is turned off. Turning on...', entity_id)
+            await hass.services.async_call(
+                "media_player", "turn_on", {CONF_ENTITY_ID: entity_id}, True
+            )
+
+        # Store media player's current volume level
+        should_change_volume = False
+        initial_volume_level = -1
+        volume_supported = get_supported_feature(entity, ATTR_MEDIA_VOLUME_LEVEL)
+        if volume_level >= 0:
+            if volume_supported:
+                initial_volume_level = float(entity.attributes.get(
+                    ATTR_MEDIA_VOLUME_LEVEL, -1))
+                if float(initial_volume_level) == float(volume_level / 100):
+                    _LOGGER.debug("%s's volume_level is already %s",
+                                entity_id, str(volume_level))
+                else:
+                    should_change_volume = True
+            else:
+                _LOGGER.warning('Media player "%s" does not support volume level', entity_id)
+
+        media_players_dict.append({
+            "entity_id": entity_id,
+            "should_change_volume": should_change_volume,
+            "initial_volume_level": initial_volume_level
+        })
+    if entity_found is False:
+        _LOGGER.error('No valid media player found')
+        return False
+    return media_players_dict
+
+async def async_reset_media_players(hass: HomeAssistant, media_players_dict, volume_level: float):
+    """Reset media players back to their original volumes."""
+    for media_player_dict in media_players_dict:
+        entity_id = media_player_dict["entity_id"]
+        should_change_volume = media_player_dict["should_change_volume"]
+        initial_volume_level = media_player_dict["initial_volume_level"]
+        if should_change_volume and initial_volume_level >= 0:
+            _LOGGER.debug("Returning volume level to %s", initial_volume_level)
+            await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
 
 
 ####################################
