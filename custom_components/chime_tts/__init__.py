@@ -34,7 +34,6 @@ from .const import (
     AUDIO_DURATION_KEY,
     BLANK_MP3_PATH,
     TEMP_PATH,
-    TTS_PATH,
     TTS_API,
     TIMEOUT,
     # AMAZON_POLLY,
@@ -452,7 +451,6 @@ async def async_get_playback_audio_path(params: dict):
     if chime_path is not None:
         output_audio = get_audio_from_path(hass, chime_path)
 
-
     # TTS audio
     tts_audio_path = None
     tts_filename = get_tts_filename(params)
@@ -505,7 +503,7 @@ async def async_get_playback_audio_path(params: dict):
             hass, tts_audio_path, delay, output_audio, tts_playback_speed)
 
     # Load end chime audio
-    if end_chime_path is None:
+    if end_chime_path is None or len(end_chime_path) == 0:
         end_chime_path = BLANK_MP3_PATH
         output_audio = get_audio_from_path(hass, end_chime_path, delay, output_audio)
 
@@ -704,7 +702,7 @@ async def async_remove_cached_audio_data(hass: HomeAssistant, filepath_hash: str
 
         await async_save_data(hass)
     else:
-        _LOGGER.warning(
+        _LOGGER.debug(
             " - filepath_hash %s does not exist in the cache.", str(filepath_hash))
 
 
