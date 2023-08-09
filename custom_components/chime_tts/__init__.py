@@ -204,6 +204,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
 
     async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume_level: float):
+        if type(entity_ids) is str:
+            entity_ids = entity_ids.split(',')
         entity_found = False
         media_players_dict = []
         for entity_id in entity_ids:
