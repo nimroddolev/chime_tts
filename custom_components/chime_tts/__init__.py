@@ -86,6 +86,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         chime_path = str(service.data.get("chime_path", ""))
         end_chime_path = str(service.data.get("end_chime_path", ""))
         delay = float(service.data.get("delay", PAUSE_DURATION_MS))
+        final_delay = float(service.data.get("final_delay", 0))
         message = str(service.data.get("message", ""))
         tts_platform = str(service.data.get("tts_platform", ""))
         tts_playback_speed = float(service.data.get("tts_playback_speed", 100))
@@ -187,6 +188,10 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         delay_duration = float(audio_duration)
         _LOGGER.debug("Waiting %ss for audio playback to complete...", str(delay_duration))
         await hass.async_add_executor_job(sleep, delay_duration)
+        if final_delay > 0:
+            final_delay_s = float(final_delay/1000)
+            _LOGGER.debug("Waiting %ss for final_delay to complete...", str(final_delay_s/1000))
+            await hass.async_add_executor_job(sleep, final_delay_s)
 
         # Reset media player volume levels once finish playing
         await async_reset_media_players(hass, media_players_dict, volume_level)
