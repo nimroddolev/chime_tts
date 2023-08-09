@@ -272,7 +272,7 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
 
 async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume_level: float):
     """Initialize media player entities."""
-    if type(entity_ids) is str:
+    if isinstance(entity_ids, str):
         entity_ids = entity_ids.split(',')
     entity_found = False
     media_players_dict = []
@@ -325,7 +325,7 @@ async def async_reset_media_players(hass: HomeAssistant, media_players_dict, vol
         should_change_volume = media_player_dict["should_change_volume"]
         initial_volume_level = media_player_dict["initial_volume_level"]
         if should_change_volume and initial_volume_level >= 0:
-            _LOGGER.debug("Returning volume level to %s", initial_volume_level)
+            _LOGGER.debug("Returning %s's volume level to %s", entity_id, initial_volume_level)
             await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
 
 
@@ -527,7 +527,7 @@ async def async_get_playback_audio_path(params: dict):
                     }
                     await async_store_data(hass, tts_filepath_hash, tts_audio_dict)
             else:
-                _LOGGER.warning(" - TTS file path not found on filesystem after %sms.", str(retries*delay))
+                _LOGGER.warning(" - TTS filepath not found after %sms.", str(retries*delay))
         else:
             _LOGGER.debug(" - No TTS filepaths returned")
 
