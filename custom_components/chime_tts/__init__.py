@@ -479,7 +479,14 @@ async def async_get_playback_audio_path(params: dict):
             _LOGGER.debug(" - TTS filepaths = %s", str(returned_paths))
 
             # Test the path to the file
-            tts_audio_path = get_file_path(hass, returned_paths["path"])
+            retries = 10
+            delay = 0.1
+            while retries >0 and tts_audio_path is None:
+                tts_audio_path = get_file_path(hass, returned_paths["path"])
+                if tts_audio_path is None:
+                    await hass.async_add_executor_job(sleep, delay)
+                    retries -= 1
+
             if tts_audio_path is not None:
                 _LOGGER.debug(" - TTS file path found: %s", tts_audio_path)
                 if cache is True:
@@ -489,7 +496,7 @@ async def async_get_playback_audio_path(params: dict):
                     }
                     await async_store_data(hass, tts_filepath_hash, tts_audio_dict)
             else:
-                _LOGGER.warning(" - TTS file path not found on filesystem.")
+                _LOGGER.warning(" - TTS file path not found on filesystem after %sms.", str(retries*delay))
         else:
             _LOGGER.debug(" - No TTS filepaths returned")
 
