@@ -19,7 +19,7 @@ Chime TTS offers the following enhancements for TTS audio playback:
 
 * **Flexible TTS platform selection:** Chime TTS supports [TTS platform integrations in Home Assistant](https://www.home-assistant.io/integrations/#text-to-speech).
 
-* **Easy service invocation:** The Chime TTS service can be used in automations, scripts, and other Home Assistant components.
+* **Easy service invocation:** The Chime TTS 'say' service can be used in automations, scripts, and other Home Assistant components, and supports queuing multiple service calls.
 
 * **Set media player notification volume:** Set the volume of the media player for the notification, and restore it back once playback ends.
 
@@ -73,17 +73,17 @@ Chime TTS uses Home Assistant's [tts_get_url](https://www.home-assistant.io/inte
 
 ## chime_tts.say
 
-The `chime_tts.say` service supports the following parameters:
+The `chime_tts.say` service can play to multiple `media_player` targets and supports the following parameters:
 
 | Name                   | YAML Key             | Required? | Description                                                                                                                                                          | Default |
 | ---------------------- | -------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | Chime Path             | `chime_path`         |           | Either an audio preset or a local audio file path to be played **before** the TTS message.                                                                           | None    |
 | End Chime Path         | `end_chime_path`     |           | Either an audio preset or a local audio file path to be played **after** the TTS message.                                                                            | None    |
 | Delay                  | `delay`              |           | Delay (ms) between chime audio and the TTS message                                                                                                                   | 450ms   |
+| Final Delay            | `final_delay`        |           | Final delay (ms) added after playback (useful for queued calls)                                                                                                                    | 0ms   |
 | Message                | `message`            | Required  | The text to be converted into TTS audio                                                                                                                              | None    |
 | TTS Platform           | `tts_platform`       | Required  | TTS platform to be used to create TTS audio. **Note:** the [TTS platforms](https://www.home-assistant.io/integrations/#text-to-speech) must be installed separately. | None    |
 | TTS Playback Speed     | `tts_playback_speed` |           | The desired playback speed for the TTS audio, anywhere from 100% - 200%                                                                                              | 100     |
-| Media Player Entity Id | `media_player`       | Required  | The entity_id of the media player to play the audio.                                                                                                                 | None    |
 | Volume Level           | `volume_level`       |           | The volume level (between 0.0 - 1.0) to play the audio. The original value will be restored after playback.                                                          | 1       |
 | Cache                  | `cache`              |           | Save generated audio to the cache for reuse in future service calls.                                                                                                 | False   |
 
@@ -97,9 +97,9 @@ The `chime_tts.say` service supports the following parameters:
 ### From the UI
 
 <picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-dark.png?v=3">
-<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light.png?v=3">
-<img alt="Screenshot of the parameters for the Chime TTS say service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light?v=3">
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-dark.png?v=4">
+<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light.png?v=4">
+<img alt="Screenshot of the parameters for the Chime TTS say service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light?v=4">
 </picture>
 
 ### From YAML
@@ -107,15 +107,18 @@ The `chime_tts.say` service supports the following parameters:
 ```
 service: chime_tts.say
 data:
-  chime_path: custom_components/chime_tts/mp3s/tada.mp3
   message: The washing's done!
   tts_platform: google_translate
-  tts_playback_speed: 120
-  entity_id: media_player.homepod_mini
-  volume_level: 0.7
   cache: true
   language: en
-  tld: co.uk
+  tld: com.au
+  chime_path: custom_components/chime_tts/mp3s/tada.mp3
+  tts_playback_speed: 120
+  volume_level: 0.7
+  announce: true
+target:
+  entity_id:
+    - media_player.homepod_mini
 ```
 
 ## chime_tts.clear_cache
