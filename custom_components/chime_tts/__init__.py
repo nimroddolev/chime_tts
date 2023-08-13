@@ -183,7 +183,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         await hass.async_add_executor_job(sleep, delay_duration)
         if final_delay > 0:
             final_delay_s = float(final_delay/1000)
-            _LOGGER.debug("Waiting %ss for final_delay to complete...", str(final_delay_s/1000))
+            _LOGGER.debug("Waiting %ss for final_delay to complete...", str(final_delay_s))
             await hass.async_add_executor_job(sleep, final_delay_s)
 
         # Reset media player volume levels once finish playing
