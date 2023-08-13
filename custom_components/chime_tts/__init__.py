@@ -142,9 +142,10 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         # Set volume to desired level
         for media_player_dict in media_players_dict:
             entity_id = media_player_dict["entity_id"]
-            should_change_volume = media_player_dict["should_change_volume"]
+            should_change_volume = bool(media_player_dict["should_change_volume"])
             initial_volume_level = media_player_dict["initial_volume_level"]
-            if should_change_volume:
+            if should_change_volume and volume_level >= 0:
+                _LOGGER.debug(" - Setting '%s' volume level to %s", entity_id, str(volume_level))
                 await async_set_volume_level(hass, entity_id, volume_level, initial_volume_level)
 
         # Prepare data for play_media service call
@@ -232,8 +233,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             # Store media player's current volume level
             should_change_volume = False
             initial_volume_level = -1
-            volume_supported = get_supported_feature(entity, ATTR_MEDIA_VOLUME_LEVEL)
             if volume_level >= 0:
+                volume_supported = get_supported_feature(entity, ATTR_MEDIA_VOLUME_LEVEL)
                 if volume_supported:
                     initial_volume_level = float(entity.attributes.get(
                         ATTR_MEDIA_VOLUME_LEVEL, -1))
@@ -243,7 +244,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                     else:
                         should_change_volume = True
                 else:
-                    _LOGGER.warning('Media player "%s" does not support volume level', entity_id)
+                    _LOGGER.warning('The media player "%s" does not support changing volume levels', entity_id)
 
             media_players_dict.append({
                 "entity_id": entity_id,
@@ -258,10 +259,10 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     async def async_reset_media_players(hass: HomeAssistant, media_players_dict, volume_level: float):
         for media_player_dict in media_players_dict:
             entity_id = media_player_dict["entity_id"]
-            should_change_volume = media_player_dict["should_change_volume"]
+            should_change_volume = bool(media_player_dict["should_change_volume"])
             initial_volume_level = media_player_dict["initial_volume_level"]
             if should_change_volume and initial_volume_level >= 0:
-                _LOGGER.debug("Returning volume level to %s", initial_volume_level)
+                _LOGGER.debug("Restoring volume level")
                 await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
 
     #######################
@@ -359,7 +360,7 @@ async def async_reset_media_players(hass: HomeAssistant, media_players_dict, vol
     """Reset media players back to their original volumes."""
     for media_player_dict in media_players_dict:
         entity_id = media_player_dict["entity_id"]
-        should_change_volume = media_player_dict["should_change_volume"]
+        should_change_volume = bool(media_player_dict["should_change_volume"])
         initial_volume_level = media_player_dict["initial_volume_level"]
         if should_change_volume and initial_volume_level >= 0:
             _LOGGER.debug("Returning %s's volume level to %s", entity_id, initial_volume_level)
