@@ -84,6 +84,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         tts_playback_speed = float(service.data.get("tts_playback_speed", 100))
         entity_ids = service.data.get(CONF_ENTITY_ID, [])
         volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
+        join_players = service.data.get("join_players", False)
         cache = service.data.get("cache", False)
         announce = service.data.get("announce", False)
         language = service.data.get("language", None)
@@ -100,6 +101,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             "tts_platform": tts_platform,
             "tts_playback_speed": tts_playback_speed,
             "volume_level": volume_level,
+            "join_players": join_players,
             "cache": cache,
             "announce": announce,
             "language": language,
@@ -140,31 +142,10 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             return False
 
         # Set volume to desired level
-        for media_player_dict in media_players_dict:
-            entity_id = media_player_dict["entity_id"]
-            should_change_volume = bool(media_player_dict["should_change_volume"])
-            initial_volume_level = media_player_dict["initial_volume_level"]
-            if should_change_volume and volume_level >= 0:
-                _LOGGER.debug(" - Setting '%s' volume level to %s", entity_id, str(volume_level))
-                await async_set_volume_level(hass, entity_id, volume_level, initial_volume_level)
+        await async_set_volume_level_for_media_players(hass, media_players_dict, volume_level)
 
-        # Prepare data for play_media service call
-        media_path = audio_path
-        media_index = media_path.find("/media/")
-        if media_index != -1:
-            media_prefix = "media-source://media_source/local/"
-            media_path = media_prefix + media_path[media_index + len("/media/"):]
-        service_data = {
-                ATTR_MEDIA_CONTENT_ID: media_path,
-                ATTR_MEDIA_CONTENT_TYPE: MEDIA_TYPE_MUSIC,
-                CONF_ENTITY_ID: entity_ids
-        }
-        if announce is True:
-            # if get_supported_feature(entity, ATTR_MEDIA_ANNOUNCE):
-            service_data[ATTR_MEDIA_ANNOUNCE] = announce
-            # else:
-            #     _LOGGER.warning('Media player "%s" does not support announce', entity_id)
-
+        # Prepare play_media service call
+        service_data = await async_get_service_data(hass, audio_path, entity_ids, announce, join_players)
         _LOGGER.debug('Calling media_player.play_media service with data:')
         for key, value in service_data.items():
             _LOGGER.debug(' - %s: %s', str(key), str(value))
@@ -187,7 +168,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             await hass.async_add_executor_job(sleep, final_delay_s)
 
         # Reset media player volume levels once finish playing
-        await async_reset_media_players(hass, media_players_dict, volume_level)
+        await async_reset_media_players(hass, media_players_dict, volume_level, join_players)
 
         # Save generated temp mp3 file to cache
         if cache is True:
@@ -208,62 +189,6 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
     hass.services.async_register(DOMAIN, SERVICE_SAY, async_say)
 
-
-    async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume_level: float):
-        if type(entity_ids) is str:
-            entity_ids = entity_ids.split(',')
-        entity_found = False
-        media_players_dict = []
-        for entity_id in entity_ids:
-            # Validate media player entity_id
-            entity = hass.states.get(entity_id)
-            if entity is None:
-                _LOGGER.warning('Media player entity: "%s" not found', entity_id)
-                break
-            else:
-                entity_found = True
-
-            # Ensure media player is turned on
-            if entity.state == "off":
-                _LOGGER.info('Media player entity "%s" is turned off. Turning on...', entity_id)
-                await hass.services.async_call(
-                    "media_player", "turn_on", {CONF_ENTITY_ID: entity_id}, True
-                )
-
-            # Store media player's current volume level
-            should_change_volume = False
-            initial_volume_level = -1
-            if volume_level >= 0:
-                volume_supported = get_supported_feature(entity, ATTR_MEDIA_VOLUME_LEVEL)
-                if volume_supported:
-                    initial_volume_level = float(entity.attributes.get(
-                        ATTR_MEDIA_VOLUME_LEVEL, -1))
-                    if float(initial_volume_level) == float(volume_level / 100):
-                        _LOGGER.debug("%s's volume_level is already %s",
-                                    entity_id, str(volume_level))
-                    else:
-                        should_change_volume = True
-                else:
-                    _LOGGER.warning('The media player "%s" does not support changing volume levels', entity_id)
-
-            media_players_dict.append({
-                "entity_id": entity_id,
-                "should_change_volume": should_change_volume,
-                "initial_volume_level": initial_volume_level
-            })
-        if entity_found is False:
-            _LOGGER.error('No valid media player found')
-            return False
-        return media_players_dict
-
-    async def async_reset_media_players(hass: HomeAssistant, media_players_dict, volume_level: float):
-        for media_player_dict in media_players_dict:
-            entity_id = media_player_dict["entity_id"]
-            should_change_volume = bool(media_player_dict["should_change_volume"])
-            initial_volume_level = media_player_dict["initial_volume_level"]
-            if should_change_volume and initial_volume_level >= 0:
-                _LOGGER.debug("Restoring volume level")
-                await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
 
     #######################
     # Clear Cahce Service #
@@ -333,8 +258,8 @@ async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume
         # Store media player's current volume level
         should_change_volume = False
         initial_volume_level = -1
-        volume_supported = get_supported_feature(entity, ATTR_MEDIA_VOLUME_LEVEL)
         if volume_level >= 0:
+            volume_supported = get_supported_feature(entity, ATTR_MEDIA_VOLUME_LEVEL)
             if volume_supported:
                 initial_volume_level = float(entity.attributes.get(
                     ATTR_MEDIA_VOLUME_LEVEL, -1))
@@ -344,7 +269,8 @@ async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume
                 else:
                     should_change_volume = True
             else:
-                _LOGGER.warning('Media player "%s" does not support volume level', entity_id)
+                _LOGGER.warning('Media player "%s" does not support changing volume levels',
+                                entity_id)
 
         media_players_dict.append({
             "entity_id": entity_id,
@@ -356,16 +282,61 @@ async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume
         return False
     return media_players_dict
 
-async def async_reset_media_players(hass: HomeAssistant, media_players_dict, volume_level: float):
-    """Reset media players back to their original volumes."""
+async def async_reset_media_players(hass: HomeAssistant, media_players_dict, volume_level: float, join_players: bool):
+    """Reset media players back to their original states."""
+    entity_ids = []
+
+    # Reset volume
     for media_player_dict in media_players_dict:
         entity_id = media_player_dict["entity_id"]
+        entity_ids.append(entity_id)
         should_change_volume = bool(media_player_dict["should_change_volume"])
         initial_volume_level = media_player_dict["initial_volume_level"]
         if should_change_volume and initial_volume_level >= 0:
             _LOGGER.debug("Returning %s's volume level to %s", entity_id, initial_volume_level)
             await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
 
+    # Unjoin entity_ids
+    await async_join_unjoin_media_players(hass, False, entity_ids, join_players)
+
+async def async_join_unjoin_media_players(hass: HomeAssistant, is_join: bool, entity_ids, join_players: bool):
+    """Join / Unjoin media players."""
+    if join_players is True and len(entity_ids) > 1:
+        service = None
+        service_data = {}
+        join_players_id = "media_player.join_players_id"
+
+        if is_join is True:
+            _LOGGER.debug("Joining %s media_player entities to form: '%s':", str(len(entity_ids)), join_players_id)
+        else:
+            _LOGGER.debug("Unoining %s media_player entities:", str(len(entity_ids)))
+
+        for entity_id in entity_ids:
+
+            # Join Media Players?
+            if is_join is True:
+                _LOGGER.debug(" - Joining media_player entity: '%s'", entity_id)
+                service = "join"
+                service_data = {
+                    CONF_ENTITY_ID: join_players_id,
+                    "group_members": [entity_id]
+                },
+
+            # Unjoin Media Player?
+            else:
+                _LOGGER.debug(" - Unjoining media_player entity: '%s'", entity_id)
+                service = "unjoin"
+                service_data = {
+                    CONF_ENTITY_ID: entity_id
+                }
+
+            # Join / Unjoin
+            await hass.services.async_call(
+                domain="media_player",
+                service=service,
+                service_data=service_data,
+                blocking=True
+            )
 
 ####################################
 ### Retrieve TTS Audio Functions ###
@@ -655,6 +626,18 @@ def get_audio_from_path(hass: HomeAssistant,
     _LOGGER.warning("   - ...unable to find audio from filepath")
     return audio
 
+async def async_set_volume_level_for_media_players(hass: HomeAssistant,
+                                                   media_players_dict,
+                                                   volume_level: float):
+    """Set the volume level for all media_players."""
+    for media_player_dict in media_players_dict:
+        entity_id = media_player_dict["entity_id"]
+        should_change_volume = bool(media_player_dict["should_change_volume"])
+        initial_volume_level = media_player_dict["initial_volume_level"]
+        if should_change_volume and volume_level >= 0:
+            _LOGGER.debug(" - Setting '%s' volume level to %s", entity_id, str(volume_level))
+            await async_set_volume_level(hass, entity_id, volume_level, initial_volume_level)
+
 
 async def async_set_volume_level(hass: HomeAssistant,
                                  entity_id: str,
@@ -811,6 +794,38 @@ def get_filename_hash(string: str):
     hash_object.update(string.encode('utf-8'))
     hash_value = str(hash_object.hexdigest())
     return hash_value
+
+async def async_get_service_data(hass: HomeAssistant, audio_path, entity_ids, announce, join_players):
+    """Get the service data dictionary for media_player.play_media service call."""
+    service_data = {}
+
+    # media content type
+    service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE_MUSIC
+
+    # media_content_id
+    media_path = audio_path
+    media_index = media_path.find("/media/")
+    if media_index != -1:
+        media_prefix = "media-source://media_source/local/"
+        media_path = media_prefix + media_path[media_index + len("/media/"):]
+    service_data[ATTR_MEDIA_CONTENT_ID] = media_path
+
+    # announce
+    if announce is True:
+        service_data[ATTR_MEDIA_ANNOUNCE] = announce
+
+    # join entity_ids as a group
+    if join_players is True and len(entity_ids) > 1:
+        await async_join_unjoin_media_players(hass, True, entity_ids, join_players)
+        join_players_id = "media_player.join_players_id"
+        service_data[CONF_ENTITY_ID] = join_players_id
+
+    # entity_ids individually
+    else:
+        service_data[CONF_ENTITY_ID] = entity_ids
+
+    return service_data
+
 
 ##############################
 ### Misc. Helper Functions ###
