@@ -192,6 +192,13 @@ say:
           step: 0.01
           mode: slider
       example: 0.75
+    join_players:
+      name: Join Players
+      description: "Play the audio on all included media_players at the same time, as a group"
+      example: "True"
+      required: false
+      selector:
+        boolean:
     cache:
       name: Cache
       description: "Whether or not to save the generated audio file in a local cache"
