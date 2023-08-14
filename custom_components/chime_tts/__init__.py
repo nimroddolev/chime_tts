@@ -383,7 +383,10 @@ async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume
         return False
     return media_players_dict
 
-async def async_reset_media_players(hass: HomeAssistant, media_players_dict, volume_level: float, join_players: bool):
+async def async_reset_media_players(hass: HomeAssistant,
+                                    media_players_dict,
+                                    volume_level: float,
+                                    join_players: bool):
     """Reset media players back to their original states."""
     entity_ids = []
 
@@ -400,7 +403,10 @@ async def async_reset_media_players(hass: HomeAssistant, media_players_dict, vol
     # Unjoin entity_ids
     await async_join_unjoin_media_players(hass, False, entity_ids, join_players)
 
-async def async_join_unjoin_media_players(hass: HomeAssistant, is_join: bool, entity_ids, join_players: bool):
+async def async_join_unjoin_media_players(hass: HomeAssistant,
+                                          is_join: bool,
+                                          entity_ids,
+                                          join_players: bool):
     """Join / Unjoin media players."""
     if join_players is True and len(entity_ids) > 1:
         service = None
@@ -408,7 +414,8 @@ async def async_join_unjoin_media_players(hass: HomeAssistant, is_join: bool, en
         join_players_id = "media_player.join_players_id"
 
         if is_join is True:
-            _LOGGER.debug("Joining %s media_player entities to form: '%s':", str(len(entity_ids)), join_players_id)
+            _LOGGER.debug("Joining %s media_player entities to form: '%s':",
+                          str(len(entity_ids)), join_players_id)
         else:
             _LOGGER.debug("Unoining %s media_player entities:", str(len(entity_ids)))
 
@@ -432,12 +439,14 @@ async def async_join_unjoin_media_players(hass: HomeAssistant, is_join: bool, en
                 }
 
             # Join / Unjoin
+            _LOGGER.debug(" - Calling %s service...", service)
             await hass.services.async_call(
                 domain="media_player",
                 service=service,
                 service_data=service_data,
                 blocking=True
             )
+            _LOGGER.debug(" - ...done", service)
 
 ####################################
 ### Retrieve TTS Audio Functions ###
@@ -849,7 +858,11 @@ def get_filename_hash(string: str):
     hash_value = str(hash_object.hexdigest())
     return hash_value
 
-async def async_get_service_data(hass: HomeAssistant, audio_path, entity_ids, announce, join_players):
+async def async_get_service_data(hass: HomeAssistant,
+                                 audio_path,
+                                 entity_ids,
+                                 announce,
+                                 join_players):
     """Get the service data dictionary for media_player.play_media service call."""
     service_data = {}
 
