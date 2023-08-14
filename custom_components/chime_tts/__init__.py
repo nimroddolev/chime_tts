@@ -829,9 +829,9 @@ def get_supported_feature(entity: State, feature: str):
         return True
     return False
 
-def sleep(duration: float):
-    """Make a synchronous time.sleep call."""
-    return time.sleep(duration)
+def sleep(duration_s: float):
+    """Make a synchronous time.sleep call lasting duration_s seconds."""
+    return time.sleep(duration_s)
 
 def get_file_path(hass: HomeAssistant, p_filepath: str=""):
     """Return a valid file path string."""
