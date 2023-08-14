@@ -37,7 +37,7 @@ from .const import (
     # BAIDU,
     # GOOGLE_CLOUD,
     GOOGLE_TRANSLATE,
-    # IBM_WATSON_TTS,
+    IBM_WATSON_TTS,
     # MARYTTS,
     # MICROSOFT_TTS,
     NABU_CASA,
@@ -401,7 +401,9 @@ async def async_request_tts_audio(hass: HomeAssistant,
     options = {}
 
     # Language
-    if language is not None and tts_platform not in [GOOGLE_TRANSLATE, NABU_CASA, IBM_WATSON_TTS]:
+    if language is not None and tts_platform in [GOOGLE_TRANSLATE, NABU_CASA, IBM_WATSON_TTS]:
+        if tts_platform is IBM_WATSON_TTS:
+            options["voice"] = language
     else:
         language = None
 
