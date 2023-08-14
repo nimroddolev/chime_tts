@@ -24,6 +24,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.core import State
 from homeassistant.helpers.network import get_url
 from homeassistant.helpers import storage
+from homeassistant.exceptions import (
+    HomeAssistantError,
+    ServiceNotFound,
+    TemplateError,
+)
+
 from .const import (
     DOMAIN,
     SERVICE_SAY,
@@ -209,13 +215,22 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         for key, value in service_data.items():
             _LOGGER.debug(' - %s: %s', str(key), str(value))
 
-        await hass.services.async_call(
-            "media_player",
-            "play_media",
-            service_data,
-            True,
-        )
-        _LOGGER.debug('...media_player.play_media completed.')
+        try:
+            await hass.services.async_call(
+                "media_player",
+                "play_media",
+                service_data,
+                True,
+            )
+            _LOGGER.debug('...media_player.play_media completed.')
+        except ServiceNotFound:
+            _LOGGER.warning("Service 'play_media' not found.")
+        except TemplateError:
+            _LOGGER.warning("Error while rendering Jinja2 template.")
+        except HomeAssistantError as err:
+            _LOGGER.warning("An error occurred: %s", str(err))
+        except Exception as err:
+            _LOGGER.warning("An unexpected error occurred: %s", str(err))
 
         # Delay by audio playback duration
         delay_duration = float(audio_duration)

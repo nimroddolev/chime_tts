@@ -6,6 +6,16 @@
             "type": "shell",
             "command": "scripts/develop",
             "problemMatcher": []
+        },
+        {
+            "type": "Live Preview",
+            "workspacePath": "/workspaces/chime_tts",
+            "problemMatcher": [],
+            "label": "Live Preview: Run Server",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }

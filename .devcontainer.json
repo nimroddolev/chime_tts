@@ -5,6 +5,9 @@
     "forwardPorts": [
         8123
     ],
+    "runArgs": [
+        "--network=host"
+    ],
     "portsAttributes": {
         "8123": {
             "label": "Home Assistant",

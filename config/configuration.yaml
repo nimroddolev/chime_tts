@@ -6,3 +6,34 @@ logger:
   default: info
   logs:
     custom_components.chime_tts: debug
+
+################
+
+media_source:
+
+# homeassistant:
+#   whitelist_external_dirs:
+#   - "/config/tts"
+#   - "/media/sounds/temp/chime_tts"
+
+ffmpeg:
+  ffmpeg_bin: /usr/bin/ffmpeg
+
+tts:
+  - platform: google_translate
+    service_name: google_say
+  #  base_url: !secret ha_url
+
+  # - platform: amazon_polly
+  #   service_name: amazon_polly_say
+  #   aws_access_key_id: !secret AWS_ACCESS_KEY_ID
+  #   aws_secret_access_key: !secret AWS_SECRET_ACCESS_KEY
+  #   region_name: "eu-central-1"
+  #   output_format: mp3 # Either: mp3, ogg_vorbis or pcm.
+  #   sample_rate: 22050 # Possible values are: 8000, 16000, 22050, 24000. Default: 22050 for MP3 and Ogg Vorbis, 16000 for pcm
+  #   voice: Amy # UK Posh
+  #   #  voice: Emma # UK
+  #   #  voice: Nicole # AU
+  #   cache: true
+  #   text_type: text # 'text' (default) or 'ssml'
+  # #  cache_dir: /www/sounds/tts
