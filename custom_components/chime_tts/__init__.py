@@ -36,6 +36,13 @@ from .const import (
     TEMP_PATH,
     TTS_API,
     TIMEOUT,
+    QUEUE,
+    QUEUE_STATUS,
+    QUEUE_IDLE,
+    QUEUE_RUNNING,
+    QUEUE_CURRENT_ID,
+    QUEUE_LAST_ID,
+    QUEUE_TIMEOUT_S,
     # AMAZON_POLLY,
     # BAIDU,
     # GOOGLE_CLOUD,
@@ -52,15 +59,14 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 _data = {}
 
-
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up an entry."""
     await async_init_stored_data(hass)
     _data[HTTP_BEARER_AUTHENTICATION] = config_entry.data[HTTP_BEARER_AUTHENTICATION]
+    init_queue()
     config_entry.async_on_unload(
         config_entry.add_update_listener(async_reload_entry))
     return True
-
 
 async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up the Chime TTS integration."""
@@ -71,21 +77,74 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     ###############
 
     async def async_say(service):
+        service_dict = queue_new_service_call(service)
+
+        while _data[QUEUE_CURRENT_ID] < service_dict["id"]:
+            # Wait for the previous service call to end
+            if _data[QUEUE_STATUS] is QUEUE_RUNNING:
+                # Wait until current job is completed
+                previous_jobs_count = int(int(service_dict["id"]) - int(_data[QUEUE_CURRENT_ID]))
+                _LOGGER.debug("...waiting for %s previous queued job%s to complete.",
+                              "a" if previous_jobs_count == 1 else str(previous_jobs_count),
+                              "s" if previous_jobs_count > 1 else "")
+                retry_interval = 0.1
+                timeout = QUEUE_TIMEOUT_S * 60 * 1000
+                elapsed_time = 0
+                while elapsed_time < timeout and _data[QUEUE_STATUS] is QUEUE_RUNNING:
+                    await hass.async_add_executor_job(sleep, retry_interval)
+                    elapsed_time += retry_interval
+                    if _data[QUEUE_STATUS] is QUEUE_IDLE:
+                        break
+                # Timeout
+                if _data[QUEUE_STATUS] is QUEUE_RUNNING:
+                    _LOGGER.error("Timeout reached on queued job #%s.", str(service_dict["id"]))
+                    dequeue_service_call()
+                    return False
+
+            # Execute the next service call in the queue
+            if _data[QUEUE_STATUS] is QUEUE_IDLE:
+                next_service_dict = get_queued_service_call()
+                if next_service_dict is not None:
+                    next_service = next_service_dict["service"]
+                    next_service_id = next_service_dict["id"]
+                    _data[QUEUE_STATUS] = QUEUE_RUNNING
+                    _LOGGER.debug("Executing queued job #%s", str(next_service_id))
+                    result = await async_say_execute(next_service)
+                    dequeue_service_call()
+                    _data[QUEUE_STATUS] = QUEUE_IDLE
+                    return result
+                else:
+                    _LOGGER.error("Unable to get next queued service call.")
+            else:
+                _LOGGER.error("Unable to run queued service call.")
+
+        # Remove failed service call from queue
+        dequeue_service_call()
+        return False
+
+    async def async_say_execute(service):
         """Play TTS audio with local chime MP3 audio."""
-        start_time = datetime.now()
         _LOGGER.debug('----- Chime TTS Say Called -----')
+        start_time = datetime.now()
+
+        entity_ids = service.data.get(CONF_ENTITY_ID, [])
+        if isinstance(entity_ids, str):
+            entity_ids = entity_ids.split(',')
 
         chime_path = str(service.data.get("chime_path", ""))
         end_chime_path = str(service.data.get("end_chime_path", ""))
+
         delay = float(service.data.get("delay", PAUSE_DURATION_MS))
         final_delay = float(service.data.get("final_delay", 0))
+
         message = str(service.data.get("message", ""))
         tts_platform = str(service.data.get("tts_platform", ""))
         tts_playback_speed = float(service.data.get("tts_playback_speed", 100))
-        entity_ids = service.data.get(CONF_ENTITY_ID, [])
+
         volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
         cache = service.data.get("cache", False)
         announce = service.data.get("announce", False)
+
         language = service.data.get("language", None)
         tld = service.data.get("tld", None)
         gender = service.data.get("gender", None)
@@ -304,14 +363,60 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     await async_setup(hass, config_entry)
 
 
+#############
+### QUEUE ###
+#############
+
+def init_queue():
+    """Initialize variables and states for queuing service calls."""
+    _data[QUEUE] = []
+    _data[QUEUE_STATUS] = QUEUE_IDLE
+    _data[QUEUE_CURRENT_ID] = -1
+    _data[QUEUE_LAST_ID] = -1
+
+def queue_new_service_call(service):
+    """Add a new service call to the queue."""
+    service_id = _data[QUEUE_LAST_ID] + 1
+    if _data[QUEUE] is None:
+        _data[QUEUE] = []
+
+    service_dict = {
+        "service": service,
+        "id": service_id
+    }
+    _data[QUEUE].append(service_dict)
+    _data[QUEUE_LAST_ID] = service_id
+
+    _LOGGER.debug("Service call #%s was added to the queue.", service_id)
+    return service_dict
+
+def get_queued_service_call():
+    """Get the next queued service call from the queue."""
+    if len(_data[QUEUE]) > 0:
+        return _data[QUEUE][0]
+    _LOGGER.debug("Queue empty")
+    return None
+
+def dequeue_service_call():
+    """Remove the oldest service call from the queue."""
+    if _data[QUEUE] and len(_data[QUEUE]) > 0:
+        _data[QUEUE].pop(0)
+
+        # All queued jobs completed
+        if len(_data[QUEUE]) == 0:
+            _LOGGER.debug("Queue empty. Reinitializing values.")
+            init_queue()
+        else:
+            # Move on to the next item (queued or in the future)
+            _data[QUEUE_CURRENT_ID] += 1
+
+
 ##############################
 ### Media Player Functions ###
 ##############################
 
 async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume_level: float):
     """Initialize media player entities."""
-    if isinstance(entity_ids, str):
-        entity_ids = entity_ids.split(',')
     entity_found = False
     media_players_dict = []
     for entity_id in entity_ids:
