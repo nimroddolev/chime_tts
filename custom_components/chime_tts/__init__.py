@@ -27,6 +27,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.core import State
 from homeassistant.helpers import storage
 from homeassistant.components import tts
+from homeassistant.exceptions import (
+    HomeAssistantError,
+    ServiceNotFound,
+    TemplateError,
+)
+
 from .const import (
     DOMAIN,
     SERVICE_SAY,
@@ -205,19 +211,31 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         await async_set_volume_level_for_media_players(hass, media_players_dict, volume_level)
 
         # Prepare play_media service call
-        service_data = await async_get_service_data(hass, audio_path, entity_ids,
-                                                    announce, join_players)
+        service_data = await async_get_service_data(hass,
+                                                    audio_path,
+                                                    entity_ids,
+                                                    announce,
+                                                    join_players)
         _LOGGER.debug('Calling media_player.play_media service with data:')
         for key, value in service_data.items():
             _LOGGER.debug(' - %s: %s', str(key), str(value))
 
-        await hass.services.async_call(
-            "media_player",
-            SERVICE_PLAY_MEDIA,
-            service_data,
-            True,
-        )
-        _LOGGER.debug('...media_player.play_media completed.')
+        try:
+            await hass.services.async_call(
+                "media_player",
+                SERVICE_PLAY_MEDIA,
+                service_data,
+                True,
+            )
+            _LOGGER.debug('...media_player.play_media completed.')
+        except ServiceNotFound:
+            _LOGGER.warning("Service 'play_media' not found.")
+        except TemplateError:
+            _LOGGER.warning("Error while rendering Jinja2 template.")
+        except HomeAssistantError as err:
+            _LOGGER.warning("An error occurred: %s", str(err))
+        except Exception as err:
+            _LOGGER.warning("An unexpected error occurred: %s", str(err))
 
         # Delay by audio playback duration
         delay_duration = float(audio_duration)
@@ -414,7 +432,7 @@ async def async_reset_media_players(hass: HomeAssistant,
             await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
 
     # Unjoin entity_ids
-    if join_players is True and _data["group_members_supported"] >= 2:
+    if join_players is True and _data["group_members_supported"] > 1:
         _LOGGER.debug(" - Calling media_player.unjoin service for %s media_player entities...", len(entity_ids))
         for entity_id in entity_ids:
             entity = hass.states.get(entity_id)
