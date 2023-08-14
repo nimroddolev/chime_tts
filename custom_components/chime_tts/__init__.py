@@ -200,7 +200,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         await async_set_volume_level_for_media_players(hass, media_players_dict, volume_level)
 
         # Prepare play_media service call
-        service_data = await async_get_service_data(hass, audio_path, entity_ids, announce, join_players)
+        service_data = await async_get_service_data(hass, audio_path, entity_ids,
+                                                    announce, join_players)
         _LOGGER.debug('Calling media_player.play_media service with data:')
         for key, value in service_data.items():
             _LOGGER.debug(' - %s: %s', str(key), str(value))
@@ -446,7 +447,7 @@ async def async_join_unjoin_media_players(hass: HomeAssistant,
                 service_data=service_data,
                 blocking=True
             )
-            _LOGGER.debug(" - ...done", service)
+            _LOGGER.debug(" - ...done")
 
 ####################################
 ### Retrieve TTS Audio Functions ###
