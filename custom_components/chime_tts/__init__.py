@@ -185,57 +185,22 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             return False
 
         # Create audio file to play on media player
-        audio_path = None
-        audio_duration = None
         audio_dict = await async_get_playback_audio_path(params)
-        _LOGGER.debug(" - audio_dict = %s", str(audio_dict))
-        if audio_dict is not None:
-            if AUDIO_PATH_KEY in audio_dict:
-                if AUDIO_DURATION_KEY in audio_dict:
-                    audio_path = audio_dict[AUDIO_PATH_KEY]
-                    audio_duration = audio_dict[AUDIO_DURATION_KEY]
-                    if audio_duration == 0:
-                        _LOGGER.error("async_get_playback_audio_path --> Audio has no duration")
-                        return False
-                else:
-                    _LOGGER.error("async_get_playback_audio_path --> Audio has no duration data")
-                    return False
-            else:
-                _LOGGER.error("async_get_playback_audio_path --> Audio has no file path data")
-                return False
-        else:
-            _LOGGER.error("async_get_playback_audio_path --> Unable to generate audio for playback")
+        if validate_audio_dict(audio_dict) is False:
             return False
+        _LOGGER.debug(" - audio_dict = %s", str(audio_dict))
+        audio_path = audio_dict[AUDIO_PATH_KEY]
+        audio_duration = audio_dict[AUDIO_DURATION_KEY]
 
         # Set volume to desired level
         await async_set_volume_level_for_media_players(hass, media_players_dict, volume_level)
 
-        # Prepare play_media service call
-        service_data = await async_get_service_data(hass,
-                                                    audio_path,
-                                                    entity_ids,
-                                                    announce,
-                                                    join_players)
-        _LOGGER.debug('Calling media_player.play_media service with data:')
-        for key, value in service_data.items():
-            _LOGGER.debug(' - %s: %s', str(key), str(value))
-
-        try:
-            await hass.services.async_call(
-                "media_player",
-                SERVICE_PLAY_MEDIA,
-                service_data,
-                True,
-            )
-            _LOGGER.debug('...media_player.play_media completed.')
-        except ServiceNotFound:
-            _LOGGER.warning("Service 'play_media' not found.")
-        except TemplateError:
-            _LOGGER.warning("Error while rendering Jinja2 template.")
-        except HomeAssistantError as err:
-            _LOGGER.warning("An error occurred: %s", str(err))
-        except Exception as err:
-            _LOGGER.warning("An unexpected error occurred: %s", str(err))
+        # Play audio with service_data
+        await async_play_media(hass,
+                               audio_path,
+                               entity_ids,
+                               announce,
+                               join_players)
 
         # Delay by audio playback duration
         delay_duration = float(audio_duration)
@@ -689,6 +654,24 @@ async def async_get_playback_audio_path(params: dict):
 
     return None
 
+def validate_audio_dict(audio_dict: any):
+    """Validate the audio_dict. Returns True if passes validation."""
+    if audio_dict is not None:
+        if AUDIO_PATH_KEY in audio_dict:
+            if AUDIO_DURATION_KEY in audio_dict:
+                audio_duration = audio_dict[AUDIO_DURATION_KEY]
+                if audio_duration == 0:
+                    _LOGGER.error("async_get_playback_audio_path --> Audio has no duration")
+                    return False
+            else:
+                _LOGGER.error("async_get_playback_audio_path --> Audio has no duration data")
+                return False
+        else:
+            _LOGGER.error("async_get_playback_audio_path --> Audio has no file path data")
+            return False
+    else:
+        _LOGGER.error("async_get_playback_audio_path --> Unable to generate audio for playback")
+        return False
 
 def get_audio_from_path(hass: HomeAssistant,
                         filepath: str,
@@ -877,12 +860,12 @@ def get_filename_hash(string: str):
     hash_value = str(hash_object.hexdigest())
     return hash_value
 
-async def async_get_service_data(hass: HomeAssistant,
-                                 audio_path,
-                                 entity_ids,
-                                 announce,
-                                 join_players):
-    """Get the service data dictionary for media_player.play_media service call."""
+async def async_play_media(hass: HomeAssistant,
+                           audio_path,
+                           entity_ids,
+                           announce,
+                           join_players):
+    """Call the media_player.play_media service."""
     service_data = {}
 
     # media content type
@@ -908,9 +891,31 @@ async def async_get_service_data(hass: HomeAssistant,
             await async_join_media_players(hass, entity_ids)
             service_data[CONF_ENTITY_ID] = JOIN_PLAYERS_ID
         else:
-            _LOGGER.debug("Unable to form a joint speaker group, as less than 2 supported speakers were found")
+            if _data["group_members_supported"] == 1:
+                _LOGGER.warning("Joint playback only supported on 1 media_player.")
+            else:
+                _LOGGER.warning("No media_player found supporting joint playback.")
 
-    return service_data
+    # Play the audio
+    _LOGGER.debug('Calling media_player.play_media service with data:')
+    for key, value in service_data.items():
+        _LOGGER.debug(' - %s: %s', str(key), str(value))
+    try:
+        await hass.services.async_call(
+            "media_player",
+            SERVICE_PLAY_MEDIA,
+            service_data,
+            True,
+        )
+        _LOGGER.debug('...media_player.play_media completed.')
+    except ServiceNotFound:
+        _LOGGER.warning("Service 'play_media' not found.")
+    except TemplateError:
+        _LOGGER.warning("Error while rendering Jinja2 template.")
+    except HomeAssistantError as err:
+        _LOGGER.warning("An error occurred: %s", str(err))
+    except Exception as err:
+        _LOGGER.warning("An unexpected error occurred: %s", str(err))
 
 
 ##############################
