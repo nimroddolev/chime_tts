@@ -120,8 +120,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                     dequeue_service_call()
                     _data[QUEUE_STATUS] = QUEUE_IDLE
                     return result
-                else:
-                    _LOGGER.error("Unable to get next queued service call.")
+                _LOGGER.error("Unable to get next queued service call.")
             else:
                 _LOGGER.error("Unable to run queued service call.")
 
@@ -398,7 +397,8 @@ async def async_reset_media_players(hass: HomeAssistant,
 
     # Unjoin entity_ids
     if join_players is True and _data["group_members_supported"] > 1:
-        _LOGGER.debug(" - Calling media_player.unjoin service for %s media_player entities...", len(entity_ids))
+        _LOGGER.debug(" - Calling media_player.unjoin service for %s media_player entities...",
+                      len(entity_ids))
         for entity_id in entity_ids:
             entity = hass.states.get(entity_id)
             if get_supported_feature(entity, ATTR_GROUP_MEMBERS):
@@ -415,7 +415,8 @@ async def async_reset_media_players(hass: HomeAssistant,
 async def async_join_media_players(hass, entity_ids):
     """Join media players."""
     # Call the join/unjoin service
-    _LOGGER.debug(" - Calling media_player.join service for %s media_player entities...", len(entity_ids))
+    _LOGGER.debug(" - Calling media_player.join service for %s media_player entities...",
+                  len(entity_ids))
 
     for entity_id in entity_ids:
         entity = hass.states.get(entity_id)
