@@ -22,6 +22,8 @@ QUEUE_IDLE = "QUEUE_IDLE"
 QUEUE_CURRENT_ID = "QUEUE_CURRENT_ID"
 QUEUE_LAST_ID = "QUEUE_LAST_ID"
 QUEUE_TIMEOUT_S = 7.5
+JOIN_PLAYERS_ID = "media_player.join_players_id"
+
 
 # TTS Platforms
 AMAZON_POLLY = "amazon_polly"

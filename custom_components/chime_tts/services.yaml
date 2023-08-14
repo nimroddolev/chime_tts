@@ -194,7 +194,7 @@ say:
       example: 0.75
     join_players:
       name: Join Players
-      description: "Play the audio on all included media_players at the same time, as a group"
+      description: "Play the audio simultaneously on media_players (that support speaker groups)"
       example: "True"
       required: false
       selector:

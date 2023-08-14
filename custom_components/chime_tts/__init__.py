@@ -15,7 +15,11 @@ from homeassistant.components.media_player.const import (
     ATTR_MEDIA_CONTENT_TYPE,
     ATTR_MEDIA_ANNOUNCE,
     ATTR_MEDIA_VOLUME_LEVEL,
+    ATTR_GROUP_MEMBERS,
     MEDIA_TYPE_MUSIC,
+    SERVICE_PLAY_MEDIA,
+    SERVICE_JOIN,
+    SERVICE_UNJOIN,
 )
 from homeassistant.const import CONF_ENTITY_ID
 from homeassistant.config_entries import ConfigEntry
@@ -40,6 +44,7 @@ from .const import (
     QUEUE_CURRENT_ID,
     QUEUE_LAST_ID,
     QUEUE_TIMEOUT_S,
+    JOIN_PLAYERS_ID,
     # AMAZON_POLLY,
     # BAIDU,
     # GOOGLE_CLOUD,
@@ -208,7 +213,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         await hass.services.async_call(
             "media_player",
-            "play_media",
+            SERVICE_PLAY_MEDIA,
             service_data,
             True,
         )
@@ -340,6 +345,7 @@ def dequeue_service_call():
 async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume_level: float):
     """Initialize media player entities."""
     entity_found = False
+    _data["group_members_supported"] = 0
     media_players_dict = []
     for entity_id in entity_ids:
         # Validate media player entity_id
@@ -374,10 +380,16 @@ async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume
                 _LOGGER.warning('Media player "%s" does not support changing volume levels',
                                 entity_id)
 
+        # Group members supported?
+        group_member_support =  get_supported_feature(entity, ATTR_GROUP_MEMBERS)
+        if group_member_support is True:
+            _data["group_members_supported"] += 1
+
         media_players_dict.append({
             "entity_id": entity_id,
             "should_change_volume": should_change_volume,
-            "initial_volume_level": initial_volume_level
+            "initial_volume_level": initial_volume_level,
+            "group_members_supported": group_member_support
         })
     if entity_found is False:
         _LOGGER.error('No valid media player found')
@@ -402,49 +414,37 @@ async def async_reset_media_players(hass: HomeAssistant,
             await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
 
     # Unjoin entity_ids
-    await async_join_unjoin_media_players(hass, False, entity_ids, join_players)
-
-async def async_join_unjoin_media_players(hass: HomeAssistant,
-                                          is_join: bool,
-                                          entity_ids,
-                                          join_players: bool):
-    """Join / Unjoin media players."""
-    if join_players is True and len(entity_ids) > 1:
-        service = None
-        service_data = {}
-        join_players_id = "media_player.join_players_id"
-
-        if is_join is True:
-            _LOGGER.debug("Joining %s media_player entities to form: '%s':",
-                          str(len(entity_ids)), join_players_id)
-        else:
-            _LOGGER.debug("Unoining %s media_player entities:", str(len(entity_ids)))
-
+    if join_players is True and _data["group_members_supported"] >= 2:
+        _LOGGER.debug(" - Calling media_player.unjoin service for %s media_player entities...", len(entity_ids))
         for entity_id in entity_ids:
+            entity = hass.states.get(entity_id)
+            if get_supported_feature(entity, ATTR_GROUP_MEMBERS):
+                _LOGGER.debug(" - Unjoining media plater entity: %s", entity_id)
+                await hass.services.async_call(
+                    domain="media_player",
+                    service=SERVICE_UNJOIN,
+                    service_data={CONF_ENTITY_ID: entity_id},
+                    blocking=True
+                )
+            _LOGGER.debug(" - ...done")
 
-            # Join Media Players?
-            if is_join is True:
-                _LOGGER.debug(" - Joining media_player entity: '%s'", entity_id)
-                service = "join"
-                service_data = {
-                    CONF_ENTITY_ID: join_players_id,
-                    "group_members": [entity_id]
-                },
 
-            # Unjoin Media Player?
-            else:
-                _LOGGER.debug(" - Unjoining media_player entity: '%s'", entity_id)
-                service = "unjoin"
-                service_data = {
-                    CONF_ENTITY_ID: entity_id
-                }
+async def async_join_media_players(hass, entity_ids):
+    """Join media players."""
+    # Call the join/unjoin service
+    _LOGGER.debug(" - Calling media_player.join service for %s media_player entities...", len(entity_ids))
 
-            # Join / Unjoin
-            _LOGGER.debug(" - Calling %s service...", service)
+    for entity_id in entity_ids:
+        entity = hass.states.get(entity_id)
+        if get_supported_feature(entity, ATTR_GROUP_MEMBERS):
+            _LOGGER.debug(" - Joining media_player entity: '%s'", entity_id)
             await hass.services.async_call(
                 domain="media_player",
-                service=service,
-                service_data=service_data,
+                service=SERVICE_JOIN,
+                service_data={
+                    CONF_ENTITY_ID: JOIN_PLAYERS_ID,
+                    "group_members": [entity_id]
+                },
                 blocking=True
             )
             _LOGGER.debug(" - ...done")
@@ -882,15 +882,15 @@ async def async_get_service_data(hass: HomeAssistant,
     if announce is True:
         service_data[ATTR_MEDIA_ANNOUNCE] = announce
 
-    # join entity_ids as a group
-    if join_players is True and len(entity_ids) > 1:
-        await async_join_unjoin_media_players(hass, True, entity_ids, join_players)
-        join_players_id = "media_player.join_players_id"
-        service_data[CONF_ENTITY_ID] = join_players_id
-
-    # entity_ids individually
-    else:
-        service_data[CONF_ENTITY_ID] = entity_ids
+    # entity_id
+    service_data[CONF_ENTITY_ID] = entity_ids
+    if join_players is True:
+        # join entity_ids as a group
+        if _data["group_members_supported"] > 1:
+            await async_join_media_players(hass, entity_ids)
+            service_data[CONF_ENTITY_ID] = JOIN_PLAYERS_ID
+        else:
+            _LOGGER.debug("Unable to form a joint speaker group, as less than 2 supported speakers were found")
 
     return service_data
 
@@ -904,12 +904,18 @@ def get_supported_feature(entity: State, feature: str):
     if entity is None or entity.attributes is None:
         return False
     supported_features = entity.attributes.get('supported_features', 0)
+
     if feature is ATTR_MEDIA_VOLUME_LEVEL:
         return bool(supported_features & 2)
+
     if feature is ATTR_MEDIA_ANNOUNCE:
         # Announce support detection feature not yet supporting in HA
         # return bool(supported_features & 128)
         return True
+
+    if feature is ATTR_GROUP_MEMBERS:
+        return bool(supported_features & 524288)
+
     return False
 
 def sleep(duration_s: float):
