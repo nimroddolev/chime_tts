@@ -210,7 +210,11 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         await async_set_volume_level_for_media_players(hass, media_players_dict, volume_level)
 
         # Prepare play_media service call
-        service_data = await async_get_service_data(hass, audio_path, entity_ids, announce, join_players)
+        service_data = await async_get_service_data(hass,
+                                                    audio_path,
+                                                    entity_ids,
+                                                    announce,
+                                                    join_players)
         _LOGGER.debug('Calling media_player.play_media service with data:')
         for key, value in service_data.items():
             _LOGGER.debug(' - %s: %s', str(key), str(value))
@@ -402,7 +406,10 @@ async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume
         return False
     return media_players_dict
 
-async def async_reset_media_players(hass: HomeAssistant, media_players_dict, volume_level: float, join_players: bool):
+async def async_reset_media_players(hass: HomeAssistant,
+                                    media_players_dict,
+                                    volume_level: float,
+                                    join_players: bool):
     """Reset media players back to their original states."""
     entity_ids = []
 
@@ -419,7 +426,10 @@ async def async_reset_media_players(hass: HomeAssistant, media_players_dict, vol
     # Unjoin entity_ids
     await async_join_unjoin_media_players(hass, False, entity_ids, join_players)
 
-async def async_join_unjoin_media_players(hass: HomeAssistant, is_join: bool, entity_ids, join_players: bool):
+async def async_join_unjoin_media_players(hass: HomeAssistant,
+                                          is_join: bool,
+                                          entity_ids,
+                                          join_players: bool):
     """Join / Unjoin media players."""
     if join_players is True and len(entity_ids) > 1:
         service = None
