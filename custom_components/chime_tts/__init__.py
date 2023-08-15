@@ -16,12 +16,15 @@ from homeassistant.components.media_player.const import (
     ATTR_MEDIA_ANNOUNCE,
     ATTR_MEDIA_VOLUME_LEVEL,
     ATTR_GROUP_MEMBERS,
-    MEDIA_TYPE_MUSIC,
     SERVICE_PLAY_MEDIA,
     SERVICE_JOIN,
     SERVICE_UNJOIN,
+    MEDIA_TYPE_MUSIC,
 )
-from homeassistant.const import CONF_ENTITY_ID
+from homeassistant.const import (
+    CONF_ENTITY_ID,
+    SERVICE_VOLUME_SET,
+    SERVICE_TURN_ON)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.core import State
@@ -342,7 +345,10 @@ async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume
         if entity.state == "off":
             _LOGGER.info('Media player entity "%s" is turned off. Turning on...', entity_id)
             await hass.services.async_call(
-                "media_player", "turn_on", {CONF_ENTITY_ID: entity_id}, True
+                "media_player",
+                SERVICE_TURN_ON,
+                {CONF_ENTITY_ID: entity_id},
+                True
             )
 
         # Store media player's current volume level
@@ -402,14 +408,18 @@ async def async_reset_media_players(hass: HomeAssistant,
         for entity_id in entity_ids:
             entity = hass.states.get(entity_id)
             if get_supported_feature(entity, ATTR_GROUP_MEMBERS):
-                _LOGGER.debug(" - Unjoining media plater entity: %s", entity_id)
-                await hass.services.async_call(
-                    domain="media_player",
-                    service=SERVICE_UNJOIN,
-                    service_data={CONF_ENTITY_ID: entity_id},
-                    blocking=True
-                )
-            _LOGGER.debug(" - ...done")
+                _LOGGER.debug(" - Unjoining media plater entity: %s...", entity_id)
+                try:
+                    await hass.services.async_call(
+                        domain="media_player",
+                        service=SERVICE_UNJOIN,
+                        service_data={CONF_ENTITY_ID: entity_id},
+                        blocking=True
+                    )
+                    _LOGGER.debug(" - ...done")
+                except Exception as error:
+                    _LOGGER.warning("   - Error calling media_player.%s: %s",
+                                    SERVICE_UNJOIN, error)
 
 
 async def async_join_media_players(hass, entity_ids):
@@ -421,17 +431,21 @@ async def async_join_media_players(hass, entity_ids):
     for entity_id in entity_ids:
         entity = hass.states.get(entity_id)
         if get_supported_feature(entity, ATTR_GROUP_MEMBERS):
-            _LOGGER.debug(" - Joining media_player entity: '%s'", entity_id)
-            await hass.services.async_call(
-                domain="media_player",
-                service=SERVICE_JOIN,
-                service_data={
-                    CONF_ENTITY_ID: JOIN_PLAYERS_ID,
-                    "group_members": [entity_id]
-                },
-                blocking=True
-            )
-            _LOGGER.debug(" - ...done")
+            _LOGGER.debug(" - Joining media_player entity: '%s'...", entity_id)
+            try:
+                await hass.services.async_call(
+                    domain="media_player",
+                    service=SERVICE_JOIN,
+                    service_data={
+                        CONF_ENTITY_ID: JOIN_PLAYERS_ID,
+                        ATTR_GROUP_MEMBERS: [entity_id]
+                    },
+                    blocking=True
+                )
+                _LOGGER.debug(" - ...done")
+            except Exception as error:
+                _LOGGER.warning("   - Error calling media_player.%s: %s",
+                                SERVICE_JOIN, error)
 
 ####################################
 ### Retrieve TTS Audio Functions ###
@@ -723,16 +737,20 @@ async def async_set_volume_level(hass: HomeAssistant,
     if new_volume_level >= 0 and new_volume_level != current_volume_level:
         _LOGGER.debug(' - Seting volume_level of media player "%s" to: %s',
                        entity_id, str(new_volume_level))
-        await hass.services.async_call(
-            "media_player",
-            "volume_set",
-            {
-                ATTR_MEDIA_VOLUME_LEVEL: new_volume_level,
-                CONF_ENTITY_ID: entity_id
-            },
-            True,
-        )
-        _LOGGER.debug(' - Volume set')
+        try:
+            await hass.services.async_call(
+                "media_player",
+                SERVICE_VOLUME_SET,
+                {
+                    ATTR_MEDIA_VOLUME_LEVEL: new_volume_level,
+                    CONF_ENTITY_ID: entity_id
+                },
+                True,
+            )
+            _LOGGER.debug(' - Volume set')
+        except Exception as error:
+            _LOGGER.warning(" - Error setting volume for '%s': %s",
+                            entity_id, error)
         return True
     _LOGGER.debug(' - Skipped setting volume')
     return False
