@@ -30,29 +30,24 @@ Chime TTS offers the following enhancements for TTS audio playback:
 
 * **Caching:** Audio created by Chime TTS can be cached for faster playback in future service calls.
 
+* **Speaker Groups:** Supported speakers can be grouped together for simultaneous playback.
+
 
 # Quick start
 
-## 1. Installation
+## Step 1. Installation
 
 ### Via HACS (Recommended)
 
-It is recommended to use the [HACS Home Assistant Community Store](https://hacs.xyz/) to install Chime TTS.
-
-Either:
-
-1. Once HACS is installed, add the Chime TTS repository to HACS: <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=nimroddolev&repository=chime_tts&category=integration" title="Chime TTS HACS repository"><div class="badge"><img loading="lazy" src="https://my.home-assistant.io/badges/hacs_repository.svg"></div></a></div>
-2. Click `ADD` and then `DOWNLOAD`
-3. Restart Home Assistant.
-
-or
-
-1. Once HACS is installed, click on `HACS` -> select `Integrations` -> ⋮ -> `Custom repositories`.
-2. Enter `https://github.com/nimroddolev/chime_tts` as the `Repository` -> select "Integration" from the `Category` menu -> select `ADD`.
-3. Select `EXPLORE & DOWNLOAD REPOSITORIES` -> search for *Chime TTS* -> Select it -> Select `Download` to install.
+1. Make sure [HACS](https://hacs.xyz/) is installed.
+2. Add the Chime TTS repository to HACS: <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=nimroddolev&repository=chime_tts&category=integration" title="Chime TTS HACS repository"><div class="badge"><img loading="lazy" src="https://my.home-assistant.io/badges/hacs_repository.svg"></div></a>
+3. Click `ADD` and then `DOWNLOAD`
 4. Restart Home Assistant.
 
+Or:
+
 ### Manual Installation
+
 1. Using your file browser of choice open the directory for your HA configuration (where you find configuration.yaml).
 2. Create a ```custom_components``` directory if it does not already exist.
 3. Add a subdirectory inside ```custom_components``` named ```chime_tts```.
@@ -60,15 +55,9 @@ or
 5. Place them into the new ```custom_components/chime_tts``` directory you created.
 6. Restart Home Assistant.
 
-## 2. Adding the integration
+## Step 2. Add the integration
 
-Chime TTS uses Home Assistant's [tts_get_url](https://www.home-assistant.io/integrations/tts/#post-apitts_get_url) API to generate and locate TTS audio files. The API requires a long-lived token.
-1. Navigate to your profile (found at the bottom of Home Assistant's left-hand-side navigation bar).
-2. Make sure `Advanced Mode` is enabled
-3. Scroll to the bottom and select `CREATE TOKEN` under the 'Long-Lived Access Tokens' section.
-4. Enter a name (eg: *Chime TTS*) and copy the token string.
-5. Navigate to: `Settings` -> `Devices and Services` -> `Add Integration`, and then type: *Chime TTS* (if it does not appear empty your browser cache and reload the page).
-6. Paste in your token and then click `Submit`.
+Click this button <a href="https://my.home-assistant.io/redirect/config_flow_start/?domain=chime_tts" rel="nofollow"><img src="https://camo.githubusercontent.com/637fd24a458765d763a6dced4b312c503f54397bdd9b683584ef8054f305cd7f/68747470733a2f2f6d792e686f6d652d617373697374616e742e696f2f6261646765732f636f6e6669675f666c6f775f73746172742e737667" alt="Open your Home Assistant instance and start setting up a new integration." data-canonical-src="https://my.home-assistant.io/badges/config_flow_start.svg" style="max-width: 100%;"></a> to add the interation.
 
 # Services
 
@@ -80,30 +69,25 @@ The `chime_tts.say` service can play to multiple `media_player` targets and supp
 | ---------------------- | -------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | Chime Path             | `chime_path`         |           | Either an audio preset or a local audio file path to be played **before** the TTS message.                                                                           | None    |
 | End Chime Path         | `end_chime_path`     |           | Either an audio preset or a local audio file path to be played **after** the TTS message.                                                                            | None    |
-| Delay                  | `delay`              |           | Delay (ms) between chime audio and the TTS message                                                                                                                   | 450ms   |
-| Final Delay            | `final_delay`        |           | Final delay (ms) added after playback (useful for queued calls)                                                                                                                    | 0ms   |
-| Message                | `message`            | Required  | The text to be converted into TTS audio                                                                                                                              | None    |
+| Delay                  | `delay`              |           | Delay (ms) between chime audio and the TTS message.                                                                                                                  | 450ms   |
+| Final Delay            | `final_delay`        |           | Final delay (ms) added after playback (useful for queued calls).                                                                                                                   | 0ms   |
+| Message                | `message`            | Required  | The text to be converted into TTS audio.                                                                                                                             | None    |
 | TTS Platform           | `tts_platform`       | Required  | TTS platform to be used to create TTS audio. **Note:** the [TTS platforms](https://www.home-assistant.io/integrations/#text-to-speech) must be installed separately. | None    |
-| TTS Playback Speed     | `tts_playback_speed` |           | The desired playback speed for the TTS audio, anywhere from 100% - 200%                                                                                              | 100     |
-| Volume Level           | `volume_level`       |           | The volume level (between 0.0 - 1.0) to play the audio. The original value will be restored after playback.                                                          | 1       |
+| TTS Playback Speed     | `tts_playback_speed` |           | The desired playback speed for the TTS audio, anywhere from 100% - 200%.                                                                                             | 100     |
+| Volume Level           | `volume_level`       |           | The volume level (between 0.0 - 1.0) to play the audio. The original value will be restored after playback.                                                          | 1.0     |
+| Join Players           | `join_players`       |           | Play the audio simultaneously on media_players (that support speaker groups).                                                                          | False   |
 | Cache                  | `cache`              |           | Save generated audio to the cache for reuse in future service calls.                                                                                                 | False   |
+| Announce               | `announce`           |           | Stops current media during the announcement and then resume (on supported devices).                                                                                                | False   |
 
-### Additional parameters (not supported by all TTS platforms)
+#### Additional parameters (not supported by all TTS platforms)
 | Name     | Parameter  | Required? | Description                | Supported TTS Platforms                                                                                                                       | Default |
 | -------- | ---------- | --------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | Language | `language` |           | The speech language to use | [Google Translate](https://www.home-assistant.io/integrations/google_translate/), [Nabu Casa Cloud TTS](https://www.nabucasa.com/config/tts/) | None    |
 | TLD      | `tld`      |           | The dialect domain         | [Google Translate](https://www.home-assistant.io/integrations/google_translate/)                                                              | None    |
 | Gender   | `gender`   |           | Use a male or female voice | [Nabu Casa Cloud TTS](https://www.nabucasa.com/config/tts/)                                                                                   | None    |
 
-### From the UI
 
-<picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-dark.png?v=4">
-<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light.png?v=4">
-<img alt="Screenshot of the parameters for the Chime TTS say service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_from_ui-light?v=4">
-</picture>
-
-### From YAML
+### Example
 
 ```
 service: chime_tts.say
@@ -120,22 +104,12 @@ data:
 target:
   entity_id:
     - media_player.homepod_mini
+    - media_player.kitchen
 ```
 
 ## chime_tts.clear_cache
 
 The `chime_tts.clear_cache` service removes all genenrated audio cache files & referennces to cached TTS audio.
-
-### From the UI
-
-
-<picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_clear_cache_from_ui-dark.png">
-<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_clear_cache_from_ui-light.png">
-<img alt="Screenshot of the parameters for the Chime TTS clear cache service in the UI" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/call_service_clear_cache_from_ui-light.png">
-</picture>
-
-### From YAML
 
 ```
 service: chime_tts.clear_cache
