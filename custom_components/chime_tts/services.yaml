@@ -109,8 +109,8 @@ say:
         number:
           mode: box
           min: 0
-          max: 10
-          step: 0.1
+          max: 10000
+          step: 1
           unit_of_measurement: ms
     final_delay:
       name: Final Delay
@@ -122,8 +122,8 @@ say:
         number:
           mode: box
           min: 0
-          max: 10
-          step: 0.1
+          max: 10000
+          step: 1
           unit_of_measurement: ms
     message:
       name: Message
