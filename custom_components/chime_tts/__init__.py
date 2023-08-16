@@ -185,6 +185,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         media_players_dict = await async_initialize_media_players(hass, entity_ids, volume_level)
         if media_players_dict is False:
             return False
+        entity_ids = [media_player_dict['entity_id'] for media_player_dict in media_players_dict]
+        params["entity_ids"] = entity_ids
 
         # Create audio file to play on media player
         audio_dict = await async_get_playback_audio_path(params)
