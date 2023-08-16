@@ -105,11 +105,11 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                     elapsed_time += retry_interval
                     if _data[QUEUE_STATUS] is QUEUE_IDLE:
                         break
-                # Timeout
+                # Status is still 'running' after timeout
                 if _data[QUEUE_STATUS] is QUEUE_RUNNING:
                     _LOGGER.error("Timeout reached on queued job #%s.", str(service_dict["id"]))
                     dequeue_service_call()
-                    return False
+                    break
 
             # Execute the next service call in the queue
             if _data[QUEUE_STATUS] is QUEUE_IDLE:
@@ -314,14 +314,16 @@ def get_queued_service_call():
 def dequeue_service_call():
     """Remove the oldest service call from the queue."""
     if _data[QUEUE] and len(_data[QUEUE]) > 0:
+        _LOGGER.debug("Removing current queued service call.")
         _data[QUEUE].pop(0)
 
         # All queued jobs completed
         if len(_data[QUEUE]) == 0:
-            _LOGGER.debug("Queue empty. Reinitializing values.")
+            _LOGGER.debug("Queue emptied. Reinitializing values.")
             init_queue()
         else:
             # Move on to the next item (queued or in the future)
+            _LOGGER.debug("Incrementing to next queued service call.")
             _data[QUEUE_CURRENT_ID] += 1
 
 
