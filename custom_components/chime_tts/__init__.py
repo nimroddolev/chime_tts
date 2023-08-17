@@ -618,7 +618,10 @@ async def async_get_playback_audio_path(params: dict):
                                               gender,
                                               tts_playback_speed)
     if tts_audio is not None:
-        output_audio = output_audio + tts_audio
+        if output_audio is not None:
+            output_audio = output_audio + tts_audio
+        else:
+            output_audio = tts_audio
     else:
         _LOGGER.warning("Unable to generate TTS audio")
 
