@@ -698,22 +698,29 @@ def get_audio_from_path(hass: HomeAssistant,
                         delay=0,
                         audio=None):
     """Add audio from a given file path to existing audio (optional) with delay (optional)."""
+    if filepath is None or filepath == "None" or len(filepath) <= 5:
+        _LOGGER.debug('Invalid audio filepath provided')
+        return audio
+
     filepath = str(filepath)
     _LOGGER.debug('get_audio_from_path("%s", %s, audio)', filepath, str(delay))
 
-    if (filepath is None) or (filepath == "None") or (len(filepath) <= 5):
-        return audio
-
     filepath = get_file_path(hass, filepath)
-    _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
-    audio_from_path = AudioSegment.from_file(filepath)
-    if audio_from_path is not None:
-        duration = float(len(audio_from_path) / 1000.0)
-        _LOGGER.debug('   - ...audio with duration %ss retrieved successfully', str(duration))
-        if audio is None:
-            return audio_from_path
-        return (audio + (AudioSegment.silent(duration=delay) + audio_from_path))
-    _LOGGER.warning("   - ...unable to find audio from filepath")
+    if filepath is None:
+        _LOGGER.warning('Unable to find audio file')
+    else:
+        _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
+        try:
+            audio_from_path = AudioSegment.from_file(filepath)
+            if audio_from_path is not None:
+                duration = float(len(audio_from_path) / 1000.0)
+                _LOGGER.debug('   - ...audio with duration %ss retrieved successfully', str(duration))
+                if audio is None:
+                    return audio_from_path
+                return (audio + (AudioSegment.silent(duration=delay) + audio_from_path))
+            _LOGGER.warning("Unable to find audio at filepath: ", filepath)
+        except Exception as error:
+            _LOGGER.warning('Unable to extract audio from file: "%s"', error)
     return audio
 
 async def async_set_volume_level_for_media_players(hass: HomeAssistant,
