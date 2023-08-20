@@ -619,7 +619,7 @@ async def async_get_playback_audio_path(params: dict):
                                               tts_playback_speed)
     if tts_audio is not None:
         if output_audio is not None:
-            output_audio = output_audio + tts_audio
+            output_audio = output_audio + (AudioSegment.silent(duration=delay)) + tts_audio
         else:
             output_audio = tts_audio
     else:
