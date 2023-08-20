@@ -178,7 +178,7 @@ say:
             - label: "Microsoft Text-to-Speech (TTS)"
               value: "microsoft"
             - label: "Nabu Casa Cloud TTS"
-              value: "cloud_say"
+              value: "cloud"
             - label: "Pico TTS"
               value: "picotts"
             - label: "Piper"
