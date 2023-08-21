@@ -61,6 +61,7 @@ from .const import (
     # MARYTTS,
     # MICROSOFT_TTS,
     NABU_CASA_CLOUD_TTS,
+    NABU_CASA_CLOUD_TTS_OLD,
     # PICOTTS,
     # PIPER,
     # VOICE_RSS,
@@ -483,6 +484,8 @@ async def async_request_tts_audio(hass: HomeAssistant,
     if tts_platform is False or tts_platform == "":
         _LOGGER.warning("No TTS platform selected")
         return None
+    if tts_platform == NABU_CASA_CLOUD_TTS_OLD:
+        tts_platform = NABU_CASA_CLOUD_TTS
 
     # Add & validate additional parameters
     options = {}
