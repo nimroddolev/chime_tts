@@ -7,12 +7,12 @@
 
 ![Chime TTS](https://raw.githubusercontent.com/nimroddolev/chime_tts/main/icon.png)
 
-- [What is Chime TTS?](https://github.com/nimroddolev/chime_tts/blob/main/README.md#what-is-chime-tts)
-- [Features](https://github.com/nimroddolev/chime_tts/blob/main/README.md#features)
-- [Quick Start](https://github.com/nimroddolev/chime_tts/blob/main/README.md#quick-start)
-- [How Do I Use It?](https://github.com/nimroddolev/chime_tts/blob/main/README.md#how-do-i-use-it)
-- [Discussion](https://github.com/nimroddolev/chime_tts/blob/main/README.md#support-and-discussion)
-- [Show Your Support](https://github.com/nimroddolev/chime_tts/blob/main/README.md#show-your-support)
+- [What is Chime TTS?](https://github.com/nimroddolev/chime_tts/wiki/#what-is-chime-tts)
+- [Features](https://github.com/nimroddolev/chime_tts/wiki/#features)
+- [Quick Start](https://github.com/nimroddolev/chime_tts/wiki/#quick-start)
+- [How Do I Use It?](https://github.com/nimroddolev/chime_tts/wiki/#how-do-i-use-it)
+- [Discussion](https://github.com/nimroddolev/chime_tts/wiki/#support-and-discussion)
+- [Show Your Support](https://github.com/nimroddolev/chime_tts/wiki/#show-your-support)
 
 ---
 
