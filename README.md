@@ -1,15 +1,18 @@
-# Chime TTS Wiki
+# Chime TTS
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 ![version](https://img.shields.io/github/v/release/nimroddolev/chime_tts)
 [![Community Forum][forum-shield]][forum]
+<a href="https://www.buymeacoffee.com/nimroddolev"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" height="20px"></a>
+
 
 ![Chime TTS](https://raw.githubusercontent.com/nimroddolev/chime_tts/main/icon.png)
 
-- [What is Chime TTS?](#what-is-chime-tts)
-- [Features](#features)
-- [Quick Start](#quick-start)
-- [How Do I Use It?](#how-do-i-use-it)
-- [Support and Discussion](#support-and-discussion)
+- [What is Chime TTS?](https://github.com/nimroddolev/chime_tts/blob/main/README.md#what-is-chime-tts)
+- [Features](https://github.com/nimroddolev/chime_tts/blob/main/README.md#features)
+- [Quick Start](https://github.com/nimroddolev/chime_tts/blob/main/README.md#quick-start)
+- [How Do I Use It?](https://github.com/nimroddolev/chime_tts/blob/main/README.md#how-do-i-use-it)
+- [Discussion](https://github.com/nimroddolev/chime_tts/blob/main/README.md#support-and-discussion)
+- [Show Your Support](https://github.com/nimroddolev/chime_tts/blob/main/README.md#show-your-support)
 
 ---
 
