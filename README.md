@@ -1,5 +1,5 @@
 # Chime TTS
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 ![version](https://img.shields.io/github/v/release/nimroddolev/chime_tts)
 [![Community Forum][forum-shield]][forum]
 <a href="https://www.buymeacoffee.com/nimroddolev"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" height="20px"></a>
