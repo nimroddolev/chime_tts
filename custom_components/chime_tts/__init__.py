@@ -136,9 +136,23 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         _LOGGER.debug('----- Chime TTS Say Called -----')
         start_time = datetime.now()
 
+        # Parse entity_id/s
         entity_ids = service.data.get(CONF_ENTITY_ID, [])
         if isinstance(entity_ids, str):
             entity_ids = entity_ids.split(',')
+
+        # Find all media_player entities associated with device/s specified
+        device_ids = service.data.get("device_id", [])
+        if isinstance(device_ids, str):
+            device_ids = device_ids.split(',')
+        entity_registry = hass.data['entity_registry']
+        for device_id in device_ids:
+            matching_entity_ids = [
+                entity.entity_id
+                for entity in entity_registry.entities.values()
+                if entity.device_id == device_id and entity.entity_id.startswith("media_player.")
+            ]
+            entity_ids.extend(matching_entity_ids)
 
         chime_path = str(service.data.get("chime_path", ""))
         end_chime_path = str(service.data.get("end_chime_path", ""))
