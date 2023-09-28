@@ -1,0 +1,16 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Requerido: Um token de acesso prolongado",
+                "description": "Chime TTS precisa de  'long-lived token' para aceder aos ficheiros TTS de audio no teu sistema.\n\nPor Favor siga as intruções:\n\n 1. Clicar no seu perfil na parte de baixo do menu.\n 2. selecionar 'Criar token' em baixo de  'token de acesso prolongado' .\n 3. copia o texto e colar-lo aqui:",
+                "data": {
+                    "HTTP_BEARER_AUTHENTICATION": "token de acesso prolongado"
+                }
+            }
+        },
+        "error": {
+            "empty_token": "Insia um string válida."
+        }
+    }
+}
