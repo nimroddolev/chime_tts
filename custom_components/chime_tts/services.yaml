@@ -175,6 +175,8 @@ say:
               value: "watson_tts"
             - label: "MaryTTS"
               value: "marytts"
+            - label: "Microsoft Edge TTS"
+              value: "edge_tts"
             - label: "Microsoft Text-to-Speech (TTS)"
               value: "microsoft"
             - label: "Nabu Casa Cloud TTS"
@@ -235,8 +237,8 @@ say:
         boolean:
     language:
       name: Language
-      description: "The TTS language (suppored by Google Translate and Nabu Casa Cloud TTS)"
-      example: "'en' (for Google Translate) or 'en-US' (for Nabu Casa Cloud TTS)"
+      description: "The TTS language (suppored by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
+      example: "'en' (for Google Translate) or 'en-US' (for Microsoft Edge TTS and Nabu Casa Cloud TTS)"
       required: false
       selector:
         text:
