@@ -552,7 +552,7 @@ async def async_request_tts_audio(hass: HomeAssistant,
                     _LOGGER.debug("  -  ...changing TTS playback speed to %s percent",
                                 str(tts_playback_speed))
                     playback_speed = float(tts_playback_speed / 100)
-                    audio = audio.speedup(playback_speed=playback_speed)
+                    audio = audio.speedup(playback_speed=playback_speed, chunk_size=50)
                 end_time = datetime.now()
                 _LOGGER.debug(" - ...TTS audio completed in %s ms",
                             str((end_time - start_time).total_seconds() * 1000))
