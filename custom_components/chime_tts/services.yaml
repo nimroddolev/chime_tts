@@ -19,6 +19,7 @@ say:
       required: false
       selector:
         select:
+          translation_key: "chime_paths"
           multiple: false
           custom_value: true
           mode: dropdown
@@ -73,6 +74,7 @@ say:
       required: false
       selector:
         select:
+          translation_key: "chime_paths"
           multiple: false
           custom_value: true
           mode: dropdown

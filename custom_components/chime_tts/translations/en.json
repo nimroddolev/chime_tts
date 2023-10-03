@@ -1,16 +1,98 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "title": "Required: Long-Lived Access Token",
-                "description": "Chime TTS requires a 'long-lived token' to access TTS audio files from your system.\n\nPlease complete the following steps:\n\n 1. Click on your profile from the bottom of the side menu, and scroll to the bottom of your profile page.\n 2. Select 'CREATE TOKEN' under the 'Long-Lived Access Tokens' section.\n 3. Copy the token text, and paste it below:",
-                "data": {
-                    "HTTP_BEARER_AUTHENTICATION": "Long-Lived Access Token"
+    "services": {
+        "clear_cache": {
+            "name": "Clear Cache",
+            "description": "Removes all locally cached TTS audio files created from Chime TTS"
+        },
+        "say": {
+            "name": "Say",
+            "description": "Play an audio file before TTS audio",
+            "fields": {
+                "chime_path": {
+                    "name": "Chime Path",
+                    "description": "A preset or custom audio file to be played before TTS audio"
+                },
+                "end_chime_path": {
+                    "name": "End Chime Path",
+                    "description": "A preset or custom audio file to be played after TTS audio"
+                },
+                "delay": {
+                    "name": "Delay",
+                    "description": "Delay (ms) between the chime/s and the TTS message"
+                },
+                "final_delay": {
+                    "name": "Final Delay",
+                    "description": "Final delay (ms) added to the end of the audio"
+                },
+                "message": {
+                    "name": "Message",
+                    "description": "Text converted into TTS audio",
+                    "example": "Hello"
+                },
+                "tts_platform": {
+                    "name": "TTS Platform",
+                    "description": "TTS platform used to generate TTS audio"
+                },
+                "tts_playback_speed": {
+                    "name": "TTS Playback Speed",
+                    "description": "Playback speed of the TTS audio, between 100% - 200%"
+                },
+                "volume_level": {
+                    "name": "Volume Level",
+                    "description": "The volume to use when playing audio"
+                },
+                "join_players": {
+                    "name": "Join Players",
+                    "description": "Play the audio simultaneously on media_players (that support speaker groups)"
+                },
+                "cache": {
+                    "name": "Cache",
+                    "description": "Whether or not to save the generated audio file in a local cache"
+                },
+                "announce": {
+                    "name": "Announce",
+                    "description": "Stops current media during the announcement and then resume (on supported devices)"
+                },
+                "language": {
+                    "name": "Language",
+                    "description": "The TTS language (suppored by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
+                },
+                "tld": {
+                    "name": "TLD",
+                    "description": "The dialect Domain (suppored by Google Translate)"
+                },
+                "gender": {
+                    "name": "Gender",
+                    "description": "Use a male or female voice (suppored by Nabu Casa)"
                 }
             }
-        },
-        "error": {
-            "empty_token": "Please enter a valid token string."
+        }
+    },
+    "selector": {
+        "chime_paths": {
+            "options": {
+                "custom_components/chime_tts/mp3s/bells.mp3": "Bells",
+                "custom_components/chime_tts/mp3s/bells_2.mp3": "Bells 2",
+                "custom_components/chime_tts/mp3s/bright.mp3": "Bright",
+                "custom_components/chime_tts/mp3s/chirp.mp3": "Chirp",
+                "custom_components/chime_tts/mp3s/choir.mp3": "Choir",
+                "custom_components/chime_tts/mp3s/chord.mp3": "Chord",
+                "custom_components/chime_tts/mp3s/classical.mp3": "Classical",
+                "custom_components/chime_tts/mp3s/ding_dong.mp3": "Ding Dong",
+                "custom_components/chime_tts/mp3s/drumroll.mp3": "Drum Roll",
+                "custom_components/chime_tts/mp3s/dun_dun_dun.mp3": "Dun dun DUUUN!",
+                "custom_components/chime_tts/mp3s/error.mp3": "Error",
+                "custom_components/chime_tts/mp3s/glockenspiel.mp3": "Glockenspiel",
+                "custom_components/chime_tts/mp3s/hail.mp3": "Hail",
+                "custom_components/chime_tts/mp3s/marimba.mp3": "Marimba",
+                "custom_components/chime_tts/mp3s/mario_coin.mp3": "Mario Coin",
+                "custom_components/chime_tts/mp3s/microphone_tap.mp3": "Microphone Tap",
+                "custom_components/chime_tts/mp3s/tada.mp3": "Ta-da!",
+                "custom_components/chime_tts/mp3s/toast.mp3": "Toast",
+                "custom_components/chime_tts/mp3s/twenty_four.mp3": "Twenty Four",
+                "custom_components/chime_tts/mp3s/sad_trombone.mp3": "Sad Trombone",
+                "custom_components/chime_tts/mp3s/whistle.mp3": "Whistle"
+            }
         }
     }
 }
