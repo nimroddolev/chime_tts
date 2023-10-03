@@ -421,16 +421,21 @@ async def async_reset_media_players(hass: HomeAssistant,
     # Unjoin entity_ids
     if join_players is True and "joint_media_player_entity_id" in _data and _data["joint_media_player_entity_id"] is not None:
         _LOGGER.debug(" - Calling media_player.unjoin service...")
-        try:
-            await hass.services.async_call(
-                domain="media_player",
-                service=SERVICE_UNJOIN,
-                service_data={CONF_ENTITY_ID: _data["joint_media_player_entity_id"]},
-                blocking=True
-            )
-            _LOGGER.debug(" - ...done")
-        except Exception as error:
-            _LOGGER.warning(" - Error calling unjoin service: %s", error)
+        for media_player_dict in media_players_dict:
+            entity_id = media_player_dict["entity_id"]
+            entity = hass.states.get(entity_id)
+            if get_supported_feature(entity, ATTR_GROUP_MEMBERS):
+                _LOGGER.debug("   - media_player.unjoin: %s", entity_id)
+                try:
+                    await hass.services.async_call(
+                        domain="media_player",
+                        service=SERVICE_UNJOIN,
+                        service_data={CONF_ENTITY_ID: entity_id},
+                        blocking=True
+                    )
+                    _LOGGER.debug("   ...done")
+                except Exception as error:
+                    _LOGGER.warning(" - Error calling unjoin service for %s: %s", entity_id, error)
 
 
 async def async_join_media_players(hass, entity_ids):
