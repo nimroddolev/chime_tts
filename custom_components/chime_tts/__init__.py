@@ -52,7 +52,6 @@ from .const import (
     QUEUE_CURRENT_ID,
     QUEUE_LAST_ID,
     QUEUE_TIMEOUT_S,
-    JOIN_PLAYERS_ID,
     # AMAZON_POLLY,
     # BAIDU,
     # GOOGLE_CLOUD,
@@ -420,50 +419,52 @@ async def async_reset_media_players(hass: HomeAssistant,
             await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
 
     # Unjoin entity_ids
-    if join_players is True and _data["group_members_supported"] > 1:
-        _LOGGER.debug(" - Calling media_player.unjoin service for %s media_player entities...",
-                      len(entity_ids))
-        for entity_id in entity_ids:
-            entity = hass.states.get(entity_id)
-            if get_supported_feature(entity, ATTR_GROUP_MEMBERS):
-                _LOGGER.debug(" - Unjoining media plater entity: %s...", entity_id)
-                try:
-                    await hass.services.async_call(
-                        domain="media_player",
-                        service=SERVICE_UNJOIN,
-                        service_data={CONF_ENTITY_ID: entity_id},
-                        blocking=True
-                    )
-                    _LOGGER.debug(" - ...done")
-                except Exception as error:
-                    _LOGGER.warning("   - Error calling media_player.%s: %s",
-                                    SERVICE_UNJOIN, error)
+    if join_players is True and "joint_media_player_entity_id" in _data and _data["joint_media_player_entity_id"] is not None:
+        _LOGGER.debug(" - Calling media_player.unjoin service...")
+        try:
+            await hass.services.async_call(
+                domain="media_player",
+                service=SERVICE_UNJOIN,
+                service_data={CONF_ENTITY_ID: _data["joint_media_player_entity_id"]},
+                blocking=True
+            )
+            _LOGGER.debug(" - ...done")
+        except Exception as error:
+            _LOGGER.warning(" - Error calling unjoin service: %s", error)
 
 
 async def async_join_media_players(hass, entity_ids):
     """Join media players."""
-    # Call the join/unjoin service
     _LOGGER.debug(" - Calling media_player.join service for %s media_player entities...",
                   len(entity_ids))
 
+    supported_entity_ids = []
     for entity_id in entity_ids:
         entity = hass.states.get(entity_id)
         if get_supported_feature(entity, ATTR_GROUP_MEMBERS):
-            _LOGGER.debug(" - Joining media_player entity: '%s'...", entity_id)
-            try:
-                await hass.services.async_call(
-                    domain="media_player",
-                    service=SERVICE_JOIN,
-                    service_data={
-                        CONF_ENTITY_ID: JOIN_PLAYERS_ID,
-                        ATTR_GROUP_MEMBERS: [entity_id]
-                    },
-                    blocking=True
-                )
-                _LOGGER.debug(" - ...done")
-            except Exception as error:
-                _LOGGER.warning("   - Error calling media_player.%s: %s",
-                                SERVICE_JOIN, error)
+            supported_entity_ids.append(entity_id)
+
+    if len(supported_entity_ids) > 1:
+        _LOGGER.debug(" - Joining %s media_player entities...", str(len(supported_entity_ids)))
+        try:
+            _data["joint_media_player_entity_id"] = supported_entity_ids[0]
+            await hass.services.async_call(
+                domain="media_player",
+                service=SERVICE_JOIN,
+                service_data={
+                    CONF_ENTITY_ID: _data["joint_media_player_entity_id"],
+                    ATTR_GROUP_MEMBERS: supported_entity_ids
+                },
+                blocking=True
+            )
+            _LOGGER.debug(" - ...done")
+            return _data["joint_media_player_entity_id"]
+        except Exception as error:
+            _LOGGER.warning("   - Error joining media_player entities: %s", error)
+    else:
+        _LOGGER.warning(" - Only 1 media_player entity provided. Unable to join.")
+
+    return False
 
 ####################################
 ### Retrieve TTS Audio Functions ###
@@ -935,13 +936,16 @@ async def async_play_media(hass: HomeAssistant,
     if join_players is True:
         # join entity_ids as a group
         if _data["group_members_supported"] > 1:
-            await async_join_media_players(hass, entity_ids)
-            service_data[CONF_ENTITY_ID] = JOIN_PLAYERS_ID
+            joint_speakers_entity_id = await async_join_media_players(hass, entity_ids)
+            if joint_speakers_entity_id is not False:
+                service_data[CONF_ENTITY_ID] = joint_speakers_entity_id
+            else:
+                _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
         else:
             if _data["group_members_supported"] == 1:
-                _LOGGER.warning("Joint playback only supported on 1 media_player.")
+                _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
             else:
-                _LOGGER.warning("No media_player found supporting joint playback.")
+                _LOGGER.warning("Unable to join speakers. No supported media_players found.")
 
     # Play the audio
     _LOGGER.debug('Calling media_player.play_media service with data:')
