@@ -6,3 +6,16 @@ logger:
   default: info
   logs:
     custom_components.chime_tts: debug
+
+homeassistant:
+  media_dirs:
+    local: /media
+
+media_source:
+
+ffmpeg:
+  ffmpeg_bin: /usr/bin/ffmpeg
+
+tts:
+  - platform: google_translate
+    service_name: google_say

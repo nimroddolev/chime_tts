@@ -1,5 +1,6 @@
 {
     "name": "nimroddolev/chime_tts",
+    "network": "host",
     "image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.10-bullseye",
     "postCreateCommand": "scripts/setup",
     "forwardPorts": [
@@ -37,6 +38,7 @@
     },
     "remoteUser": "vscode",
     "features": {
-        "ghcr.io/devcontainers/features/rust:1": {}
+        "ghcr.io/devcontainers/features/rust:1": {},
+        "ghcr.io/devcontainers-contrib/features/ffmpeg-apt-get:1": {}
     }
 }
