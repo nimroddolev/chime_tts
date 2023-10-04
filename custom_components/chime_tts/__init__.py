@@ -45,6 +45,8 @@ from .const import (
     AUDIO_PATH_KEY,
     AUDIO_DURATION_KEY,
     TEMP_PATH,
+    MP3_PRESET_PATH,
+    MP3_PRESET_PATH_PLACEHOLDER,
     QUEUE,
     QUEUE_STATUS,
     QUEUE_IDLE,
@@ -153,8 +155,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             ]
             entity_ids.extend(matching_entity_ids)
 
-        chime_path = str(service.data.get("chime_path", ""))
-        end_chime_path = str(service.data.get("end_chime_path", ""))
+        chime_path = get_chime_path(str(service.data.get("chime_path", "")))
+        end_chime_path = get_chime_path(str(service.data.get("end_chime_path", "")))
 
         delay = float(service.data.get("delay", PAUSE_DURATION_MS))
         final_delay = float(service.data.get("final_delay", 0))
@@ -888,6 +890,13 @@ async def async_remove_cached_audio_data(hass: HomeAssistant, filepath_hash: str
 ################################
 ### Audio Filename Functions ###
 ################################
+
+def get_chime_path(chime_path: str = ""):
+    """Retrieve preset chime path if selected."""
+    _LOGGER.debug("Chime path supplied = %s", chime_path)
+    if chime_path.startswith(MP3_PRESET_PATH_PLACEHOLDER):
+        chime_path = MP3_PRESET_PATH + chime_path.replace(MP3_PRESET_PATH_PLACEHOLDER, "") + ".mp3"
+    return chime_path
 
 def get_generated_filename(params: dict):
     """Generate a unique generated filename based on specific parameters."""
