@@ -228,9 +228,9 @@ say:
       description: "Release the joined media_players after playback"
       example: "True"
       required: false
-      default: true
       selector:
         boolean:
+        default: true
     cache:
       name: Cache
       description: "Whether or not to save the generated audio file in a local cache"
