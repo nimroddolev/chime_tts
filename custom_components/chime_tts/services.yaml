@@ -230,7 +230,6 @@ say:
       required: false
       selector:
         boolean:
-        default: true
     cache:
       name: Cache
       description: "Whether or not to save the generated audio file in a local cache"
