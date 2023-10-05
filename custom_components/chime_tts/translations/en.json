@@ -43,7 +43,11 @@
                 },
                 "join_players": {
                     "name": "Join Players",
-                    "description": "Play the audio simultaneously on media_players (that support speaker groups)"
+                    "description": "Join media_players for simultaneous playback (for supported speakers)"
+                },
+                "unjoin_players": {
+                    "name": "Unjoin Players",
+                    "description": "Release the joined media_players after playback"
                 },
                 "cache": {
                     "name": "Cache",

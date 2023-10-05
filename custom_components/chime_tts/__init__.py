@@ -167,6 +167,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
         join_players = service.data.get("join_players", False)
+        unjoin_players = service.data.get("unjoin_players", False)
         cache = service.data.get("cache", False)
         announce = service.data.get("announce", False)
 
@@ -185,6 +186,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             "tts_playback_speed": tts_playback_speed,
             "volume_level": volume_level,
             "join_players": join_players,
+            "unjoin_players": unjoin_players,
             "cache": cache,
             "announce": announce,
             "language": language,
@@ -231,7 +233,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             await hass.async_add_executor_job(sleep, final_delay_s)
 
         # Reset media player volume levels once finish playing
-        await async_reset_media_players(hass, media_players_dict, volume_level, join_players)
+        await async_reset_media_players(hass, media_players_dict, volume_level, unjoin_players)
 
         # Save generated temp mp3 file to cache
         if cache is True:
@@ -406,7 +408,7 @@ async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume
 async def async_reset_media_players(hass: HomeAssistant,
                                     media_players_dict,
                                     volume_level: float,
-                                    join_players: bool):
+                                    unjoin_players: bool):
     """Reset media players back to their original states."""
     entity_ids = []
 
@@ -421,12 +423,11 @@ async def async_reset_media_players(hass: HomeAssistant,
             await async_set_volume_level(hass, entity_id, initial_volume_level, volume_level)
 
     # Unjoin entity_ids
-    if join_players is True and "joint_media_player_entity_id" in _data and _data["joint_media_player_entity_id"] is not None:
+    if unjoin_players is True and "joint_media_player_entity_id" in _data and _data["joint_media_player_entity_id"] is not None:
         _LOGGER.debug(" - Calling media_player.unjoin service...")
         for media_player_dict in media_players_dict:
-            entity_id = media_player_dict["entity_id"]
-            entity = hass.states.get(entity_id)
-            if get_supported_feature(entity, ATTR_GROUP_MEMBERS):
+            if media_player_dict["group_members_supported"] is True:
+                entity_id = media_player_dict["entity_id"]
                 _LOGGER.debug("   - media_player.unjoin: %s", entity_id)
                 try:
                     await hass.services.async_call(
