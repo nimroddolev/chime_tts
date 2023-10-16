@@ -1,11 +1,24 @@
 """Constants for chime_tts."""
 from logging import Logger, getLogger
 
+import os
+import json
+
 LOGGER: Logger = getLogger(__package__)
 
 DOMAIN = "chime_tts"
 NAME = "Chime TTS"
 DESCRIPTION = "A custom Home Assistant integration to play audio with text-to-speech (TTS) messages"
+
+# Get version number from manifest.json
+integration_dir = os.path.dirname(__file__)
+manifest_path = os.path.join(integration_dir, "manifest.json")
+if os.path.isfile(manifest_path):
+    with open(manifest_path) as manifest_file:
+        manifest_data = json.load(manifest_file)
+    VERSION = manifest_data.get("version")
+else:
+    VERSION = None
 
 SERVICE_SAY = "say"
 SERVICE_CLEAR_CACHE = "clear_cache"

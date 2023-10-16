@@ -40,6 +40,7 @@ from .const import (
     DOMAIN,
     SERVICE_SAY,
     SERVICE_CLEAR_CACHE,
+    VERSION,
     PAUSE_DURATION_MS,
     DATA_STORAGE_KEY,
     AUDIO_PATH_KEY,
@@ -134,7 +135,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
     async def async_say_execute(service):
         """Play TTS audio with local chime MP3 audio."""
-        _LOGGER.debug('----- Chime TTS Say Called -----')
+        _LOGGER.debug('----- Chime TTS Say Called. Version %s -----', VERSION)
         start_time = datetime.now()
 
         # Parse entity_id/s
