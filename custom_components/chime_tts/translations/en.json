@@ -68,6 +68,10 @@
                 "gender": {
                     "name": "Gender",
                     "description": "Use a male or female voice (suppored by Nabu Casa)"
+                },
+                "options": {
+                    "name": "Options",
+                    "description": "YAML Options to pass to TTS services (will override `tld` and `gender` fields)"
                 }
             }
         }

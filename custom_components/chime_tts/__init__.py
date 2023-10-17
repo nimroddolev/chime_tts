@@ -6,6 +6,7 @@ import time
 import os
 import hashlib
 import io
+import yaml
 
 from datetime import datetime
 from pydub import AudioSegment
@@ -138,6 +139,14 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         _LOGGER.debug('----- Chime TTS Say Called. Version %s -----', VERSION)
         start_time = datetime.now()
 
+        # Parse options YAML
+        options = {}
+        try:
+            options = yaml.safe_load(service.data.get("options", None))
+        except yaml.YAMLError as error:
+            _LOGGER.error("Error parsing options YAML: %s", error)
+            return True
+
         # Parse entity_id/s
         entity_ids = service.data.get(CONF_ENTITY_ID, [])
         if isinstance(entity_ids, str):
@@ -158,47 +167,51 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         chime_path = get_chime_path(str(service.data.get("chime_path", "")))
         end_chime_path = get_chime_path(str(service.data.get("end_chime_path", "")))
-
         delay = float(service.data.get("delay", PAUSE_DURATION_MS))
         final_delay = float(service.data.get("final_delay", 0))
-
         message = str(service.data.get("message", ""))
         tts_platform = str(service.data.get("tts_platform", ""))
         tts_playback_speed = float(service.data.get("tts_playback_speed", 100))
-
         volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
         join_players = service.data.get("join_players", False)
         unjoin_players = service.data.get("unjoin_players", False)
+        language = service.data.get("language", False)
         cache = service.data.get("cache", False)
         announce = service.data.get("announce", False)
 
-        language = service.data.get("language", None)
-        tld = service.data.get("tld", None)
-        gender = service.data.get("gender", None)
+        # TTS Options
+        for key in ["tld", "gender"]:
+            if key not in options:
+                value = service.data.get(key, None)
+                if value is not None:
+                    options[key] = value
 
         params = {
             "entity_ids": entity_ids,
             "hass": hass,
             "chime_path": chime_path,
             "end_chime_path": end_chime_path,
+            "cache": cache,
             "delay": delay,
             "message": message,
+            "language": language,
             "tts_platform": tts_platform,
             "tts_playback_speed": tts_playback_speed,
+            "announce": announce,
             "volume_level": volume_level,
             "join_players": join_players,
             "unjoin_players": unjoin_players,
-            "cache": cache,
-            "announce": announce,
-            "language": language,
-            "tld": tld,
-            "gender": gender
         }
 
-        for key, value in params.items():
-            if value is not None and len(str(value)) > 0:
-                _LOGGER.debug(' * %s = %s', key, str(value))
-        _LOGGER.debug('------')
+        for params_list in [params, options]:
+            if params_list is params:
+                _LOGGER.debug("----- General Parameters -----")
+            else:
+                _LOGGER.debug("----- TTS-Specific Params -----")
+            for key, value in params_list.items():
+                if value is not None and len(str(value)) > 0:
+                    _LOGGER.debug(' * %s = %s', key, str(value))
+        _LOGGER.debug('-----------')
 
         media_players_dict = await async_initialize_media_players(hass, entity_ids, volume_level)
         if media_players_dict is False:
@@ -207,7 +220,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         params["entity_ids"] = entity_ids
 
         # Create audio file to play on media player
-        audio_dict = await async_get_playback_audio_path(params)
+        audio_dict = await async_get_playback_audio_path(params, options)
         if validate_audio_dict(audio_dict) is False:
             return False
         _LOGGER.debug(" - audio_dict = %s", str(audio_dict))
@@ -482,20 +495,23 @@ async def async_join_media_players(hass, entity_ids):
 async def async_request_tts_audio(hass: HomeAssistant,
                                   tts_platform: str,
                                   message: str,
-                                  cache: bool,
-                                  language: str = None,
-                                  tld: str = None,
-                                  gender: str = None,
+                                  language: str,
+                                  cache: str,
+                                  options: dict,
                                   tts_playback_speed: float = 0.0):
     """Send an API request for TTS audio and return the audio file's local filepath."""
+
+    tld = options["tld"]
+    gender = options["gender"]
+
     start_time = datetime.now()
-    debug_string = 'hass, tts_platform="' + tts_platform + \
-        '", message="' + str(message) + \
-        '", cache="' + str(cache) + \
-        '", language="' + str(language) + \
-        '", tld="' + str(tld) + \
-        '", gender="' + str(gender) + \
-        '", tts_playback_speed="' + str(tts_playback_speed) + '")'
+    debug_string = 'hass, tts_platform = ' + tts_platform + \
+        ', message = ' + str(message) + \
+        ', tts_playback_speed = ' + str(tts_playback_speed) + \
+        ', cache = ' + str(cache) + \
+        ', language = ' + str(language)
+    for key in options:
+        debug_string += ', ' + key + " = " + str(options[key])
     _LOGGER.debug(
         'async_request_tts_audio(%s)', debug_string)
 
@@ -512,10 +528,11 @@ async def async_request_tts_audio(hass: HomeAssistant,
         tts_platform = NABU_CASA_CLOUD_TTS
 
     # Add & validate additional parameters
-    options = {}
 
     # Language
-    if language is not None and tts_platform in [GOOGLE_TRANSLATE, NABU_CASA_CLOUD_TTS, IBM_WATSON_TTS]:
+    if language is not None and tts_platform in [GOOGLE_TRANSLATE,
+                                                 NABU_CASA_CLOUD_TTS,
+                                                 IBM_WATSON_TTS]:
         if tts_platform is IBM_WATSON_TTS:
             options["voice"] = language
     else:
@@ -530,12 +547,14 @@ async def async_request_tts_audio(hass: HomeAssistant,
         options["tld"] = tld
     else:
         tld = None
+        del options["tld"]
 
     # Gender
     if gender is not None and tts_platform in [NABU_CASA_CLOUD_TTS]:
         options["gender"] = gender
     else:
         gender = None
+        del options["gender"]
 
     _LOGGER.debug(" - Generating TTS audio...")
     media_source_id = None
@@ -544,8 +563,8 @@ async def async_request_tts_audio(hass: HomeAssistant,
                                                                     message=message,
                                                                     engine=tts_platform,
                                                                     language=language,
-                                                                    options=options,
-                                                                    cache=cache)
+                                                                    cache=cache,
+                                                                    options=options)
     except Exception as error:
         _LOGGER.warning("   - Error calling tts.media_source.generate_media_source_id: %s",
                          error)
@@ -596,7 +615,7 @@ async def async_request_tts_audio(hass: HomeAssistant,
 ### Audio Helper Functions ###
 ##############################
 
-async def async_get_playback_audio_path(params: dict):
+async def async_get_playback_audio_path(params: dict, options: dict):
     """Create audio to play on media player entity."""
     output_audio = None
 
@@ -606,16 +625,14 @@ async def async_get_playback_audio_path(params: dict):
     delay = params["delay"]
     tts_platform = params["tts_platform"]
     tts_playback_speed = params["tts_playback_speed"]
-    cache = params["cache"]
     message = params["message"]
     language = params["language"]
-    tld = params["tld"]
-    gender = params["gender"]
+    cache = params["cache"]
     _data["delay"] = 0
     _data["is_save_generated"] = False
     _LOGGER.debug('async_get_playback_audio_path')
 
-    _data["generated_filename"] = get_generated_filename(params)
+    _data["generated_filename"] = get_generated_filename({**params, **options})
 
     # Load previously generated audio from cache
     if cache is True:
@@ -639,14 +656,13 @@ async def async_get_playback_audio_path(params: dict):
         output_audio = get_audio_from_path(hass, chime_path)
 
     # Request TTS audio file
-    tts_audio = await async_request_tts_audio(hass,
-                                              tts_platform,
-                                              message,
-                                              cache,
-                                              language,
-                                              tld,
-                                              gender,
-                                              tts_playback_speed)
+    tts_audio = await async_request_tts_audio(hass=hass,
+                                              tts_platform=tts_platform,
+                                              message=message,
+                                              language=language,
+                                              cache=cache,
+                                              options=options,
+                                              tts_playback_speed=tts_playback_speed)
     if tts_audio is not None:
         if output_audio is not None:
             output_audio = output_audio + (AudioSegment.silent(duration=delay)) + tts_audio
@@ -898,7 +914,6 @@ async def async_remove_cached_audio_data(hass: HomeAssistant, filepath_hash: str
 
 def get_chime_path(chime_path: str = ""):
     """Retrieve preset chime path if selected."""
-    _LOGGER.debug("Chime path supplied = %s", chime_path)
     if chime_path.startswith(MP3_PRESET_PATH_PLACEHOLDER):
         chime_path = MP3_PRESET_PATH + chime_path.replace(MP3_PRESET_PATH_PLACEHOLDER, "") + ".mp3"
     return chime_path

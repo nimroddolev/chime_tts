@@ -293,3 +293,11 @@ say:
               value: "male"
             - label: "Female"
               value: "female"
+    options:
+      name: Options
+      description: "YAML Options to pass to TTS services (will override `tld` and `gender` fields)"
+      example: "tld: com.au\ngender: female"
+      required: false
+      selector:
+        text:
+          multiline: True
