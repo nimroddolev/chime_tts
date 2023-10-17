@@ -136,35 +136,15 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
     async def async_say_execute(service):
         """Play TTS audio with local chime MP3 audio."""
-        _LOGGER.debug('----- Chime TTS Say Called. Version %s -----', VERSION)
         start_time = datetime.now()
 
-        # Parse options YAML
-        options = {}
-        try:
-            options = yaml.safe_load(service.data.get("options", None))
-        except yaml.YAMLError as error:
-            _LOGGER.error("Error parsing options YAML: %s", error)
+        # Parse TTS service options YAML
+        options = parse_options_yaml(service.data)
+        if options is None:
             return True
 
         # Parse entity_id/s
-        entity_ids = service.data.get(CONF_ENTITY_ID, [])
-        if isinstance(entity_ids, str):
-            entity_ids = entity_ids.split(',')
-
-        # Find all media_player entities associated with device/s specified
-        device_ids = service.data.get("device_id", [])
-        if isinstance(device_ids, str):
-            device_ids = device_ids.split(',')
-        entity_registry = hass.data['entity_registry']
-        for device_id in device_ids:
-            matching_entity_ids = [
-                entity.entity_id
-                for entity in entity_registry.entities.values()
-                if entity.device_id == device_id and entity.entity_id.startswith("media_player.")
-            ]
-            entity_ids.extend(matching_entity_ids)
-
+        entity_ids = parse_entity_ids(service.data, hass)
         chime_path = get_chime_path(str(service.data.get("chime_path", "")))
         end_chime_path = get_chime_path(str(service.data.get("end_chime_path", "")))
         delay = float(service.data.get("delay", PAUSE_DURATION_MS))
@@ -178,13 +158,6 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         language = service.data.get("language", False)
         cache = service.data.get("cache", False)
         announce = service.data.get("announce", False)
-
-        # TTS Options
-        for key in ["tld", "gender"]:
-            if key not in options:
-                value = service.data.get(key, None)
-                if value is not None:
-                    options[key] = value
 
         params = {
             "entity_ids": entity_ids,
@@ -211,7 +184,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             for key, value in params_list.items():
                 if value is not None and len(str(value)) > 0:
                     _LOGGER.debug(' * %s = %s', key, str(value))
-        _LOGGER.debug('-----------')
+        _LOGGER.debug('-------------------------------')
 
         media_players_dict = await async_initialize_media_players(hass, entity_ids, volume_level)
         if media_players_dict is False:
@@ -321,6 +294,7 @@ def init_queue():
 
 def queue_new_service_call(service):
     """Add a new service call to the queue."""
+    _LOGGER.debug('----- Chime TTS Say Called. Version %s -----', VERSION)
     service_id = _data[QUEUE_LAST_ID] + 1
     if _data[QUEUE] is None:
         _data[QUEUE] = []
@@ -1006,6 +980,41 @@ async def async_play_media(hass: HomeAssistant,
 ##############################
 ### Misc. Helper Functions ###
 ##############################
+
+def parse_options_yaml(data):
+    """Parse TTS service options YAML into dict object."""
+    try:
+        options = yaml.safe_load(data.get("options", None))
+        for key in ["tld", "gender"]:
+            if key not in options:
+                value = data.get(key, None)
+                if value is not None:
+                    options[key] = value
+        return options
+    except yaml.YAMLError as error:
+        _LOGGER.error("Error parsing options YAML: %s", error)
+    return None
+
+def parse_entity_ids(data, hass):
+    """Parse media_player entity_ids into list object."""
+    entity_ids = data.get(CONF_ENTITY_ID, [])
+    if isinstance(entity_ids, str):
+        entity_ids = entity_ids.split(',')
+
+    # Find all media_player entities associated with device/s specified
+    device_ids = data.get("device_id", [])
+    if isinstance(device_ids, str):
+        device_ids = device_ids.split(',')
+    entity_registry = hass.data['entity_registry']
+    for device_id in device_ids:
+        matching_entity_ids = [
+            entity.entity_id
+            for entity in entity_registry.entities.values()
+            if entity.device_id == device_id and entity.entity_id.startswith("media_player.")
+        ]
+        entity_ids.extend(matching_entity_ids)
+    entity_ids = list(set(entity_ids))
+    return entity_ids
 
 def get_supported_feature(entity: State, feature: str):
     """Whether a feature is supported by the media_player device."""
