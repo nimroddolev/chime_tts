@@ -346,7 +346,7 @@ async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume
         entity = hass.states.get(entity_id)
         if entity is None:
             _LOGGER.warning('Media player entity: "%s" not found', entity_id)
-            break
+            continue
         else:
             entity_found = True
 
