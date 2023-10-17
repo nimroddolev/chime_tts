@@ -140,8 +140,6 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         # Parse TTS service options YAML
         options = parse_options_yaml(service.data)
-        if options is None:
-            return True
 
         # Parse entity_id/s
         entity_ids = parse_entity_ids(service.data, hass)
@@ -475,8 +473,8 @@ async def async_request_tts_audio(hass: HomeAssistant,
                                   tts_playback_speed: float = 0.0):
     """Send an API request for TTS audio and return the audio file's local filepath."""
 
-    tld = options["tld"]
-    gender = options["gender"]
+    tld = options["tld"] if "tld" in options else None
+    gender = options["gender"] if "gender" in options else None
 
     start_time = datetime.now()
     debug_string = 'hass, tts_platform = ' + tts_platform + \
@@ -521,14 +519,16 @@ async def async_request_tts_audio(hass: HomeAssistant,
         options["tld"] = tld
     else:
         tld = None
-        del options["tld"]
+        if "tld" in options:
+            del options["tld"]
 
     # Gender
     if gender is not None and tts_platform in [NABU_CASA_CLOUD_TTS]:
         options["gender"] = gender
     else:
         gender = None
-        del options["gender"]
+        if "gender" in options:
+            del options["gender"]
 
     _LOGGER.debug(" - Generating TTS audio...")
     media_source_id = None
@@ -905,7 +905,7 @@ def get_generated_filename(params: dict):
                        "delay",
                        "tts_playback_speed"]
     for param in relevant_params:
-        if params[param] is not None and len(str(params[param])) > 0:
+        if param in params and params[param] is not None and len(str(params[param])) > 0:
             filename = filename + "-" + str(params[param])
     return filename
 
@@ -984,16 +984,19 @@ async def async_play_media(hass: HomeAssistant,
 def parse_options_yaml(data):
     """Parse TTS service options YAML into dict object."""
     try:
-        options = yaml.safe_load(data.get("options", None))
+        options_string = data.get("options", "")
+        options = yaml.safe_load(options_string)
+        if options is None:
+            return {}
         for key in ["tld", "gender"]:
-            if key not in options:
+            if options is not None and key not in options:
                 value = data.get(key, None)
                 if value is not None:
                     options[key] = value
         return options
     except yaml.YAMLError as error:
         _LOGGER.error("Error parsing options YAML: %s", error)
-    return None
+    return {}
 
 def parse_entity_ids(data, hass):
     """Parse media_player entity_ids into list object."""
