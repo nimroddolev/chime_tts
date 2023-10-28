@@ -153,7 +153,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
         join_players = service.data.get("join_players", False)
         unjoin_players = service.data.get("unjoin_players", False)
-        language = service.data.get("language", False)
+        language = service.data.get("language", None)
         cache = service.data.get("cache", False)
         announce = service.data.get("announce", False)
 
@@ -468,13 +468,10 @@ async def async_request_tts_audio(hass: HomeAssistant,
                                   tts_platform: str,
                                   message: str,
                                   language: str,
-                                  cache: str,
+                                  cache: bool,
                                   options: dict,
                                   tts_playback_speed: float = 0.0):
     """Send an API request for TTS audio and return the audio file's local filepath."""
-
-    tld = options["tld"] if "tld" in options else None
-    gender = options["gender"] if "gender" in options else None
 
     start_time = datetime.now()
     debug_string = 'hass, tts_platform = ' + tts_platform + \
@@ -511,24 +508,16 @@ async def async_request_tts_audio(hass: HomeAssistant,
         language = None
 
     # Cache
-    if cache is not None and tts_platform not in [GOOGLE_TRANSLATE, NABU_CASA_CLOUD_TTS]:
-        cache = None
+    if tts_platform not in [GOOGLE_TRANSLATE, NABU_CASA_CLOUD_TTS]:
+        cache = False
 
     # tld
-    if tld is not None and tts_platform in [GOOGLE_TRANSLATE]:
-        options["tld"] = tld
-    else:
-        tld = None
-        if "tld" in options:
-            del options["tld"]
+    if "tld" in options and tts_platform not in [GOOGLE_TRANSLATE]:
+        del options["tld"]
 
     # Gender
-    if gender is not None and tts_platform in [NABU_CASA_CLOUD_TTS]:
-        options["gender"] = gender
-    else:
-        gender = None
-        if "gender" in options:
-            del options["gender"]
+    if "gender" in options and tts_platform not in [NABU_CASA_CLOUD_TTS]:
+        del options["gender"]
 
     _LOGGER.debug(" - Generating TTS audio...")
     media_source_id = None
