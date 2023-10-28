@@ -972,20 +972,22 @@ async def async_play_media(hass: HomeAssistant,
 
 def parse_options_yaml(data):
     """Parse TTS service options YAML into dict object."""
+    options = {}
     try:
         options_string = data.get("options", "")
         options = yaml.safe_load(options_string)
         if options is None:
-            return {}
-        for key in ["tld", "gender"]:
-            if options is not None and key not in options:
-                value = data.get(key, None)
-                if value is not None:
-                    options[key] = value
-        return options
+            options = {}
     except yaml.YAMLError as error:
         _LOGGER.error("Error parsing options YAML: %s", error)
-    return {}
+        return {}
+
+    for key in ["tld", "gender"]:
+        if key not in options:
+            value = data.get(key, None)
+            if value is not None:
+                options[key] = value
+    return options
 
 def parse_entity_ids(data, hass):
     """Parse media_player entity_ids into list object."""
