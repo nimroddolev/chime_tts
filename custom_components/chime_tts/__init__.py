@@ -198,15 +198,14 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         audio_path = audio_dict[AUDIO_PATH_KEY]
         audio_duration = audio_dict[AUDIO_DURATION_KEY]
 
-        # Set volume to desired level
-        await async_set_volume_level_for_media_players(hass, media_players_dict, volume_level)
-
         # Play audio with service_data
         await async_play_media(hass,
                                audio_path,
                                entity_ids,
                                announce,
-                               join_players)
+                               join_players,
+                               media_players_dict,
+                               volume_level)
 
         # Delay by audio playback duration
         delay_duration = float(audio_duration)
@@ -909,7 +908,9 @@ async def async_play_media(hass: HomeAssistant,
                            audio_path,
                            entity_ids,
                            announce,
-                           join_players):
+                           join_players,
+                           media_players_dict,
+                           volume_level):
     """Call the media_player.play_media service."""
     service_data = {}
 
@@ -943,6 +944,9 @@ async def async_play_media(hass: HomeAssistant,
                 _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
             else:
                 _LOGGER.warning("Unable to join speakers. No supported media_players found.")
+
+    # Set volume to desired level
+    await async_set_volume_level_for_media_players(hass, media_players_dict, volume_level)
 
     # Play the audio
     _LOGGER.debug('Calling media_player.play_media service with data:')
