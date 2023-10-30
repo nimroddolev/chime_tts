@@ -361,18 +361,13 @@ async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume
         should_change_volume = False
         initial_volume_level = -1
         if volume_level >= 0:
-            volume_supported = get_supported_feature(entity, ATTR_MEDIA_VOLUME_LEVEL)
-            if volume_supported:
-                initial_volume_level = float(entity.attributes.get(
-                    ATTR_MEDIA_VOLUME_LEVEL, -1))
-                if float(initial_volume_level) == float(volume_level / 100):
-                    _LOGGER.debug("%s's volume_level is already %s",
-                                entity_id, str(volume_level))
-                else:
-                    should_change_volume = True
+            initial_volume_level = float(entity.attributes.get(
+                ATTR_MEDIA_VOLUME_LEVEL, -1))
+            if float(initial_volume_level) == float(volume_level / 100):
+                _LOGGER.debug("%s's volume_level is already %s",
+                            entity_id, str(volume_level))
             else:
-                _LOGGER.warning('Media player "%s" does not support changing volume levels',
-                                entity_id)
+                should_change_volume = True
 
         # Group members supported?
         group_member_support =  get_supported_feature(entity, ATTR_GROUP_MEMBERS)
