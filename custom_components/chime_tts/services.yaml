@@ -246,14 +246,14 @@ say:
         boolean:
     language:
       name: Language
-      description: "The TTS language (suppored by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
+      description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
       example: "'en' (for Google Translate) or 'en-US' (for Microsoft Edge TTS and Nabu Casa Cloud TTS)"
       required: false
       selector:
         text:
     tld:
       name: TLD
-      description: "The dialect Domain (suppored by Google Translate)"
+      description: "The dialect Domain (supported by Google Translate)"
       example: "com.uk"
       required: false
       selector:
