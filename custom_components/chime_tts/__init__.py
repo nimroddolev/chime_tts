@@ -27,9 +27,9 @@ from homeassistant.const import (
     SERVICE_VOLUME_SET,
     SERVICE_TURN_ON)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.core import State
+from homeassistant.core import HomeAssistant, State, ServiceResponse, SupportsResponse
 from homeassistant.helpers import storage
+from homeassistant.helpers.network import get_url
 from homeassistant.components import tts
 from homeassistant.exceptions import (
     HomeAssistantError,
@@ -40,6 +40,7 @@ from homeassistant.exceptions import (
 from .const import (
     DOMAIN,
     SERVICE_SAY,
+    SERVICE_SAY_URL,
     SERVICE_CLEAR_CACHE,
     VERSION,
     PAUSE_DURATION_MS,
@@ -151,6 +152,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         tts_platform = str(service.data.get("tts_platform", ""))
         tts_playback_speed = float(service.data.get("tts_playback_speed", 100))
         volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
+        media_players_dict = await async_initialize_media_players(hass, entity_ids, volume_level)
         join_players = service.data.get("join_players", False)
         unjoin_players = service.data.get("unjoin_players", False)
         language = service.data.get("language", None)
@@ -185,10 +187,9 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         _LOGGER.debug('-------------------------------')
 
         media_players_dict = await async_initialize_media_players(hass, entity_ids, volume_level)
-        if media_players_dict is False:
-            return False
-        entity_ids = [media_player_dict['entity_id'] for media_player_dict in media_players_dict]
-        params["entity_ids"] = entity_ids
+        if media_players_dict is not False:
+            entity_ids = [media_player_dict['entity_id'] for media_player_dict in media_players_dict]
+            params["entity_ids"] = entity_ids
 
         # Create audio file to play on media player
         audio_dict = await async_get_playback_audio_path(params, options)
@@ -199,30 +200,32 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         audio_duration = audio_dict[AUDIO_DURATION_KEY]
 
         # Play audio with service_data
-        await async_play_media(hass,
-                               audio_path,
-                               entity_ids,
-                               announce,
-                               join_players,
-                               media_players_dict,
-                               volume_level)
+        if media_players_dict is not False:
+            await async_play_media(hass,
+                                audio_path,
+                                entity_ids,
+                                announce,
+                                join_players,
+                                media_players_dict,
+                                volume_level)
 
-        # Delay by audio playback duration
-        delay_duration = float(audio_duration)
-        _LOGGER.debug("Waiting %ss for audio playback to complete...", str(delay_duration))
-        await hass.async_add_executor_job(sleep, delay_duration)
-        if final_delay > 0:
-            final_delay_s = float(final_delay/1000)
-            _LOGGER.debug("Waiting %ss for final_delay to complete...", str(final_delay_s))
-            await hass.async_add_executor_job(sleep, final_delay_s)
+            # Delay by audio playback duration
+            delay_duration = float(audio_duration)
+            _LOGGER.debug("Waiting %ss for audio playback to complete...", str(delay_duration))
+            await hass.async_add_executor_job(sleep, delay_duration)
+            if final_delay > 0:
+                final_delay_s = float(final_delay/1000)
+                _LOGGER.debug("Waiting %ss for final_delay to complete...", str(final_delay_s))
+                await hass.async_add_executor_job(sleep, final_delay_s)
 
-        # Reset media player volume levels once finish playing
-        await async_reset_media_players(hass, media_players_dict, volume_level, unjoin_players)
+            # Reset media player volume levels once finish playing
+            await async_reset_media_players(hass, media_players_dict, volume_level, unjoin_players)
 
         # Save generated temp mp3 file to cache
-        if cache is True:
+        if cache is True or len(entity_ids) == 0:
             if _data["is_save_generated"] is True:
-                _LOGGER.debug("Saving generated mp3 file to cache")
+                if cache:
+                    _LOGGER.debug("Saving generated mp3 file to cache")
                 filepath_hash = get_filename_hash(_data["generated_filename"])
                 await async_store_data(hass, filepath_hash, audio_dict)
         else:
@@ -231,12 +234,32 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         end_time = datetime.now()
         elapsed_time = (end_time - start_time).total_seconds() * 1000
+
+        # Convert URL to external
+        instance_url = str(get_url(hass))
+        external_url = (instance_url + audio_path).replace("/config", "").replace("www/", "local/")
+        _LOGGER.debug("Final URL = %s", external_url)
+
         _LOGGER.debug(
             '----- Chime TTS Say Completed in %s ms -----', str(elapsed_time))
 
-        return True
+        return external_url
 
     hass.services.async_register(DOMAIN, SERVICE_SAY, async_say)
+
+
+    ###################
+    # Say URL Service #
+    ###################
+
+    async def async_say_url(service) -> ServiceResponse:
+        """Create a public URL to an audio file generated with the `chime_tts.say` service."""
+        url = await async_say(service)
+        return {
+            "url": url
+        }
+
+    hass.services.async_register(DOMAIN, SERVICE_SAY_URL, async_say_url, supports_response=SupportsResponse.ONLY)
 
 
     #######################
@@ -335,6 +358,10 @@ def dequeue_service_call():
 
 async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume_level: float):
     """Initialize media player entities."""
+    # Service call was from chime_tts.say_url, so media_players are irrelevant
+    if len(entity_ids) == 0:
+        return False
+
     entity_found = False
     _data["group_members_supported"] = 0
     media_players_dict = []
@@ -585,6 +612,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     message = params["message"]
     language = params["language"]
     cache = params["cache"]
+    entity_ids = params["entity_ids"]
     _data["delay"] = 0
     _data["is_save_generated"] = False
     _LOGGER.debug('async_get_playback_audio_path')
@@ -641,39 +669,48 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
         # Save temporary MP3 file
         _LOGGER.debug("Creating final audio file")
-        root_path = hass.config.path("").replace("/config", "")
-        temp_folder_path = (root_path + TEMP_PATH).replace("//", "/")
-        if os.path.exists(temp_folder_path) is False:
-            _LOGGER.debug(" - Creating temp folder: %s", temp_folder_path)
+        if len(entity_ids) > 0:
+            new_audio_folder =(hass.config.path("").replace("/config", "") + TEMP_PATH).replace("//", "/")
+        else:
+            new_audio_folder = (hass.config.path("www/chime_tts/")).replace("//", "/")
+        if os.path.exists(new_audio_folder) is False:
+            _LOGGER.debug(" - Creating audio folder: %s", new_audio_folder)
             try:
-                os.makedirs(temp_folder_path)
-                _LOGGER.debug("   - Temp folder created")
+                os.makedirs(new_audio_folder)
+                _LOGGER.debug("   - Audio folder created")
             except OSError as error:
                 _LOGGER.warning("   - An error occurred while creating the folder '%s': %s",
-                                temp_folder_path, error)
+                                new_audio_folder, error)
             except Exception as error:
                 _LOGGER.warning("   - An error occurred when creating the folder: %s",
                                 error)
         else:
-            _LOGGER.debug("   - Temp folder exists: %s", temp_folder_path)
+            _LOGGER.debug("   - Audio folder exists: %s", new_audio_folder)
 
 
-        _LOGGER.debug(" - Creating temporary mp3 file...")
+        _LOGGER.debug(" - Creating mp3 file...")
         try:
-            with tempfile.NamedTemporaryFile(prefix=temp_folder_path, suffix=".mp3") as temp_obj:
+            with tempfile.NamedTemporaryFile(prefix=new_audio_folder, suffix=".mp3") as temp_obj:
                 _LOGGER.debug("   - temp_obj = %s", str(temp_obj))
-                output_path = temp_obj.name
-            _LOGGER.debug("   - Filepath = '%s'", output_path)
+                new_audio_full_path = temp_obj.name
+            _LOGGER.debug("   - Filepath = '%s'", new_audio_full_path)
             _data["is_save_generated"] = True
-            output_audio.export(output_path, format="mp3")
+
+            output_audio.export(new_audio_full_path, format="mp3")
+            if len(entity_ids) == 0:
+                new_audio_full_path = get_file_path(hass, new_audio_full_path)
+                _LOGGER.debug("   - Non-relative filepath = '%s'", new_audio_full_path)
+
             _LOGGER.debug("   - File saved successfully")
-            return {
-                AUDIO_PATH_KEY: output_path,
-                AUDIO_DURATION_KEY: duration
-            }
         except Exception as error:
             _LOGGER.warning("An error occurred when creating the temp mp3 file: %s",
                           error)
+            return None
+
+        return {
+            AUDIO_PATH_KEY: new_audio_full_path,
+            AUDIO_DURATION_KEY: duration
+        }
 
     return None
 

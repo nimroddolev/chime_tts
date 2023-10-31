@@ -21,6 +21,7 @@ else:
     VERSION = None
 
 SERVICE_SAY = "say"
+SERVICE_SAY_URL = "say_url"
 SERVICE_CLEAR_CACHE = "clear_cache"
 PAUSE_DURATION_MS = 450
 DATA_STORAGE_KEY = "chime_tts_integration_data"

@@ -301,3 +301,265 @@ say:
       selector:
         text:
           multiline: True
+
+say_url:
+  name: "Say URL"
+  description: "Returns a public URL to an audio file generated with the `chime_tts.say` service"
+  fields:
+    chime_path:
+      name: "Chime Path"
+      description: "A preset or custom audio file to be played before TTS audio"
+      example: "custom_components/chime_tts/mp3s/bells.mp3"
+      default: ""
+      required: false
+      selector:
+        select:
+          translation_key: "chime_paths"
+          multiple: false
+          custom_value: true
+          mode: dropdown
+          options:
+            - label: "Bells"
+              value: "mp3_path_placeholder-bells"
+            - label: "Bells 2"
+              value: "mp3_path_placeholder-bells_2"
+            - label: "Bright"
+              value: "mp3_path_placeholder-bright"
+            - label: "Chirp"
+              value: "mp3_path_placeholder-chirp"
+            - label: "Choir"
+              value: "mp3_path_placeholder-choir"
+            - label: "Chord"
+              value: "mp3_path_placeholder-chord"
+            - label: "Classical"
+              value: "mp3_path_placeholder-classical"
+            - label: "Ding Dong"
+              value: "mp3_path_placeholder-ding_dong"
+            - label: "Drum Roll"
+              value: "mp3_path_placeholder-drumroll"
+            - label: "Dun dun DUUUN!"
+              value: "mp3_path_placeholder-dun_dun_dun"
+            - label: "Error"
+              value: "mp3_path_placeholder-error"
+            - label: "Glockenspiel"
+              value: "mp3_path_placeholder-glockenspiel"
+            - label: "Hail"
+              value: "mp3_path_placeholder-hail"
+            - label: "Marimba"
+              value: "mp3_path_placeholder-marimba"
+            - label: "Mario Coin"
+              value: "mp3_path_placeholder-mario_coin"
+            - label: "Microphone Tap"
+              value: "mp3_path_placeholder-microphone_tap"
+            - label: "Ta-da!"
+              value: "mp3_path_placeholder-tada"
+            - label: "Toast"
+              value: "mp3_path_placeholder-toast"
+            - label: "Twenty Four"
+              value: "mp3_path_placeholder-twenty_four"
+            - label: "Sad Trombone"
+              value: "mp3_path_placeholder-sad_trombone"
+            - label: "Whistle"
+              value: "mp3_path_placeholder-whistle"
+    end_chime_path:
+      name: "End Chime Path"
+      description: "A preset or custom audio file to be played after TTS audio"
+      example: "custom_components/chime_tts/mp3s/tada.mp3"
+      default: ""
+      required: false
+      selector:
+        select:
+          translation_key: "chime_paths"
+          multiple: false
+          custom_value: true
+          mode: dropdown
+          options:
+            - label: "Bells"
+              value: "mp3_path_placeholder-bells"
+            - label: "Bells 2"
+              value: "mp3_path_placeholder-bells_2"
+            - label: "Bright"
+              value: "mp3_path_placeholder-bright"
+            - label: "Chirp"
+              value: "mp3_path_placeholder-chirp"
+            - label: "Choir"
+              value: "mp3_path_placeholder-choir"
+            - label: "Chord"
+              value: "mp3_path_placeholder-chord"
+            - label: "Classical"
+              value: "mp3_path_placeholder-classical"
+            - label: "Ding Dong"
+              value: "mp3_path_placeholder-ding_dong"
+            - label: "Drum Roll"
+              value: "mp3_path_placeholder-drumroll"
+            - label: "Dun dun DUUUN!"
+              value: "mp3_path_placeholder-dun_dun_dun"
+            - label: "Error"
+              value: "mp3_path_placeholder-error"
+            - label: "Glockenspiel"
+              value: "mp3_path_placeholder-glockenspiel"
+            - label: "Hail"
+              value: "mp3_path_placeholder-hail"
+            - label: "Marimba"
+              value: "mp3_path_placeholder-marimba"
+            - label: "Mario Coin"
+              value: "mp3_path_placeholder-mario_coin"
+            - label: "Microphone Tap"
+              value: "mp3_path_placeholder-microphone_tap"
+            - label: "Ta-da!"
+              value: "mp3_path_placeholder-tada"
+            - label: "Toast"
+              value: "mp3_path_placeholder-toast"
+            - label: "Twenty Four"
+              value: "mp3_path_placeholder-twenty_four"
+            - label: "Sad Trombone"
+              value: "mp3_path_placeholder-sad_trombone"
+            - label: "Whistle"
+              value: "mp3_path_placeholder-whistle"
+    delay:
+      name: Delay
+      description: "Delay (ms) between the chime/s and the TTS message"
+      example: 450
+      required: false
+      default: 450
+      selector:
+        number:
+          mode: box
+          min: 0
+          max: 10000
+          step: 1
+          unit_of_measurement: ms
+    final_delay:
+      name: Final Delay
+      description: "Final delay (ms) added to the end of the audio"
+      example: 100
+      required: false
+      default: 0
+      selector:
+        number:
+          mode: box
+          min: 0
+          max: 10000
+          step: 1
+          unit_of_measurement: ms
+    message:
+      name: Message
+      description: "Text converted into TTS audio"
+      example: "Hello world!"
+      required: true
+      selector:
+        text:
+    tts_platform:
+      name: "TTS Platform"
+      description: "TTS platform used to generate TTS audio"
+      example: "google_translate"
+      required: true
+      selector:
+        select:
+          multiple: false
+          custom_value: true
+          mode: dropdown
+          options:
+            - label: "Amazon Polly"
+              value: "amazon_polly"
+            - label: "Baidu"
+              value: "baidu"
+            - label: "Google Cloud"
+              value: "google_cloud"
+            - label: "Google Translate"
+              value: "google_translate"
+            - label: "IBM Watson TTS"
+              value: "watson_tts"
+            - label: "MaryTTS"
+              value: "marytts"
+            - label: "Microsoft Edge TTS"
+              value: "edge_tts"
+            - label: "Microsoft Text-to-Speech (TTS)"
+              value: "microsoft"
+            - label: "Nabu Casa Cloud TTS"
+              value: "cloud"
+            - label: "Pico TTS"
+              value: "picotts"
+            - label: "Piper"
+              value: "tts.piper"
+            - label: "VoiceRSS"
+              value: "voicerss"
+            - label: "Yandex TTS"
+              value: "yandextts"
+    tts_playback_speed:
+      name: TTS Playback Speed
+      description: "Playback speed of the TTS audio, between 100% - 200%"
+      example: 125
+      required: false
+      default: 100
+      selector:
+        number:
+          mode: slider
+          min: 100
+          max: 200
+          step: 5
+          unit_of_measurement: '%'
+    cache:
+      name: Cache
+      description: "Whether or not to save/reuse the generated audio file in a local cache"
+      example: "True"
+      required: false
+      selector:
+        boolean:
+    language:
+      name: Language
+      description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
+      example: "'en' (for Google Translate) or 'en-US' (for Microsoft Edge TTS and Nabu Casa Cloud TTS)"
+      required: false
+      selector:
+        text:
+    tld:
+      name: TLD
+      description: "The dialect Domain (supported by Google Translate)"
+      example: "com.uk"
+      required: false
+      selector:
+        select:
+          options:
+            - label: com
+              value: com
+            - label: co.uk
+              value: co.uk
+            - label: com.au
+              value: com.au
+            - label: ca
+              value: ca
+            - label: co.in
+              value: co.in
+            - label: ie
+              value: ie
+            - label: co.za
+              value: co.za
+            - label: fr
+              value: fr
+            - label: com.br
+              value: com.br
+            - label: pt
+              value: pt
+            - label: es
+              value: es
+    gender:
+      name: Gender
+      description: "Use a male or female voice (Nabu Casa)"
+      example: "'male' or 'female'"
+      required: false
+      selector:
+        select:
+          options:
+            - label: "Male"
+              value: "male"
+            - label: "Female"
+              value: "female"
+    options:
+      name: Options
+      description: "YAML Options to pass to TTS services (will override `tld` and `gender` fields)"
+      example: "tld: com.au\ngender: female"
+      required: false
+      selector:
+        text:
+          multiline: True
