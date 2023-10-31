@@ -199,7 +199,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         # Create audio file to play on media player
         audio_dict = await async_get_playback_audio_path(params, options)
-        if validate_audio_dict(audio_dict) is False:
+        if audio_dict is None:
             return False
         _LOGGER.debug(" - audio_dict = %s", str(audio_dict))
         audio_path = audio_dict[AUDIO_PATH_KEY]
@@ -215,17 +215,12 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                                 media_players_dict,
                                 volume_level)
 
-            # Delay by audio playback duration
-            delay_duration = float(audio_duration)
-            _LOGGER.debug("Waiting %ss for audio playback to complete...", str(delay_duration))
-            await hass.async_add_executor_job(sleep, delay_duration)
-            if final_delay > 0:
-                final_delay_s = float(final_delay/1000)
-                _LOGGER.debug("Waiting %ss for final_delay to complete...", str(final_delay_s))
-                await hass.async_add_executor_job(sleep, final_delay_s)
-
-            # Reset media player volume levels once finish playing
-            await async_reset_media_players(hass, media_players_dict, volume_level, unjoin_players)
+            await async_post_playback_actions(hass,
+                                              audio_duration,
+                                              final_delay,
+                                              media_players_dict,
+                                              volume_level,
+                                              unjoin_players)
 
         # Save generated temp mp3 file to cache
         if cache is True or len(entity_ids) == 0:
@@ -418,11 +413,22 @@ async def async_initialize_media_players(hass: HomeAssistant, entity_ids, volume
         return False
     return media_players_dict
 
-async def async_reset_media_players(hass: HomeAssistant,
-                                    media_players_dict,
-                                    volume_level: float,
-                                    unjoin_players: bool):
-    """Reset media players back to their original states."""
+async def async_post_playback_actions(hass: HomeAssistant,
+                                      delay_duration: float,
+                                      final_delay: float,
+                                      media_players_dict: dict,
+                                      volume_level: float,
+                                      unjoin_players: bool):
+    """"Run post playback actions."""
+    # Delay by audio playback duration
+    _LOGGER.debug("Waiting %ss for audio playback to complete...", str(delay_duration))
+    await hass.async_add_executor_job(sleep, delay_duration)
+    if final_delay > 0:
+        final_delay_s = float(final_delay/1000)
+        _LOGGER.debug("Waiting %ss for final_delay to complete...", str(final_delay_s))
+        await hass.async_add_executor_job(sleep, final_delay_s)
+
+    # Reset media players back to their original states
     entity_ids = []
 
     # Reset volume
@@ -452,7 +458,6 @@ async def async_reset_media_players(hass: HomeAssistant,
                     _LOGGER.debug("   ...done")
                 except Exception as error:
                     _LOGGER.warning(" - Error calling unjoin service for %s: %s", entity_id, error)
-
 
 async def async_join_media_players(hass, entity_ids):
     """Join media players."""
@@ -713,31 +718,23 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                           error)
             return None
 
-        return {
+        audio_dict = {
             AUDIO_PATH_KEY: new_audio_full_path,
             AUDIO_DURATION_KEY: duration
         }
+        # Validate
+        if audio_dict[AUDIO_DURATION_KEY] == 0:
+            _LOGGER.error("async_get_playback_audio_path --> Audio has no duration")
+            audio_dict = None
+        if audio_dict[AUDIO_DURATION_KEY] == 0:
+            _LOGGER.error("async_get_playback_audio_path --> Audio has no duration")
+            audio_dict = None
+        if len(audio_dict[AUDIO_PATH_KEY]) == 0:
+            _LOGGER.error("async_get_playback_audio_path --> Audio has no file path data")
+            audio_dict = None
+        return audio_dict
 
     return None
-
-def validate_audio_dict(audio_dict: any):
-    """Validate the audio_dict. Returns True if passes validation."""
-    if audio_dict is not None:
-        if AUDIO_PATH_KEY in audio_dict:
-            if AUDIO_DURATION_KEY in audio_dict:
-                audio_duration = audio_dict[AUDIO_DURATION_KEY]
-                if audio_duration == 0:
-                    _LOGGER.error("async_get_playback_audio_path --> Audio has no duration")
-                    return False
-            else:
-                _LOGGER.error("async_get_playback_audio_path --> Audio has no duration data")
-                return False
-        else:
-            _LOGGER.error("async_get_playback_audio_path --> Audio has no file path data")
-            return False
-    else:
-        _LOGGER.error("async_get_playback_audio_path --> Unable to generate audio for playback")
-        return False
 
 def get_audio_from_path(hass: HomeAssistant,
                         filepath: str,
