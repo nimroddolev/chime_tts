@@ -51,7 +51,7 @@
                 },
                 "cache": {
                     "name": "Cache",
-                    "description": "Whether or not to save the generated audio file in a local cache"
+                    "description": "Whether or not to save/reuse the generated audio file in a local cache"
                 },
                 "announce": {
                     "name": "Announce",
