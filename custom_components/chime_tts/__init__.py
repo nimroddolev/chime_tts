@@ -7,6 +7,8 @@ import os
 import hashlib
 import io
 import yaml
+import asyncio
+
 
 from datetime import datetime
 from pydub import AudioSegment
@@ -122,8 +124,12 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                     next_service = next_service_dict["service"]
                     next_service_id = next_service_dict["id"]
                     _data[QUEUE_STATUS] = QUEUE_RUNNING
-                    _LOGGER.debug("Executing queued job #%s", str(next_service_id))
-                    result = await async_say_execute(next_service)
+                    try:
+                        _LOGGER.debug("Executing queued job #%s", str(next_service_id))
+                        task = asyncio.create_task(async_say_execute(next_service))
+                        result = await asyncio.wait_for(task, 15)
+                    except asyncio.TimeoutError:
+                        _LOGGER.error("Service call to chime_tts.say timed out after 15 seconds.")
                     dequeue_service_call()
                     _data[QUEUE_STATUS] = QUEUE_IDLE
                     return result
