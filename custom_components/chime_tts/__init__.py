@@ -127,9 +127,9 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                     try:
                         _LOGGER.debug("Executing queued job #%s", str(next_service_id))
                         task = asyncio.create_task(async_say_execute(next_service))
-                        result = await asyncio.wait_for(task, 15)
+                        result = await asyncio.wait_for(task, QUEUE_TIMEOUT_S)
                     except asyncio.TimeoutError:
-                        _LOGGER.error("Service call to chime_tts.say timed out after 15 seconds.")
+                        _LOGGER.error("Service call to chime_tts.say timed out after %s seconds.", QUEUE_TIMEOUT_S)
                     dequeue_service_call()
                     _data[QUEUE_STATUS] = QUEUE_IDLE
                     return result
