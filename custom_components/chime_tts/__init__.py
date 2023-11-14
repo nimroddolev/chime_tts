@@ -1038,6 +1038,8 @@ async def async_play_media(hass: HomeAssistant,
         _LOGGER.warning("Error while rendering Jinja2 template.")
     except HomeAssistantError as err:
         _LOGGER.warning("An error occurred: %s", str(err))
+        if err is "Unknown source directory":
+            _LOGGER.warning("Please check that media directories are enabled in your configuration.yaml file, e.g:\r\n\r\nmedia_source:\r\n media_dirs:\r\n   local: /media")
     except Exception as err:
         _LOGGER.warning("An unexpected error occurred: %s", str(err))
 
