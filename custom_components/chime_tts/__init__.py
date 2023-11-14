@@ -59,19 +59,20 @@ from .const import (
     QUEUE_CURRENT_ID,
     QUEUE_LAST_ID,
     QUEUE_TIMEOUT_S,
-    # AMAZON_POLLY,
-    # BAIDU,
-    # GOOGLE_CLOUD,
+    AMAZON_POLLY,
+    BAIDU,
+    GOOGLE_CLOUD,
     GOOGLE_TRANSLATE,
     IBM_WATSON_TTS,
-    # MARYTTS,
-    # MICROSOFT_TTS,
+    MARYTTS,
+    MICROSOFT_EDGE_TTS,
+    MICROSOFT_TTS,
     NABU_CASA_CLOUD_TTS,
     NABU_CASA_CLOUD_TTS_OLD,
-    # PICOTTS,
-    # PIPER,
-    # VOICE_RSS,
-    # YANDEX_TTS,
+    PICOTTS,
+    PIPER,
+    VOICE_RSS,
+    YANDEX_TTS,
 )
 _LOGGER = logging.getLogger(__name__)
 _data = {}
@@ -561,8 +562,11 @@ async def async_request_tts_audio(hass: HomeAssistant,
                                                                     cache=cache,
                                                                     options=options)
     except Exception as error:
-        _LOGGER.warning("   - Error calling tts.media_source.generate_media_source_id: %s",
-                         error)
+        if error is "Invalid TTS provider selected":
+            missing_tts_platform_warning(tts_platform)
+        else:
+            _LOGGER.warning("   - Error calling tts.media_source.generate_media_source_id: %s",
+                            error)
         return None
     if media_source_id is None:
         _LOGGER.warning(" - ...unable to generate media_source_id")
@@ -604,6 +608,39 @@ async def async_request_tts_audio(hass: HomeAssistant,
     else:
         _LOGGER.warning(" - ...audio_data generation failed")
     return None
+
+def missing_tts_platform_warning(tts_platform):
+    """Write a TTS platform specific debug warning when the TTS platform has not been configured."""
+    tts_platform_name = tts_platform
+    if tts_platform is AMAZON_POLLY:
+        tts_platform_name = "Amazon Polly"
+    if tts_platform is BAIDU:
+        tts_platform_name = "Baidu"
+    if tts_platform is GOOGLE_CLOUD:
+        tts_platform_name = "Google Cloud"
+    if tts_platform is GOOGLE_TRANSLATE:
+        tts_platform_name = "Google Translate"
+    if tts_platform is IBM_WATSON_TTS:
+        tts_platform_name = "Watson TTS"
+    if tts_platform is MARYTTS:
+        tts_platform_name = "MaryTTS"
+    if tts_platform is MICROSOFT_TTS:
+        tts_platform_name = "Microsoft TTS"
+    if tts_platform is MICROSOFT_EDGE_TTS:
+        tts_platform_name = "Microsoft Edge TTS"
+    if tts_platform is NABU_CASA_CLOUD_TTS:
+        tts_platform_name = "Nabu Casa Cloud TTS"
+    if tts_platform is NABU_CASA_CLOUD_TTS_OLD:
+        tts_platform_name = "Nabu Casa Cloud TTS"
+    if tts_platform is PICOTTS:
+        tts_platform_name = "PicoTTS"
+    if tts_platform is PIPER:
+        tts_platform_name = "Piper"
+    if tts_platform is VOICE_RSS:
+        tts_platform_name = "VoiceRSS"
+    if tts_platform is YANDEX_TTS:
+        tts_platform_name = "Yandex TTS"
+    _LOGGER.warning("The %s platform was not found. Please check that it has been configured correctly: https://www.home-assistant.io/integrations/#text-to-speech", tts_platform_name)
 
 
 ##############################
