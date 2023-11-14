@@ -208,20 +208,20 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         # Play audio with service_data
         if media_players_dict is not False:
-            await async_play_media(hass,
-                                audio_path,
-                                entity_ids,
-                                announce,
-                                join_players,
-                                media_players_dict,
-                                volume_level)
-
-            await async_post_playback_actions(hass,
-                                              audio_duration,
-                                              final_delay,
-                                              media_players_dict,
-                                              volume_level,
-                                              unjoin_players)
+            play_result = await async_play_media(hass,
+                                                 audio_path,
+                                                 entity_ids,
+                                                 announce,
+                                                 join_players,
+                                                 media_players_dict,
+                                                 volume_level)
+            if play_result is True:
+                await async_post_playback_actions(hass,
+                                                  audio_duration,
+                                                  final_delay,
+                                                  media_players_dict,
+                                                  volume_level,
+                                                  unjoin_players)
 
         # Save generated temp mp3 file to cache
         if cache is True or len(entity_ids) == 0:
@@ -1032,6 +1032,8 @@ async def async_play_media(hass: HomeAssistant,
             True,
         )
         _LOGGER.debug('...media_player.play_media completed.')
+        return True
+
     except ServiceNotFound:
         _LOGGER.warning("Service 'play_media' not found.")
     except TemplateError:
@@ -1042,6 +1044,8 @@ async def async_play_media(hass: HomeAssistant,
             _LOGGER.warning("Please check that media directories are enabled in your configuration.yaml file, e.g:\r\n\r\nmedia_source:\r\n media_dirs:\r\n   local: /media")
     except Exception as err:
         _LOGGER.warning("An unexpected error occurred: %s", str(err))
+
+    return False
 
 
 ##############################
