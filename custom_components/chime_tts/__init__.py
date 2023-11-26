@@ -12,6 +12,8 @@ import asyncio
 
 from datetime import datetime
 from pydub import AudioSegment
+from .config_flow import ChimeTTSOptionsFlowHandler
+
 
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_CONTENT_ID,
@@ -58,6 +60,7 @@ from .const import (
     QUEUE_RUNNING,
     QUEUE_CURRENT_ID,
     QUEUE_LAST_ID,
+    QUEUE_TIMEOUT,
     QUEUE_TIMEOUT_S,
     AMAZON_POLLY,
     BAIDU,
@@ -80,7 +83,7 @@ _data = {}
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up an entry."""
     await async_init_stored_data(hass)
-    init_queue()
+    init_queue(config_entry)
     config_entry.async_on_unload(
         config_entry.add_update_listener(async_reload_entry))
     return True
@@ -98,6 +101,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         while _data[QUEUE_CURRENT_ID] < service_dict["id"]:
             # Wait for the previous service call to end
+            timeout = _data[QUEUE_TIMEOUT]
             if _data[QUEUE_STATUS] is QUEUE_RUNNING:
                 # Wait until current job is completed
                 previous_jobs_count = int(int(service_dict["id"]) - int(_data[QUEUE_CURRENT_ID]))
@@ -105,7 +109,6 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                               "a" if previous_jobs_count == 1 else str(previous_jobs_count),
                               "s" if previous_jobs_count > 1 else "")
                 retry_interval = 0.1
-                timeout = QUEUE_TIMEOUT_S * 60 * 1000
                 elapsed_time = 0
                 while elapsed_time < timeout and _data[QUEUE_STATUS] is QUEUE_RUNNING:
                     await hass.async_add_executor_job(sleep, retry_interval)
@@ -128,9 +131,9 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                     try:
                         _LOGGER.debug("Executing queued job #%s", str(next_service_id))
                         task = asyncio.create_task(async_say_execute(next_service))
-                        result = await asyncio.wait_for(task, QUEUE_TIMEOUT_S)
+                        result = await asyncio.wait_for(task, timeout)
                     except asyncio.TimeoutError:
-                        _LOGGER.error("Service call to chime_tts.say timed out after %s seconds.", QUEUE_TIMEOUT_S)
+                        _LOGGER.error("Service call to chime_tts.say timed out after %s seconds.", timeout)
                     dequeue_service_call()
                     _data[QUEUE_STATUS] = QUEUE_IDLE
                     return result
@@ -307,12 +310,14 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
 ### QUEUE ###
 #############
 
-def init_queue():
+def init_queue(config_entry):
     """Initialize variables and states for queuing service calls."""
     _data[QUEUE] = []
     _data[QUEUE_STATUS] = QUEUE_IDLE
     _data[QUEUE_CURRENT_ID] = -1
     _data[QUEUE_LAST_ID] = -1
+    _data[QUEUE_TIMEOUT] = config_entry.options.get("timeout", QUEUE_TIMEOUT_S)
+
 
 def queue_new_service_call(service):
     """Add a new service call to the queue."""
@@ -1135,3 +1140,19 @@ def get_file_path(hass: HomeAssistant, p_filepath: str=""):
             _LOGGER.debug("File not found at path: %s", filepath)
 
     return ret_value
+
+##################################################
+
+# Integration options
+
+async def async_options(self, entry: ConfigEntry):
+    """Present current configuration options for modification."""
+    # Create an options flow handler and return it
+    _LOGGER.debug(f"In __init__.py --> async_options(). ConfigEntry = $s", str(entry))
+    return ChimeTTSOptionsFlowHandler(entry)
+
+async def async_options_updated(self, entry: ConfigEntry):
+    """Handle updated configuration options and update the entry."""
+    # Update the queue timeout value
+    init_queue(entry)
+

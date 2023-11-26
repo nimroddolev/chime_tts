@@ -102,5 +102,16 @@
                 "mp3_path_placeholder-whistle": "Whistle"
             }
         }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Chime TTS Configuration",
+                "description": "Set the amount of time (in seconds) before `chime_tts.say` calls are timed out.",
+                "data": {
+                    "timeout": "Timeout (in seconds)"
+                }
+            }
+        }
     }
 }
