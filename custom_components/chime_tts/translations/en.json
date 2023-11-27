@@ -107,7 +107,7 @@
         "step": {
             "init": {
                 "title": "Chime TTS Options",
-                "description": "Configure `chime_tts.say` service call timeout duration and media folder paths:",
+                "description": "Configure the `chime_tts.say` and `chime_tts.say_url` services:",
                 "data": {
                     "queue_timeout": "Service call timeout (in seconds)",
                     "media_dir": "Media folder (default 'local')",
