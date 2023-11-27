@@ -65,7 +65,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 description_placeholders=user_input,
                 last_step=True
             )
-        
+
         # User input is valid, update the options
         LOGGER.debug("Updating configuration...")
         # user_input = None
