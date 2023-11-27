@@ -51,17 +51,26 @@ from .const import (
     DATA_STORAGE_KEY,
     AUDIO_PATH_KEY,
     AUDIO_DURATION_KEY,
-    TEMP_PATH,
+
+    ROOT_PATH_KEY,
+    DEFAULT_TEMP_PATH_KEY,
+    TEMP_PATH_KEY,
+    DEFAULT_WWW_PATH_KEY,
+    WWW_PATH_KEY,
+    WWW_PATH_DEFAULT,
+    MEDIA_DIR_KEY,
+    MEDIA_DIR_DEFAULT,
+
     MP3_PRESET_PATH,
     MP3_PRESET_PATH_PLACEHOLDER,
     QUEUE,
-    QUEUE_STATUS,
+    QUEUE_STATUS_KEY,
     QUEUE_IDLE,
     QUEUE_RUNNING,
-    QUEUE_CURRENT_ID,
+    QUEUE_CURRENT_ID_KEY,
     QUEUE_LAST_ID,
-    QUEUE_TIMEOUT,
-    QUEUE_TIMEOUT_S,
+    QUEUE_TIMEOUT_KEY,
+    QUEUE_TIMEOUT_DEFAULT,
     AMAZON_POLLY,
     BAIDU,
     GOOGLE_CLOUD,
@@ -83,7 +92,8 @@ _data = {}
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up an entry."""
     await async_init_stored_data(hass)
-    init_queue(config_entry)
+    init_queue()
+    update_configuration(config_entry, hass)
     config_entry.async_on_unload(
         config_entry.add_update_listener(async_reload_entry))
     return True
@@ -97,51 +107,13 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     ###############
 
     async def async_say(service):
-        service_dict = queue_new_service_call(service)
+        result = await start_queue(service, hass, async_say_execute)
+        # Service call completed successfully
 
-        while _data[QUEUE_CURRENT_ID] < service_dict["id"]:
-            # Wait for the previous service call to end
-            timeout = _data[QUEUE_TIMEOUT]
-            if _data[QUEUE_STATUS] is QUEUE_RUNNING:
-                # Wait until current job is completed
-                previous_jobs_count = int(int(service_dict["id"]) - int(_data[QUEUE_CURRENT_ID]))
-                _LOGGER.debug("...waiting for %s previous queued job%s to complete.",
-                              "a" if previous_jobs_count == 1 else str(previous_jobs_count),
-                              "s" if previous_jobs_count > 1 else "")
-                retry_interval = 0.1
-                elapsed_time = 0
-                while elapsed_time < timeout and _data[QUEUE_STATUS] is QUEUE_RUNNING:
-                    await hass.async_add_executor_job(sleep, retry_interval)
-                    elapsed_time += retry_interval
-                    if _data[QUEUE_STATUS] is QUEUE_IDLE:
-                        break
-                # Status is still 'running' after timeout
-                if _data[QUEUE_STATUS] is QUEUE_RUNNING:
-                    _LOGGER.error("Timeout reached on queued job #%s.", str(service_dict["id"]))
-                    dequeue_service_call()
-                    break
+        if result is not False:
+            return result
 
-            # Execute the next service call in the queue
-            if _data[QUEUE_STATUS] is QUEUE_IDLE:
-                next_service_dict = get_queued_service_call()
-                if next_service_dict is not None:
-                    next_service = next_service_dict["service"]
-                    next_service_id = next_service_dict["id"]
-                    _data[QUEUE_STATUS] = QUEUE_RUNNING
-                    try:
-                        _LOGGER.debug("Executing queued job #%s", str(next_service_id))
-                        task = asyncio.create_task(async_say_execute(next_service))
-                        result = await asyncio.wait_for(task, timeout)
-                    except asyncio.TimeoutError:
-                        _LOGGER.error("Service call to chime_tts.say timed out after %s seconds.", timeout)
-                    dequeue_service_call()
-                    _data[QUEUE_STATUS] = QUEUE_IDLE
-                    return result
-                _LOGGER.error("Unable to get next queued service call.")
-            else:
-                _LOGGER.error("Unable to run queued service call.")
-
-        # Remove failed service call from queue
+        # Service call failed
         dequeue_service_call()
         return False
 
@@ -259,6 +231,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
     async def async_say_url(service) -> ServiceResponse:
         """Create a public URL to an audio file generated with the `chime_tts.say` service."""
+        _LOGGER.debug("Calling chime_tts.say_url...")
         url = await async_say(service)
         return {
             "url": url
@@ -310,14 +283,12 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
 ### QUEUE ###
 #############
 
-def init_queue(config_entry):
+def init_queue():
     """Initialize variables and states for queuing service calls."""
     _data[QUEUE] = []
-    _data[QUEUE_STATUS] = QUEUE_IDLE
-    _data[QUEUE_CURRENT_ID] = -1
+    _data[QUEUE_STATUS_KEY] = QUEUE_IDLE
+    _data[QUEUE_CURRENT_ID_KEY] = -1
     _data[QUEUE_LAST_ID] = -1
-    _data[QUEUE_TIMEOUT] = config_entry.options.get("timeout", QUEUE_TIMEOUT_S)
-
 
 def queue_new_service_call(service):
     """Add a new service call to the queue."""
@@ -356,8 +327,60 @@ def dequeue_service_call():
         else:
             # Move on to the next item (queued or in the future)
             _LOGGER.debug("Incrementing to next queued service call.")
-            _data[QUEUE_CURRENT_ID] += 1
+            _data[QUEUE_CURRENT_ID_KEY] += 1
 
+async def start_queue(service, hass, say_execute_callback):
+    """Start the queue for chime_tts.say service calls."""
+    service_dict = queue_new_service_call(service)
+
+    # Start queue
+    while _data[QUEUE_CURRENT_ID_KEY] < service_dict["id"]:
+        # Wait for the previous service call to end
+        timeout = _data[QUEUE_TIMEOUT_KEY]
+        if _data[QUEUE_STATUS_KEY] is QUEUE_RUNNING:
+            # Wait until current job is completed
+            previous_jobs_count = int(int(service_dict["id"]) - int(_data[QUEUE_CURRENT_ID_KEY]))
+            _LOGGER.debug("...waiting for %s previous queued job%s to complete.",
+                            "a" if previous_jobs_count == 1 else str(previous_jobs_count),
+                            "s" if previous_jobs_count > 1 else "")
+            retry_interval = 0.1
+            elapsed_time = 0
+            while elapsed_time < timeout and _data[QUEUE_STATUS_KEY] is QUEUE_RUNNING:
+                await hass.async_add_executor_job(sleep, retry_interval)
+                elapsed_time += retry_interval
+                if _data[QUEUE_STATUS_KEY] is QUEUE_IDLE:
+                    break
+            # Status is still 'running' after timeout
+            if _data[QUEUE_STATUS_KEY] is QUEUE_RUNNING:
+                _LOGGER.error("Timeout reached on queued job #%s.", str(service_dict["id"]))
+                dequeue_service_call()
+                break
+
+        # Execute the next service call in the queue
+        if _data[QUEUE_STATUS_KEY] is QUEUE_IDLE:
+            next_service_dict = get_queued_service_call()
+            if next_service_dict is not None:
+                next_service = next_service_dict["service"]
+                next_service_id = next_service_dict["id"]
+                _data[QUEUE_STATUS_KEY] = QUEUE_RUNNING
+                result = None
+                try:
+                    _LOGGER.debug("Executing queued job #%s", str(next_service_id))
+                    task = asyncio.create_task(say_execute_callback(next_service))
+                    result = await asyncio.wait_for(task, timeout)
+                except asyncio.TimeoutError:
+                    _LOGGER.error("Service call to chime_tts.say timed out after %s seconds.", timeout)
+                dequeue_service_call()
+                _data[QUEUE_STATUS_KEY] = QUEUE_IDLE
+                return result
+            _LOGGER.error("Unable to get next queued service call.")
+        else:
+            _LOGGER.error("Unable to run queued service call.")
+
+        # Service call failed
+        dequeue_service_call()
+        _data[QUEUE_STATUS_KEY] = QUEUE_IDLE
+        return False
 
 ##############################
 ### Media Player Functions ###
@@ -567,7 +590,7 @@ async def async_request_tts_audio(hass: HomeAssistant,
                                                                     cache=cache,
                                                                     options=options)
     except Exception as error:
-        if error is "Invalid TTS provider selected":
+        if error == "Invalid TTS provider selected":
             missing_tts_platform_warning(tts_platform)
         else:
             _LOGGER.warning("   - Error calling tts.media_source.generate_media_source_id: %s",
@@ -720,14 +743,17 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         _LOGGER.debug(" - Final audio created:")
         _LOGGER.debug("   - Duration = %ss", duration)
 
-        # Save temporary MP3 file
-        _LOGGER.debug("Creating final audio file")
+        # Save MP3 file
         if len(entity_ids) > 0:
-            new_audio_folder =(hass.config.path("").replace("/config", "") + TEMP_PATH).replace("//", "/")
+            # Use the temp folder path
+            new_audio_folder = _data[TEMP_PATH_KEY]
         else:
-            new_audio_folder = (hass.config.path("www/chime_tts/")).replace("//", "/")
+            # Use the public folder path (i.e chime_tts.say_url service calls)
+            new_audio_folder = _data[WWW_PATH_KEY]
+        _LOGGER.debug("new_audio_folder = %s", new_audio_folder)
+
         if os.path.exists(new_audio_folder) is False:
-            _LOGGER.debug(" - Creating audio folder: %s", new_audio_folder)
+            _LOGGER.debug("Creating audio folder: %s", new_audio_folder)
             try:
                 os.makedirs(new_audio_folder)
                 _LOGGER.debug("   - Audio folder created")
@@ -738,18 +764,17 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 _LOGGER.warning("   - An error occurred when creating the folder: %s",
                                 error)
         else:
-            _LOGGER.debug("   - Audio folder exists: %s", new_audio_folder)
+            _LOGGER.debug("Audio folder exists: %s", new_audio_folder)
 
 
         _LOGGER.debug(" - Creating mp3 file...")
         try:
             with tempfile.NamedTemporaryFile(prefix=new_audio_folder, suffix=".mp3") as temp_obj:
-                _LOGGER.debug("   - temp_obj = %s", str(temp_obj))
                 new_audio_full_path = temp_obj.name
             _LOGGER.debug("   - Filepath = '%s'", new_audio_full_path)
             _data["is_save_generated"] = True
-
             output_audio.export(new_audio_full_path, format="mp3")
+
             if len(entity_ids) == 0:
                 new_audio_full_path = get_file_path(hass, new_audio_full_path)
                 _LOGGER.debug("   - Non-relative filepath = '%s'", new_audio_full_path)
@@ -995,12 +1020,13 @@ async def async_play_media(hass: HomeAssistant,
     service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE_MUSIC
 
     # media_content_id
-    media_path = audio_path
-    media_index = media_path.find("/media/")
-    if media_index != -1:
-        media_prefix = "media-source://media_source/local/"
-        media_path = media_prefix + media_path[media_index + len("/media/"):]
-    service_data[ATTR_MEDIA_CONTENT_ID] = media_path
+    media_source_path = audio_path
+    media_folder = "/media/"
+    media_folder_index_in_path = media_source_path.find(media_folder)
+    if media_folder_index_in_path != -1:
+        media_path = media_source_path[media_folder_index_in_path + len(media_folder):]
+        media_source_path = "media-source://media_source/<media_dir>/<path>".replace("<media_dir>", _data[MEDIA_DIR_KEY]).replace("<path>", media_path)
+    service_data[ATTR_MEDIA_CONTENT_ID] = media_source_path
 
     # announce
     if announce is True:
@@ -1045,7 +1071,7 @@ async def async_play_media(hass: HomeAssistant,
         _LOGGER.warning("Error while rendering Jinja2 template.")
     except HomeAssistantError as err:
         _LOGGER.warning("An error occurred: %s", str(err))
-        if err is "Unknown source directory":
+        if err == "Unknown source directory":
             _LOGGER.warning("Please check that media directories are enabled in your configuration.yaml file, e.g:\r\n\r\nmedia_source:\r\n media_dirs:\r\n   local: /media")
     except Exception as err:
         _LOGGER.warning("An unexpected error occurred: %s", str(err))
@@ -1148,11 +1174,46 @@ def get_file_path(hass: HomeAssistant, p_filepath: str=""):
 async def async_options(self, entry: ConfigEntry):
     """Present current configuration options for modification."""
     # Create an options flow handler and return it
-    _LOGGER.debug(f"In __init__.py --> async_options(). ConfigEntry = $s", str(entry))
+    _LOGGER.debug("In __init__.py --> async_options(). ConfigEntry = $s", str(entry))
     return ChimeTTSOptionsFlowHandler(entry)
 
 async def async_options_updated(self, entry: ConfigEntry):
     """Handle updated configuration options and update the entry."""
     # Update the queue timeout value
-    init_queue(entry)
+    update_configuration(entry, None)
 
+def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
+    """Update configurable values."""
+
+    # Prepare default paths
+    if hass is not None:
+        _data[ROOT_PATH_KEY] = hass.config.path("").replace("/config", "")
+
+    def get_full_path(relative_path):
+        """Generate a full path to the relative path."""
+        return (_data[ROOT_PATH_KEY] + relative_path).replace("//", "/")
+
+    if DEFAULT_TEMP_PATH_KEY not in _data:
+        _data[DEFAULT_TEMP_PATH_KEY] = get_full_path("/media/sounds/temp/chime_tts/")
+
+    if DEFAULT_WWW_PATH_KEY not in _data:
+        _data[DEFAULT_WWW_PATH_KEY] = get_full_path("/www/")
+
+    # Set configurable values
+    options = config_entry.options
+
+    # Queue timeout
+    _data[QUEUE_TIMEOUT_KEY] = options.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT)
+
+    # Media folder (default local)
+    _data[MEDIA_DIR_KEY] = options.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)
+
+    # www / local folder path
+    _data[WWW_PATH_KEY] = get_full_path(options.get(WWW_PATH_KEY, WWW_PATH_DEFAULT))
+
+    # Temp folder path
+    _data[TEMP_PATH_KEY] = get_full_path(options.get(TEMP_PATH_KEY, _data[DEFAULT_TEMP_PATH_KEY]))
+
+    # Debug summary
+    for keyString in [QUEUE_TIMEOUT_KEY, TEMP_PATH_KEY, WWW_PATH_KEY, MEDIA_DIR_KEY]:
+        _LOGGER.debug("%s = %s", keyString, _data[keyString])

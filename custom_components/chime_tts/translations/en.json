@@ -106,10 +106,13 @@
     "options": {
         "step": {
             "init": {
-                "title": "Chime TTS Configuration",
-                "description": "Set the amount of time (in seconds) before `chime_tts.say` calls are timed out.",
+                "title": "Chime TTS Options",
+                "description": "Configure `chime_tts.say` service call timeout duration and media folder paths:",
                 "data": {
-                    "timeout": "Timeout (in seconds)"
+                    "queue_timeout": "Service call timeout (in seconds)",
+                    "media_dir": "Media folder (default 'local')",
+                    "temp_path": "Tempoary mp3 folder path",
+                    "www_path": "Public mp3 folder path (used in `chime_tts.say_url`)"
                 }
             }
         }

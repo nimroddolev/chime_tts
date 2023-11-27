@@ -1,6 +1,15 @@
 """Adds config flow for Chime TTS."""
 from homeassistant import config_entries
-from .const import DOMAIN, QUEUE_TIMEOUT_S
+from .const import(
+    DOMAIN,
+    QUEUE_TIMEOUT_KEY,
+    QUEUE_TIMEOUT_DEFAULT,
+    MEDIA_DIR_KEY,
+    MEDIA_DIR_DEFAULT,
+    TEMP_PATH_KEY,
+    TEMP_PATH_DEFAULT,
+    WWW_PATH_KEY,
+    WWW_PATH_DEFAULT)
 import voluptuous as vol
 import logging
 LOGGER = logging.getLogger(__name__)
@@ -33,14 +42,19 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         """Initialize the options flow."""
 
-        # Define the options schema
-        # config_options = dict(self.config_entry.options)
-        config_data = dict(self.config_entry.data)
-
         options_schema = vol.Schema({
-            vol.Required("timeout",
-                         default=self.get_data_key_value("timeout", QUEUE_TIMEOUT_S) # type: ignore
-            ): str
+            vol.Required(QUEUE_TIMEOUT_KEY,
+                         default=self.get_data_key_value(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT) # type: ignore
+            ): int,
+            vol.Required(MEDIA_DIR_KEY,
+                         default=self.get_data_key_value(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT) # type: ignore
+            ): str,
+            vol.Required(TEMP_PATH_KEY,
+                         default=self.get_data_key_value(TEMP_PATH_KEY, TEMP_PATH_DEFAULT) # type: ignore
+            ): str,
+            vol.Optional(WWW_PATH_KEY,
+                         default=self.get_data_key_value(WWW_PATH_KEY, WWW_PATH_DEFAULT) # type: ignore
+            ): str,
         })
 
         # Show the form with the current options
