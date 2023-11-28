@@ -62,7 +62,8 @@ from .const import (
     MEDIA_DIR_DEFAULT,
 
     MP3_PRESET_PATH,
-    MP3_PRESET_PATH_PLACEHOLDER,
+    MP3_PRESETS,
+    MP3_PRESET_PATH_PLACEHOLDER, # DEPRECATED
     QUEUE,
     QUEUE_STATUS_KEY,
     QUEUE_IDLE,
@@ -978,8 +979,9 @@ async def async_remove_cached_audio_data(hass: HomeAssistant, filepath_hash: str
 
 def get_chime_path(chime_path: str = ""):
     """Retrieve preset chime path if selected."""
-    if chime_path.startswith(MP3_PRESET_PATH_PLACEHOLDER):
-        chime_path = MP3_PRESET_PATH + chime_path.replace(MP3_PRESET_PATH_PLACEHOLDER, "") + ".mp3"
+    chime_path = chime_path.replace(MP3_PRESET_PATH_PLACEHOLDER, "") # Remove prefix (deprecated in v0.9.1)
+    if chime_path in MP3_PRESETS:
+        chime_path = MP3_PRESET_PATH + chime_path + ".mp3"
     return chime_path
 
 def get_generated_filename(params: dict):
