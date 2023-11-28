@@ -77,7 +77,7 @@ Chime TTS adds three new services to your Home Assistant instance: `chime_tts.sa
 
 ## Configuration
 
-![chime_tts_options](https://github.com/nimroddolev/chime_tts/assets/1849295/9e590556-3cc4-47b0-833d-a70ef1c19ecd)
+![chime_tts_options](https://github.com/nimroddolev/chime_tts/assets/1849295/b3bfaf0c-57d3-41fd-a1cd-bc57a8119e51)
 
 You can customise the following elements for the `chime_tts.say` and `chime_tts.say_url` services:
 
