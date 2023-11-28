@@ -1191,7 +1191,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
 
     def get_full_path(relative_path):
         """Generate a full path to the relative path."""
-        return (_data[ROOT_PATH_KEY] + relative_path).replace("//", "/")
+        return (_data[ROOT_PATH_KEY] + "/" + relative_path + "/").replace("//", "/").replace("//", "/")
 
     if DEFAULT_TEMP_PATH_KEY not in _data:
         _data[DEFAULT_TEMP_PATH_KEY] = get_full_path("/media/sounds/temp/chime_tts/")
