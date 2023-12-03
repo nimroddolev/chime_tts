@@ -479,7 +479,7 @@ async def async_post_playback_actions(
     volume_level: float,
     unjoin_players: bool,
 ):
-    """ "Run post playback actions."""
+    """Run post playback actions."""
     # Delay by audio playback duration
     _LOGGER.debug("Waiting %ss for audio playback to complete...", str(delay_duration))
     await hass.async_add_executor_job(sleep, delay_duration)
