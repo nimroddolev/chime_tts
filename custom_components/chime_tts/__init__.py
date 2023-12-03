@@ -1328,6 +1328,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
 
     def get_full_path(relative_path):
         """Generate a full path to the relative path."""
+        relative_path = relative_path.replace(_data[ROOT_PATH_KEY], "")
         return (
             (_data[ROOT_PATH_KEY] + "/" + relative_path + "/")
             .replace("//", "/")
