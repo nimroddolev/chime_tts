@@ -58,7 +58,9 @@ from .const import (
     MEDIA_DIR_DEFAULT,
     MP3_PRESET_PATH,
     MP3_PRESETS,
-    MP3_PRESET_PATH_PLACEHOLDER, # DEPRECATED
+    MP3_PRESET_CUSTOM_PREFIX,
+    MP3_PRESET_CUSTOM_KEY,
+    MP3_PRESET_PATH_PLACEHOLDER,  # DEPRECATED
     QUEUE,
     QUEUE_STATUS_KEY,
     QUEUE_IDLE,
@@ -164,9 +166,9 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             else:
                 _LOGGER.debug("----- TTS-Specific Params -----")
             for key, value in params_list.items():
-                if value is not None and len(str(value)) > 0:
-                    _LOGGER.debug(' * %s = %s', key, str(value))
-        _LOGGER.debug('-------------------------------')
+                if value is not None:
+                    _LOGGER.debug(" * %s = %s", key, str(value))
+        _LOGGER.debug("-------------------------------")
 
         media_players_dict = await async_initialize_media_players(
             hass, entity_ids, volume_level
@@ -896,7 +898,7 @@ def get_audio_from_path(hass: HomeAssistant, filepath: str, delay=0, audio=None)
 
     filepath = get_file_path(hass, filepath)
     if filepath is None:
-        _LOGGER.warning('Unable to find audio file')
+        _LOGGER.warning("Unable to find audio file %s", filepath)
     else:
         _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
         try:
@@ -1067,8 +1069,21 @@ def get_chime_path(chime_path: str = ""):
     """Retrieve preset chime path if selected."""
     # Remove prefix (prefix deprecated in v0.9.1)
     chime_path = chime_path.replace(MP3_PRESET_PATH_PLACEHOLDER, "")
+
+    # Preset chime mp3 path?
     if chime_path in MP3_PRESETS:
-        chime_path = MP3_PRESET_PATH + chime_path + ".mp3"
+        return MP3_PRESET_PATH + chime_path + ".mp3"
+
+    # Custom chime mp3 path?
+    if chime_path.startswith(MP3_PRESET_CUSTOM_PREFIX):
+        custom_path = _data[MP3_PRESET_CUSTOM_KEY][chime_path]
+        if custom_path == "":
+            _LOGGER.warning(
+                "No mp3 file path specified for custom chime path `Custom #%s`. Please add the mp3 file path to the Chime TTS configuration.",
+                chime_path.replace(MP3_PRESET_CUSTOM_PREFIX, ""),
+            )
+        return custom_path
+
     return chime_path
 
 
@@ -1342,6 +1357,19 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
         options.get(TEMP_PATH_KEY, _data[DEFAULT_TEMP_PATH_KEY])
     )
 
+    # Custom chime paths
+    _data[MP3_PRESET_CUSTOM_KEY] = {}
+    for i in range(5):
+        key = MP3_PRESET_CUSTOM_PREFIX + str(i + 1)
+        value = options.get(key, "")
+        _data[MP3_PRESET_CUSTOM_KEY][key] = value
+
     # Debug summary
-    for keyString in [QUEUE_TIMEOUT_KEY, TEMP_PATH_KEY, WWW_PATH_KEY, MEDIA_DIR_KEY]:
-        _LOGGER.debug("%s = %s", keyString, _data[keyString])
+    for keyString in [
+        QUEUE_TIMEOUT_KEY,
+        TEMP_PATH_KEY,
+        WWW_PATH_KEY,
+        MEDIA_DIR_KEY,
+        MP3_PRESET_CUSTOM_KEY,
+    ]:
+        _LOGGER.debug("%s = %s", keyString, str(_data[keyString]))

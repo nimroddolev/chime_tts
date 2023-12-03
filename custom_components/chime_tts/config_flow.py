@@ -10,9 +10,12 @@ from .const import (
     TEMP_PATH_DEFAULT,
     WWW_PATH_KEY,
     WWW_PATH_DEFAULT,
+    MP3_PRESET_CUSTOM_PREFIX,
 )
 import voluptuous as vol
 import logging
+import os
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -66,8 +69,39 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                     WWW_PATH_KEY,
                     default=self.get_data_key_value(WWW_PATH_KEY, WWW_PATH_DEFAULT),  # type: ignore
                 ): str,
+                vol.Optional(
+                    MP3_PRESET_CUSTOM_PREFIX + str(1),
+                    default=self.get_data_key_value(
+                        MP3_PRESET_CUSTOM_PREFIX + str(1), ""
+                    ),  # type: ignore
+                ): str,
+                vol.Optional(
+                    MP3_PRESET_CUSTOM_PREFIX + str(2),
+                    default=self.get_data_key_value(
+                        MP3_PRESET_CUSTOM_PREFIX + str(2), ""
+                    ),  # type: ignore
+                ): str,
+                vol.Optional(
+                    MP3_PRESET_CUSTOM_PREFIX + str(3),
+                    default=self.get_data_key_value(
+                        MP3_PRESET_CUSTOM_PREFIX + str(3), ""
+                    ),  # type: ignore
+                ): str,
+                vol.Optional(
+                    MP3_PRESET_CUSTOM_PREFIX + str(4),
+                    default=self.get_data_key_value(
+                        MP3_PRESET_CUSTOM_PREFIX + str(4), ""
+                    ),  # type: ignore
+                ): str,
+                vol.Optional(
+                    MP3_PRESET_CUSTOM_PREFIX + str(5),
+                    default=self.get_data_key_value(
+                        MP3_PRESET_CUSTOM_PREFIX + str(5), ""
+                    ),  # type: ignore
+                ): str,
             }
         )
+        _errors = {}
 
         # Show the form with the current options
         if user_input is None:
@@ -76,6 +110,32 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 data_schema=options_schema,
                 description_placeholders=user_input,
                 last_step=True,
+            )
+
+        # Validation
+
+        # Timeout
+        if user_input[QUEUE_TIMEOUT_KEY] < 0:
+            _errors["base"] = "timeout"
+            _errors[QUEUE_TIMEOUT_KEY] = "timeout_sub"
+
+        # Validate custom chime mp3 paths
+        for i in range(5):
+            key = MP3_PRESET_CUSTOM_PREFIX + str(i + 1)
+            value = user_input.get(key, "")
+            if value != "":
+                # File not found?
+                if os.path.exists(value) is False:
+                    # Set main error message
+                    if _errors == {}:
+                        _errors["base"] = "invalid_chime_paths"
+                    else:
+                        _errors["base"] = "multiple"
+                    # Add specific custom chime error
+                    _errors[key] = key
+        if _errors != {}:
+            return self.async_show_form(
+                step_id="init", data_schema=options_schema, errors=_errors
             )
 
         # User input is valid, update the options

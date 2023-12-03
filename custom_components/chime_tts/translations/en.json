@@ -99,22 +99,43 @@
                 "toast": "Toast",
                 "twenty_four": "Twenty Four",
                 "sad_trombone": "Sad Trombone",
-                "whistle": "Whistle"
+                "whistle": "Whistle",
+                "custom_chime_path_1": "Custom 1",
+                "custom_chime_path_2": "Custom 2",
+                "custom_chime_path_3": "Custom 3",
+                "custom_chime_path_4": "Custom 4",
+                "custom_chime_path_5": "Custom 5"
             }
         }
     },
     "options": {
         "step": {
             "init": {
-                "title": "Chime TTS Options",
-                "description": "Configure the `chime_tts.say` and `chime_tts.say_url` services:",
+                "title": "Chime TTS Configuration",
+                "description": "Configure the `chime_tts.say` and `chime_tts.say_url` services and add custom chime mp3 paths:",
                 "data": {
                     "queue_timeout": "Service call timeout (in seconds)",
                     "media_dir": "Media folder (default 'local')",
                     "temp_path": "Tempoary mp3 folder path",
-                    "www_path": "Public mp3 folder path (used in `chime_tts.say_url`)"
+                    "www_path": "Public mp3 folder path (used in `chime_tts.say_url`)",
+                    "custom_chime_path_1": "'Custom 1' chime local mp3 file path",
+                    "custom_chime_path_2": "'Custom 2' chime local mp3 file path",
+                    "custom_chime_path_3": "'Custom 3' chime local mp3 file path",
+                    "custom_chime_path_4": "'Custom 4' chime local mp3 file path",
+                    "custom_chime_path_5": "'Custom 5' chime local mp3 file path"
                 }
             }
+        },
+        "error": {
+            "timeout": "The timeout value is invalid",
+            "timeout_sub": "Enter a valid timeout duration",
+            "multiple": "Multiple issues detected",
+            "invalid_chime_paths": "Invalid custom chime path detected",
+            "custom_chime_path_1": "'Custom 1' file path invalid",
+            "custom_chime_path_2": "'Custom 2' file path invalid",
+            "custom_chime_path_3": "'Custom 3' file path invalid",
+            "custom_chime_path_4": "'Custom 4' file path invalid",
+            "custom_chime_path_5": "'Custom 5' file path invalid"
         }
     }
 }
