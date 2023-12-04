@@ -65,7 +65,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                     TEMP_PATH_KEY,
                     default=self.get_data_key_value(TEMP_PATH_KEY, TEMP_PATH_DEFAULT),  # type: ignore
                 ): str,
-                vol.Optional(
+                vol.Required(
                     WWW_PATH_KEY,
                     default=self.get_data_key_value(WWW_PATH_KEY, WWW_PATH_DEFAULT),  # type: ignore
                 ): str,

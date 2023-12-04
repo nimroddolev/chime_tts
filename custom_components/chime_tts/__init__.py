@@ -51,6 +51,7 @@ from .const import (
     ROOT_PATH_KEY,
     DEFAULT_TEMP_PATH_KEY,
     TEMP_PATH_KEY,
+    TEMP_PATH_DEFAULT,
     DEFAULT_WWW_PATH_KEY,
     WWW_PATH_KEY,
     WWW_PATH_DEFAULT,
@@ -1328,18 +1329,20 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
 
     def get_full_path(relative_path):
         """Generate a full path to the relative path."""
-        relative_path = relative_path.replace(_data[ROOT_PATH_KEY], "")
-        return (
+        if _data[ROOT_PATH_KEY] != "/":
+            relative_path = relative_path.replace(_data[ROOT_PATH_KEY], "")
+        relative_path = (
             (_data[ROOT_PATH_KEY] + "/" + relative_path + "/")
             .replace("//", "/")
             .replace("//", "/")
         )
+        return relative_path
 
     if DEFAULT_TEMP_PATH_KEY not in _data:
-        _data[DEFAULT_TEMP_PATH_KEY] = get_full_path("/media/sounds/temp/chime_tts/")
+        _data[DEFAULT_TEMP_PATH_KEY] = get_full_path(TEMP_PATH_DEFAULT)
 
     if DEFAULT_WWW_PATH_KEY not in _data:
-        _data[DEFAULT_WWW_PATH_KEY] = get_full_path("/www/")
+        _data[DEFAULT_WWW_PATH_KEY] = get_full_path(WWW_PATH_DEFAULT)
 
     # Set configurable values
     options = config_entry.options
