@@ -107,7 +107,10 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     # Say Service #
     ###############
 
-    async def async_say(service):
+    async def async_say(service, is_say_url = False):
+        if is_say_url == False:
+            _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
+
         result = await start_queue(service, hass, async_say_execute)
         # Service call completed successfully
 
@@ -224,16 +227,20 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         end_time = datetime.now()
         elapsed_time = (end_time - start_time).total_seconds() * 1000
 
-        # Convert URL to external
-        instance_url = str(get_url(hass))
-        external_url = (
-            (instance_url + audio_path).replace("/config", "").replace("www/", "local/")
-        )
-        _LOGGER.debug("Final URL = %s", external_url)
+        # Convert URL to external for chime_tts.say_url
+        if entity_ids == None or len(entity_ids) == 0:
+            instance_url = str(get_url(hass))
+            external_url = (
+                (instance_url + audio_path).replace("/config", "").replace("www/", "local/")
+            )
+            _LOGGER.debug("Final URL = %s", external_url)
+
+            _LOGGER.debug("----- Chime TTS Say URL Completed in %s ms -----", str(elapsed_time))
+            return external_url
+
 
         _LOGGER.debug("----- Chime TTS Say Completed in %s ms -----", str(elapsed_time))
 
-        return external_url
 
     hass.services.async_register(DOMAIN, SERVICE_SAY, async_say)
 
@@ -243,8 +250,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
     async def async_say_url(service) -> ServiceResponse:
         """Create a public URL to an audio file generated with the `chime_tts.say` service."""
-        _LOGGER.debug("Calling chime_tts.say_url...")
-        url = await async_say(service)
+        _LOGGER.debug("----- Chime TTS Say URL Called. Version %s -----", VERSION)
+        url = await async_say(service, True)
         return {"url": url}
 
     hass.services.async_register(
@@ -305,7 +312,6 @@ def init_queue():
 
 def queue_new_service_call(service):
     """Add a new service call to the queue."""
-    _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
     service_id = _data[QUEUE_LAST_ID] + 1
     if _data[QUEUE] is None:
         _data[QUEUE] = []
@@ -859,7 +865,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
             _data["is_save_generated"] = True
             output_audio.export(new_audio_full_path, format="mp3")
 
-            if len(entity_ids) == 0:
+            if entity_ids == None or len(entity_ids) == 0:
                 new_audio_full_path = get_file_path(hass, new_audio_full_path)
                 _LOGGER.debug("   - Non-relative filepath = '%s'", new_audio_full_path)
 
@@ -1140,10 +1146,11 @@ async def async_play_media(
     media_folder = "/media/"
     media_folder_index_in_path = media_source_path.find(media_folder)
     if media_folder_index_in_path != -1:
-        media_path = media_source_path[media_folder_index_in_path + len(media_folder) :]
-        media_source_path = "media-source://media_source/<media_dir>/<path>".replace(
+        media_path = media_source_path[media_folder_index_in_path + len(media_folder) :].replace("//", "/")
+        media_source_path = "media-source://media_source/<media_dir>/<media_path>".replace(
             "<media_dir>", _data[MEDIA_DIR_KEY]
-        ).replace("<path>", media_path)
+        ).replace(
+            "<media_path>", media_path)
     service_data[ATTR_MEDIA_CONTENT_ID] = media_source_path
 
     # announce
