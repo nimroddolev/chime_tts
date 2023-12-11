@@ -267,14 +267,14 @@ say:
     language:
       name: Language
       description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
-      example: "'en' (for Google Translate) or 'en-US' (for Microsoft Edge TTS and Nabu Casa Cloud TTS)"
+      example: "en"
       required: false
       selector:
         text:
     tld:
       name: TLD
       description: "The dialect Domain (supported by Google Translate)"
-      example: "com.uk"
+      example: "com.au"
       required: false
       selector:
         select:
@@ -304,7 +304,7 @@ say:
     gender:
       name: Gender
       description: "Use a male or female voice (Nabu Casa)"
-      example: "'male' or 'female'"
+      example: "female"
       required: false
       selector:
         select:
@@ -549,14 +549,14 @@ say_url:
     language:
       name: Language
       description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
-      example: "'en' (for Google Translate) or 'en-US' (for Microsoft Edge TTS and Nabu Casa Cloud TTS)"
+      example: "en"
       required: false
       selector:
         text:
     tld:
       name: TLD
       description: "The dialect Domain (supported by Google Translate)"
-      example: "com.uk"
+      example: "com.au"
       required: false
       selector:
         select:
@@ -586,7 +586,7 @@ say_url:
     gender:
       name: Gender
       description: "Use a male or female voice (Nabu Casa)"
-      example: "'male' or 'female'"
+      example: "female'"
       required: false
       selector:
         select:
