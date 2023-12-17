@@ -236,8 +236,11 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             _LOGGER.debug("Final URL = %s", external_url)
 
             _LOGGER.debug("----- Chime TTS Say URL Completed in %s ms -----", str(elapsed_time))
-            return external_url
 
+            return {
+                "url": external_url,
+                "duration": audio_duration
+            }
 
         _LOGGER.debug("----- Chime TTS Say Completed in %s ms -----", str(elapsed_time))
 
@@ -251,8 +254,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     async def async_say_url(service) -> ServiceResponse:
         """Create a public URL to an audio file generated with the `chime_tts.say` service."""
         _LOGGER.debug("----- Chime TTS Say URL Called. Version %s -----", VERSION)
-        url = await async_say(service, True)
-        return {"url": url}
+        return await async_say(service, True)
 
     hass.services.async_register(
         DOMAIN, SERVICE_SAY_URL, async_say_url, supports_response=SupportsResponse.ONLY
