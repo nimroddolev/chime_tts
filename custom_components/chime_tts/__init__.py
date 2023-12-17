@@ -214,7 +214,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                 )
 
         # Save generated temp mp3 file to cache
-        if cache is True or len(entity_ids) == 0:
+        if cache is True or entity_ids is None or len(entity_ids) == 0:
             if _data["is_save_generated"] is True:
                 if cache:
                     _LOGGER.debug("Saving generated mp3 file to cache")
@@ -829,7 +829,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         _LOGGER.debug("   - Duration = %ss", duration)
 
         # Save MP3 file
-        if len(entity_ids) > 0:
+        if entity_ids and len(entity_ids) > 0:
             # Use the temp folder path
             new_audio_folder = _data[TEMP_PATH_KEY]
         else:
@@ -1334,22 +1334,11 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
     if hass is not None:
         _data[ROOT_PATH_KEY] = hass.config.path("").replace("/config", "")
 
-    def get_full_path(relative_path):
-        """Generate a full path to the relative path."""
-        if _data[ROOT_PATH_KEY] != "/":
-            relative_path = relative_path.replace(_data[ROOT_PATH_KEY], "")
-        relative_path = (
-            (_data[ROOT_PATH_KEY] + "/" + relative_path + "/")
-            .replace("//", "/")
-            .replace("//", "/")
-        )
-        return relative_path
-
     if DEFAULT_TEMP_PATH_KEY not in _data:
-        _data[DEFAULT_TEMP_PATH_KEY] = get_full_path(TEMP_PATH_DEFAULT)
+        _data[DEFAULT_TEMP_PATH_KEY] = hass.config.path(TEMP_PATH_DEFAULT)
 
     if DEFAULT_WWW_PATH_KEY not in _data:
-        _data[DEFAULT_WWW_PATH_KEY] = get_full_path(WWW_PATH_DEFAULT)
+        _data[DEFAULT_WWW_PATH_KEY] = hass.config.path(WWW_PATH_DEFAULT)
 
     # Set configurable values
     options = config_entry.options
@@ -1361,10 +1350,12 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
     _data[MEDIA_DIR_KEY] = options.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)
 
     # www / local folder path
-    _data[WWW_PATH_KEY] = get_full_path(options.get(WWW_PATH_KEY, WWW_PATH_DEFAULT))
+    _data[WWW_PATH_KEY] = hass.config.path(
+        options.get(WWW_PATH_KEY, WWW_PATH_DEFAULT)
+    )
 
     # Temp folder path
-    _data[TEMP_PATH_KEY] = get_full_path(
+    _data[TEMP_PATH_KEY] = hass.config.path(
         options.get(TEMP_PATH_KEY, _data[DEFAULT_TEMP_PATH_KEY])
     )
 
