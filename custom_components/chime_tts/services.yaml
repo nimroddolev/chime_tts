@@ -320,11 +320,11 @@ say:
       required: false
       selector:
         text:
-          multiline: True
+          multiline: true
 
 say_url:
   name: "Say URL"
-  description: "Returns a public URL to an audio file generated with the `chime_tts.say` service"
+  description: "Creates a public URL to an audio file generated with the `chime_tts.say` service"
   fields:
     chime_path:
       name: "Chime Path"
@@ -586,7 +586,7 @@ say_url:
     gender:
       name: Gender
       description: "Use a male or female voice (Nabu Casa)"
-      example: "female'"
+      example: "female"
       required: false
       selector:
         select:
@@ -602,4 +602,4 @@ say_url:
       required: false
       selector:
         text:
-          multiline: True
+          multiline: true
