@@ -1,4 +1,4 @@
-"""Audio helper functions for Chime TTS"""
+"""Audio helper functions for Chime TTS."""
 
 import subprocess
 import shutil
@@ -7,8 +7,8 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 
-class ChimeTTSFAudioHelper():
-    """Audio helper functions for Chime TTS"""
+class ChimeTTSFAudioHelper:
+    """Audio helper functions for Chime TTS."""
 
     def ffmpeg_convert_from_file(file_path, ffmpeg_args):
         """Convert audio stream with FFmpeg and provided arguments."""

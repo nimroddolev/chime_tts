@@ -109,7 +109,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     ###############
 
     async def async_say(service, is_say_url = False):
-        if is_say_url == False:
+        if is_say_url is False:
             _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
 
         result = await start_queue(service, hass, async_say_execute)
@@ -173,7 +173,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             else:
                 _LOGGER.debug("----- TTS-Specific Params -----")
             for key, value in params_list.items():
-                if value is not None and key is not "hass":
+                if value is not None and key != "hass":
                     _LOGGER.debug(" * %s = %s", key, str(value))
         _LOGGER.debug("-------------------------------")
 
@@ -231,7 +231,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         elapsed_time = (end_time - start_time).total_seconds() * 1000
 
         # Convert URL to external for chime_tts.say_url
-        if entity_ids == None or len(entity_ids) == 0:
+        if entity_ids is None or len(entity_ids) == 0:
             instance_url = str(get_url(hass))
             external_url = (
                 (instance_url + audio_path).replace("/config", "").replace("www/", "local/")
@@ -880,7 +880,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                     output_audio = converted_output_audio
 
             # Check URL (chime_tts.say_url)
-            if entity_ids == None or len(entity_ids) == 0:
+            if entity_ids is None or len(entity_ids) == 0:
                 relative_path = new_audio_full_path
                 new_audio_full_path = get_file_path(hass, new_audio_full_path)
                 if relative_path != new_audio_full_path:
