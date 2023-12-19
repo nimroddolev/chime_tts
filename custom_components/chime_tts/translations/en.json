@@ -80,7 +80,7 @@
             }
         },
         "say_url": {
-            "name": "Say",
+            "name": "Say URL",
             "description": "Creates a public URL to an audio file generated with the `chime_tts.say` service",
             "fields": {
                 "chime_path": {
