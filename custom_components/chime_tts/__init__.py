@@ -865,19 +865,21 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 prefix=new_audio_folder, suffix=".mp3"
             ) as temp_obj:
                 new_audio_full_path = temp_obj.name
-            _LOGGER.debug("  - Filepath = '%s'", new_audio_full_path)
-            _data["is_save_generated"] = True
             output_audio.export(new_audio_full_path, format="mp3")
 
             # Perform FFmpeg conversion
             if ffmpeg_args:
                 _LOGGER.debug("  - Performing FFmpeg audio conversion...")
                 converted_output_audio = ChimeTTSFAudioHelper.ffmpeg_convert_from_file(new_audio_full_path, ffmpeg_args)
-                if converted_output_audio == output_audio:
-                    _LOGGER.debug("  - ...FFmpeg audio conversion failed.")
-                else:
+                if converted_output_audio is not False:
                     _LOGGER.debug("  - ...FFmpeg audio conversion completed.")
-                    output_audio = converted_output_audio
+                    new_audio_full_path = converted_output_audio
+                else:
+                    _LOGGER.warning("  - ...FFmpeg audio conversion failed. Using unconverted audio file")
+
+            _LOGGER.debug("  - Filepath = '%s'", new_audio_full_path)
+            _data["is_save_generated"] = True
+
 
             # Check URL (chime_tts.say_url)
             if entity_ids is None or len(entity_ids) == 0:
