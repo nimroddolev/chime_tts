@@ -264,6 +264,13 @@ say:
       required: false
       selector:
         boolean:
+    ffmpeg_args:
+      name: FFmpeg Arguments
+      description: "FFmpeg argument list to convert the generated audio"
+      example: "-ac 2 -codec:a libmp3lame -b:a 48k -ar 16000"
+      required: false
+      selector:
+        text:
     language:
       name: Language
       description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
@@ -546,6 +553,13 @@ say_url:
       required: false
       selector:
         boolean:
+    ffmpeg_args:
+      name: FFmpeg Arguments
+      description: "FFmpeg argument list to convert the generated audio"
+      example: "-ac 2 -codec:a libmp3lame -b:a 48k -ar 16000"
+      required: false
+      selector:
+        text:
     language:
       name: Language
       description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"

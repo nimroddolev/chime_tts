@@ -14,6 +14,7 @@ from datetime import datetime
 from pydub import AudioSegment
 from .config_flow import ChimeTTSOptionsFlowHandler
 
+from .audio_helper import ChimeTTSFAudioHelper
 
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_CONTENT_ID,
@@ -146,6 +147,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         language = service.data.get("language", None)
         cache = service.data.get("cache", False)
         announce = service.data.get("announce", False)
+        ffmpeg_args = service.data.get("ffmpeg_args", False)
 
         params = {
             "entity_ids": entity_ids,
@@ -162,6 +164,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             "volume_level": volume_level,
             "join_players": join_players,
             "unjoin_players": unjoin_players,
+            "ffmpeg_args": ffmpeg_args,
         }
 
         for params_list in [params, options]:
@@ -188,7 +191,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         audio_dict = await async_get_playback_audio_path(params, options)
         if audio_dict is None:
             return False
-        _LOGGER.debug(" - audio_dict = %s", str(audio_dict))
+        _LOGGER.debug("  - audio_dict = %s", str(audio_dict))
         audio_path = audio_dict[AUDIO_PATH_KEY]
         audio_duration = audio_dict[AUDIO_DURATION_KEY]
 
@@ -773,6 +776,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     language = params["language"]
     cache = params["cache"]
     entity_ids = params["entity_ids"]
+    ffmpeg_args = params["ffmpeg_args"]
     _data["delay"] = 0
     _data["is_save_generated"] = False
     _LOGGER.debug("async_get_playback_audio_path")
@@ -865,6 +869,17 @@ async def async_get_playback_audio_path(params: dict, options: dict):
             _data["is_save_generated"] = True
             output_audio.export(new_audio_full_path, format="mp3")
 
+            # Perform FFmpeg conversion
+            if ffmpeg_args:
+                _LOGGER.debug("  - Performing FFmpeg audio conversion...")
+                converted_output_audio = ChimeTTSFAudioHelper.ffmpeg_convert_from_file(new_audio_full_path, ffmpeg_args)
+                if converted_output_audio == output_audio:
+                    _LOGGER.debug("  - ...FFmpeg audio conversion failed.")
+                else:
+                    _LOGGER.debug("  - ...FFmpeg audio conversion completed.")
+                    output_audio = converted_output_audio
+
+            # Check URL (chime_tts.say_url)
             if entity_ids == None or len(entity_ids) == 0:
                 relative_path = new_audio_full_path
                 new_audio_full_path = get_file_path(hass, new_audio_full_path)

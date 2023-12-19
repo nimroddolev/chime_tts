@@ -72,6 +72,10 @@
                 "options": {
                     "name": "Options",
                     "description": "YAML Options to pass to TTS services (will override `tld` and `gender` fields)"
+                },
+                "ffmpeg_args": {
+                    "name": "FFmpeg Arguments",
+                    "description": "FFmpeg argument list to convert the generated audio"
                 }
             }
         },
