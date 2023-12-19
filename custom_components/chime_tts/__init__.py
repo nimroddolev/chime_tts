@@ -170,7 +170,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             else:
                 _LOGGER.debug("----- TTS-Specific Params -----")
             for key, value in params_list.items():
-                if value is not None:
+                if value is not None and key is not "hass":
                     _LOGGER.debug(" * %s = %s", key, str(value))
         _LOGGER.debug("-------------------------------")
 
@@ -693,7 +693,7 @@ async def async_request_tts_audio(
             if audio is not None:
                 if tts_playback_speed != 100:
                     _LOGGER.debug(
-                        "  -  ...changing TTS playback speed to %s percent",
+                        " -  ...changing TTS playback speed to %s percent",
                         str(tts_playback_speed),
                     )
                     playback_speed = float(tts_playback_speed / 100)
@@ -827,51 +827,51 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     if output_audio is not None:
         duration = float(len(output_audio) / 1000.0)
         _data["delay"] = duration
-        _LOGGER.debug(" - Final audio created:")
-        _LOGGER.debug("   - Duration = %ss", duration)
+        _LOGGER.debug(" - Final audio created. Duration: %ss", duration)
 
         # Save MP3 file
+        _LOGGER.debug(" - Saving mp3 file...")
         if entity_ids and len(entity_ids) > 0:
             # Use the temp folder path
             new_audio_folder = _data[TEMP_PATH_KEY]
         else:
             # Use the public folder path (i.e chime_tts.say_url service calls)
             new_audio_folder = _data[WWW_PATH_KEY]
-        _LOGGER.debug("new_audio_folder = %s", new_audio_folder)
 
         if os.path.exists(new_audio_folder) is False:
-            _LOGGER.debug("Creating audio folder: %s", new_audio_folder)
+            _LOGGER.debug("  - Creating audio folder: %s", new_audio_folder)
             try:
                 os.makedirs(new_audio_folder)
-                _LOGGER.debug("   - Audio folder created")
+                _LOGGER.debug("  - Audio folder created")
             except OSError as error:
                 _LOGGER.warning(
-                    "   - An error occurred while creating the folder '%s': %s",
+                    "  - An error occurred while creating the folder '%s': %s",
                     new_audio_folder,
                     error,
                 )
             except Exception as error:
                 _LOGGER.warning(
-                    "   - An error occurred when creating the folder: %s", error
+                    "  - An error occurred when creating the folder: %s", error
                 )
         else:
-            _LOGGER.debug("Audio folder exists: %s", new_audio_folder)
+            _LOGGER.debug("  - Audio folder exists: %s", new_audio_folder)
 
-        _LOGGER.debug(" - Creating mp3 file...")
         try:
             with tempfile.NamedTemporaryFile(
                 prefix=new_audio_folder, suffix=".mp3"
             ) as temp_obj:
                 new_audio_full_path = temp_obj.name
-            _LOGGER.debug("   - Filepath = '%s'", new_audio_full_path)
+            _LOGGER.debug("  - Filepath = '%s'", new_audio_full_path)
             _data["is_save_generated"] = True
             output_audio.export(new_audio_full_path, format="mp3")
 
             if entity_ids == None or len(entity_ids) == 0:
+                relative_path = new_audio_full_path
                 new_audio_full_path = get_file_path(hass, new_audio_full_path)
-                _LOGGER.debug("   - Non-relative filepath = '%s'", new_audio_full_path)
+                if relative_path != new_audio_full_path:
+                    _LOGGER.debug("  - Non-relative filepath = '%s'", new_audio_full_path)
 
-            _LOGGER.debug("   - File saved successfully")
+            _LOGGER.debug("  - File saved successfully")
         except Exception as error:
             _LOGGER.warning(
                 "An error occurred when creating the temp mp3 file: %s", error
@@ -915,7 +915,7 @@ def get_audio_from_path(hass: HomeAssistant, filepath: str, delay=0, audio=None)
             if audio_from_path is not None:
                 duration = float(len(audio_from_path) / 1000.0)
                 _LOGGER.debug(
-                    "   - ...audio with duration %ss retrieved successfully",
+                    " - ...retrieved successfully. Audio duration: %ss",
                     str(duration),
                 )
                 if audio is None:
