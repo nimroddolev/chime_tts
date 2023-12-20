@@ -265,12 +265,19 @@ say:
       selector:
         boolean:
     ffmpeg_args:
-      name: FFmpeg Arguments
-      description: "FFmpeg argument list to convert the generated audio"
-      example: "-ac 2 -codec:a libmp3lame -b:a 48k -ar 16000"
+      name: Audio Conversion
+      description: "Convert the audio to match Alexa speaker requirements, or use your own FFmpeg arguments"
+      example: "Alexa"
       required: false
       selector:
-        text:
+        select:
+          custom_value: True
+          translation_key: ffmpeg_args
+          options:
+            - label: Alexa
+              value: alexa
+            - label: Custom (replace this text with your FFmpeg arguments)
+              value:
     language:
       name: Language
       description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
@@ -554,12 +561,19 @@ say_url:
       selector:
         boolean:
     ffmpeg_args:
-      name: FFmpeg Arguments
-      description: "FFmpeg argument list to convert the generated audio"
-      example: "-ac 2 -codec:a libmp3lame -b:a 48k -ar 16000"
+      name: Audio Conversion
+      description: "Convert the audio to match Alexa speaker requirements, or use your own FFmpeg arguments"
+      example: "Alexa"
       required: false
       selector:
-        text:
+        select:
+          custom_value: True
+          translation_key: ffmpeg_args
+          options:
+            - label: Alexa
+              value: alexa
+            - label: Custom (replace this text with your FFmpeg arguments)
+              value:
     language:
       name: Language
       description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
