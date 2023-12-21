@@ -1374,13 +1374,13 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
     _data[WWW_PATH_KEY] = hass.config.path(
         options.get(WWW_PATH_KEY, WWW_PATH_DEFAULT)
     )
-    _data[WWW_PATH_KEY] += (_data[WWW_PATH_KEY] + "/").replace("//", "/")
+    _data[WWW_PATH_KEY] = (_data[WWW_PATH_KEY] + "/").replace("//", "/")
 
     # Temp folder path
     _data[TEMP_PATH_KEY] = hass.config.path(
         options.get(TEMP_PATH_KEY, _data[DEFAULT_TEMP_PATH_KEY])
     )
-    _data[TEMP_PATH_KEY] += (_data[TEMP_PATH_KEY] + "/").replace("//", "/")
+    _data[TEMP_PATH_KEY] = (_data[TEMP_PATH_KEY] + "/").replace("//", "/")
 
     # Custom chime paths
     _data[MP3_PRESET_CUSTOM_KEY] = {}
