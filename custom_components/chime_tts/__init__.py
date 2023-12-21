@@ -387,8 +387,8 @@ async def start_queue(service, hass, say_execute_callback):
                 elapsed_time += retry_interval
                 if _data[QUEUE_STATUS_KEY] is QUEUE_IDLE:
                     break
-            # Status is still 'running' after timeout
-            if _data[QUEUE_STATUS_KEY] is QUEUE_RUNNING:
+            if _data[QUEUE_STATUS_KEY] is not QUEUE_IDLE:
+                # Timeout
                 _LOGGER.error(
                     "Timeout reached on queued job #%s.", str(service_dict["id"])
                 )
