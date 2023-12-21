@@ -277,7 +277,7 @@ say:
             - label: Alexa
               value: alexa
             - label: Custom (replace this text with your FFmpeg arguments)
-              value:
+              value: custom
     language:
       name: Language
       description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
@@ -573,7 +573,7 @@ say_url:
             - label: Alexa
               value: alexa
             - label: Custom (replace this text with your FFmpeg arguments)
-              value:
+              value: custom
     language:
       name: Language
       description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
