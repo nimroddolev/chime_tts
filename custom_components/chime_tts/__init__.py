@@ -352,6 +352,7 @@ def dequeue_service_call():
             # Move on to the next item (queued or in the future)
             _LOGGER.debug("Incrementing to next queued service call.")
             _data[QUEUE_CURRENT_ID_KEY] += 1
+            _data[QUEUE_STATUS_KEY] = QUEUE_IDLE
 
 
 async def start_queue(service, hass, say_execute_callback):
