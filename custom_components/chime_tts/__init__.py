@@ -148,7 +148,11 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         language = service.data.get("language", None)
         cache = service.data.get("cache", False)
         announce = service.data.get("announce", False)
-        ffmpeg_args = ALEXA_FFMPEG_ARGS if service.data.get("audio_conversion", None).lower() == "alexa" else (None if service.data.get("audio_conversion", None).lower() == "custom" else service.data.get("audio_conversion", None))
+
+        # FFmpeg arguments
+        ffmpeg_args = service.data.get("audio_conversion", None)
+        if ffmpeg_args is not None:
+            ffmpeg_args = ALEXA_FFMPEG_ARGS if service.data.get("audio_conversion", None).lower() == "alexa" else (None if service.data.get("audio_conversion", None).lower() == "custom" else service.data.get("audio_conversion", None))
 
         params = {
             "entity_ids": entity_ids,
