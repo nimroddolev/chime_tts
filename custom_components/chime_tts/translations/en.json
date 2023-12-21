@@ -73,7 +73,7 @@
                     "name": "Options",
                     "description": "YAML Options to pass to TTS services (will override `tld` and `gender` fields)"
                 },
-                "ffmpeg_args": {
+                "audio_conversion": {
                     "name": "Audio Conversion",
                     "description": "Convert the audio to match Alexa speaker requirements, or use your own FFmpeg arguments"
                 }
@@ -132,7 +132,7 @@
                     "name": "Options",
                     "description": "YAML Options to pass to TTS services (will override `tld` and `gender` fields)"
                 },
-                "ffmpeg_args": {
+                "audio_conversion": {
                     "name": "Audio Conversion",
                     "description": "Convert the audio to match Alexa speaker requirements, or use your own FFmpeg arguments"
                 }
@@ -140,7 +140,7 @@
         }
     },
     "selector": {
-        "ffmpeg_args": {
+        "audio_conversion": {
             "options": {
                 "alexa": "Alexa",
                 "custom": "Custom (replace this text with your FFmpeg arguments)"

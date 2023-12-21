@@ -264,7 +264,7 @@ say:
       required: false
       selector:
         boolean:
-    ffmpeg_args:
+    audio_conversion:
       name: Audio Conversion
       description: "Convert the audio to match Alexa speaker requirements, or use your own FFmpeg arguments"
       example: "Alexa"
@@ -272,12 +272,12 @@ say:
       selector:
         select:
           custom_value: True
-          translation_key: ffmpeg_args
+          translation_key: audio_conversion
           options:
             - label: Alexa
-              value: alexa
+              value: Alexa
             - label: Custom (replace this text with your FFmpeg arguments)
-              value: custom
+              value: Custom
     language:
       name: Language
       description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
@@ -560,7 +560,7 @@ say_url:
       required: false
       selector:
         boolean:
-    ffmpeg_args:
+    audio_conversion:
       name: Audio Conversion
       description: "Convert the audio to match Alexa speaker requirements, or use your own FFmpeg arguments"
       example: "Alexa"
@@ -568,12 +568,12 @@ say_url:
       selector:
         select:
           custom_value: True
-          translation_key: ffmpeg_args
+          translation_key: audio_conversion
           options:
             - label: Alexa
-              value: alexa
+              value: Alexa
             - label: Custom (replace this text with your FFmpeg arguments)
-              value: custom
+              value: Custom
     language:
       name: Language
       description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
