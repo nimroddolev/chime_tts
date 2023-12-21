@@ -36,7 +36,7 @@ Adding a notification chime before the TTS makes sense, but in practice this int
 <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/wiki/home/with_chime_tts-light.png">
 <img alt="Chime TTS removes the latency between the notification chime and the TTS audio" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/wiki/home/with_chime_tts-dark.png">
 
-**Chime TTS** solves this issue by stitching these audio files together. Chime TTS _generates a single audio file locally_ on your Home Assistant device, and plays it to your speakers in a single event, eliminating any lag.
+**Chime TTS** solves this issue by stitching these audio files together as _a single file_ locally on your Home Assistant device, and played to your speakers in a single event, eliminating any lag.
 
 ***
 
