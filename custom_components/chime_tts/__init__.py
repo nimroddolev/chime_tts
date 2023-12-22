@@ -606,7 +606,7 @@ async def async_request_tts_audio(
     """Send an API request for TTS audio and return the audio file's local filepath."""
 
     start_time = datetime.now()
-    debug_string = (
+    _LOGGER.debug("async_request_tts_audio(%s)",
         "hass, tts_platform = "
         + tts_platform
         + ", message = "
@@ -617,10 +617,9 @@ async def async_request_tts_audio(
         + str(cache)
         + ", language = "
         + str(language)
+        + ", options = "
+        + str(options)
     )
-    for key in options:
-        debug_string += ", " + key + " = " + str(options[key])
-    _LOGGER.debug("async_request_tts_audio(%s)", debug_string)
 
     # Data validation
 
@@ -671,16 +670,16 @@ async def async_request_tts_audio(
             options=options,
         )
     except Exception as error:
-        if error == "Invalid TTS provider selected":
-            missing_tts_platform_warning(tts_platform)
+        if f"{error}" == "Invalid TTS provider selected":
+            missing_tts_platform_error(tts_platform)
         else:
-            _LOGGER.warning(
+            _LOGGER.error(
                 "   - Error calling tts.media_source.generate_media_source_id: %s",
                 error,
             )
         return None
     if media_source_id is None:
-        _LOGGER.warning(" - ...unable to generate media_source_id")
+        _LOGGER.error(" - Error: Unable to generate media_source_id")
         return None
 
     audio_data = None
@@ -689,7 +688,7 @@ async def async_request_tts_audio(
             hass=hass, media_source_id=media_source_id
         )
     except Exception as error:
-        _LOGGER.warning(
+        _LOGGER.error(
             "   - Error calling tts.async_get_media_source_audio: %s", error
         )
         return None
@@ -699,7 +698,7 @@ async def async_request_tts_audio(
             audio_bytes = audio_data[1]
             file = io.BytesIO(audio_bytes)
             if file is None:
-                _LOGGER.warning(" - ...could not convert TTS bytes to audio")
+                _LOGGER.error(" - ...could not convert TTS bytes to audio")
                 return None
             audio = AudioSegment.from_file(file)
             if audio is not None:
@@ -721,15 +720,15 @@ async def async_request_tts_audio(
                     str((end_time - start_time).total_seconds() * 1000),
                 )
                 return audio
-            _LOGGER.warning(" - ...could not extract TTS audio from file")
+            _LOGGER.error(" - ...could not extract TTS audio from file")
         else:
-            _LOGGER.warning(" - ...audio_data did not contain audio bytes")
+            _LOGGER.error(" - ...audio_data did not contain audio bytes")
     else:
-        _LOGGER.warning(" - ...audio_data generation failed")
+        _LOGGER.error(" - ...audio_data generation failed")
     return None
 
 
-def missing_tts_platform_warning(tts_platform):
+def missing_tts_platform_error(tts_platform):
     """Write a TTS platform specific debug warning when the TTS platform has not been configured."""
     tts_platform_name = tts_platform
     if tts_platform is AMAZON_POLLY:
@@ -760,7 +759,7 @@ def missing_tts_platform_warning(tts_platform):
         tts_platform_name = "VoiceRSS"
     if tts_platform is YANDEX_TTS:
         tts_platform_name = "Yandex TTS"
-    _LOGGER.warning(
+    _LOGGER.error(
         "The %s platform was not found. Please check that it has been configured correctly: https://www.home-assistant.io/integrations/#text-to-speech",
         tts_platform_name,
     )
