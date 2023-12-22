@@ -17,5 +17,5 @@
   "requirements": [
     "pydub"
   ],
-  "version": "v0.10.2-beta2"
+  "version": "v0.10.2"
 }
