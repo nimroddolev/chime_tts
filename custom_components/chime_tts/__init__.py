@@ -6,11 +6,12 @@ import time
 import os
 import hashlib
 import io
-import yaml
 import asyncio
-
-
 from datetime import datetime
+import json
+import yaml
+
+
 from pydub import AudioSegment
 from .config_flow import ChimeTTSOptionsFlowHandler
 
@@ -1070,7 +1071,7 @@ async def async_remove_cached_audio_data(hass: HomeAssistant, filepath_hash: str
         if AUDIO_PATH_KEY not in audio_dict:
             audio_dict = {AUDIO_PATH_KEY: audio_dict}
         cached_path = audio_dict[AUDIO_PATH_KEY]
-        if os.path.exists(cached_path):
+        if cached_path and os.path.exists(cached_path):
             os.remove(str(cached_path))
             if os.path.exists(cached_path):
                 _LOGGER.warning(
