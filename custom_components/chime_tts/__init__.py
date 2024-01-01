@@ -81,6 +81,7 @@ from .const import (
     MICROSOFT_TTS,
     NABU_CASA_CLOUD_TTS,
     NABU_CASA_CLOUD_TTS_OLD,
+    OPENAI_TTS,
     PICOTTS,
     PIPER,
     VOICE_RSS,
@@ -754,6 +755,8 @@ def missing_tts_platform_error(tts_platform):
         tts_platform_name = "Nabu Casa Cloud TTS"
     if tts_platform is NABU_CASA_CLOUD_TTS_OLD:
         tts_platform_name = "Nabu Casa Cloud TTS"
+    if tts_platform is OPENAI_TTS:
+        tts_platform_name = "OpenAI TTS"
     if tts_platform is PICOTTS:
         tts_platform_name = "PicoTTS"
     if tts_platform is PIPER:
