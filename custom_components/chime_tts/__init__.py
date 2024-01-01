@@ -847,6 +847,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                     segment_message = segment["message"]
                     segment_tts_platform = segment["tts_platform"] if "tts_platform" in segment else tts_platform
                     segment_language = segment["language"] if "language" in segment else language
+                    segment_cache = segment["cache"] if "cache" in segment else cache
                     segment_tts_playback_speed = segment["tts_playback_speed"] if "tts_playback_speed" in segment else tts_playback_speed
                     segment_options = segment["options"] if "options" in segment else {}
                     for key, value in options.items():
@@ -858,7 +859,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                         tts_platform=segment_tts_platform,
                         message=segment_message,
                         language=segment_language,
-                        cache=cache,
+                        cache=segment_cache,
                         options=segment_options,
                         tts_playback_speed=segment_tts_playback_speed,
                     )
