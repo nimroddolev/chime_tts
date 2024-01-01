@@ -1107,28 +1107,35 @@ async def async_play_media(
     _LOGGER.debug("Calling media_player.play_media service with data:")
     for key, value in service_data.items():
         _LOGGER.debug(" - %s: %s", str(key), str(value))
-    try:
-        await hass.services.async_call(
-            "media_player",
-            SERVICE_PLAY_MEDIA,
-            service_data,
-            True,
-        )
-        _LOGGER.debug("...media_player.play_media completed.")
-        return True
-
-    except ServiceNotFound:
-        _LOGGER.warning("Service 'play_media' not found.")
-    except TemplateError:
-        _LOGGER.warning("Error while rendering Jinja2 template.")
-    except HomeAssistantError as err:
-        _LOGGER.warning("An error occurred: %s", str(err))
-        if err == "Unknown source directory":
-            _LOGGER.warning(
-                "Please check that media directories are enabled in your configuration.yaml file, e.g:\r\n\r\nmedia_source:\r\n media_dirs:\r\n   local: /media"
-            )
-    except Exception as err:
-        _LOGGER.warning("An unexpected error occurred: %s", str(err))
+    retry_count = 3
+    should_retry = False
+    for i in range(retry_count):
+        if i == 0 or should_retry is True:
+            should_retry = False
+            if i > 0:
+                _LOGGER.warning("...playback retry %s/%s", str(i+1), str(retry_count))
+            try:
+                await hass.services.async_call(
+                    "media_player",
+                    SERVICE_PLAY_MEDIA,
+                    service_data,
+                    True,
+                )
+                _LOGGER.debug("...media_player.play_media completed.")
+                return True
+            except ServiceNotFound:
+                _LOGGER.error("Service 'play_media' not found.")
+            except TemplateError as err:
+                _LOGGER.error("Error while rendering Jinja2 template for audio playback: %s", err)
+            except HomeAssistantError as err:
+                _LOGGER.error("An error occurred: %s", str(err))
+                if err == "Unknown source directory":
+                    _LOGGER.warning(
+                        "Please check that media directories are enabled in your configuration.yaml file, e.g:\r\n\r\nmedia_source:\r\n media_dirs:\r\n   local: /media"
+                    )
+            except Exception as err:
+                _LOGGER.error("An unexpected error occurred when playing the audio: %s", str(err))
+                should_retry = True
 
     return False
 
