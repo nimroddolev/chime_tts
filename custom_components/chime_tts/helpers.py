@@ -5,8 +5,8 @@ import time
 import os
 import subprocess
 import shutil
-import yaml
 import json
+import yaml
 from homeassistant.core import HomeAssistant, State
 from homeassistant.const import CONF_ENTITY_ID
 from homeassistant.components.media_player.const import (
@@ -62,24 +62,34 @@ class ChimeTTSHelper:
         entity_ids = list(set(entity_ids))
         return entity_ids
 
-    def parse_message(self, message):
+    def parse_message(self, message_string):
         """Parse the message string/YAML object into segments dictionary."""
-        message_string = str(message)
+        message_string = str(message_string)
         segments = []
         if len(message_string) > 0:
-            if message_string[0:1] == '"' and message_string[len(message_string)-1:len(message_string)] == '"':
-                message_string = message_string[1:len(message)-1]
-            message_string = message_string.replace("'", "\"")
             try:
-                # Message contains segments
-                segments = json.loads(message_string)
-                _LOGGER.debug("%i message segments found", len(segments))
-            except json.JSONDecodeError:
-                # Message is a string
+                message_yaml = yaml.safe_load(message_string)
+            except yaml.YAMLError as exc:
+                if hasattr(exc, 'problem_mark'):
+                    # Handle parsing errors with line and column information
+                    _LOGGER.error("Message YAML parsing error at line %s, column {exc.problem_mark.column + 1}: %s",
+                                  str(exc.problem_mark.line + 1), str(exc))
+                else:
+                    # Handle other YAML-related errors
+                    _LOGGER.error("Message YAML error: %s", str(exc))
+            except Exception as error:
+                _LOGGER.error("An unexpected error occurred while parsing message YAML: %s", str(error))
+                # Handle other unexpected exceptions
+            if isinstance(message_yaml, list):
+                segments = message_yaml
+            elif isinstance(message_yaml, str):
                 segments.append({
                     'type': 'tts',
-                    'message': message
+                    'message': message_string
                 })
+            else:
+                _LOGGER.error("Error parsing message parameter")
+                return []
 
         # Make all keys lowercase
         final_segments = []
@@ -88,7 +98,6 @@ class ChimeTTSHelper:
             for key, value in segment_n.items():
                 key_lower = key.lower()
                 segment[key_lower] = value
-            _LOGGER.debug("Segment dict = %s", str(segment))
             final_segments.append(segment)
 
         return final_segments
