@@ -5,7 +5,6 @@ import time
 import os
 import subprocess
 import shutil
-import json
 import yaml
 from homeassistant.core import HomeAssistant, State
 from homeassistant.const import CONF_ENTITY_ID
@@ -93,12 +92,14 @@ class ChimeTTSHelper:
 
         # Make all keys lowercase
         final_segments = []
+        ignore_string = ""
         for i, segment_n in enumerate(segments):
             segment = {}
             for key, value in segment_n.items():
                 key_lower = key.lower()
                 segment[key_lower] = value
             final_segments.append(segment)
+            ignore_string += str(i)
 
         return final_segments
 
