@@ -47,9 +47,10 @@ Chime TTS offers various features that enhance TTS audio playback experience:
 - **No lag or timing issues:** Precise timing between audio files without cloud TTS delays.
 - **Customizable audio cues:** Play preset or custom audio before and after TTS messages.
 - **Flexible TTS platform selection:** Supports various [TTS platform integrations](https://www.home-assistant.io/integrations/#text-to-speech).
-- **Easy service invocation:** Use the 'chime_tts.say' service in automations and scripts.
+- **Easy service invocation:** Use the 'chime_tts.say' and 'chime_tts.say_url' services in automations and scripts.
 - **Set media player notification volume:** Restore volume after playback.
 - **Configurable TTS playback speed:** Set the TTS audio speed anywhere from 100-200%.
+- **Multiple TTS Platforms in the same message:** Generate TTS from multiple TTS platforms within the same audio announcement
 - **Configurable delay:** Set custom delays between audio and TTS.
 - **Caching:** Cache audio for faster playback.
 - **Speaker Groups:** Group speakers for simultaneous playback.
