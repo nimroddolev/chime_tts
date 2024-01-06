@@ -616,7 +616,7 @@ async def async_request_tts_audio(
 
     # Data validation
 
-    tts_options = options.copy()
+    tts_options = options.copy() if isinstance(options, dict) else (str(options) if isinstance(options, str) else options)
 
     if message is False or message == "":
         _LOGGER.warning("No message text provided for TTS audio")
@@ -652,10 +652,6 @@ async def async_request_tts_audio(
     # Gender
     if "gender" in tts_options and tts_platform not in [NABU_CASA_CLOUD_TTS]:
         del tts_options["gender"]
-
-    # Piper - convert tts_options to json dict string
-    if tts_platform == PIPER and tts_options is not None and len(tts_options) > 0:
-        tts_options = json.dumps(tts_options).replace('{', '').replace('}', '').replace('"', '')
 
     _LOGGER.debug("async_request_tts_audio(%s)",
         "tts_platform='" + tts_platform
