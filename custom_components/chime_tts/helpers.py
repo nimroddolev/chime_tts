@@ -65,9 +65,13 @@ class ChimeTTSHelper:
         """Parse the message string/YAML object into segments dictionary."""
         message_string = str(message_string)
         segments = []
-        if len(message_string) > 0 and (message_string.find("'type':") > -1 or message_string.find('"type":') > -1):
+        if len(message_string) == 0 or message_string == "None":
+            return []
+
+        if (message_string.find("'type':") > -1 or message_string.find('"type":') > -1):
 
             # Convert message string to YAML object
+            message_yaml = None
             try:
                 message_yaml = yaml.safe_load(message_string)
             except yaml.YAMLError as exc:
@@ -80,7 +84,7 @@ class ChimeTTSHelper:
                 _LOGGER.error("An unexpected error occurred while parsing message YAML: %s", str(error))
 
             # Verify objects in YAML are valid chime/tts/delay segements
-            if message_yaml is not None and isinstance(message_yaml, list):
+            if isinstance(message_yaml, list):
                 is_valid = True
                 for elem in message_yaml:
                     if isinstance(elem, dict):
