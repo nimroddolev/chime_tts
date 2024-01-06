@@ -65,39 +65,49 @@ class ChimeTTSHelper:
         """Parse the message string/YAML object into segments dictionary."""
         message_string = str(message_string)
         segments = []
-        if len(message_string) > 0:
+        if len(message_string) > 0 and (message_string.find("'type':") > -1 or message_string.find('"type":') > -1):
+
+            # Convert message string to YAML object
             try:
                 message_yaml = yaml.safe_load(message_string)
             except yaml.YAMLError as exc:
                 if hasattr(exc, 'problem_mark'):
-                    # Handle parsing errors with line and column information
                     _LOGGER.error("Message YAML parsing error at line %s, column {exc.problem_mark.column + 1}: %s",
                                   str(exc.problem_mark.line + 1), str(exc))
                 else:
-                    # Handle other YAML-related errors
                     _LOGGER.error("Message YAML error: %s", str(exc))
             except Exception as error:
                 _LOGGER.error("An unexpected error occurred while parsing message YAML: %s", str(error))
-                # Handle other unexpected exceptions
-            if isinstance(message_yaml, list):
-                segments = message_yaml
-            elif isinstance(message_yaml, str):
-                segments.append({
-                    'type': 'tts',
-                    'message': message_string
-                })
-            else:
-                _LOGGER.error("Error parsing message parameter")
-                return []
 
-        # Make all keys lowercase
+            # Verify objects in YAML are valid chime/tts/delay segements
+            if message_yaml is not None and isinstance(message_yaml, list):
+                is_valid = True
+                for elem in message_yaml:
+                    if isinstance(elem, dict):
+                        if "type" not in elem:
+                            is_valid = False
+                    else:
+                        is_valid = False
+                if is_valid is True:
+                    segments = message_yaml
+
+        # Add message string as TTS segment
+        if len(segments) == 0:
+            segments.append({
+                'type': 'tts',
+                'message': message_string
+            })
+
+        # Make all segment keys lowercase
         final_segments = []
         ignore_string = ""
         for i, segment_n in enumerate(segments):
             segment = {}
             for key, value in segment_n.items():
-                key_lower = key.lower()
-                segment[key_lower] = value
+                if isinstance(value, dict):
+                    for key_n, value_n in value.items():
+                        value[key_n.lower()] = value_n
+                segment[key.lower()] = value
             final_segments.append(segment)
             ignore_string += str(i)
 
