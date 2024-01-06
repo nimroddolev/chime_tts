@@ -938,6 +938,8 @@ async def async_process_segment(hass, segments, output_audio, params, options):
             if segment["type"] == "tts":
                 if "message" in segment and len(segment["message"]) > 0:
                     segment_message = segment["message"]
+                    if len(segment_message) == 0 or segment_message == "None":
+                        continue
                     segment_tts_platform = segment["tts_platform"] if "tts_platform" in segment else params["tts_platform"]
                     segment_language = segment["language"] if "language" in segment else params["language"]
                     segment_cache = segment["cache"] if "cache" in segment else params["cache"]
