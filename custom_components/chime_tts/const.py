@@ -52,7 +52,7 @@ MP3_PRESETS = [
     "drumroll",
     "dun_dun_dun",
     "error",
-    "fanfare"
+    "fanfare",
     "glockenspiel",
     "hail",
     "marimba",
