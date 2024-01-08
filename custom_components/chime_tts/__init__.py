@@ -915,7 +915,7 @@ async def async_process_segment(hass, segments, output_audio, params, options):
     if segments is not None and len(segments) > 0:
         for index, segment in enumerate(segments):
 
-            segment_delay = float(segment["delay"]) if "delay" in segment and output_audio is not None else params["delay"]
+            segment_delay = float(segment["delay"]) if "delay" in segment and output_audio is not None else (params["delay"] if "delay" in params else 0.0)
 
             # Chime tag
             if segment["type"] == "chime":
@@ -979,7 +979,7 @@ def get_audio_from_path(hass: HomeAssistant, filepath: str, delay=0, audio=None)
         return audio
 
     filepath = str(filepath)
-    _LOGGER.debug('get_audio_from_path("%s", %s, audio)', filepath, str(delay))
+    _LOGGER.debug('get_audio_from_path("%s", %s, %s)', filepath, str(delay), ("audio" if audio is not None else "None"))
 
     filepath = helpers.get_file_path(hass, filepath)
     if filepath is None:
