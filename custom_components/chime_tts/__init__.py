@@ -972,8 +972,8 @@ async def async_process_segment(hass, segments, output_audio, params, options):
                     if tts_audio is not None:
                         if output_audio is not None:
                             output_audio = (
-                                output_audio + (AudioSegment.silent(duration=segment_delay)) + tts_audio
-                            )
+                                output_audio + (
+                                    AudioSegment.silent(duration=segment_delay)) + tts_audio)
                         else:
                             output_audio = tts_audio
 
@@ -994,10 +994,11 @@ async def async_process_segment(hass, segments, output_audio, params, options):
                                 _LOGGER.warning("Unable to save generated TTS audio to cache")
 
                     else:
-                        _LOGGER.warning("Unable to generate TTS audio from messsage segment #%s", str(index+1))
+                        _LOGGER.warning("Error generating TTS audio from messsage segment #%s: %s",
+                                        str(index+1), str(segment))
                 else:
-                    _LOGGER.warning("TTS message missing from messsage segment #%s", str(index+1))
-                    _LOGGER.warning("%s", str(segment))
+                    _LOGGER.warning("TTS message missing from messsage segment #%s: %s",
+                                    str(index+1), str(segment))
     return output_audio
 
 def get_audio_from_path(hass: HomeAssistant, filepath: str, delay=0, audio=None):
@@ -1007,7 +1008,10 @@ def get_audio_from_path(hass: HomeAssistant, filepath: str, delay=0, audio=None)
         return audio
 
     filepath = str(filepath)
-    _LOGGER.debug('get_audio_from_path("%s", %s, %s)', filepath, str(delay), ("audio" if audio is not None else "None"))
+    _LOGGER.debug('get_audio_from_path("%s", %s, %s)',
+                  filepath,
+                  str(delay),
+                  ("audio" if audio is not None else "None"))
 
     filepath = helpers.get_file_path(hass, filepath)
     if filepath is None:
@@ -1096,9 +1100,9 @@ async def async_play_media(
     # media_content_id
     media_source_path = audio_path
     media_folder = "/media/"
-    media_folder_index_in_path = media_source_path.find(media_folder)
-    if media_folder_index_in_path != -1:
-        media_path = media_source_path[media_folder_index_in_path + len(media_folder) :].replace("//", "/")
+    media_folder_path_index = media_source_path.find(media_folder)
+    if media_folder_path_index != -1:
+        media_path = media_source_path[media_folder_path_index + len(media_folder) :].replace("//", "/")
         media_source_path = "media-source://media_source/<media_dir>/<media_path>".replace(
             "<media_dir>", _data[MEDIA_DIR_KEY]
         ).replace(
@@ -1286,7 +1290,7 @@ def get_chime_path(chime_path: str = ""):
         custom_path = _data[MP3_PRESET_CUSTOM_KEY][chime_path]
         if custom_path == "":
             _LOGGER.warning(
-                "No mp3 file path specified for custom chime path `Custom #%s`. Please add the mp3 file path to the Chime TTS configuration.",
+                "MP3 file path missing for custom chime path `Custom #%s`",
                 chime_path.replace(MP3_PRESET_CUSTOM_PREFIX, ""),
             )
         return custom_path
