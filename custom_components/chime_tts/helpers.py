@@ -2,6 +2,7 @@
 
 import logging
 import time
+import tempfile
 import os
 import subprocess
 import shutil
@@ -76,12 +77,15 @@ class ChimeTTSHelper:
                 message_yaml = yaml.safe_load(message_string)
             except yaml.YAMLError as exc:
                 if hasattr(exc, 'problem_mark'):
-                    _LOGGER.error("Message YAML parsing error at line %s, column {exc.problem_mark.column + 1}: %s",
-                                  str(exc.problem_mark.line + 1), str(exc))
+                    _LOGGER.error("Message YAML parsing error at line %s, column %s: %s",
+                                  str(exc.problem_mark.line + 1),
+                                  str(exc.problem_mark.column + 1),
+                                  str(exc))
                 else:
                     _LOGGER.error("Message YAML error: %s", str(exc))
             except Exception as error:
-                _LOGGER.error("An unexpected error occurred while parsing message YAML: %s", str(error))
+                _LOGGER.error("An unexpected error occurred while parsing message YAML: %s",
+                              str(error))
 
             # Verify objects in YAML are valid chime/tts/delay segements
             if isinstance(message_yaml, list):
@@ -221,3 +225,35 @@ class ChimeTTSHelper:
                            error, ffmpeg_cmd_string)
 
         return file_path
+
+    def save_audio_to_folder(self, audio, folder):
+        """Save audio to temp file in folder."""
+
+        # Create folder if it doesn't already exist
+        if os.path.exists(folder) is False:
+            _LOGGER.debug("  - Creating audio folder: %s", folder)
+            try:
+                os.makedirs(folder)
+            except OSError as error:
+                _LOGGER.warning(
+                    "  - An error occurred while creating the folder '%s': %s",
+                    folder, error)
+            except Exception as error:
+                _LOGGER.warning(
+                    "  - An error occurred while creating the folder '%s': %s",
+                    folder, error)
+
+        # Save to temp file
+        try:
+            with tempfile.NamedTemporaryFile(
+                prefix=folder, suffix=".mp3"
+            ) as temp_obj:
+                audio_full_path = temp_obj.name
+            audio.export(audio_full_path, format="mp3")
+            _LOGGER.debug("  - File saved successfully")
+        except Exception as error:
+            _LOGGER.warning(
+                "An error occurred when creating the temp mp3 file: %s", error
+            )
+            return None
+        return audio_full_path
