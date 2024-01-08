@@ -1247,7 +1247,7 @@ async def async_remove_cached_audio_data(hass: HomeAssistant, filepath_hash: str
 def get_chime_path(chime_path: str = ""):
     """Retrieve preset chime path if selected."""
     # Remove prefix (prefix deprecated in v0.9.1)
-    chime_path = chime_path.replace(MP3_PRESET_PATH_PLACEHOLDER, "").lower()
+    chime_path = chime_path.replace(MP3_PRESET_PATH_PLACEHOLDER, "")
 
     # Preset chime mp3 path?
     if chime_path in MP3_PRESETS:
