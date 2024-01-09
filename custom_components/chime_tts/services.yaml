@@ -1,6 +1,31 @@
 clear_cache:
   name: "Clear Cache"
-  description: "Removes all locally cached TTS audio files created from Chime TTS"
+  description: "Remove text-to-speech cache files from Chime TTS and/or Home Assistant."
+  fields:
+    clear_temp_tts_cache:
+      name: Temporary Chime TTS Cache
+      description: "Remove the local temporary audio files stored in the Chime TTS cache"
+      default: True
+      example: "True"
+      required: false
+      selector:
+        boolean:
+    clear_www_tts_cache:
+      name: Publicly Accessible Chime TTS Cache
+      description: "Remove the publicly accessible audio files stored in the Chime TTS cache"
+      default: True
+      example: "True"
+      required: false
+      selector:
+        boolean:
+    clear_ha_tts_cache:
+      name: Home Assistant TTS Cache
+      description: "Remove the TTS audio files stored in the Home Assistant TTS cache"
+      default: True
+      example: "True"
+      required: false
+      selector:
+        boolean:
 
 say:
   name: "Say"

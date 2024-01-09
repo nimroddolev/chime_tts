@@ -284,18 +284,41 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     async def async_clear_cache(service):
         """Play TTS audio with local chime MP3 audio."""
         _LOGGER.debug("----- Chime TTS Clear Cache Called -----")
+        clear_ha_tts_cache = bool(service.data.get("clear_ha_tts_cache", False))
+        clear_temp_tts_cache = bool(service.data.get("clear_temp_tts_cache", False))
+        clear_www_tts_cache = bool(service.data.get("clear_www_tts_cache", False))
+
         start_time = datetime.now()
+
+        if clear_temp_tts_cache is True or clear_www_tts_cache is True:
+            if clear_temp_tts_cache is True and clear_www_tts_cache is True:
+                _LOGGER.debug("Clearing cached temporary and publicly accessible Chime TTS audio files...")
+            elif clear_temp_tts_cache is True:
+                _LOGGER.debug("Clearing cached temporary Chime TTS audio files...")
+            else:
+                _LOGGER.debug("Clearing cached publicly accessible Chime TTS audio files...")
+
+        # CLEAR CHIME TTS CACHE #
         cached_dicts = dict(_data[DATA_STORAGE_KEY])
-
-        # Delete generated mp3 files
-        _LOGGER.debug("Deleting generated mp3 cache files.")
         for key in cached_dicts:
-            await async_remove_cached_audio_data(hass, str(key))
+            await async_remove_cached_audio_data(hass,
+                                                 str(key),
+                                                 clear_temp_tts_cache,
+                                                 clear_www_tts_cache)
 
+        # CLEAR HA TTS CACHE #
+        if clear_ha_tts_cache:
+            _LOGGER.debug("Clearing cached Home Assistant TTS audio files...")
+            await hass.services.async_call(domain="TTS",
+                                           service="clear_cache",
+                                           blocking=True)
+
+        # Summary
         elapsed_time = (datetime.now() - start_time).total_seconds() * 1000
         _LOGGER.debug(
             "----- Chime TTS Clear Cache Completed in %s ms -----", str(elapsed_time)
         )
+
         return True
 
     hass.services.async_register(DOMAIN, SERVICE_CLEAR_CACHE, async_clear_cache)
@@ -1201,9 +1224,6 @@ async def async_store_data(hass: HomeAssistant, key: str, value: str):
 async def async_retrieve_data(key: str):
     """Retrieve a value from the integration's stored data based on the provided key."""
     if key in _data[DATA_STORAGE_KEY]:
-        _LOGGER.debug(" - Retrieving key/value from chime_tts storage:")
-        _LOGGER.debug("   - key: %s", key)
-        _LOGGER.debug("   - value: %s", str(_data[DATA_STORAGE_KEY][key]))
         return _data[DATA_STORAGE_KEY][key]
     return None
 
@@ -1238,19 +1258,34 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
         return audio_dict
 
     _LOGGER.debug(" - Audio data not found in cache.")
-    await async_remove_cached_audio_data(hass, filepath_hash)
+    await async_remove_cached_audio_data(hass, filepath_hash, True, True)
     return None
 
 
-async def async_remove_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
+async def async_remove_cached_audio_data(hass: HomeAssistant,
+                                         filepath_hash: str,
+                                         remove_temp: bool = False,
+                                         remove_public: bool = False):
     """Remove cached audio data from Chime TTS' cache and deletes audio filepath from filesystem."""
     audio_dict = await async_retrieve_data(filepath_hash)
+    temp_path = _data[TEMP_PATH_KEY]
+    public_path = _data[WWW_PATH_KEY]
+
     if audio_dict is not None:
         # Old cache format?
         if AUDIO_PATH_KEY not in audio_dict:
             audio_dict = {AUDIO_PATH_KEY: audio_dict}
+
         cached_path = audio_dict[AUDIO_PATH_KEY]
         if cached_path and os.path.exists(cached_path):
+
+            # Stop if user wishes to keep temp file
+            if temp_path in cached_path and remove_temp is False:
+                return
+            # Stop if user wishes to keep public file
+            if public_path in cached_path and remove_public is False:
+                return
+
             os.remove(str(cached_path))
             if os.path.exists(cached_path):
                 _LOGGER.warning(
