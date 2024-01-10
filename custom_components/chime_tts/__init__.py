@@ -989,10 +989,10 @@ async def async_process_segment(hass, segments, output_audio, params, options):
                             options=segment_options,
                             tts_playback_speed=segment_tts_playback_speed,
                         )
-                        tts_audio_duration = float(len(tts_audio) / 1000.0)
 
 
                     if tts_audio is not None:
+                        tts_audio_duration = float(len(tts_audio) / 1000.0)
                         if output_audio is not None:
                             output_audio = (
                                 output_audio + (
