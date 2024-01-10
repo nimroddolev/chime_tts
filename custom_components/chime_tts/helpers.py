@@ -8,14 +8,21 @@ import subprocess
 import shutil
 import yaml
 from homeassistant.core import HomeAssistant, State
-from homeassistant.const import CONF_ENTITY_ID
+from homeassistant.const import CONF_ENTITY_ID, SERVICE_TURN_ON
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_VOLUME_LEVEL,
     ATTR_MEDIA_ANNOUNCE,
     ATTR_GROUP_MEMBERS
 )
+from .const import (
+    PAUSE_DURATION_MS,
+    ALEXA_FFMPEG_ARGS,
+    MP3_PRESET_PATH,
+    MP3_PRESETS,
+    MP3_PRESET_PATH_PLACEHOLDER,  # DEPRECATED
+    MP3_PRESET_CUSTOM_PREFIX,
+)
 _LOGGER = logging.getLogger(__name__)
-
 
 class ChimeTTSHelper:
     """Helper functions for Chime TTS."""
@@ -38,6 +45,62 @@ class ChimeTTSHelper:
                 if value is not None:
                     options[key] = value
         return options
+
+    async def async_parse_params(self, service, custom_chime_paths_dict, hass: HomeAssistant):
+        """Parse TTS service parameters."""
+        # Parse entity_id/s
+        entity_ids = self.parse_entity_ids(service.data, hass)
+        chime_path = self.get_chime_path(
+            custom_chime_paths_dict,
+            str(service.data.get("chime_path", "")))
+        end_chime_path = self.get_chime_path(
+            custom_chime_paths_dict,
+            str(service.data.get("end_chime_path", "")))
+        delay = float(service.data.get("delay", PAUSE_DURATION_MS))
+        final_delay = float(service.data.get("final_delay", 0))
+        message = str(service.data.get("message", ""))
+        tts_platform = str(service.data.get("tts_platform", ""))
+        tts_playback_speed = float(service.data.get("tts_playback_speed", 100))
+        volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
+        media_players_array = await self.async_initialize_media_players(
+            hass, entity_ids, volume_level
+        )
+        join_players = service.data.get("join_players", False)
+        unjoin_players = service.data.get("unjoin_players", False)
+        language = service.data.get("language", None)
+        cache = service.data.get("cache", False)
+        announce = service.data.get("announce", False)
+
+        # FFmpeg arguments
+        ffmpeg_args = service.data.get("audio_conversion", None)
+        if ffmpeg_args is not None:
+            if service.data.get("audio_conversion", None).lower() == "alexa":
+                ffmpeg_args = ALEXA_FFMPEG_ARGS
+            else:
+                if service.data.get("audio_conversion", None).lower() == "custom":
+                    ffmpeg_args = None
+                else:
+                    service.data.get("audio_conversion", None)
+
+        return {
+            "entity_ids": entity_ids,
+            "hass": hass,
+            "chime_path": chime_path,
+            "end_chime_path": end_chime_path,
+            "cache": cache,
+            "delay": delay,
+            "final_delay": final_delay,
+            "media_players_array": media_players_array,
+            "message": message,
+            "language": language,
+            "tts_platform": tts_platform,
+            "tts_playback_speed": tts_playback_speed,
+            "announce": announce,
+            "volume_level": volume_level,
+            "join_players": join_players,
+            "unjoin_players": unjoin_players,
+            "ffmpeg_args": ffmpeg_args,
+        }
 
 
     def parse_entity_ids(self, data, hass):
@@ -167,6 +230,26 @@ class ChimeTTSHelper:
 
         return ret_value
 
+    def get_chime_path(self, custom_chime_paths_dict, chime_path: str = ""):
+        """Retrieve preset chime path if selected."""
+        # Remove prefix (prefix deprecated in v0.9.1)
+        chime_path = chime_path.replace(MP3_PRESET_PATH_PLACEHOLDER, "")
+
+        # Preset chime mp3 path?
+        if chime_path in MP3_PRESETS:
+            return MP3_PRESET_PATH + chime_path + ".mp3"
+        # Custom chime mp3 path?
+        if chime_path.startswith(MP3_PRESET_CUSTOM_PREFIX):
+            custom_path = custom_chime_paths_dict[chime_path]
+            if custom_path == "":
+                _LOGGER.warning(
+                    "MP3 file path missing for custom chime path `Custom #%s`",
+                    chime_path.replace(MP3_PRESET_CUSTOM_PREFIX, ""),
+                )
+            return custom_path
+
+        return chime_path
+
     def ffmpeg_convert_from_file(self, file_path, ffmpeg_args):
         """Convert audio stream with FFmpeg and provided arguments."""
         try:
@@ -257,3 +340,78 @@ class ChimeTTSHelper:
             )
             return None
         return audio_full_path
+
+
+    ##############################
+    ### Media Player Functions ###
+    ##############################
+
+    def get_group_members_suppored(self, media_players_array):
+        """Get the number of media player which support the join feature."""
+        group_members_supported = 0
+        for media_player_dict in media_players_array:
+            if media_player_dict["group_member_support"] is True:
+                group_members_supported += 1
+        return group_members_supported
+
+
+    async def async_initialize_media_players(
+            self,
+            hass: HomeAssistant,
+            entity_ids,
+            volume_level: float
+    ):
+        """Initialize media player entities."""
+        # Service call was from chime_tts.say_url, so media_players are irrelevant
+        if len(entity_ids) == 0:
+            return False
+
+        entity_found = False
+        media_players_array = []
+        for entity_id in entity_ids:
+            # Validate media player entity_id
+            entity = hass.states.get(entity_id)
+            if entity is None:
+                _LOGGER.warning('Media player entity: "%s" not found', entity_id)
+                continue
+            else:
+                entity_found = True
+
+            # Ensure media player is turned on
+            if entity.state == "off":
+                _LOGGER.info(
+                    'Media player entity "%s" is turned off. Turning on...', entity_id
+                )
+                await hass.services.async_call(
+                    "media_player", SERVICE_TURN_ON, {CONF_ENTITY_ID: entity_id}, True
+                )
+
+            # Store media player's current volume level
+            should_change_volume = False
+            initial_volume_level = -1
+            if volume_level >= 0:
+                initial_volume_level = float(
+                    entity.attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
+                )
+                if float(initial_volume_level) == float(volume_level / 100):
+                    _LOGGER.debug(
+                        "%s's volume_level is already %s", entity_id, str(volume_level)
+                    )
+                else:
+                    should_change_volume = True
+
+            # Group members supported?
+            group_member_support = self.get_supported_feature(entity, ATTR_GROUP_MEMBERS)
+
+            media_players_array.append(
+                {
+                    "entity_id": entity_id,
+                    "should_change_volume": should_change_volume,
+                    "initial_volume_level": initial_volume_level,
+                    "group_members_supported": group_member_support,
+                }
+            )
+        if entity_found is False:
+            _LOGGER.error("No valid media player found")
+            return False
+        return media_players_array
