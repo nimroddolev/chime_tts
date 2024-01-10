@@ -1128,9 +1128,20 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
 
 async def async_remove_cached_audio_data(hass: HomeAssistant,
                                          filepath_hash: str,
-                                         remove_temp: bool = False,
-                                         remove_public: bool = False):
+                                         clear_temp_tts_cache: bool = False,
+                                         clear_www_tts_cache: bool = False):
     """Remove cached audio data from Chime TTS' cache and deletes audio filepath from filesystem."""
+
+    if clear_temp_tts_cache is True or clear_www_tts_cache is True:
+        if clear_temp_tts_cache is True and clear_www_tts_cache is True:
+            _LOGGER.debug("Clearing cached temporary and publicly accessible Chime TTS audio files...")
+        elif clear_temp_tts_cache is True:
+            _LOGGER.debug("Clearing cached temporary Chime TTS audio files...")
+        else:
+            _LOGGER.debug("Clearing cached publicly accessible Chime TTS audio files...")
+    else:
+        return
+
     audio_dict = await async_retrieve_data(filepath_hash)
     temp_path = _data[TEMP_PATH_KEY]
     public_path = _data[WWW_PATH_KEY]
@@ -1144,10 +1155,10 @@ async def async_remove_cached_audio_data(hass: HomeAssistant,
         if cached_path and os.path.exists(cached_path):
 
             # Stop if user wishes to keep temp file
-            if temp_path in cached_path and remove_temp is False:
+            if temp_path in cached_path and clear_temp_tts_cache is False:
                 return
             # Stop if user wishes to keep public file
-            if public_path in cached_path and remove_public is False:
+            if public_path in cached_path and clear_www_tts_cache is False:
                 return
 
             os.remove(str(cached_path))
