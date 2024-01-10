@@ -248,7 +248,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                 instance_url = str(get_url(hass))
 
             external_url = (
-                (instance_url + audio_path).replace("/config", "").replace("www/", "local/")
+                (instance_url + "/" + audio_path).replace(instance_url + "//", instance_url + "/").replace("/config", "").replace("www/", "local/")
             )
             _LOGGER.debug("Final URL = %s", external_url)
 
