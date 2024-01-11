@@ -1,20 +1,23 @@
 """Adds config flow for Chime TTS."""
 from homeassistant import config_entries
+import requests
+import voluptuous as vol
+import logging
+import os
 from .const import (
     DOMAIN,
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
     MEDIA_DIR_KEY,
     MEDIA_DIR_DEFAULT,
+    TEMP_CHIMES_PATH_KEY,
+    TEMP_CHIMES_PATH_DEFAULT,
     TEMP_PATH_KEY,
     TEMP_PATH_DEFAULT,
     WWW_PATH_KEY,
     WWW_PATH_DEFAULT,
     MP3_PRESET_CUSTOM_PREFIX,
 )
-import voluptuous as vol
-import logging
-import os
 
 LOGGER = logging.getLogger(__name__)
 
@@ -60,6 +63,10 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(
                     MEDIA_DIR_KEY,
                     default=self.get_data_key_value(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT),  # type: ignore
+                ): str,
+                vol.Required(
+                    TEMP_CHIMES_PATH_KEY,
+                    default=self.get_data_key_value(TEMP_CHIMES_PATH_KEY, TEMP_CHIMES_PATH_DEFAULT),  # type: ignore
                 ): str,
                 vol.Required(
                     TEMP_PATH_KEY,
@@ -124,8 +131,15 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             key = MP3_PRESET_CUSTOM_PREFIX + str(i + 1)
             value = user_input.get(key, "")
             if value != "":
+
+                # URL valid?
+                is_valid = False
+                is_url = True if (value.startswith("http://") or value.startswith("https://")) else False
+                if is_url:
+                    is_valid = await self.ping_url(value)
+
                 # File not found?
-                if os.path.exists(value) is False:
+                if os.path.exists(value) is False and is_valid is False:
                     # Set main error message
                     if _errors == {}:
                         _errors["base"] = "invalid_chime_paths"
@@ -153,3 +167,18 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             if key in p_dict:
                 return p_dict[key]
         return placeholder
+
+
+    async def ping_url(self, url: str):
+        """Ping a URL and receive a boolean result."""
+        if url is None:
+            return False
+        try:
+            response = await self.hass.async_add_executor_job(requests.head, url)
+            if 200 <= response.status_code < 300:
+                return True
+            LOGGER.warning("Error: Received status code %s from %s", str(response.status_code), url)
+        except requests.ConnectionError:
+            LOGGER.warning("Error: Failed to connect to %s", url)
+
+        return False

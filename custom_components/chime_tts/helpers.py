@@ -4,9 +4,14 @@ import logging
 import time
 import tempfile
 import os
+import hashlib
 import subprocess
 import shutil
+from io import BytesIO
+import re
+import requests
 import yaml
+from pydub import AudioSegment
 from homeassistant.core import HomeAssistant, State
 from homeassistant.const import CONF_ENTITY_ID, SERVICE_TURN_ON
 from homeassistant.components.media_player.const import (
@@ -21,6 +26,10 @@ from .const import (
     MP3_PRESETS,
     MP3_PRESET_PATH_PLACEHOLDER,  # DEPRECATED
     MP3_PRESET_CUSTOM_PREFIX,
+    MP3_PRESET_CUSTOM_KEY,
+    TEMP_CHIMES_PATH_KEY,
+    AUDIO_PATH_KEY,
+    AUDIO_DURATION_KEY
 )
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,45 +53,46 @@ class ChimeTTSHelper:
                 value = data.get(key, None)
                 if value is not None:
                     options[key] = value
+
+        if len(options) > 0:
+            _LOGGER.debug("----- TTS-Specific Params -----")
+            for key, value in options.items():
+                _LOGGER.debug(" * %s = %s", key, str(value))
+
         return options
 
-    async def async_parse_params(self, service, custom_chime_paths_dict, hass: HomeAssistant):
+    async def async_parse_params(self, data, hass: HomeAssistant):
         """Parse TTS service parameters."""
-        # Parse entity_id/s
-        entity_ids = self.parse_entity_ids(service.data, hass)
-        chime_path = self.get_chime_path(
-            custom_chime_paths_dict,
-            str(service.data.get("chime_path", "")))
-        end_chime_path = self.get_chime_path(
-            custom_chime_paths_dict,
-            str(service.data.get("end_chime_path", "")))
-        delay = float(service.data.get("delay", PAUSE_DURATION_MS))
-        final_delay = float(service.data.get("final_delay", 0))
-        message = str(service.data.get("message", ""))
-        tts_platform = str(service.data.get("tts_platform", ""))
-        tts_playback_speed = float(service.data.get("tts_playback_speed", 100))
-        volume_level = float(service.data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
+        entity_ids = self.parse_entity_ids(data, hass)
+        chime_path =str(data.get("chime_path", ""))
+        end_chime_path = str(data.get("end_chime_path", ""))
+        delay = float(data.get("delay", PAUSE_DURATION_MS))
+        final_delay = float(data.get("final_delay", 0))
+        message = str(data.get("message", ""))
+        tts_platform = str(data.get("tts_platform", ""))
+        tts_playback_speed = float(data.get("tts_playback_speed", 100))
+        volume_level = float(data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
         media_players_array = await self.async_initialize_media_players(
             hass, entity_ids, volume_level
         )
-        join_players = service.data.get("join_players", False)
-        unjoin_players = service.data.get("unjoin_players", False)
-        language = service.data.get("language", None)
-        cache = service.data.get("cache", False)
-        announce = service.data.get("announce", False)
+        join_players = data.get("join_players", False)
+        unjoin_players = data.get("unjoin_players", False)
+        language = data.get("language", None)
+        cache = data.get("cache", False)
+        announce = data.get("announce", False)
 
         # FFmpeg arguments
-        ffmpeg_args = service.data.get("audio_conversion", None)
+        ffmpeg_args = data.get("audio_conversion", None)
         if ffmpeg_args is not None:
-            if service.data.get("audio_conversion", None).lower() == "alexa":
+            if data.get("audio_conversion", None).lower() == "alexa":
                 ffmpeg_args = ALEXA_FFMPEG_ARGS
             else:
-                if service.data.get("audio_conversion", None).lower() == "custom":
+                if data.get("audio_conversion", None).lower() == "custom":
                     ffmpeg_args = None
                 else:
-                    service.data.get("audio_conversion", None)
+                    data.get("audio_conversion", None)
 
-        return {
+        params = {
             "entity_ids": entity_ids,
             "hass": hass,
             "chime_path": chime_path,
@@ -101,6 +111,13 @@ class ChimeTTSHelper:
             "unjoin_players": unjoin_players,
             "ffmpeg_args": ffmpeg_args,
         }
+
+        _LOGGER.debug("----- General Parameters -----")
+        for key, value in params.items():
+            if value is not None and key not in ["hass", "media_players_array"]:
+                _LOGGER.debug(" * %s = %s", key, str(value))
+
+        return params
 
 
     def parse_entity_ids(self, data, hass):
@@ -209,9 +226,11 @@ class ChimeTTSHelper:
         return time.sleep(duration_s)
 
 
-    def get_file_path(self, hass: HomeAssistant, p_filepath: str = ""):
+    def validate_path(self, hass: HomeAssistant, p_filepath: str = ""):
         """Return a valid file path string."""
         ret_value = None
+        if p_filepath is None:
+            return ret_value
 
         filepaths = [p_filepath]
 
@@ -230,24 +249,52 @@ class ChimeTTSHelper:
 
         return ret_value
 
-    def get_chime_path(self, custom_chime_paths_dict, chime_path: str = ""):
+    async def async_get_chime_path(self, chime_path, cache, data, hass: HomeAssistant):
         """Retrieve preset chime path if selected."""
+
+        custom_chime_paths_dict = data[MP3_PRESET_CUSTOM_KEY]
+        temp_chimes_path = data[TEMP_CHIMES_PATH_KEY]
+
         # Remove prefix (prefix deprecated in v0.9.1)
         chime_path = chime_path.replace(MP3_PRESET_PATH_PLACEHOLDER, "")
 
         # Preset chime mp3 path?
         if chime_path in MP3_PRESETS:
             return MP3_PRESET_PATH + chime_path + ".mp3"
+
         # Custom chime mp3 path?
         if chime_path.startswith(MP3_PRESET_CUSTOM_PREFIX):
-            custom_path = custom_chime_paths_dict[chime_path]
-            if custom_path == "":
+            chime_path = custom_chime_paths_dict[chime_path]
+            if chime_path == "":
                 _LOGGER.warning(
                     "MP3 file path missing for custom chime path `Custom #%s`",
                     chime_path.replace(MP3_PRESET_CUSTOM_PREFIX, ""),
                 )
-            return custom_path
 
+        # External URL?
+        if chime_path.startswith("http://") or chime_path.startswith("https://"):
+            # Use cached version?
+            if cache is True:
+                local_file = self.get_downloaded_chime_path(folder=temp_chimes_path, url=chime_path)
+                if local_file is not None:
+                    return local_file
+                _LOGGER.debug(" - Chime does not exist in cache")
+
+            # Download from URL
+            audio_dict = await self.async_download_file(hass, chime_path, temp_chimes_path)
+            if audio_dict is not None:
+                _LOGGER.debug(" - Chime downloaded successfully")
+                # # Store audio data in cache
+                # file_hash = self.get_hash_for_string(chime_path)
+                # data[DATA_STORAGE_KEY][file_hash] = audio_dict
+                # store = storage.Store(hass, 1, DATA_STORAGE_KEY)
+                # await store.async_save(data[DATA_STORAGE_KEY])
+                return audio_dict[AUDIO_PATH_KEY]
+
+            _LOGGER.warning(" - Unable to downloaded chime %s", chime_path)
+            return None
+
+        chime_path = self.validate_path(hass, chime_path)
         return chime_path
 
     def ffmpeg_convert_from_file(self, file_path, ffmpeg_args):
@@ -309,8 +356,12 @@ class ChimeTTSHelper:
 
         return file_path
 
-    def save_audio_to_folder(self, audio, folder):
-        """Save audio to temp file in folder."""
+    def get_downloaded_chime_path(self, folder: str, url: str):
+        """Local file path string for chime URL in local folder."""
+        return folder + ("" if folder.endswith("/") else "/") + re.sub(r'[\/:*?"<>|]', '_', url.replace("https://", "").replace("http://", ""))
+
+    def save_audio_to_folder(self, audio, folder, file_name: str = None):
+        """Save audio to local folder."""
 
         # Create folder if it doesn't already exist
         if os.path.exists(folder) is False:
@@ -321,24 +372,39 @@ class ChimeTTSHelper:
                 _LOGGER.warning(
                     "  - An error occurred while creating the folder '%s': %s",
                     folder, error)
+                return None
             except Exception as error:
                 _LOGGER.warning(
                     "  - An error occurred while creating the folder '%s': %s",
                     folder, error)
+                return None
 
-        # Save to temp file
-        try:
-            with tempfile.NamedTemporaryFile(
-                prefix=folder, suffix=".mp3"
-            ) as temp_obj:
-                audio_full_path = temp_obj.name
-            audio.export(audio_full_path, format="mp3")
-            _LOGGER.debug("  - File saved successfully")
-        except Exception as error:
-            _LOGGER.warning(
-                "An error occurred when creating the temp mp3 file: %s", error
-            )
-            return None
+        # Save to file
+        if file_name is None:
+            try:
+                with tempfile.NamedTemporaryFile(
+                    prefix=folder, suffix=".mp3"
+                ) as temp_obj:
+                    audio_full_path = temp_obj.name
+                audio.export(audio_full_path, format="mp3")
+                _LOGGER.debug(" - File saved successfully")
+            except Exception as error:
+                _LOGGER.warning(
+                    "An error occurred when creating the temp mp3 file: %s", error
+                )
+                return None
+        else:
+            try:
+                # Make file name safe
+                audio_full_path = self.get_downloaded_chime_path(url=file_name, folder=folder)
+                audio.export(audio_full_path, format="mp3")
+            except Exception as error:
+                _LOGGER.warning(
+                    "An error occurred when creating the mp3 file: %s", error
+                )
+                return None
+
+        _LOGGER.debug(" - File saved to path: %s", audio_full_path)
         return audio_full_path
 
 
@@ -415,3 +481,55 @@ class ChimeTTSHelper:
             _LOGGER.error("No valid media player found")
             return False
         return media_players_array
+
+    async def async_download_file(self, hass: HomeAssistant, url, folder):
+        """Download a file and save locally."""
+        try:
+            _LOGGER.debug("Downloading chime at URL: %s", url)
+            response = await hass.async_add_executor_job(requests.get, url)
+            response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx status codes)
+        except requests.exceptions.HTTPError as errh:
+            _LOGGER.warning(" - HTTP Error: %s", str(errh))
+            return None
+        except requests.exceptions.ConnectionError as errc:
+            _LOGGER.warning(" - Error Connecting: %s", str(errc))
+            return None
+        except requests.exceptions.Timeout as errt:
+            _LOGGER.warning(" - Timeout Error: %s", str(errt))
+            return None
+        except requests.exceptions.RequestException as err:
+            _LOGGER.warning(" - Request Exception: %s", str(err))
+            return None
+        except Exception as error:
+            _LOGGER.warning(" - An unexpected error occurred: %s", str(error))
+            return None
+
+        if response is None:
+            _LOGGER.warning(" - Received an invalid response")
+            return None
+
+        content_type = response.headers.get('Content-Type', '')
+        if 'audio' in content_type:
+            _LOGGER.debug(" - Audio downloaded successfully")
+            file_name, file_extension = os.path.splitext(url)
+            audio_content = AudioSegment.from_file(BytesIO(response.content),
+                                                   format=file_extension.replace(".", ""))
+            if audio_content is not None:
+                audio_file_path = self.save_audio_to_folder(audio=audio_content,
+                                                            folder=folder,
+                                                            file_name=url)
+                audio_duration = float(len(audio_content) / 1000)
+                return {
+                    AUDIO_PATH_KEY: audio_file_path,
+                    AUDIO_DURATION_KEY: audio_duration
+                }
+        else:
+            _LOGGER.warning(" - Unable to extract audio from URL with content-type '%s'", str(content_type))
+        return None
+
+    def get_hash_for_string(self, string):
+        """Generate a has for a given string."""
+        hash_object = hashlib.sha256()
+        hash_object.update(string.encode("utf-8"))
+        hash_value = str(hash_object.hexdigest())
+        return hash_value
