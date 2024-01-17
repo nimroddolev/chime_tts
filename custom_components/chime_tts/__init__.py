@@ -889,14 +889,18 @@ async def async_process_segment(hass, segments, output_audio, params, options):
                         )
 
 
+                    # Combine audio
                     if tts_audio is not None:
                         tts_audio_duration = float(len(tts_audio) / 1000.0)
                         if output_audio is not None:
-                            output_audio = (
-                                output_audio + (
-                                    AudioSegment.silent(duration=segment_delay)) + tts_audio)
+                            # Crossfade or delay?
+                            if segment_delay < 0:
+                                output_audio = helpers.crossfade(output_audio, tts_audio, segment_delay)
+                            elif segment_delay > 0:
+                                _LOGGER.debug("*** Performing delay of %sms", str(segment_delay))
+                                output_audio += (AudioSegment.silent(duration=segment_delay) + tts_audio)
                         else:
-                            output_audio = tts_audio
+                            output_audio += tts_audio
 
                         # Cache the new TTS audio?
                         if segment_cache is True and audio_dict is None:
@@ -947,7 +951,16 @@ async def async_get_audio_from_path(hass: HomeAssistant, filepath: str, cache=Fa
                 )
                 if audio is None:
                     return audio_from_path
-                return audio + (AudioSegment.silent(duration=delay) + audio_from_path)
+
+                # Crossfade or delay?
+                if delay < 0:
+                    return helpers.crossfade(audio, audio_from_path, delay)
+                elif delay > 0:
+                    _LOGGER.debug("*** Combining audio files with delay of %sms", str(delay))
+                    return audio + (AudioSegment.silent(duration=delay) + audio_from_path)
+                else:
+                    _LOGGER.debug("*** Combining audio files with no delay")
+                    return audio + audio_from_path
             _LOGGER.warning("Unable to find audio at filepath: %s", filepath)
         except Exception as error:
             _LOGGER.warning('Unable to extract audio from file: "%s"', error)

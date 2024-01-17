@@ -177,17 +177,17 @@ say:
             - label: "Custom 5"
               value: "custom_chime_path_5"
     delay:
-      name: Delay
-      description: "Delay (ms) between the chime/s and the TTS message"
+      name: Delay/Overlap
+      description: "Adds a delay between chime and TTS message segments if value > 0ms. Overlaps them if value < 0ms"
       example: 450
       required: false
       default: 450
       selector:
         number:
           mode: box
-          min: 0
-          max: 10000
-          step: 1
+          min: -100000
+          max: 100000
+          step: 100
           unit_of_measurement: ms
     final_delay:
       name: Final Delay
@@ -511,17 +511,17 @@ say_url:
             - label: "Custom 5"
               value: "custom_chime_path_5"
     delay:
-      name: Delay
-      description: "Delay (ms) between the chime/s and the TTS message"
+      name: Delay/Overlap
+      description: "Adds a delay between chime and TTS message segments if value > 0ms. Overlaps them if value < 0ms"
       example: 450
       required: false
       default: 450
       selector:
         number:
           mode: box
-          min: 0
-          max: 10000
-          step: 1
+          min: -100000
+          max: 100000
+          step: 100
           unit_of_measurement: ms
     final_delay:
       name: Final Delay
