@@ -886,15 +886,7 @@ async def async_process_segment(hass, segments, output_audio, params, options):
                     # Combine audio
                     if tts_audio is not None:
                         tts_audio_duration = float(len(tts_audio) / 1000.0)
-                        if output_audio is not None:
-                            # Crossfade or delay?
-                            if segment_delay < 0:
-                                output_audio = helpers.crossfade(output_audio, tts_audio, segment_delay)
-                            elif segment_delay > 0:
-                                _LOGGER.debug("*** Performing delay of %sms", str(segment_delay))
-                                output_audio += (AudioSegment.silent(duration=segment_delay) + tts_audio)
-                        else:
-                            output_audio += tts_audio
+                        output_audio = helpers.combine_audio(output_audio, tts_audio, segment_delay)
 
                         # Cache the new TTS audio?
                         if segment_cache is True and audio_dict is None:
