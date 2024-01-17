@@ -448,12 +448,9 @@ class ChimeTTSHelper:
     def crossfade(self, audio_1: AudioSegment, audio_2: AudioSegment, duration: int = 0):
         """Crossfade two audio segments."""
         duration = abs(duration)
-        _LOGGER.debug("*** Performing crossfade of %sms", str(duration))
-        _LOGGER.debug("*** duration of audio_1 = %sms", str(len(audio_1)))
+        _LOGGER.debug("Performing overlay of -%sms", str(duration))
         overlap_point = len(audio_1) - duration
-        _LOGGER.debug("*** overlap_point = %sms", str(overlap_point))
         overlap_point = max(0, overlap_point)
-        _LOGGER.debug("*** overlap_point = %sms", str(overlap_point))
 
         crossover_audio = audio_1.overlay(audio_2, position=overlap_point)
         if len(audio_2) > duration:
