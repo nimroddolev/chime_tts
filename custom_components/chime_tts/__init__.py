@@ -796,6 +796,7 @@ async def async_process_segment(hass, segments, output_audio, params, options):
 
             segment_delay = float(segment["delay"]) if "delay" in segment and output_audio is not None else (params["delay"] if "delay" in params else 0.0)
             segment_cache = segment["cache"] if "cache" in segment else params["cache"]
+            segment_audio_conversion = segment["audio_conversion"] if "audio_conversion" in segment else None
 
             # Chime tag
             if segment["type"] == "chime":
@@ -916,6 +917,13 @@ async def async_process_segment(hass, segments, output_audio, params, options):
                 else:
                     _LOGGER.warning("TTS message missing from messsage segment #%s: %s",
                                     str(index+1), str(segment))
+
+            # Audio Conversion with FFmpeg
+            if segment_audio_conversion is not None:
+                _LOGGER.debug("Converting audio segment with FFmpeg...")
+                temp_folder = _data[TEMP_PATH_KEY]
+                output_audio = helpers.ffmpeg_convert_from_audio_segment(output_audio, segment_audio_conversion, temp_folder)
+
     return output_audio
 
 async def async_get_audio_from_path(hass: HomeAssistant, filepath: str, cache=False, delay=0, audio=None):

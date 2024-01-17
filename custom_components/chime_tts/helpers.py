@@ -297,8 +297,43 @@ class ChimeTTSHelper:
         chime_path = self.validate_path(hass, chime_path)
         return chime_path
 
-    def ffmpeg_convert_from_file(self, file_path, ffmpeg_args):
-        """Convert audio stream with FFmpeg and provided arguments."""
+    def ffmpeg_convert_from_audio_segment(self, audio_segment: AudioSegment, ffmpeg_args: str, folder: str):
+        """Convert pydub AudioSegment with FFmpeg and provided arguments."""
+        # Save to temp file
+        temp_audio_file = self.save_audio_to_folder(audio=audio_segment,
+                                                    folder=folder)
+        if temp_audio_file is None:
+            _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to store audio segment")
+            return audio_segment
+
+        # Convert with FFmpeg
+        converted_audio_file = self.ffmpeg_convert_from_file(temp_audio_file, ffmpeg_args)
+        if converted_audio_file is None or converted_audio_file is False or len(converted_audio_file) < 5:
+            _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable convert audio segment")
+            return audio_segment
+
+        # Load new AudioSegment from converted file
+        try:
+            converted_audio_segment = AudioSegment.from_file(converted_audio_file)
+        except Exception as error:
+            _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to load converted audio segment %s", error)
+            return audio_segment
+
+        # Delete temp file & converted file
+        try:
+            os.remove(temp_audio_file)
+            os.remove(converted_audio_file)
+        except Exception as error:
+            _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to delete temp files: %s", error)
+
+        if converted_audio_segment is not None:
+            return converted_audio_segment
+
+        return audio_segment
+
+
+    def ffmpeg_convert_from_file(self, file_path: str, ffmpeg_args: str):
+        """Convert audio file with FFmpeg and provided arguments."""
         try:
             ffmpeg_cmd = [
                 'ffmpeg',
@@ -316,9 +351,12 @@ class ChimeTTSHelper:
                 # Use the default file type of mp3
                 converted_file_path = file_path.replace(".mp3", "_converted.mp3")
             ffmpeg_cmd.append(converted_file_path)
+
+            # Overwrite output file if it already exists
+            ffmpeg_cmd.append('-y')
+
+            # Convert the audil file
             ffmpeg_cmd_string = " ".join(ffmpeg_cmd)
-
-
             ffmpeg_process = subprocess.Popen(ffmpeg_cmd,
                                               stdin=subprocess.PIPE,
                                               stdout=subprocess.PIPE,
