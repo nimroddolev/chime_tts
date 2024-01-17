@@ -681,6 +681,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     hass = params["hass"]
     chime_path = params["chime_path"]
     end_chime_path = params["end_chime_path"]
+    overlay = params["overlay"]
     delay = params["delay"]
     message = params["message"]
     cache = params["cache"]
@@ -713,22 +714,24 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     ######################
 
     # Load chime audio
-    if chime_path is not None and len(chime_path) > 0:
-        output_audio = await async_get_audio_from_path(hass=hass,
-                                                       filepath=chime_path,
-                                                       cache=cache)
+    output_audio = await async_get_audio_from_path(hass=hass,
+                                                    filepath=chime_path,
+                                                    cache=cache)
 
     # Process message tags
-    segments = helpers.parse_message(message)
-    output_audio = await async_process_segment(hass, segments, output_audio, params, options)
+    output_audio = await async_process_segments(hass,
+                                                message,
+                                                output_audio,
+                                                params,
+                                                options)
 
     # Load end chime audio
-    if end_chime_path is not None and len(end_chime_path) > 0:
-        output_audio = await async_get_audio_from_path(hass=hass,
-                                                       filepath=end_chime_path,
-                                                       cache=cache,
-                                                       delay=delay,
-                                                       audio=output_audio)
+    output_audio = await async_get_audio_from_path(hass=hass,
+                                                    filepath=end_chime_path,
+                                                    cache=cache,
+                                                    overlay=overlay,
+                                                    delay=delay,
+                                                    audio=output_audio)
 
     # Save generated audio file
     if output_audio is not None:
@@ -789,139 +792,153 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     return None
 
 
-async def async_process_segment(hass, segments, output_audio, params, options):
+async def async_process_segments(hass, message, output_audio, params, options):
     """Process all message segments and add the audio."""
-    if segments is not None and len(segments) > 0:
-        for index, segment in enumerate(segments):
+    segments = helpers.parse_message(message)
+    if segments is None or len(segments) == 0:
+        return output_audio
 
-            segment_delay = float(segment["delay"]) if "delay" in segment and output_audio is not None else (params["delay"] if "delay" in params else 0.0)
-            segment_cache = segment["cache"] if "cache" in segment else params["cache"]
-            segment_audio_conversion = segment["audio_conversion"] if "audio_conversion" in segment else None
+    for index, segment in enumerate(segments):
+        segment_delay = float(segment["delay"]) if "delay" in segment and output_audio is not None else (params["delay"] if "delay" in params else 0.0)
+        segment_cache = segment["cache"] if "cache" in segment else params["cache"]
+        segment_audio_conversion = segment["audio_conversion"] if "audio_conversion" in segment else None
 
-            # Chime tag
-            if segment["type"] == "chime":
-                if "path" in segment:
-                    output_audio = await async_get_audio_from_path(hass=hass,
-                                                                    filepath=segment["path"],
+        segment_overlay = params["overlay"] if "overlay" in params else 0
+        # if index < len(segments) - 1 and "overlay" in segments[index+1]:
+        #     segment_overlay = segments[index+1]["overlay"]
+        if index > 0 and "overlay" in segments[index-1]:
+            segment_overlay = segments[index-1]["overlay"]
+        _LOGGER.debug("segment_overlay = %s", str(segment_overlay))
+
+        # Chime tag
+        if segment["type"] == "chime":
+            if "path" in segment:
+                output_audio = await async_get_audio_from_path(hass=hass,
+                                                               filepath=segment["path"],
+                                                               cache=segment_cache,
+                                                               overlay=segment_overlay,
+                                                               delay=segment_delay,
+                                                               audio=output_audio)
+            else:
+                _LOGGER.warning("Chime path missing from messsage segment #%s", str(index+1))
+
+        # Delay tag
+        if segment["type"] == "delay":
+            if "length" in segment:
+                segment_delay_length = float(segment["length"])
+                output_audio = output_audio + AudioSegment.silent(duration=segment_delay_length)
+            else:
+                _LOGGER.warning("Delay length missing from messsage segment #%s", str(index+1))
+
+        # Request TTS audio file
+        if segment["type"] == "tts":
+            if "message" in segment and len(segment["message"]) > 0:
+                segment_message = segment["message"]
+                if len(segment_message) == 0 or segment_message == "None":
+                    continue
+
+                segment_tts_platform = segment["tts_platform"] if "tts_platform" in segment else params["tts_platform"]
+                segment_language = segment["language"] if "language" in segment else params["language"]
+                segment_tts_playback_speed = segment["tts_playback_speed"] if "tts_playback_speed" in segment else params["tts_playback_speed"]
+
+                # Use exposed parameters if not present in the options dictionary
+                segment_options = segment["options"] if "options" in segment else {}
+                exposed_option_keys = ["gender", "tld", "voice"]
+                for exposed_option_key in exposed_option_keys:
+                    value = None
+                    if exposed_option_key in segment_options:
+                        value = segment_options[exposed_option_key]
+                    elif exposed_option_key in segment:
+                        value = segment[exposed_option_key]
+                    if value is not None:
+                        segment_options[exposed_option_key] = value
+
+                for key, value in options.items():
+                    if key not in segment_options:
+                        segment_options[key] = value
+                segment_params = {
+                    "message": segment_message,
+                    "tts_platform": segment_tts_platform,
+                    "language": segment_language,
+                    "cache": segment_cache,
+                    "tts_playback_speed": segment_tts_playback_speed
+                }
+                segment_filepath_hash = get_filename_hash_from_service_data({**segment_params}, {**segment_options}, )
+
+                tts_audio = None
+
+                # Use cached TTS audio
+                if segment_cache is True:
+                    _LOGGER.debug(" - Attempting to retrieve TTS file from cache...")
+                    audio_dict = await async_get_cached_audio_data(hass, segment_filepath_hash)
+                    if audio_dict is not None:
+                        tts_audio = await async_get_audio_from_path(hass=hass,
+                                                                    filepath=audio_dict[AUDIO_PATH_KEY],
                                                                     cache=segment_cache,
-                                                                    delay=segment_delay,
-                                                                    audio=output_audio)
-                else:
-                    _LOGGER.warning("Chime path missing from messsage segment #%s", str(index+1))
+                                                                    audio=None)
 
-            # Delay tag
-            if segment["type"] == "delay":
-                if "length" in segment:
-                    segment_delay_length = float(segment["length"])
-                    output_audio = output_audio + AudioSegment.silent(duration=segment_delay_length)
-                else:
-                    _LOGGER.warning("Delay length missing from messsage segment #%s", str(index+1))
-
-            # Request TTS audio file
-            if segment["type"] == "tts":
-                if "message" in segment and len(segment["message"]) > 0:
-                    segment_message = segment["message"]
-                    if len(segment_message) == 0 or segment_message == "None":
-                        continue
-
-                    segment_tts_platform = segment["tts_platform"] if "tts_platform" in segment else params["tts_platform"]
-                    segment_language = segment["language"] if "language" in segment else params["language"]
-                    segment_tts_playback_speed = segment["tts_playback_speed"] if "tts_playback_speed" in segment else params["tts_playback_speed"]
-
-                    # Use exposed parameters if not present in the options dictionary
-                    segment_options = segment["options"] if "options" in segment else {}
-                    exposed_option_keys = ["gender", "tld", "voice"]
-                    for exposed_option_key in exposed_option_keys:
-                        value = None
-                        if exposed_option_key in segment_options:
-                            value = segment_options[exposed_option_key]
-                        elif exposed_option_key in segment:
-                            value = segment[exposed_option_key]
-                        if value is not None:
-                            segment_options[exposed_option_key] = value
-
-                    for key, value in options.items():
-                        if key not in segment_options:
-                            segment_options[key] = value
-                    segment_params = {
-                        "message": segment_message,
-                        "tts_platform": segment_tts_platform,
-                        "language": segment_language,
-                        "cache": segment_cache,
-                        "tts_playback_speed": segment_tts_playback_speed
-                    }
-                    segment_filepath_hash = get_filename_hash_from_service_data({**segment_params}, {**segment_options}, )
-
-                    tts_audio = None
-
-                    # Use cached TTS audio
-                    if segment_cache is True:
-                        _LOGGER.debug(" - Attempting to retrieve TTS file from cache...")
-                        audio_dict = await async_get_cached_audio_data(hass, segment_filepath_hash)
-                        if audio_dict is not None:
-                            tts_audio = await async_get_audio_from_path(hass=hass,
-                                                                        filepath=audio_dict[AUDIO_PATH_KEY],
-                                                                        cache=segment_cache,
-                                                                        audio=None)
-
-                            tts_audio_duration = audio_dict[AUDIO_DURATION_KEY]
-                            _LOGGER.debug(" - ...cached TTS file retrieved with duration: %ss", str(tts_audio_duration))
-                        else:
-                            _LOGGER.debug(" - ...cached TTS file not found")
-
-
-                    # Generate new TTS audio
-                    if tts_audio is None:
-                        tts_audio = await async_request_tts_audio(
-                            hass=hass,
-                            tts_platform=segment_tts_platform,
-                            message=segment_message,
-                            language=segment_language,
-                            cache=segment_cache,
-                            options=segment_options,
-                            tts_playback_speed=segment_tts_playback_speed,
-                        )
-
-
-                    # Combine audio
-                    if tts_audio is not None:
-                        tts_audio_duration = float(len(tts_audio) / 1000.0)
-                        output_audio = helpers.combine_audio(output_audio, tts_audio, segment_delay)
-
-                        # Cache the new TTS audio?
-                        if segment_cache is True and audio_dict is None:
-                            _LOGGER.debug("Saving generated TTS audio to cache")
-                            tts_audio_full_path = helpers.save_audio_to_folder(
-                                tts_audio, _data[TEMP_PATH_KEY])
-                            if tts_audio_full_path is not None:
-                                audio_dict = {
-                                    AUDIO_PATH_KEY: tts_audio_full_path,
-                                    AUDIO_DURATION_KEY: tts_audio_duration
-                                }
-                                await async_store_data(hass, segment_filepath_hash, audio_dict)
-
-                            else:
-                                _LOGGER.warning("Unable to save generated TTS audio to cache")
-
+                        tts_audio_duration = audio_dict[AUDIO_DURATION_KEY]
+                        _LOGGER.debug(" - ...cached TTS file retrieved with duration: %ss", str(tts_audio_duration))
                     else:
-                        _LOGGER.warning("Error generating TTS audio from messsage segment #%s: %s",
-                                        str(index+1), str(segment))
-                else:
-                    _LOGGER.warning("TTS message missing from messsage segment #%s: %s",
-                                    str(index+1), str(segment))
+                        _LOGGER.debug(" - ...cached TTS file not found")
 
-            # Audio Conversion with FFmpeg
-            if segment_audio_conversion is not None:
-                _LOGGER.debug("Converting audio segment with FFmpeg...")
-                temp_folder = _data[TEMP_PATH_KEY]
-                output_audio = helpers.ffmpeg_convert_from_audio_segment(output_audio, segment_audio_conversion, temp_folder)
+
+                # Generate new TTS audio
+                if tts_audio is None:
+                    tts_audio = await async_request_tts_audio(
+                        hass=hass,
+                        tts_platform=segment_tts_platform,
+                        message=segment_message,
+                        language=segment_language,
+                        cache=segment_cache,
+                        options=segment_options,
+                        tts_playback_speed=segment_tts_playback_speed,
+                    )
+
+
+                # Combine audio
+                if tts_audio is not None:
+                    tts_audio_duration = float(len(tts_audio) / 1000.0)
+                    output_audio = helpers.combine_audio(output_audio, tts_audio, segment_overlay, segment_delay)
+
+                    # Cache the new TTS audio?
+                    if segment_cache is True and audio_dict is None:
+                        _LOGGER.debug("Saving generated TTS audio to cache")
+                        tts_audio_full_path = helpers.save_audio_to_folder(
+                            tts_audio, _data[TEMP_PATH_KEY])
+                        if tts_audio_full_path is not None:
+                            audio_dict = {
+                                AUDIO_PATH_KEY: tts_audio_full_path,
+                                AUDIO_DURATION_KEY: tts_audio_duration
+                            }
+                            await async_store_data(hass, segment_filepath_hash, audio_dict)
+
+                        else:
+                            _LOGGER.warning("Unable to save generated TTS audio to cache")
+
+                else:
+                    _LOGGER.warning("Error generating TTS audio from messsage segment #%s: %s",
+                                    str(index+1), str(segment))
+            else:
+                _LOGGER.warning("TTS message missing from messsage segment #%s: %s",
+                                str(index+1), str(segment))
+
+        # Audio Conversion with FFmpeg
+        if segment_audio_conversion is not None:
+            _LOGGER.debug("Converting audio segment with FFmpeg...")
+            temp_folder = _data[TEMP_PATH_KEY]
+            output_audio = helpers.ffmpeg_convert_from_audio_segment(output_audio, segment_audio_conversion, temp_folder)
 
     return output_audio
 
-async def async_get_audio_from_path(hass: HomeAssistant, filepath: str, cache=False, delay=0, audio=None):
+async def async_get_audio_from_path(hass: HomeAssistant,
+                                    filepath: str,
+                                    cache=False,
+                                    overlay=0,
+                                    delay=0,
+                                    audio=None):
     """Add audio from a given file path to existing audio (optional) with delay (optional)."""
-    if filepath is None or filepath == "None":
-        _LOGGER.warning("Invalid audio filepath provided")
+    if filepath is None or filepath == "None" or len(filepath) == 0:
         return audio
 
     # Load/download audio file & validate local path
@@ -946,14 +963,13 @@ async def async_get_audio_from_path(hass: HomeAssistant, filepath: str, cache=Fa
                     return audio_from_path
 
                 # Crossfade or delay?
-                if delay < 0:
-                    return helpers.crossfade(audio, audio_from_path, delay)
-                elif delay > 0:
+                if overlay > 0:
+                    return helpers.crossfade(audio, audio_from_path, overlay)
+                if delay > 0:
                     _LOGGER.debug("*** Combining audio files with delay of %sms", str(delay))
                     return audio + (AudioSegment.silent(duration=delay) + audio_from_path)
-                else:
-                    _LOGGER.debug("*** Combining audio files with no delay")
-                    return audio + audio_from_path
+                _LOGGER.debug("*** Combining audio files with no delay")
+                return audio + audio_from_path
             _LOGGER.warning("Unable to find audio at filepath: %s", filepath)
         except Exception as error:
             _LOGGER.warning('Unable to extract audio from file: "%s"', error)

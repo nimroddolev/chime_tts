@@ -66,6 +66,7 @@ class ChimeTTSHelper:
         entity_ids = self.parse_entity_ids(data, hass)
         chime_path =str(data.get("chime_path", ""))
         end_chime_path = str(data.get("end_chime_path", ""))
+        overlay = float(data.get("overlay", 0))
         delay = float(data.get("delay", PAUSE_DURATION_MS))
         final_delay = float(data.get("final_delay", 0))
         message = str(data.get("message", ""))
@@ -98,6 +99,7 @@ class ChimeTTSHelper:
             "chime_path": chime_path,
             "end_chime_path": end_chime_path,
             "cache": cache,
+            "overlay": overlay,
             "delay": delay,
             "final_delay": final_delay,
             "media_players_array": media_players_array,
@@ -300,8 +302,10 @@ class ChimeTTSHelper:
     def ffmpeg_convert_from_audio_segment(self, audio_segment: AudioSegment, ffmpeg_args: str, folder: str):
         """Convert pydub AudioSegment with FFmpeg and provided arguments."""
         # Save to temp file
+        temp_filename = "temp_segment.mp3"
         temp_audio_file = self.save_audio_to_folder(audio=audio_segment,
-                                                    folder=folder)
+                                                    folder=folder,
+                                                    file_name=temp_filename)
         if temp_audio_file is None:
             _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to store audio segment")
             return audio_segment
@@ -445,7 +449,11 @@ class ChimeTTSHelper:
         _LOGGER.debug(" - File saved to path: %s", audio_full_path)
         return audio_full_path
 
-    def combine_audio(self, audio_1: AudioSegment, audio_2: AudioSegment, delay: int = 0):
+    def combine_audio(self,
+                      audio_1: AudioSegment,
+                      audio_2: AudioSegment,
+                      overlay: int = 0,
+                      delay: int = 0):
         """Combine two AudioSegment object with either a delay (if >0) or overlap (if <0)."""
         if audio_1 is None:
             return audio_2
@@ -453,23 +461,22 @@ class ChimeTTSHelper:
             return audio_1
         ret_val = audio_1 + audio_2
         # Crossfade or delay?
-        if delay < 0:
-            _LOGGER.debug("Performing overlay of -%sms", str(delay))
-            ret_val = self.crossfade(audio_1, audio_2, delay)
+        if overlay > 0:
+            _LOGGER.debug("Performing overlay of %sms", str(overlay))
+            ret_val = self.crossfade(audio_1, audio_2, overlay)
         elif delay > 0:
             _LOGGER.debug("Performing delay of %sms", str(delay))
             ret_val = audio_1 + (AudioSegment.silent(duration=delay) + audio_2)
         return ret_val
 
-    def crossfade(self, audio_1: AudioSegment, audio_2: AudioSegment, duration: int = 0):
+    def crossfade(self, audio_1: AudioSegment, audio_2: AudioSegment, overlay: int = 0):
         """Crossfade two audio segments."""
-        duration = abs(duration)
-        overlap_point = len(audio_1) - duration
+        overlap_point = len(audio_1) - overlay
         overlap_point = max(0, overlap_point)
 
         crossover_audio = audio_1.overlay(audio_2, position=overlap_point)
-        if len(audio_2) > duration:
-            crossover_audio += audio_2[duration:]
+        if len(audio_2) > overlay:
+            crossover_audio += audio_2[overlay:]
         return crossover_audio
 
 

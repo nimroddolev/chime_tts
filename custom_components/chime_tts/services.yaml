@@ -176,18 +176,31 @@ say:
               value: "custom_chime_path_$"
             - label: "Custom 5"
               value: "custom_chime_path_5"
+    overlay:
+      name: Overlay
+      description: "Overlays the chime and TTS message segments"
+      example: 450
+      required: false
+      default: 0
+      selector:
+        number:
+          mode: box
+          min: 0
+          max: 100000
+          step: 10
+          unit_of_measurement: ms
     delay:
-      name: Delay/Overlap
-      description: "Adds a delay between chime and TTS message segments if value > 0ms. Overlaps them if value < 0ms"
+      name: Delay
+      description: "Adds a delay between chime and TTS message segments"
       example: 450
       required: false
       default: 450
       selector:
         number:
           mode: box
-          min: -100000
+          min: 0
           max: 100000
-          step: 100
+          step: 10
           unit_of_measurement: ms
     final_delay:
       name: Final Delay
@@ -510,18 +523,31 @@ say_url:
               value: "custom_chime_path_$"
             - label: "Custom 5"
               value: "custom_chime_path_5"
+    overlay:
+      name: Overlay
+      description: "Overlays the chime and TTS message segments"
+      example: 450
+      required: false
+      default: 0
+      selector:
+        number:
+          mode: box
+          min: 0
+          max: 100000
+          step: 10
+          unit_of_measurement: ms
     delay:
-      name: Delay/Overlap
-      description: "Adds a delay between chime and TTS message segments if value > 0ms. Overlaps them if value < 0ms"
+      name: Delay
+      description: "Adds a delay between chime and TTS message segments"
       example: 450
       required: false
       default: 450
       selector:
         number:
           mode: box
-          min: -100000
+          min: 0
           max: 100000
-          step: 100
+          step: 10
           unit_of_measurement: ms
     final_delay:
       name: Final Delay
