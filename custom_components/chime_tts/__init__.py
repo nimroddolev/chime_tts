@@ -800,18 +800,11 @@ async def async_process_segment(hass, segments, output_audio, params, options):
             # Chime tag
             if segment["type"] == "chime":
                 if "path" in segment:
-                    # await async_refresh_stored_data(hass)
-                    segment_chime_path = await helpers.async_get_chime_path(
-                        segment["path"],
-                        segment_cache,
-                        _data,
-                        hass)
-                    if segment_chime_path is not None:
-                        output_audio = await async_get_audio_from_path(hass=hass,
-                                                                       filepath=segment_chime_path,
-                                                                       cache=segment_cache,
-                                                                       delay=segment_delay,
-                                                                       audio=output_audio)
+                    output_audio = await async_get_audio_from_path(hass=hass,
+                                                                    filepath=segment["path"],
+                                                                    cache=segment_cache,
+                                                                    delay=segment_delay,
+                                                                    audio=output_audio)
                 else:
                     _LOGGER.warning("Chime path missing from messsage segment #%s", str(index+1))
 
