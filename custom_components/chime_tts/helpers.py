@@ -327,11 +327,16 @@ class ChimeTTSHelper:
             return audio_segment
 
         # Delete temp file & converted file
-        try:
-            os.remove(temp_audio_file)
-            os.remove(converted_audio_file)
-        except Exception as error:
-            _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to delete temp files: %s", error)
+        if os.path.exists(temp_audio_file):
+            try:
+                os.remove(temp_audio_file)
+            except Exception as error:
+                _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to delete temp files: %s", error)
+        if os.path.exists(converted_audio_file):
+            try:
+                os.remove(converted_audio_file)
+            except Exception as error:
+                _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to delete temp files: %s", error)
 
         if converted_audio_segment is not None:
             return converted_audio_segment
