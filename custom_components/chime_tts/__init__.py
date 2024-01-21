@@ -158,7 +158,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                 )
 
         # Save generated temp mp3 file to cache
-        if params["cache"] is True or params["entity_ids"] is None or len(params["entity_ids"]) == 0:
+        if params["cache"] is True or params["entity_ids"] is None or len(params["entity_ids"])==0:
             if _data["is_save_generated"] is True:
                 if params["cache"]:
                     _LOGGER.debug("Saving generated mp3 file to cache")
@@ -178,7 +178,10 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                 instance_url = str(get_url(hass))
 
             external_url = (
-                (instance_url + "/" + audio_path).replace(instance_url + "//", instance_url + "/").replace("/config", "").replace("www/", "local/")
+                (instance_url + "/" + audio_path)
+                .replace(instance_url + "//", instance_url + "/")
+                .replace("/config", "")
+                .replace("www/", "local/")
             )
             _LOGGER.debug("Final URL = %s", external_url)
 
@@ -203,7 +206,10 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         _LOGGER.debug("----- Chime TTS Say URL Called. Version %s -----", VERSION)
         return await async_say(service, True)
 
-    hass.services.async_register(DOMAIN, SERVICE_SAY_URL, async_say_url, supports_response=SupportsResponse.ONLY)
+    hass.services.async_register(DOMAIN,
+                                 SERVICE_SAY_URL,
+                                 async_say_url,
+                                 supports_response=SupportsResponse.ONLY)
 
     #######################
     # Clear Cahce Service #
@@ -636,7 +642,8 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         # Perform FFmpeg conversion
         if ffmpeg_args:
             _LOGGER.debug("  - Performing FFmpeg audio conversion...")
-            converted_output_audio = helpers.ffmpeg_convert_from_file(new_audio_full_path, ffmpeg_args)
+            converted_output_audio = helpers.ffmpeg_convert_from_file(new_audio_full_path,
+                                                                      ffmpeg_args)
             if converted_output_audio is not False:
                 _LOGGER.debug("  - ...FFmpeg audio conversion completed.")
                 new_audio_full_path = converted_output_audio

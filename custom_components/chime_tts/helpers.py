@@ -299,7 +299,10 @@ class ChimeTTSHelper:
         chime_path = self.validate_path(hass, chime_path)
         return chime_path
 
-    def ffmpeg_convert_from_audio_segment(self, audio_segment: AudioSegment, ffmpeg_args: str, folder: str):
+    def ffmpeg_convert_from_audio_segment(self,
+                                          audio_segment: AudioSegment,
+                                          ffmpeg_args: str,
+                                          folder: str):
         """Convert pydub AudioSegment with FFmpeg and provided arguments."""
         # Save to temp file
         temp_filename = "temp_segment.mp3"
@@ -324,11 +327,16 @@ class ChimeTTSHelper:
             return audio_segment
 
         # Delete temp file & converted file
-        try:
-            os.remove(temp_audio_file)
-            os.remove(converted_audio_file)
-        except Exception as error:
-            _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to delete temp files: %s", error)
+        if os.path.exists(temp_audio_file):
+            try:
+                os.remove(temp_audio_file)
+            except Exception as error:
+                _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to delete temp files: %s", error)
+        if os.path.exists(converted_audio_file):
+            try:
+                os.remove(converted_audio_file)
+            except Exception as error:
+                _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to delete temp files: %s", error)
 
         if converted_audio_segment is not None:
             return converted_audio_segment
@@ -559,7 +567,7 @@ class ChimeTTSHelper:
         try:
             _LOGGER.debug("Downloading chime at URL: %s", url)
             response = await hass.async_add_executor_job(requests.get, url)
-            response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx status codes)
+            response.raise_for_status() # Raise an HTTPError for bad responses (4xx and 5xx status codes)
         except requests.exceptions.HTTPError as errh:
             _LOGGER.warning(" - HTTP Error: %s", str(errh))
             return None
@@ -596,7 +604,8 @@ class ChimeTTSHelper:
                     AUDIO_DURATION_KEY: audio_duration
                 }
         else:
-            _LOGGER.warning(" - Unable to extract audio from URL with content-type '%s'", str(content_type))
+            _LOGGER.warning(" - Unable to extract audio from URL with content-type '%s'",
+                            str(content_type))
         return None
 
     def get_hash_for_string(self, string):

@@ -1,9 +1,9 @@
 """Adds config flow for Chime TTS."""
+import logging
+import os
 from homeassistant import config_entries
 import requests
 import voluptuous as vol
-import logging
-import os
 from .const import (
     DOMAIN,
     QUEUE_TIMEOUT_KEY,
@@ -62,19 +62,23 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 ): int,
                 vol.Required(
                     MEDIA_DIR_KEY,
-                    default=self.get_data_key_value(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT),  # type: ignore
+                    default=self.get_data_key_value(MEDIA_DIR_KEY,
+                                                    MEDIA_DIR_DEFAULT),  # type: ignore
                 ): str,
                 vol.Required(
                     TEMP_CHIMES_PATH_KEY,
-                    default=self.get_data_key_value(TEMP_CHIMES_PATH_KEY, TEMP_CHIMES_PATH_DEFAULT),  # type: ignore
+                    default=self.get_data_key_value(TEMP_CHIMES_PATH_KEY,
+                                                    TEMP_CHIMES_PATH_DEFAULT),  # type: ignore
                 ): str,
                 vol.Required(
                     TEMP_PATH_KEY,
-                    default=self.get_data_key_value(TEMP_PATH_KEY, TEMP_PATH_DEFAULT),  # type: ignore
+                    default=self.get_data_key_value(TEMP_PATH_KEY,
+                                                    TEMP_PATH_DEFAULT),  # type: ignore
                 ): str,
                 vol.Required(
                     WWW_PATH_KEY,
-                    default=self.get_data_key_value(WWW_PATH_KEY, WWW_PATH_DEFAULT),  # type: ignore
+                    default=self.get_data_key_value(WWW_PATH_KEY,
+                                                    WWW_PATH_DEFAULT),  # type: ignore
                 ): str,
                 vol.Optional(
                     MP3_PRESET_CUSTOM_PREFIX + str(1),
