@@ -3,7 +3,6 @@
 import logging
 import os
 import io
-import asyncio
 from datetime import datetime
 
 from pydub import AudioSegment
@@ -33,6 +32,7 @@ from homeassistant.exceptions import (
 
 from .config_flow import ChimeTTSOptionsFlowHandler
 from .helpers import ChimeTTSHelper
+from .queue_manager import ChimeTTSQueueManager
 
 from .const import (
     DOMAIN,
@@ -57,12 +57,6 @@ from .const import (
     MEDIA_DIR_DEFAULT,
     MP3_PRESET_CUSTOM_PREFIX,
     MP3_PRESET_CUSTOM_KEY,
-    QUEUE,
-    QUEUE_STATUS_KEY,
-    QUEUE_IDLE,
-    QUEUE_RUNNING,
-    QUEUE_CURRENT_ID_KEY,
-    QUEUE_LAST_ID,
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
     AMAZON_POLLY,
@@ -86,13 +80,15 @@ _LOGGER = logging.getLogger(__name__)
 _data = {}
 
 helpers = ChimeTTSHelper()
+queue = ChimeTTSQueueManager()
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up an entry."""
     await async_refresh_stored_data(hass)
-    init_queue()
     update_configuration(config_entry, hass)
+    queue.set_timeout(_data[QUEUE_TIMEOUT_KEY])
+
     config_entry.async_on_unload(config_entry.add_update_listener(async_reload_entry))
     return True
 
@@ -109,14 +105,16 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         if is_say_url is False:
             _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
 
-        result = await start_queue(service, hass, async_say_execute)
-        # Service call completed successfully
+        # Add service calls to the queue with arguments
+        result = await queue.add_to_queue(async_say_execute,service)
+
+        # Stop the queue processing
+        # await queue.stop_queue_processing()
 
         if result is not False:
             return result
 
         # Service call failed
-        dequeue_service_call()
         return False
 
 
@@ -283,121 +281,6 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     await async_unload_entry(hass, config_entry)
     await async_setup_entry(hass, config_entry)
     await async_setup(hass, config_entry)
-
-
-#############
-### QUEUE ###
-#############
-
-
-def init_queue():
-    """Initialize variables and states for queuing service calls."""
-    _data[QUEUE] = []
-    _data[QUEUE_STATUS_KEY] = QUEUE_IDLE
-    _data[QUEUE_CURRENT_ID_KEY] = -1
-    _data[QUEUE_LAST_ID] = -1
-
-
-def queue_new_service_call(service):
-    """Add a new service call to the queue."""
-    service_id = _data[QUEUE_LAST_ID] + 1
-    if _data[QUEUE] is None:
-        _data[QUEUE] = []
-
-    service_dict = {"service": service, "id": service_id}
-    _data[QUEUE].append(service_dict)
-    _data[QUEUE_LAST_ID] = service_id
-
-    _LOGGER.debug("Service call #%s was added to the queue.", service_id)
-    return service_dict
-
-
-def get_queued_service_call():
-    """Get the next queued service call from the queue."""
-    if len(_data[QUEUE]) > 0:
-        return _data[QUEUE][0]
-    _LOGGER.debug("Queue empty")
-    return None
-
-
-def dequeue_service_call():
-    """Remove the oldest service call from the queue."""
-    if _data[QUEUE] and len(_data[QUEUE]) > 0:
-        _LOGGER.debug("Removing current queued service call.")
-        _data[QUEUE].pop(0)
-
-        # All queued jobs completed
-        if len(_data[QUEUE]) == 0:
-            _LOGGER.debug("Queue emptied. Reinitializing values.")
-            init_queue()
-        else:
-            # Move on to the next item (queued or in the future)
-            _LOGGER.debug("Incrementing to next queued service call.")
-            _data[QUEUE_CURRENT_ID_KEY] += 1
-            _data[QUEUE_STATUS_KEY] = QUEUE_IDLE
-
-
-async def start_queue(service, hass, say_execute_callback):
-    """Start the queue for chime_tts.say service calls."""
-    service_dict = queue_new_service_call(service)
-
-    # Start queue
-    while _data[QUEUE_CURRENT_ID_KEY] < service_dict["id"]:
-        # Wait for the previous service call to end
-        timeout = _data[QUEUE_TIMEOUT_KEY]
-        if _data[QUEUE_STATUS_KEY] is QUEUE_RUNNING:
-            # Wait until current job is completed
-            previous_jobs_count = int(
-                int(service_dict["id"]) - int(_data[QUEUE_CURRENT_ID_KEY])
-            )
-            _LOGGER.debug(
-                "...waiting for %s previous queued job%s to complete.",
-                "a" if previous_jobs_count == 1 else str(previous_jobs_count),
-                "s" if previous_jobs_count > 1 else "",
-            )
-            retry_interval = 0.1
-            elapsed_time = 0
-            while elapsed_time < timeout and _data[QUEUE_STATUS_KEY] is QUEUE_RUNNING:
-                await hass.async_add_executor_job(helpers.sleep, retry_interval)
-                elapsed_time += retry_interval
-                if _data[QUEUE_STATUS_KEY] is QUEUE_IDLE:
-                    break
-            if _data[QUEUE_STATUS_KEY] is not QUEUE_IDLE:
-                # Timeout
-                _LOGGER.error(
-                    "Timeout reached on queued job #%s.", str(service_dict["id"])
-                )
-                dequeue_service_call()
-                break
-
-        # Execute the next service call in the queue
-        if _data[QUEUE_STATUS_KEY] is QUEUE_IDLE:
-            next_service_dict = get_queued_service_call()
-            if next_service_dict is not None:
-                next_service = next_service_dict["service"]
-                next_service_id = next_service_dict["id"]
-                _data[QUEUE_STATUS_KEY] = QUEUE_RUNNING
-                result = None
-                try:
-                    _LOGGER.debug("Executing queued job #%s", str(next_service_id))
-                    task = asyncio.create_task(say_execute_callback(next_service))
-                    result = await asyncio.wait_for(task, timeout)
-                except asyncio.TimeoutError:
-                    _LOGGER.error(
-                        "Service call to chime_tts.say timed out after %s seconds.",
-                        timeout,
-                    )
-                dequeue_service_call()
-                _data[QUEUE_STATUS_KEY] = QUEUE_IDLE
-                return result
-            _LOGGER.error("Unable to get next queued service call.")
-        else:
-            _LOGGER.error("Unable to run queued service call.")
-
-        # Service call failed
-        dequeue_service_call()
-        _data[QUEUE_STATUS_KEY] = QUEUE_IDLE
-        return False
 
 
 async def async_post_playback_actions(
