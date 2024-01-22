@@ -694,11 +694,8 @@ async def async_process_segments(hass, message, output_audio, params, options):
         segment_audio_conversion = segment["audio_conversion"] if "audio_conversion" in segment else None
 
         segment_overlay = params["overlay"] if "overlay" in params else 0
-        # if index < len(segments) - 1 and "overlay" in segments[index+1]:
-        #     segment_overlay = segments[index+1]["overlay"]
         if index > 0 and "overlay" in segments[index-1]:
             segment_overlay = segments[index-1]["overlay"]
-        _LOGGER.debug("segment_overlay = %s", str(segment_overlay))
 
         # Chime tag
         if segment["type"] == "chime":
