@@ -468,17 +468,24 @@ class ChimeTTSHelper:
         if audio_2 is None:
             return audio_1
         ret_val = audio_1 + audio_2
-        # Crossfade or delay?
-        if overlay > 0:
+
+        # Overlay or delay?
+        delta = delay - overlay
+        if delta < 0:
             _LOGGER.debug("Performing overlay of %sms", str(overlay))
-            ret_val = self.crossfade(audio_1, audio_2, overlay)
-        elif delay > 0:
+            ret_val = self.overlay(audio_1, audio_2, delta)
+        if delta > 0:
             _LOGGER.debug("Performing delay of %sms", str(delay))
-            ret_val = audio_1 + (AudioSegment.silent(duration=delay) + audio_2)
+            ret_val = audio_1 + (AudioSegment.silent(duration=delta) + audio_2)
+        else:
+            _LOGGER.debug("Combining audio files with no delay or overlay")
+
         return ret_val
 
-    def crossfade(self, audio_1: AudioSegment, audio_2: AudioSegment, overlay: int = 0):
-        """Crossfade two audio segments."""
+
+    def overlay(self, audio_1: AudioSegment, audio_2: AudioSegment, overlay: int = 0):
+        """Overlay two audio segments."""
+        overlay = abs(overlay)
         overlap_point = len(audio_1) - overlay
         overlap_point = max(0, overlap_point)
 
