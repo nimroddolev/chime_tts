@@ -48,8 +48,6 @@ class ChimeTTSQueueManager:
         if not self.running_tasks:
             task = asyncio.create_task(self.process_queue())
             self.running_tasks.append(task)
-        else:
-            _LOGGER.debug("Queued the service call")
 
         return future
 
