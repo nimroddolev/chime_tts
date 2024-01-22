@@ -175,7 +175,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         # Convert URL to external for chime_tts.say_url
         if params["entity_ids"] is None or len(params["entity_ids"]) == 0:
-            instance_url = hass.config.external_url
+            instance_url = hass.config.internal_url
             if instance_url is None:
                 instance_url = str(get_url(hass))
 
