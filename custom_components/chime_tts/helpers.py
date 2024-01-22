@@ -232,24 +232,33 @@ class ChimeTTSHelper:
         if p_filepath is None:
             return ret_value
 
-        filepaths = [p_filepath]
-
         # Test for docker/virtual instances filepath
         internal_url = hass.config.internal_url
         external_url = hass.config.external_url
         config_path = hass.config.path("")
         root_path = internal_url if internal_url is not None else (external_url if external_url is not None else config_path)
-        _LOGGER.debug("root_path = %s", root_path)
+
+        _LOGGER.debug("hass.config.internal_url = %s", internal_url)
+        _LOGGER.debug("hass.config.external_url = %s", external_url)
+        _LOGGER.debug("hass.config.path("") = %s", config_path)
+        _LOGGER.debug("---------------------")
+        _LOGGER.debug("Using root: %s", root_path)
         absolute_path = (root_path + p_filepath).replace("/config", "").replace("//", "/")
+
+        filepaths = [absolute_path]
+
         if p_filepath is not absolute_path:
-            filepaths.append(absolute_path)
+            filepaths.append(p_filepath)
 
         # Test each filepath
         for filepath in filepaths:
             if os.path.exists(filepath) is True:
+                _LOGGER.debug("File found at path: %s", filepath)
                 ret_value = filepath
-            if ret_value is None:
+        if ret_value is None:
+            for filepath in filepaths:
                 _LOGGER.debug("File not found at path: %s", filepath)
+
 
         return ret_value
 
