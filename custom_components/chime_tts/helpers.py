@@ -116,7 +116,7 @@ class ChimeTTSHelper:
 
         _LOGGER.debug("----- General Parameters -----")
         for key, value in params.items():
-            if value is not None and key not in ["hass", "media_players_array"]:
+            if value is not None and value is not "" and key not in ["hass", "media_players_array"]:
                 _LOGGER.debug(" * %s = %s", key, str(value))
 
         return params
