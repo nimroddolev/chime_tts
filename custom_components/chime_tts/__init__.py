@@ -173,7 +173,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         # Convert URL to external for chime_tts.say_url
         if params["entity_ids"] is None or len(params["entity_ids"]) == 0:
-            instance_url = hass.config.external_url
+            instance_url = hass.config.internal_url
             if instance_url is None:
                 instance_url = str(get_url(hass))
 
@@ -852,14 +852,8 @@ async def async_get_audio_from_path(hass: HomeAssistant,
                 if audio is None:
                     return audio_from_path
 
-                # Crossfade or delay?
-                if overlay > 0:
-                    return helpers.crossfade(audio, audio_from_path, overlay)
-                if delay > 0:
-                    _LOGGER.debug("*** Combining audio files with delay of %sms", str(delay))
-                    return audio + (AudioSegment.silent(duration=delay) + audio_from_path)
-                _LOGGER.debug("*** Combining audio files with no delay")
-                return audio + audio_from_path
+                # Apply overlay/delay?
+                return helpers.combine_audio(audio, audio_from_path, overlay, delay)
             _LOGGER.warning("Unable to find audio at filepath: %s", filepath)
         except Exception as error:
             _LOGGER.warning('Unable to extract audio from file: "%s"', error)
