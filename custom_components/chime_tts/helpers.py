@@ -235,7 +235,11 @@ class ChimeTTSHelper:
         filepaths = [p_filepath]
 
         # Test for docker/virtual instances filepath
-        root_path = hass.config.path("")
+        internal_url = hass.config.internal_url
+        external_url = hass.config.external_url
+        config_path = hass.config.path("")
+        root_path = internal_url if internal_url is not None else (external_url if external_url is not None else config_path)
+        _LOGGER.debug("root_path = %s", root_path)
         absolute_path = (root_path + p_filepath).replace("/config", "").replace("//", "/")
         if p_filepath is not absolute_path:
             filepaths.append(absolute_path)
