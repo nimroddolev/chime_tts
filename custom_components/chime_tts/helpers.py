@@ -9,8 +9,8 @@ import subprocess
 import shutil
 from io import BytesIO
 import re
-import requests
 import yaml
+import requests
 from pydub import AudioSegment
 from homeassistant.core import HomeAssistant, State
 from homeassistant.const import CONF_ENTITY_ID, SERVICE_TURN_ON
@@ -116,7 +116,7 @@ class ChimeTTSHelper:
 
         _LOGGER.debug("----- General Parameters -----")
         for key, value in params.items():
-            if value is not None and value is not "" and key not in ["hass", "media_players_array"]:
+            if value is not None and value != "" and key not in ["hass", "media_players_array"]:
                 _LOGGER.debug(" * %s = %s", key, str(value))
 
         return params
