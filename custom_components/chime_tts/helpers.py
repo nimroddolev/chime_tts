@@ -20,7 +20,7 @@ from homeassistant.components.media_player.const import (
     ATTR_GROUP_MEMBERS
 )
 from .const import (
-    PAUSE_DURATION_MS,
+    DEFAULT_DELAY_MS,
     ALEXA_FFMPEG_ARGS,
     MP3_PRESET_PATH,
     MP3_PRESETS,
@@ -66,8 +66,7 @@ class ChimeTTSHelper:
         entity_ids = self.parse_entity_ids(data, hass)
         chime_path =str(data.get("chime_path", ""))
         end_chime_path = str(data.get("end_chime_path", ""))
-        overlay = float(data.get("overlay", 0))
-        delay = float(data.get("delay", PAUSE_DURATION_MS))
+        offset = float(data.get("delay", data.get("offset", DEFAULT_DELAY_MS)))
         final_delay = float(data.get("final_delay", 0))
         message = str(data.get("message", ""))
         tts_platform = str(data.get("tts_platform", ""))
@@ -99,8 +98,7 @@ class ChimeTTSHelper:
             "chime_path": chime_path,
             "end_chime_path": end_chime_path,
             "cache": cache,
-            "overlay": overlay,
-            "delay": delay,
+            "offset": offset,
             "final_delay": final_delay,
             "media_players_array": media_players_array,
             "message": message,
@@ -460,23 +458,21 @@ class ChimeTTSHelper:
     def combine_audio(self,
                       audio_1: AudioSegment,
                       audio_2: AudioSegment,
-                      overlay: int = 0,
-                      delay: int = 0):
-        """Combine two AudioSegment object with either a delay (if >0) or overlap (if <0)."""
+                      offset: int = 0):
+        """Combine two AudioSegment object with either a delay (if >0) or overlay (if <0)."""
         if audio_1 is None:
             return audio_2
         if audio_2 is None:
             return audio_1
         ret_val = audio_1 + audio_2
 
-        # Overlay or delay?
-        delta = delay - overlay
-        if delta < 0:
-            _LOGGER.debug("Performing overlay of %sms", str(overlay))
-            ret_val = self.overlay(audio_1, audio_2, delta)
-        if delta > 0:
-            _LOGGER.debug("Performing delay of %sms", str(delay))
-            ret_val = audio_1 + (AudioSegment.silent(duration=delta) + audio_2)
+        # Overlay / delay
+        if offset < 0:
+            _LOGGER.debug("Performing overlay of %sms", str(offset))
+            ret_val = self.overlay(audio_1, audio_2, offset)
+        elif offset > 0:
+            _LOGGER.debug("Performing delay of %sms", str(offset))
+            ret_val = audio_1 + (AudioSegment.silent(duration=offset) + audio_2)
         else:
             _LOGGER.debug("Combining audio files with no delay or overlay")
 

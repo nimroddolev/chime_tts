@@ -291,16 +291,16 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
 
 async def async_post_playback_actions(
     hass: HomeAssistant,
-    delay_duration: float,
+    audio_duration: float,
     final_delay: float,
     media_players_array: list,
     volume_level: float,
     unjoin_players: bool,
 ):
     """Run post playback actions."""
-    # Delay by audio playback duration
-    _LOGGER.debug("Waiting %ss for audio playback to complete...", str(delay_duration))
-    await hass.async_add_executor_job(helpers.sleep, delay_duration)
+    # Wait the audio playback duration
+    _LOGGER.debug("Waiting %ss for audio playback to complete...", str(audio_duration))
+    await hass.async_add_executor_job(helpers.sleep, audio_duration)
     if final_delay > 0:
         final_delay_s = float(final_delay / 1000)
         _LOGGER.debug("Waiting %ss for final_delay to complete...", str(final_delay_s))
@@ -570,13 +570,11 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     hass = params["hass"]
     chime_path = params["chime_path"]
     end_chime_path = params["end_chime_path"]
-    overlay = params["overlay"]
-    delay = params["delay"]
+    offset = params["offset"]
     message = params["message"]
     cache = params["cache"]
     entity_ids = params["entity_ids"]
     ffmpeg_args = params["ffmpeg_args"]
-    _data["delay"] = 0
     _data["is_save_generated"] = False
     _LOGGER.debug("async_get_playback_audio_path")
 
@@ -616,16 +614,14 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
     # Load end chime audio
     output_audio = await async_get_audio_from_path(hass=hass,
-                                                    filepath=end_chime_path,
-                                                    cache=cache,
-                                                    overlay=overlay,
-                                                    delay=delay,
-                                                    audio=output_audio)
+                                                   filepath=end_chime_path,
+                                                   cache=cache,
+                                                   offset=offset,
+                                                   audio=output_audio)
 
     # Save generated audio file
     if output_audio is not None:
         duration = float(len(output_audio) / 1000.0)
-        _data["delay"] = duration
         _LOGGER.debug(" - Final audio created. Duration: %ss", duration)
 
         # Save MP3 file
@@ -682,6 +678,24 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     return None
 
 
+def get_segment_offset(output_audio, segment, params):
+    """Offset value for segment."""
+    segment_offset = 0
+    if output_audio is not None:
+        # Get "offset" parameter
+        if "offset" in segment:
+            segment_offset = segment["offset"]
+
+        # Support deprecated "delay" parmeter
+        else:
+            if "delay" in segment:
+                segment_offset = float(segment["delay"])
+            elif "delay" in params:
+                segment_offset = params["delay"]
+
+    return segment_offset
+
+
 async def async_process_segments(hass, message, output_audio, params, options):
     """Process all message segments and add the audio."""
     segments = helpers.parse_message(message)
@@ -689,13 +703,9 @@ async def async_process_segments(hass, message, output_audio, params, options):
         return output_audio
 
     for index, segment in enumerate(segments):
-        segment_delay = float(segment["delay"]) if "delay" in segment and output_audio is not None else (params["delay"] if "delay" in params else 0.0)
         segment_cache = segment["cache"] if "cache" in segment else params["cache"]
         segment_audio_conversion = segment["audio_conversion"] if "audio_conversion" in segment else None
-
-        segment_overlay = params["overlay"] if "overlay" in params else 0
-        if index > 0 and "overlay" in segments[index-1]:
-            segment_overlay = segments[index-1]["overlay"]
+        segment_offset = get_segment_offset(output_audio, segment, params) if index > 0 else 0
 
         # Chime tag
         if segment["type"] == "chime":
@@ -703,8 +713,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
                 output_audio = await async_get_audio_from_path(hass=hass,
                                                                filepath=segment["path"],
                                                                cache=segment_cache,
-                                                               overlay=segment_overlay,
-                                                               delay=segment_delay,
+                                                               offset=segment_offset,
                                                                audio=output_audio)
             else:
                 _LOGGER.warning("Chime path missing from messsage segment #%s", str(index+1))
@@ -786,7 +795,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
                 # Combine audio
                 if tts_audio is not None:
                     tts_audio_duration = float(len(tts_audio) / 1000.0)
-                    output_audio = helpers.combine_audio(output_audio, tts_audio, segment_overlay, segment_delay)
+                    output_audio = helpers.combine_audio(output_audio, tts_audio, segment_offset)
 
                     # Cache the new TTS audio?
                     if segment_cache is True and audio_dict is None:
@@ -821,10 +830,9 @@ async def async_process_segments(hass, message, output_audio, params, options):
 async def async_get_audio_from_path(hass: HomeAssistant,
                                     filepath: str,
                                     cache=False,
-                                    overlay=0,
-                                    delay=0,
+                                    offset=0,
                                     audio=None):
-    """Add audio from a given file path to existing audio (optional) with delay (optional)."""
+    """Add audio from a given file path to existing audio (optional) with offset (optional)."""
     if filepath is None or filepath == "None" or len(filepath) == 0:
         return audio
 
@@ -849,8 +857,8 @@ async def async_get_audio_from_path(hass: HomeAssistant,
                 if audio is None:
                     return audio_from_path
 
-                # Apply overlay/delay?
-                return helpers.combine_audio(audio, audio_from_path, overlay, delay)
+                # Apply offset
+                return helpers.combine_audio(audio, audio_from_path, offset)
             _LOGGER.warning("Unable to find audio at filepath: %s", filepath)
         except Exception as error:
             _LOGGER.warning('Unable to extract audio from file: "%s"', error)
@@ -1127,7 +1135,7 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
         "language",
         "chime_path",
         "end_chime_path",
-        "delay",
+        "offset",
         "tts_playback_speed",
     ]
     for param in relevant_params:

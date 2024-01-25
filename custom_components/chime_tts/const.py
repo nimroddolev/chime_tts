@@ -23,7 +23,7 @@ else:
 SERVICE_SAY = "say"
 SERVICE_SAY_URL = "say_url"
 SERVICE_CLEAR_CACHE = "clear_cache"
-PAUSE_DURATION_MS = 450
+DEFAULT_DELAY_MS = 450
 DATA_STORAGE_KEY = "chime_tts_integration_data"
 AUDIO_PATH_KEY = "audio_path"
 AUDIO_DURATION_KEY = "audio_duration"

@@ -16,9 +16,9 @@
                     "name": "End Chime Path",
                     "description": "A preset or custom audio file to be played after TTS audio"
                 },
-                "delay": {
-                    "name": "Delay",
-                    "description": "Delay (ms) between the chime/s and the TTS message"
+                "offset": {
+                    "name": "Offset",
+                    "description": "Adds a delay between audio segments when value > 0, or overlays audio segments when value < 0."
                 },
                 "final_delay": {
                     "name": "Final Delay",
@@ -91,9 +91,9 @@
                     "name": "End Chime Path",
                     "description": "A preset or custom audio file to be played after TTS audio"
                 },
-                "delay": {
-                    "name": "Delay",
-                    "description": "Delay (ms) between the chime/s and the TTS message"
+                "offset": {
+                    "name": "Offset",
+                    "description": "Adds a delay between audio segments when value > 0, or overlays audio segments when value < 0."
                 },
                 "final_delay": {
                     "name": "Final Delay",
