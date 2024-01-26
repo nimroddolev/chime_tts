@@ -499,7 +499,7 @@ class ChimeTTSHelper:
         """Get the number of media player which support the join feature."""
         group_members_supported = 0
         for media_player_dict in media_players_array:
-            if media_player_dict["group_member_support"] is True:
+            if "group_member_support" in media_player_dict and media_player_dict["group_member_support"] is True:
                 group_members_supported += 1
         return group_members_supported
 
