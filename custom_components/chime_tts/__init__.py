@@ -692,6 +692,8 @@ def get_segment_offset(output_audio, segment, params):
                 segment_offset = segment["delay"]
             elif "delay" in params:
                 segment_offset = params["delay"]
+            elif "offset" in params:
+                segment_offset = params["offset"]
 
     return segment_offset
 
