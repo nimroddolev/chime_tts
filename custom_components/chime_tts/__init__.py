@@ -689,7 +689,7 @@ def get_segment_offset(output_audio, segment, params):
         # Support deprecated "delay" parmeter
         else:
             if "delay" in segment:
-                segment_offset = float(segment["delay"])
+                segment_offset = segment["delay"]
             elif "delay" in params:
                 segment_offset = params["delay"]
 
@@ -705,7 +705,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
     for index, segment in enumerate(segments):
         segment_cache = segment["cache"] if "cache" in segment else params["cache"]
         segment_audio_conversion = segment["audio_conversion"] if "audio_conversion" in segment else None
-        segment_offset = get_segment_offset(output_audio, segment, params) if index > 0 else 0
+        segment_offset = get_segment_offset(output_audio, segment, params)
 
         # Chime tag
         if segment["type"] == "chime":
