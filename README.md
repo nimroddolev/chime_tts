@@ -52,6 +52,7 @@ Chime TTS offers various features that enhance TTS audio playback experience:
 - **Configurable TTS playback speed:** Set the TTS audio speed anywhere from 100-200%.
 - **Multiple TTS Platforms in the same message:** Generate TTS from multiple TTS platforms within the same audio announcement
 - **Configurable delay:** Set custom delays between audio and TTS.
+- **Configurable overlay:** Set custom overlay durations for audio and TTS.
 - **Caching:** Cache audio for faster playback.
 - **Speaker Groups:** Group speakers for simultaneous playback.
 
