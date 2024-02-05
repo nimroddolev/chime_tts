@@ -108,14 +108,11 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         # Add service calls to the queue with arguments
         result = await queue.add_to_queue(async_say_execute,service)
 
-        # Stop the queue processing
-        # await queue.stop_queue_processing()
-
         if result is not False:
             return result
 
         # Service call failed
-        return False
+        return {}
 
 
     async def async_say_execute(service):
