@@ -145,13 +145,13 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 # File not found?
                 if os.path.exists(value) is False and is_valid is False:
                     # Set main error message
-                    if _errors == {}:
+                    if not _errors:
                         _errors["base"] = "invalid_chime_paths"
                     else:
                         _errors["base"] = "multiple"
                     # Add specific custom chime error
                     _errors[key] = key
-        if _errors != {}:
+        if not _errors:
             return self.async_show_form(
                 step_id="init", data_schema=options_schema, errors=_errors
             )

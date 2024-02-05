@@ -418,7 +418,7 @@ class ChimeTTSHelper:
                 os.makedirs(folder)
             except OSError as error:
                 _LOGGER.warning(
-                    "  - An error occurred while creating the folder '%s': %s",
+                    "  - An OSError occurred while creating the folder '%s': %s",
                     folder, error)
                 return None
             except Exception as error:
