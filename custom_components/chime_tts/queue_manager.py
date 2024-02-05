@@ -42,10 +42,13 @@ class ChimeTTSQueueManager:
 
     async def queue_processor(self):
         """Continuously process the Chime TTS service call queue."""
+        running_tasks = set()
         while True:
             await asyncio.sleep(0.1)  # Adjust the sleep duration as needed
             if not self.queue.empty():
-                asyncio.create_task(self.async_process_queue())
+                task = asyncio.create_task(self.async_process_queue())
+                running_tasks.add(task)
+                task.add_done_callback(lambda t: running_tasks.remove(t))
 
     def add_to_queue(self, function, *args, **kwargs):
         """Add a new service call to the Chime TTS service call queue."""
