@@ -127,7 +127,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         # Create audio file to play on media player
         audio_dict = await async_get_playback_audio_path(params, options)
-        if audio_dict is None:
+        if audio_dict is None or audio_dict[AUDIO_PATH_KEY] is None:
             return False
         _LOGGER.debug(" - audio_dict = %s", str(audio_dict))
         audio_path = audio_dict[AUDIO_PATH_KEY]
@@ -654,6 +654,9 @@ async def async_get_playback_audio_path(params: dict, options: dict):
             if relative_path != new_audio_full_path:
                 _LOGGER.debug("  - Non-relative filepath = '%s'", new_audio_full_path)
 
+        if new_audio_full_path is None:
+            _LOGGER.error("Unable to save audio file.")
+            return None
         _LOGGER.debug("  - File saved successfully")
 
         # Valdiation
@@ -664,7 +667,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         if audio_dict[AUDIO_DURATION_KEY] == 0:
             _LOGGER.error("async_get_playback_audio_path --> Audio has no duration")
             audio_dict = None
-        if len(audio_dict[AUDIO_PATH_KEY]) == 0:
+        if audio_dict[AUDIO_PATH_KEY] is not None and len(audio_dict[AUDIO_PATH_KEY]) == 0:
             _LOGGER.error(
                 "async_get_playback_audio_path --> Audio has no file path data"
             )
