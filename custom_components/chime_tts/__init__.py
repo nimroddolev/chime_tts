@@ -421,6 +421,7 @@ async def async_request_tts_audio(
         GOOGLE_TRANSLATE,
         NABU_CASA_CLOUD_TTS,
         IBM_WATSON_TTS,
+        MICROSOFT_EDGE_TTS,
     ]:
         if tts_platform is IBM_WATSON_TTS:
             tts_options["voice"] = language
