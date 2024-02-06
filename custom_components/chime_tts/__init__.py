@@ -140,6 +140,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                 audio_path,
                 params["entity_ids"],
                 params["announce"],
+                params["force_announce"],
                 params["join_players"],
                 media_players_array,
                 params["volume_level"],
@@ -345,6 +346,14 @@ async def async_post_playback_actions(
                     _LOGGER.warning(
                         " - Error calling unjoin service for %s: %s", entity_id, error
                     )
+    if len(_data["resume_media_players"]) > 0:
+        for entity_id in _data["resume_media_players"]:
+            _LOGGER.debug("- Resuming media_player %s...", entity_id)
+            await hass.services.async_call(
+                domain="media_player",
+                service="media_play_pause",
+                service_data={CONF_ENTITY_ID: entity_id}
+            )
 
 
 async def async_join_media_players(hass, entity_ids):
@@ -925,6 +934,7 @@ async def async_play_media(
     audio_path,
     entity_ids,
     announce,
+    force_announce,
     join_players,
     media_players_array,
     volume_level,
@@ -972,6 +982,21 @@ async def async_play_media(
             else:
                 _LOGGER.warning(
                     "Unable to join speakers. No supported media_players found."
+                )
+
+    # Pause media if `force_announce` enabled
+    _data["resume_media_players"] = []
+    if force_announce is True:
+        for media_player_dict in media_players_array:
+            entity_id = media_player_dict["entity_id"]
+            if hass.states.get(entity_id).state == "playing":
+                _LOGGER.debug("- Pausing media player %s", entity_id)
+                _data["resume_media_players"].append(entity_id)
+                await hass.services.async_call(
+                    domain="media_player",
+                    service="media_pause",
+                    service_data={CONF_ENTITY_ID: entity_id},
+                    blocking=True
                 )
 
     # Set volume to desired level

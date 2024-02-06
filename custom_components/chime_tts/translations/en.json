@@ -73,7 +73,11 @@
                 },
                 "announce": {
                     "name": "Announce",
-                    "description": "Stops current media during the announcement and then resume (on supported devices)"
+                    "description": "Pauses media during announcement and resumes when completed (on supported devices)"
+                },
+                "force_announce": {
+                    "name": "Force Announce",
+                    "description": "Simulates the `announce` feature on unsupported devices (eg: HomePod)"
                 },
                 "language": {
                     "name": "Language",
