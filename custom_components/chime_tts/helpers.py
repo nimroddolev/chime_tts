@@ -532,7 +532,10 @@ class ChimeTTSHelper:
                     'Media player entity "%s" is turned off. Turning on...', entity_id
                 )
                 await hass.services.async_call(
-                    "media_player", SERVICE_TURN_ON, {CONF_ENTITY_ID: entity_id}, True
+                    domain="media_player",
+                    service=SERVICE_TURN_ON,
+                    service_data={CONF_ENTITY_ID: entity_id},
+                    blocking=True
                 )
 
             # Store media player's current volume level

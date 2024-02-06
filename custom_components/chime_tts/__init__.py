@@ -256,9 +256,11 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         # CLEAR HA TTS CACHE #
         if clear_ha_tts_cache:
             _LOGGER.debug("Clearing cached Home Assistant TTS audio files...")
-            await hass.services.async_call(domain="TTS",
-                                           service="clear_cache",
-                                           blocking=True)
+            await hass.services.async_call(
+                domain="TTS",
+                service="clear_cache",
+                blocking=True
+            )
 
         # Summary
         elapsed_time = (datetime.now() - start_time).total_seconds() * 1000
@@ -902,10 +904,13 @@ async def async_set_volume_level(
         )
         try:
             await hass.services.async_call(
-                "media_player",
-                SERVICE_VOLUME_SET,
-                {ATTR_MEDIA_VOLUME_LEVEL: new_volume_level, CONF_ENTITY_ID: entity_id},
-                True,
+                domain="media_player",
+                service=SERVICE_VOLUME_SET,
+                service_data={
+                    ATTR_MEDIA_VOLUME_LEVEL: new_volume_level,
+                    CONF_ENTITY_ID: entity_id
+                },
+                blocking=True,
             )
             _LOGGER.debug(" - Volume set")
         except Exception as error:
@@ -975,7 +980,7 @@ async def async_play_media(
     )
 
     # Play the audio
-    _LOGGER.debug("Calling media_player.play_media service with data:")
+    _LOGGER.debug("Calling media_player.play_media with data:")
     for key, value in service_data.items():
         _LOGGER.debug(" - %s: %s", str(key), str(value))
     retry_count = 3
@@ -987,10 +992,10 @@ async def async_play_media(
                 _LOGGER.warning("...playback retry %s/%s", str(i+1), str(retry_count))
             try:
                 await hass.services.async_call(
-                    "media_player",
-                    SERVICE_PLAY_MEDIA,
-                    service_data,
-                    True,
+                    domain="media_player",
+                    service=SERVICE_PLAY_MEDIA,
+                    service_data=service_data,
+                    blocking=True,
                 )
                 _LOGGER.debug("...media_player.play_media completed.")
                 return True
