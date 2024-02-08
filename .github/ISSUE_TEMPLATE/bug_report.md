@@ -24,7 +24,8 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Debug Log Messages**
-Enable debug logging for the integration:
+Please provide your debug messages to help understand and address the bug. Enable debug logging for the integration:
+
 1. Turn on debug logging
 ```
 service: logger.set_level
