@@ -84,6 +84,7 @@ ALEXA_FFMPEG_ARGS = "-y -ac 2 -codec:a libmp3lame -b:a 48k -ar 24000 -write_xing
 # TTS Platforms
 AMAZON_POLLY = "amazon_polly"
 BAIDU = "baidu"
+ELEVENLABS_TTS = "tts.elevenlabs_tts"
 GOOGLE_CLOUD = "google_cloud"
 GOOGLE_TRANSLATE = "google_translate"
 IBM_WATSON_TTS = "watson_tts"

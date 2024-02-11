@@ -61,6 +61,7 @@ from .const import (
     QUEUE_TIMEOUT_DEFAULT,
     AMAZON_POLLY,
     BAIDU,
+    ELEVENLABS_TTS,
     GOOGLE_CLOUD,
     GOOGLE_TRANSLATE,
     IBM_WATSON_TTS,
@@ -535,6 +536,8 @@ def missing_tts_platform_error(tts_platform):
         tts_platform_name = "Amazon Polly"
     if tts_platform is BAIDU:
         tts_platform_name = "Baidu"
+    if tts_platform is ELEVENLABS_TTS:
+        tts_platform_name = "ElevenLabs TTS"
     if tts_platform is GOOGLE_CLOUD:
         tts_platform_name = "Google Cloud"
     if tts_platform is GOOGLE_TRANSLATE:
