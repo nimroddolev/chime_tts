@@ -164,7 +164,7 @@ class ChimeTTSHelper:
         return None
 
     def get_has_alexa_media_player(self, hass: HomeAssistant, entity_ids):
-        """Determine whether any included media_players belong to the "Alexa" platform"""
+        """Determine whether any included media_players belong to the "Alexa" platform."""
         for entity_id in entity_ids:
             if self.get_media_player_platform(hass, entity_id) == "alexa":
                 return True
