@@ -532,41 +532,56 @@ async def async_request_tts_audio(
 def missing_tts_platform_error(tts_platform):
     """Write a TTS platform specific debug warning when the TTS platform has not been configured."""
     tts_platform_name = tts_platform
+    tts_platform_documentation = "https://www.home-assistant.io/integrations/#text-to-speech"
     if tts_platform is AMAZON_POLLY:
         tts_platform_name = "Amazon Polly"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/amazon_polly"
     if tts_platform is BAIDU:
         tts_platform_name = "Baidu"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/baidu"
     if tts_platform is ELEVENLABS_TTS:
         tts_platform_name = "ElevenLabs TTS"
+        tts_platform_documentation = "https://github.com/carleeno/elevenlabs_tts"
     if tts_platform is GOOGLE_CLOUD:
         tts_platform_name = "Google Cloud"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/google_cloud"
     if tts_platform is GOOGLE_TRANSLATE:
         tts_platform_name = "Google Translate"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/google_translate"
     if tts_platform is IBM_WATSON_TTS:
         tts_platform_name = "Watson TTS"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/watson_tts"
     if tts_platform is MARYTTS:
         tts_platform_name = "MaryTTS"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/marytts"
     if tts_platform is MICROSOFT_TTS:
         tts_platform_name = "Microsoft TTS"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/microsoft"
     if tts_platform is MICROSOFT_EDGE_TTS:
         tts_platform_name = "Microsoft Edge TTS"
-    if tts_platform is NABU_CASA_CLOUD_TTS:
+        tts_platform_documentation = "https://github.com/hasscc/hass-edge-tts"
+    if tts_platform is NABU_CASA_CLOUD_TTS or tts_platform is NABU_CASA_CLOUD_TTS_OLD:
         tts_platform_name = "Nabu Casa Cloud TTS"
-    if tts_platform is NABU_CASA_CLOUD_TTS_OLD:
-        tts_platform_name = "Nabu Casa Cloud TTS"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/cloud"
     if tts_platform is OPENAI_TTS:
         tts_platform_name = "OpenAI TTS"
+        tts_platform_documentation = "https://github.com/sfortis/openai_tts"
     if tts_platform is PICOTTS:
         tts_platform_name = "PicoTTS"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/picotts"
     if tts_platform is PIPER:
         tts_platform_name = "Piper"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/piper"
     if tts_platform is VOICE_RSS:
         tts_platform_name = "VoiceRSS"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/voicerss"
     if tts_platform is YANDEX_TTS:
         tts_platform_name = "Yandex TTS"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/yandextts"
     _LOGGER.error(
-        "The %s platform was not found. Please check that it has been configured correctly: https://www.home-assistant.io/integrations/#text-to-speech",
+        "The %s platform was not found. Please check that it has been configured correctly: %s",
         tts_platform_name,
+        tts_platform_documentation
     )
 
 
