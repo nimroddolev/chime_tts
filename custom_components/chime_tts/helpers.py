@@ -95,6 +95,11 @@ class ChimeTTSHelper:
                     ffmpeg_args = None
                 else:
                     data.get("audio_conversion", None)
+        # Force "Alexa" conversion if any Alexa media_player entities included
+        alexa_conversion_forced = False
+        if ffmpeg_args is None and self.get_has_alexa_media_player(hass, entity_ids) is True:
+            ffmpeg_args = ALEXA_FFMPEG_ARGS
+            alexa_conversion_forced = True
 
         params = {
             "entity_ids": entity_ids,
@@ -120,8 +125,11 @@ class ChimeTTSHelper:
         _LOGGER.debug("----- General Parameters -----")
         for key, value in params.items():
             if value is not None and value != "" and key not in ["hass", "media_players_array"]:
-                _LOGGER.debug(" * %s = %s", key, str(value))
+                p_key = "audio_conversion" if key == "ffmpeg_args" else key
+                _LOGGER.debug(" * %s = %s", p_key, str(value))
 
+        if alexa_conversion_forced is True:
+            _LOGGER.debug(" --- Audio will be converted to Alexa-friendly format as Alexa speaker/s detected ---")
         return params
 
 
@@ -153,6 +161,13 @@ class ChimeTTSHelper:
         for entity in entity_registry.entities.values():
             if entity.entity_id == entity_id:
                 return entity.platform
+        return None
+
+    def get_has_alexa_media_player(self, hass: HomeAssistant, entity_ids):
+        """Determine whether any included media_players belong to the "Alexa" platform"""
+        for entity_id in entity_ids:
+            if self.get_media_player_platform(hass, entity_id) == "alexa":
+                return True
         return None
 
     def parse_message(self, message_string):
