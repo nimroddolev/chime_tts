@@ -349,7 +349,7 @@ async def async_post_playback_actions(
                     )
     if len(_data["resume_media_players"]) > 0:
         for entity_id in _data["resume_media_players"]:
-            _LOGGER.debug("- Resuming media_player %s...", entity_id)
+            _LOGGER.debug("- Resuming playback on %s", entity_id)
             await hass.services.async_call(
                 domain="media_player",
                 service="media_play_pause",
@@ -920,9 +920,6 @@ async def async_set_volume_level(
     """Set the volume_level for a given media player entity."""
     new_volume_level = float(new_volume_level)
     current_volume_level = float(current_volume_level)
-    _LOGGER.debug(
-        ' - async_set_volume_level("%s", %s)', entity_id, str(new_volume_level)
-    )
     if new_volume_level >= 0 and new_volume_level != current_volume_level:
         _LOGGER.debug(
             ' - Seting volume_level of media player "%s" to: %s',
@@ -939,11 +936,9 @@ async def async_set_volume_level(
                 },
                 blocking=True,
             )
-            _LOGGER.debug(" - Volume set")
         except Exception as error:
             _LOGGER.warning(" - Error setting volume for '%s': %s", entity_id, error)
         return True
-    _LOGGER.debug(" - Skipped setting volume")
     return False
 
 
@@ -1009,7 +1004,7 @@ async def async_play_media(
         # HomePod?
         if (announce and helpers.get_media_player_platform(hass, entity_id) == "apple_tv") or force_announce is True:
             if hass.states.get(entity_id).state == "playing":
-                _LOGGER.debug("- Pausing media player %s", entity_id)
+                _LOGGER.debug("- Pausing playback on %s", entity_id)
                 _data["resume_media_players"].append(entity_id)
                 await hass.services.async_call(
                     domain="media_player",

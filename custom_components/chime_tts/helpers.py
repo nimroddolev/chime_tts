@@ -47,6 +47,9 @@ class ChimeTTSHelper:
         except yaml.YAMLError as error:
             _LOGGER.error("Error parsing options YAML: %s", error)
             return {}
+        except Exception as error:
+            _LOGGER.error("An unexpected error occurred while parsing options YAML: %s",
+                          str(error))
 
         for key in ["tld", "gender"]:
             if key not in options:
