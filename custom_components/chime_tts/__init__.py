@@ -984,11 +984,12 @@ async def async_play_media(
                     "Unable to join speakers. No supported media_players found."
                 )
 
-    # Pause media if `force_announce` enabled
+    # Pause media if `force_announce` enabled or `announce` enabled and mmedia_player's platform is apple_tv
     _data["resume_media_players"] = []
-    if force_announce is True:
-        for media_player_dict in media_players_array:
-            entity_id = media_player_dict["entity_id"]
+    for media_player_dict in media_players_array:
+        entity_id = media_player_dict["entity_id"]
+        # HomePod?
+        if (announce and helpers.get_media_player_platform(hass, entity_id) == "apple_tv") or force_announce is True:
             if hass.states.get(entity_id).state == "playing":
                 _LOGGER.debug("- Pausing media player %s", entity_id)
                 _data["resume_media_players"].append(entity_id)

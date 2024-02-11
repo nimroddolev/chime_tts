@@ -144,6 +144,14 @@ class ChimeTTSHelper:
         entity_ids = list(set(entity_ids))
         return entity_ids
 
+    def get_media_player_platform(self, hass: HomeAssistant, entity_id):
+        """Get the platform for a given media_player entity."""
+        entity_registry = hass.data["entity_registry"]
+        for entity in entity_registry.entities.values():
+            if entity.entity_id == entity_id:
+                return entity.platform
+        return None
+
     def parse_message(self, message_string):
         """Parse the message string/YAML object into segments dictionary."""
         message_string = str(message_string)
