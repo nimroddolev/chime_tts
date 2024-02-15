@@ -25,7 +25,9 @@ SERVICE_SAY_URL = "say_url"
 SERVICE_CLEAR_CACHE = "clear_cache"
 DEFAULT_DELAY_MS = 450
 DATA_STORAGE_KEY = "chime_tts_integration_data"
-AUDIO_PATH_KEY = "audio_path"
+AUDIO_PATH_KEY = "audio_path" # <-- Deprecated
+LOCAL_PATH_KEY = "local_path"
+PUBLIC_PATH_KEY = "public_path"
 AUDIO_DURATION_KEY = "audio_duration"
 
 ROOT_PATH_KEY = "root_path_key"

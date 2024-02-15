@@ -12,6 +12,7 @@ import re
 import yaml
 import requests
 from pydub import AudioSegment
+from homeassistant.helpers.network import get_url
 from homeassistant.core import HomeAssistant, State
 from homeassistant.const import CONF_ENTITY_ID, SERVICE_TURN_ON
 from homeassistant.components.media_player.const import (
@@ -28,7 +29,7 @@ from .const import (
     MP3_PRESET_CUSTOM_PREFIX,
     MP3_PRESET_CUSTOM_KEY,
     TEMP_CHIMES_PATH_KEY,
-    AUDIO_PATH_KEY,
+    LOCAL_PATH_KEY,
     AUDIO_DURATION_KEY
 )
 _LOGGER = logging.getLogger(__name__)
@@ -97,7 +98,7 @@ class ChimeTTSHelper:
                     data.get("audio_conversion", None)
         # Force "Alexa" conversion if any Alexa media_player entities included
         alexa_conversion_forced = False
-        if ffmpeg_args is None and self.get_has_alexa_media_player(hass, entity_ids) is True:
+        if ffmpeg_args is None and self.get_alexa_media_player_count(hass, entity_ids) > 0:
             ffmpeg_args = ALEXA_FFMPEG_ARGS
             alexa_conversion_forced = True
 
@@ -163,12 +164,13 @@ class ChimeTTSHelper:
                 return entity.platform
         return None
 
-    def get_has_alexa_media_player(self, hass: HomeAssistant, entity_ids):
+    def get_alexa_media_player_count(self, hass: HomeAssistant, entity_ids):
         """Determine whether any included media_players belong to the "Alexa" platform."""
+        ret_val = 0
         for entity_id in entity_ids:
             if self.get_media_player_platform(hass, entity_id) == "alexa":
-                return True
-        return None
+                ret_val = ret_val + 1
+        return ret_val
 
     def parse_message(self, message_string):
         """Parse the message string/YAML object into segments dictionary."""
@@ -272,8 +274,6 @@ class ChimeTTSHelper:
         for filepath in filepaths:
             if os.path.exists(filepath) is True:
                 ret_value = filepath
-            if ret_value is None:
-                _LOGGER.debug("File not found at path: %s", filepath)
 
         return ret_value
 
@@ -317,7 +317,7 @@ class ChimeTTSHelper:
                 # data[DATA_STORAGE_KEY][file_hash] = audio_dict
                 # store = storage.Store(hass, 1, DATA_STORAGE_KEY)
                 # await store.async_save(data[DATA_STORAGE_KEY])
-                return audio_dict[AUDIO_PATH_KEY]
+                return audio_dict[LOCAL_PATH_KEY]
 
             _LOGGER.warning(" - Unable to downloaded chime %s", chime_path)
             return None
@@ -439,21 +439,9 @@ class ChimeTTSHelper:
     def save_audio_to_folder(self, audio, folder, file_name: str = None):
         """Save audio to local folder."""
 
-        # Create folder if it doesn't already exist
-        if os.path.exists(folder) is False:
-            _LOGGER.debug("  - Creating audio folder: %s", folder)
-            try:
-                os.makedirs(folder)
-            except OSError as error:
-                _LOGGER.warning(
-                    "  - An OSError occurred while creating the folder '%s': %s",
-                    folder, error)
-                return None
-            except Exception as error:
-                _LOGGER.warning(
-                    "  - An error occurred while creating the folder '%s': %s",
-                    folder, error)
-                return None
+        folder_exists = self.create_folder(folder)
+        if folder_exists is False:
+            return None
 
         # Save to file
         if file_name is None:
@@ -463,7 +451,6 @@ class ChimeTTSHelper:
                 ) as temp_obj:
                     audio_full_path = temp_obj.name
                 audio.export(audio_full_path, format="mp3")
-                _LOGGER.debug(" - File saved successfully")
             except Exception as error:
                 _LOGGER.warning(
                     "An error occurred when creating the temp mp3 file: %s", error
@@ -633,7 +620,7 @@ class ChimeTTSHelper:
                                                             file_name=url)
                 audio_duration = float(len(audio_content) / 1000)
                 return {
-                    AUDIO_PATH_KEY: audio_file_path,
+                    LOCAL_PATH_KEY: audio_file_path,
                     AUDIO_DURATION_KEY: audio_duration
                 }
         else:
@@ -647,3 +634,65 @@ class ChimeTTSHelper:
         hash_object.update(string.encode("utf-8"))
         hash_value = str(hash_object.hexdigest())
         return hash_value
+
+    def create_folder(self, folder):
+        """Create folder if it doesn't already exist."""
+        if os.path.exists(folder) is False:
+            _LOGGER.debug("  - Creating audio folder: %s", folder)
+            try:
+                os.makedirs(folder)
+                return True
+            except OSError as error:
+                _LOGGER.warning(
+                    "  - An OSError occurred while creating the folder '%s': %s",
+                    folder, error)
+            except Exception as error:
+                _LOGGER.warning(
+                    "  - An error occurred while creating the folder '%s': %s",
+                    folder, error)
+            return False
+        return True
+
+    def copy_file(self, source_file, destination_folder):
+        """Copy a file to a folder."""
+        if self.create_folder(destination_folder):
+            try:
+                copied_file_path = shutil.copy(source_file, destination_folder)
+                return copied_file_path
+            except FileNotFoundError:
+                _LOGGER.warning("Unable to copy file: Source file not found.")
+            except PermissionError:
+                _LOGGER.warning("Unable to copy file: Permission denied. Check if you have sufficient permissions.")
+            except Exception as e:
+                if str(e).find("are the same file") != -1:
+                    return source_file
+                _LOGGER.warning(f"Unable to copy file: An error occurred: {e}")
+        return None
+
+    def file_exists_in_directory(self, file_path, directory):
+        """Determine whether a file path exists within a given directory."""
+        for root, dirs, files in os.walk(directory):
+            # Added to prevent lint error #
+            if dirs is not None:          #
+                dir_string = str(dirs)    #
+                dir_string += "1"         #
+            ###############################
+            for filename in files:
+                if os.path.join(root, filename) == file_path:
+                    return True
+        return False
+
+    def create_url_to_public_file(self, hass: HomeAssistant, public_path):
+        """Convert public path to external URL."""
+        if public_path is None:
+            return None
+        instance_url = hass.config.external_url
+        if instance_url is None:
+            instance_url = str(get_url(hass))
+
+        return (
+            (instance_url + "/" + public_path)
+            .replace(instance_url + "//", instance_url + "/")
+            .replace("/config", "")
+            .replace("www/", "local/")
+        )
