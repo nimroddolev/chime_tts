@@ -385,7 +385,7 @@ async def async_join_media_players(hass, entity_ids):
                 },
                 blocking=True,
             )
-            _LOGGER.debug(" - ...done")
+            _LOGGER.debug("   ...done")
             return _data["joint_media_player_entity_id"]
         except Exception as error:
             _LOGGER.warning("   - Error joining media_player entities: %s", error)
@@ -451,15 +451,20 @@ async def async_request_tts_audio(
     if "gender" in tts_options and tts_platform not in [NABU_CASA_CLOUD_TTS]:
         del tts_options["gender"]
 
-    _LOGGER.debug("async_request_tts_audio(%s)",
-        "tts_platform='" + tts_platform
-        + "', message='" + str(message)
-        + "', tts_playback_speed=" + str(tts_playback_speed)
-        + ", cache=" + str(use_cache)
-        + ", language=" + ("'" + str(language) + "'" if language is not None else "None")
-        + ", options=" + str(tts_options)
-    )
-    _LOGGER.debug(" - Generating TTS audio...")
+
+    # Debug log
+    _LOGGER.debug(" - Generating new TTS audio with parameters:")
+    for key, value in {
+        "tts_platform":  f"'{tts_platform}'",
+        "message":  f"'{message}'",
+        "tts_playback_speed":  str(tts_playback_speed),
+        "cache":  str(use_cache),
+        "language":  f"'{str(language) if language is not None else 'None'}'",
+        "options":  str(tts_options)
+
+    }.items():
+        _LOGGER.debug("    * %s = %s", key, value)
+
     media_source_id = None
     try:
         media_source_id = tts.media_source.generate_media_source_id(
@@ -517,7 +522,7 @@ async def async_request_tts_audio(
                         audio = audio.speedup(playback_speed=playback_speed)
                 end_time = datetime.now()
                 _LOGGER.debug(
-                    " - ...TTS audio completed in %s ms",
+                    "   ...TTS audio completed in %s ms",
                     str((end_time - start_time).total_seconds() * 1000),
                 )
                 return audio
@@ -610,7 +615,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
     # Load previously generated audio from cache
     if cache is True:
-        _LOGGER.debug("Attempting to retrieve generated mp3 file from cache")
+        _LOGGER.debug(" - Attempting to retrieve previously cached audio...")
         audio_dict = await async_get_cached_audio_data(hass, filepath_hash)
         if audio_dict is not None:
             filepath = audio_dict[AUDIO_PATH_KEY]
@@ -797,7 +802,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
 
                 # Use cached TTS audio
                 if segment_cache is True:
-                    _LOGGER.debug(" - Attempting to retrieve TTS file from cache...")
+                    _LOGGER.debug(" - Attempting to retrieve TTS audio from cache...")
                     audio_dict = await async_get_cached_audio_data(hass, segment_filepath_hash)
                     if audio_dict is not None:
                         tts_audio = await async_get_audio_from_path(hass=hass,
@@ -806,9 +811,8 @@ async def async_process_segments(hass, message, output_audio, params, options):
                                                                     audio=None)
 
                         tts_audio_duration = audio_dict[AUDIO_DURATION_KEY]
-                        _LOGGER.debug(" - ...cached TTS file retrieved with duration: %ss", str(tts_audio_duration))
                     else:
-                        _LOGGER.debug(" - ...cached TTS file not found")
+                        _LOGGER.debug("   ...no cached TTS audio found")
 
 
                 # Generate new TTS audio
@@ -831,7 +835,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
 
                     # Cache the new TTS audio?
                     if segment_cache is True and audio_dict is None:
-                        _LOGGER.debug("Saving generated TTS audio to cache")
+                        _LOGGER.debug(" - Saving generated TTS audio to cache...")
                         tts_audio_full_path = helpers.save_audio_to_folder(
                             tts_audio, _data[TEMP_PATH_KEY])
                         if tts_audio_full_path is not None:
@@ -840,6 +844,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
                                 AUDIO_DURATION_KEY: tts_audio_duration
                             }
                             await async_store_data(hass, segment_filepath_hash, audio_dict)
+                            _LOGGER.debug("  ...TTS audio saved to cache")
 
                         else:
                             _LOGGER.warning("Unable to save generated TTS audio to cache")
@@ -877,13 +882,13 @@ async def async_get_audio_from_path(hass: HomeAssistant,
         hass=hass)
 
     if filepath is not None:
-        _LOGGER.debug('Retrieving audio from path: "%s"', filepath)
+        _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
         try:
             audio_from_path = AudioSegment.from_file(filepath)
             if audio_from_path is not None:
                 duration = float(len(audio_from_path) / 1000.0)
                 _LOGGER.debug(
-                    " - Audio retrieved. Duration: %ss",
+                    "   ...audio retrieved. Duration: %ss",
                     str(duration),
                 )
                 if audio is None:

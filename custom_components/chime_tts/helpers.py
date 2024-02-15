@@ -499,7 +499,6 @@ class ChimeTTSHelper:
             _LOGGER.debug("Performing overlay of %sms", str(offset))
             ret_val = self.overlay(audio_1, audio_2, offset)
         elif offset > 0:
-            _LOGGER.debug("Performing delay of %sms", str(offset))
             ret_val = audio_1 + (AudioSegment.silent(duration=offset) + audio_2)
         else:
             _LOGGER.debug("Combining audio files with no delay or overlay")
