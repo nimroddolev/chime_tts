@@ -160,8 +160,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                     )
 
             # Remove temporary local generated mp3
-            if params["cache"] is False and local_path is not None and os.path.exists(local_path):
-                os.remove(local_path)
+            if params["cache"] is False and local_path is not None:
+                helpers.delete_file(local_path)
 
         end_time = datetime.now()
         elapsed_time = (end_time - start_time).total_seconds() * 1000
@@ -614,12 +614,16 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 _LOGGER.debug("   - Copying public file to local directory")
                 audio_dict[LOCAL_PATH_KEY] = helpers.copy_file(audio_dict[PUBLIC_PATH_KEY], _data[TEMP_PATH_KEY])
                 await add_audio_file_to_cache(hass, audio_dict[LOCAL_PATH_KEY], duration, params, options)
+            else:
+                audio_dict[LOCAL_PATH_KEY] = None
 
             # Make a public copy of the local file
             if is_public and audio_dict[PUBLIC_PATH_KEY] is None and audio_dict[LOCAL_PATH_KEY] is not None:
                 _LOGGER.debug("    - Copying local file to public directory")
                 audio_dict[PUBLIC_PATH_KEY] = helpers.copy_file(audio_dict[LOCAL_PATH_KEY], _data[WWW_PATH_KEY])
                 await add_audio_file_to_cache(hass, audio_dict[PUBLIC_PATH_KEY], duration, params, options)
+            else:
+                audio_dict[PUBLIC_PATH_KEY] = None
 
             if (is_local is False or audio_dict[LOCAL_PATH_KEY] is not None) and (is_public is False or audio_dict[PUBLIC_PATH_KEY] is not None):
                 _LOGGER.debug("   ...cached audio retrieved: %s", str(audio_dict))
@@ -1150,7 +1154,7 @@ async def async_delete_data(hass: HomeAssistant, key):
     store = storage.Store(hass, 1, DATA_STORAGE_KEY)
     data = await store.async_load()
     if key in data:
-        del key[data]
+        del data[key]
     await store.async_save(data)
 
 
@@ -1220,20 +1224,20 @@ async def async_remove_cached_audio_data(hass: HomeAssistant,
         if key == LOCAL_PATH_KEY and audio_dict[LOCAL_PATH_KEY] is not None:
             if clear_chimes_cache and helpers.file_exists_in_directory(value, temp_chimes_path):
                 _LOGGER.debug("...removing chime file %s", value)
-                os.remove(audio_dict[LOCAL_PATH_KEY])
+                helpers.delete_file(audio_dict[LOCAL_PATH_KEY])
                 audio_dict[LOCAL_PATH_KEY] = None
             elif clear_temp_tts_cache and helpers.file_exists_in_directory(value, temp_path):
                 _LOGGER.debug("...removing TTS file %s", value)
-                os.remove(audio_dict[LOCAL_PATH_KEY])
+                helpers.delete_file(audio_dict[LOCAL_PATH_KEY])
                 audio_dict[LOCAL_PATH_KEY] = None
         elif key == PUBLIC_PATH_KEY and value is not None and clear_www_tts_cache:
             _LOGGER.debug("...removing public file %s", value)
-            os.remove(audio_dict[PUBLIC_PATH_KEY])
+            helpers.delete_file(audio_dict[PUBLIC_PATH_KEY])
             audio_dict[PUBLIC_PATH_KEY] = None
 
     # Remove key/value from integration storage if no paths remain
     if (LOCAL_PATH_KEY not in audio_dict or audio_dict[LOCAL_PATH_KEY] is None) and (PUBLIC_PATH_KEY not in audio_dict or audio_dict[PUBLIC_PATH_KEY] is None):
-        async_delete_data(hass, filepath_hash)
+        await async_delete_data(hass, filepath_hash)
 
 
 async def add_audio_file_to_cache(hass, audio_path, duration, params, options):
