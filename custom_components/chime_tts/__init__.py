@@ -133,9 +133,9 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         audio_duration = 0
         audio_dict = await async_get_playback_audio_path(params, options)
         if audio_dict is not None:
-            local_path = audio_dict[LOCAL_PATH_KEY] if LOCAL_PATH_KEY in audio_dict else None
+            local_path = audio_dict.get(LOCAL_PATH_KEY, None)
             public_path = helpers.create_url_to_public_file(hass, audio_dict[PUBLIC_PATH_KEY]) if PUBLIC_PATH_KEY in audio_dict else None
-            audio_duration = audio_dict[AUDIO_DURATION_KEY] if AUDIO_DURATION_KEY in audio_dict else 0
+            audio_duration = audio_dict.get(AUDIO_DURATION_KEY, 0)
 
             # Play audio with service_data
             if media_players_array is not False and (public_path is not None or local_path is not None):
@@ -770,7 +770,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
 
     for index, segment in enumerate(segments):
         segment_cache = segment["cache"] if "cache" in segment else params["cache"]
-        segment_audio_conversion = segment["audio_conversion"] if "audio_conversion" in segment else None
+        segment_audio_conversion = segment.get("audio_conversion", None)
         segment_offset = get_segment_offset(output_audio, segment, params)
 
         # Chime tag
@@ -804,7 +804,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
                 segment_tts_playback_speed = segment["tts_playback_speed"] if "tts_playback_speed" in segment else params["tts_playback_speed"]
 
                 # Use exposed parameters if not present in the options dictionary
-                segment_options = segment["options"] if "options" in segment else {}
+                segment_options = segment.get("options", {})
                 exposed_option_keys = ["gender", "tld", "voice"]
                 for exposed_option_key in exposed_option_keys:
                     value = None
@@ -1011,7 +1011,7 @@ async def async_play_media(
     service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE_MUSIC
 
     # media_content_id
-    media_source_path = audio_dict[LOCAL_PATH_KEY] if LOCAL_PATH_KEY in audio_dict else (audio_dict[PUBLIC_PATH_KEY] if PUBLIC_PATH_KEY in audio_dict else None)
+    media_source_path = audio_dict.get(LOCAL_PATH_KEY, audio_dict.get(PUBLIC_PATH_KEY, None))
     media_folder = "/media/"
     media_folder_path_index = media_source_path.find(media_folder)
     if media_folder_path_index != -1:
