@@ -85,7 +85,6 @@ class ChimeTTSHelper:
         cache = data.get("cache", False)
 
         announce = data.get("announce", False)
-        force_announce = data.get("force_announce", False)
 
         # FFmpeg arguments
         ffmpeg_args = data.get("audio_conversion", None)
@@ -118,7 +117,6 @@ class ChimeTTSHelper:
             "tts_platform": tts_platform,
             "tts_playback_speed": tts_playback_speed,
             "announce": announce,
-            "force_announce": force_announce,
             "volume_level": volume_level,
             "join_players": join_players,
             "unjoin_players": unjoin_players,

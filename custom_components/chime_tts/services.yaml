@@ -302,13 +302,6 @@ say:
       required: false
       selector:
         boolean:
-    force_announce:
-      name: Force Announce
-      description: "Simulates the `announce` feature on unsupported devices (eg: HomePod)"
-      example: "True"
-      required: false
-      selector:
-        boolean:
     audio_conversion:
       name: Audio Conversion
       description: "Convert the audio to match Alexa speaker requirements, or use your own FFmpeg arguments"

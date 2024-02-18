@@ -75,10 +75,6 @@
                     "name": "Announce",
                     "description": "Pauses media during announcement and resumes when completed (on supported devices)"
                 },
-                "force_announce": {
-                    "name": "Force Announce",
-                    "description": "Simulates the `announce` feature on unsupported devices (eg: HomePod)"
-                },
                 "language": {
                     "name": "Language",
                     "description": "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
