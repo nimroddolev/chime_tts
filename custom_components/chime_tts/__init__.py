@@ -350,11 +350,9 @@ async def async_post_playback_actions(
             )
 
     # Unjoin entity_ids
-    if (
-        unjoin_players is True
+    if (unjoin_players is True
         and "joint_media_player_entity_id" in _data
-        and _data["joint_media_player_entity_id"] is not None
-    ):
+        and _data["joint_media_player_entity_id"] is not None):
         _LOGGER.debug(" - Calling media_player.unjoin service...")
         for media_player_dict in media_players_array:
             if media_player_dict["group_members_supported"] is True:
@@ -645,16 +643,12 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 _LOGGER.debug("   - Copying public file to local directory")
                 audio_dict[LOCAL_PATH_KEY] = helpers.copy_file(audio_dict[PUBLIC_PATH_KEY], _data[TEMP_PATH_KEY])
                 await add_audio_file_to_cache(hass, audio_dict[LOCAL_PATH_KEY], duration, params, options)
-            else:
-                audio_dict[LOCAL_PATH_KEY] = None
 
             # Make a public copy of the local file
             if is_public and audio_dict[PUBLIC_PATH_KEY] is None and audio_dict[LOCAL_PATH_KEY] is not None:
                 _LOGGER.debug("    - Copying local file to public directory")
                 audio_dict[PUBLIC_PATH_KEY] = helpers.copy_file(audio_dict[LOCAL_PATH_KEY], _data[WWW_PATH_KEY])
                 await add_audio_file_to_cache(hass, audio_dict[PUBLIC_PATH_KEY], duration, params, options)
-            else:
-                audio_dict[PUBLIC_PATH_KEY] = None
 
             if (is_local is False or audio_dict[LOCAL_PATH_KEY] is not None) and (is_public is False or audio_dict[PUBLIC_PATH_KEY] is not None):
                 _LOGGER.debug("   ...cached audio retrieved: %s", str(audio_dict))

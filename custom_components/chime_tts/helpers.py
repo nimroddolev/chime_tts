@@ -710,7 +710,6 @@ class ChimeTTSHelper:
             return False
         media_player_state = hass.states.get(entity_id).state
         if media_player_state != target_state:
-            _LOGGER.debug("``` - %s is %s", entity_id, media_player_state)
             return True
         _LOGGER.debug(" - Waiting until %s is no longer = %s...", entity_id, target_state)
         delay = 0.2
@@ -732,7 +731,6 @@ class ChimeTTSHelper:
             return False
         media_player_state = hass.states.get(entity_id).state
         if media_player_state == target_state:
-            _LOGGER.debug("``` - %s is already %s", entity_id, media_player_state)
             return True
         _LOGGER.debug(" - Waiting until %s is = %s...", entity_id, target_state)
         delay = 0.2
@@ -754,7 +752,6 @@ class ChimeTTSHelper:
             return False
         volume = hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
         if volume == target_volume:
-            _LOGGER.debug("``` - %s's volume level is %s", entity_id, str(volume))
             return True
         _LOGGER.debug(" - Waiting until %s's volume_level is = %s...", entity_id, str(target_volume))
         delay = 0.2
