@@ -83,6 +83,7 @@ class ChimeTTSHelper:
         unjoin_players = data.get("unjoin_players", False)
         language = data.get("language", None)
         cache = data.get("cache", False)
+
         announce = data.get("announce", False)
         force_announce = data.get("force_announce", False)
 
@@ -96,6 +97,7 @@ class ChimeTTSHelper:
                     ffmpeg_args = None
                 else:
                     data.get("audio_conversion", None)
+
         # Force "Alexa" conversion if any Alexa media_player entities included
         alexa_conversion_forced = False
         if ffmpeg_args is None and self.get_alexa_media_player_count(hass, entity_ids) > 0:
@@ -241,9 +243,7 @@ class ChimeTTSHelper:
             return bool(supported_features & 2)
 
         if feature is ATTR_MEDIA_ANNOUNCE:
-            # Announce support detection feature not yet supporting in HA
-            # return bool(supported_features & 128)
-            return True
+            return bool(supported_features & 1048576)
 
         if feature is ATTR_GROUP_MEMBERS:
             return bool(supported_features & 524288)
@@ -566,8 +566,8 @@ class ChimeTTSHelper:
                 else:
                     should_change_volume = True
 
-            # Group members supported?
             group_member_support = self.get_supported_feature(entity, ATTR_GROUP_MEMBERS)
+            announce_support = self.get_supported_feature(entity, ATTR_MEDIA_ANNOUNCE)
 
             media_players_array.append(
                 {
@@ -575,6 +575,8 @@ class ChimeTTSHelper:
                     "should_change_volume": should_change_volume,
                     "initial_volume_level": initial_volume_level,
                     "group_members_supported": group_member_support,
+                    "annonuce_supported": announce_support,
+                    "resume_media_player": False,
                 }
             )
         if entity_found is False:
@@ -696,3 +698,75 @@ class ChimeTTSHelper:
             .replace("/config", "")
             .replace("www/", "local/")
         )
+
+    def delete_file(self, file_path):
+        """Safely delete a file."""
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    async def async_wait_until_not_media_plater_state(self, hass: HomeAssistant, entity_id: str, target_state: str, timeout=5):
+        """Wait until a media_player's state is no longer a target state."""
+        if entity_id is None or hass.states.get(entity_id) is None:
+            return False
+        media_player_state = hass.states.get(entity_id).state
+        if media_player_state != target_state:
+            _LOGGER.debug("``` - %s is %s", entity_id, media_player_state)
+            return True
+        _LOGGER.debug(" - Waiting until %s is no longer = %s...", entity_id, target_state)
+        delay = 0.2
+        while media_player_state == target_state and timeout > 0:
+            await hass.async_add_executor_job(self.sleep, delay)
+            media_player_state = hass.states.get(entity_id).state
+            timeout = timeout - delay
+
+        if media_player_state != target_state:
+            _LOGGER.debug("   ...%s is now %s", entity_id, media_player_state)
+            return True
+
+        _LOGGER.warning(" - Timed out waiting for %s's state to change from %s", entity_id, target_state)
+        return False
+
+    async def async_wait_until_media_player_state(self, hass: HomeAssistant, entity_id: str, target_state: str, timeout=5):
+        """Wait for a media_player to have a target state."""
+        if entity_id is None or hass.states.get(entity_id) is None:
+            return False
+        media_player_state = hass.states.get(entity_id).state
+        if media_player_state == target_state:
+            _LOGGER.debug("``` - %s is already %s", entity_id, media_player_state)
+            return True
+        _LOGGER.debug(" - Waiting until %s is = %s...", entity_id, target_state)
+        delay = 0.2
+        while media_player_state != target_state and timeout > 0:
+            await hass.async_add_executor_job(self.sleep, delay)
+            media_player_state = hass.states.get(entity_id).state
+            timeout = timeout - delay
+
+        if media_player_state == target_state:
+            _LOGGER.debug("   ...%s is now %s", entity_id, media_player_state)
+            return True
+
+        _LOGGER.warning(" - Timed out waiting for %s to have state = %s", entity_id, target_state)
+        return False
+
+    async def async_wait_until_media_player_volume_level(self, hass: HomeAssistant, entity_id: str, target_volume: str, timeout=5):
+        """Wait for a media_player to have a target volume_level."""
+        if entity_id is None or hass.states.get(entity_id) is None:
+            return False
+        volume = hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
+        if volume == target_volume:
+            _LOGGER.debug("``` - %s's volume level is %s", entity_id, str(volume))
+            return True
+        _LOGGER.debug(" - Waiting until %s's volume_level is = %s...", entity_id, str(target_volume))
+        delay = 0.2
+        while volume != target_volume and timeout > 0:
+            await hass.async_add_executor_job(self.sleep, delay)
+            volume = hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
+            timeout = timeout - delay
+
+        if volume == target_volume:
+            _LOGGER.debug("   ...%s's volume level is now %s", entity_id, str(target_volume))
+            return True
+
+        _LOGGER.warning(" - Timed out waiting for %s to have volume level = %s", entity_id, str(target_volume))
+        return False
+
