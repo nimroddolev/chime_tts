@@ -39,6 +39,7 @@ from .const import (
     SERVICE_SAY_URL,
     SERVICE_CLEAR_CACHE,
     VERSION,
+    ALEXA_MEDIA_PLAYER_PLATFORM,
     DATA_STORAGE_KEY,
     AUDIO_PATH_KEY,
     LOCAL_PATH_KEY,
@@ -1095,9 +1096,9 @@ async def async_play_media(
         hass, media_players_array, volume_level
     )
 
-    # Play the audio (For Alexa media_players call notify.alexa_media, and for non-Alexa media_players, call media_player.play_media)
-    alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_media_player_platform(hass, entity_id) == "alexa"]
-    non_alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_media_player_platform(hass, entity_id) != "alexa"]
+    # Play the audio (For Alexa media_players: call notify.alexa_media, and for non-Alexa media_players: call media_player.play_media)
+    alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_media_player_platform(hass, entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM]
+    non_alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_media_player_platform(hass, entity_id) != ALEXA_MEDIA_PLAYER_PLATFORM]
     service_calls = []
 
     # Prepare service call for Alexa media_players

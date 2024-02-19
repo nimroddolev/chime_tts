@@ -23,6 +23,7 @@ from homeassistant.components.media_player.const import (
 from .const import (
     DEFAULT_DELAY_MS,
     ALEXA_FFMPEG_ARGS,
+    ALEXA_MEDIA_PLAYER_PLATFORM,
     MP3_PRESET_PATH,
     MP3_PRESETS,
     MP3_PRESET_PATH_PLACEHOLDER,  # DEPRECATED
@@ -165,10 +166,10 @@ class ChimeTTSHelper:
         return None
 
     def get_alexa_media_player_count(self, hass: HomeAssistant, entity_ids):
-        """Determine whether any included media_players belong to the "Alexa" platform."""
+        """Determine whether any included media_players belong to the Alexa Media Player platform."""
         ret_val = 0
         for entity_id in entity_ids:
-            if self.get_media_player_platform(hass, entity_id) == "alexa":
+            if self.get_media_player_platform(hass, entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM:
                 ret_val = ret_val + 1
         return ret_val
 

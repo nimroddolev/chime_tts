@@ -29,6 +29,7 @@ AUDIO_PATH_KEY = "audio_path" # <-- Deprecated
 LOCAL_PATH_KEY = "local_path"
 PUBLIC_PATH_KEY = "public_path"
 AUDIO_DURATION_KEY = "audio_duration"
+ALEXA_MEDIA_PLAYER_PLATFORM = "alexa_media"
 
 ROOT_PATH_KEY = "root_path_key"
 DEFAULT_TEMP_CHIMES_PATH_KEY = "default_temp_chimes_path"
