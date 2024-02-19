@@ -732,12 +732,10 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     # Valdiation
     if audio_dict[AUDIO_DURATION_KEY] == 0:
         _LOGGER.error("async_get_playback_audio_path --> Audio has no duration")
-        audio_dict = None
-    if audio_dict[LOCAL_PATH_KEY] is None and audio_dict[PUBLIC_PATH_KEY] is None:
-        _LOGGER.error(
-            "async_get_playback_audio_path --> No audio file generated"
-        )
-        audio_dict = None
+        return None
+    elif audio_dict[LOCAL_PATH_KEY] is None and audio_dict[PUBLIC_PATH_KEY] is None:
+        _LOGGER.error("async_get_playback_audio_path --> No audio file generated")
+        return None
 
     return audio_dict
 
