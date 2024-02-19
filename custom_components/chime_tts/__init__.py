@@ -915,7 +915,7 @@ async def async_get_audio_from_path(hass: HomeAssistant,
             audio_dict = filepath["audio_dict"]
             file_hash = filepath["file_hash"]
             filepath = audio_dict[LOCAL_PATH_KEY]
-            _LOGGER.debug(" - Adding downloaded chime to chime cache")
+            _LOGGER.debug(" - Saving reference to downloaded chime")
             await async_add_audio_file_to_cache(hass=hass,
                                                 audio_path=filepath,
                                                 duration=audio_dict[AUDIO_DURATION_KEY],

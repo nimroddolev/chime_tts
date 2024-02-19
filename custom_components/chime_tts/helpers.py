@@ -310,7 +310,6 @@ class ChimeTTSHelper:
             audio_dict = await self.async_download_file(hass, chime_path, temp_chimes_path)
             if audio_dict is not None:
                 _LOGGER.debug(" - Chime downloaded successfully")
-                # Store audio data in cache
                 file_hash = self.get_hash_for_string(chime_path)
                 return {
                     "audio_dict": audio_dict,
