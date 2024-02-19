@@ -681,8 +681,8 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     # Save generated audio file
     audio_dict = {
         AUDIO_DURATION_KEY: 0,
-        "public_path": None,
-        "local_path": None
+        LOCAL_PATH_KEY: None,
+        PUBLIC_PATH_KEY: None
     }
     if output_audio is not None:
         initial_save_folder_key = TEMP_PATH_KEY if is_local else WWW_PATH_KEY
@@ -911,7 +911,7 @@ async def async_get_audio_from_path(hass: HomeAssistant,
         hass=hass)
 
     if filepath is not None:
-        if isinstance(filepath) == dict:
+        if isinstance(filepath, dict):
             # Chime downloaded from URL
             audio_dict = filepath["audio_dict"]
             file_hash = filepath["file_hash"]
@@ -923,8 +923,8 @@ async def async_get_audio_from_path(hass: HomeAssistant,
                                                 params=None,
                                                 options=None,
                                                 file_hash=file_hash)
-        elif isinstance(filepath) != str:
-            _LOGGER.warning("Downloaded chime %s: %s", isinstance(filepath), str(filepath))
+        elif isinstance(filepath, str):
+            _LOGGER.warning("Downloaded chime %s: %s", type(filepath), str(filepath))
             return audio
 
         _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
@@ -1107,7 +1107,7 @@ async def async_play_media(
             "domain": "notify",
             "service": "alexa_media",
             "service_data": {
-                "message": f"<audio src=\"{audio_dict['public_path']}\"/>",
+                "message": f"<audio src=\"{audio_dict[PUBLIC_PATH_KEY]}\"/>",
                 "data": {
                     "type": "tts"
                     },
@@ -1235,7 +1235,7 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
         path = None
         duration = None
         # Support previous cache format of path stings
-        if isinstance(audio_dict) == "string":
+        if isinstance(audio_dict, str):
             path = audio_dict
         # Support previous cache format of AUDIO_PATH_KEY dictionary key values
         elif AUDIO_PATH_KEY in audio_dict:
