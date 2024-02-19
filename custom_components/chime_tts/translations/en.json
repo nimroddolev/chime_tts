@@ -166,6 +166,7 @@
         },
         "chime_paths": {
             "options": {
+                "ba_dum_tss": "Ba-Dum Tss!",
                 "bells": "Bells",
                 "bells_2": "Bells 2",
                 "bright": "Bright",
@@ -173,6 +174,7 @@
                 "choir": "Choir",
                 "chord": "Chord",
                 "classical": "Classical",
+                "crickets": "Crickets",
                 "ding_dong": "Ding Dong",
                 "drumroll": "Drum Roll",
                 "dun_dun_dun": "Dun dun DUUUN!",
@@ -187,6 +189,7 @@
                 "toast": "Toast",
                 "twenty_four": "Twenty Four",
                 "sad_trombone": "Sad Trombone",
+                "soft": "Soft",
                 "whistle": "Whistle",
                 "custom_chime_path_1": "Custom 1",
                 "custom_chime_path_2": "Custom 2",

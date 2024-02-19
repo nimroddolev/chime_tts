@@ -46,6 +46,7 @@ MEDIA_DIR_DEFAULT = "local"
 MP3_PRESET_PATH = "custom_components/chime_tts/mp3s/"
 MP3_PRESET_PATH_PLACEHOLDER = "mp3_path_placeholder-"  # DEPRECATED
 MP3_PRESETS = [
+    "ba_dum_tss",
     "bells",
     "bells_2",
     "bright",
@@ -53,6 +54,7 @@ MP3_PRESETS = [
     "choir",
     "chord",
     "classical",
+    "crickets",
     "ding_dong",
     "drumroll",
     "dun_dun_dun",
@@ -67,6 +69,7 @@ MP3_PRESETS = [
     "toast",
     "twenty_four",
     "sad_trombone",
+    "soft",
     "whistle",
 ]
 MP3_PRESET_CUSTOM_PREFIX = "custom_chime_path_"

@@ -57,6 +57,8 @@ say:
           custom_value: true
           mode: dropdown
           options:
+            - label: "Ba-Dum Tss!"
+              value: "ba_dum_tss"
             - label: "Bells"
               value: "bells"
             - label: "Bells 2"
@@ -71,6 +73,8 @@ say:
               value: "chord"
             - label: "Classical"
               value: "classical"
+            - label: "Crickets"
+              value: "crickets"
             - label: "Ding Dong"
               value: "ding_dong"
             - label: "Drum Roll"
@@ -99,6 +103,8 @@ say:
               value: "twenty_four"
             - label: "Sad Trombone"
               value: "sad_trombone"
+            - label: "Soft"
+              value: "soft"
             - label: "Whistle"
               value: "whistle"
             - label: "Custom 1"
@@ -124,6 +130,8 @@ say:
           custom_value: true
           mode: dropdown
           options:
+            - label: "Ba-Dum Tss!"
+              value: "ba_dum_tss"
             - label: "Bells"
               value: "bells"
             - label: "Bells 2"
@@ -138,6 +146,8 @@ say:
               value: "chord"
             - label: "Classical"
               value: "classical"
+            - label: "Crickets"
+              value: "crickets"
             - label: "Ding Dong"
               value: "ding_dong"
             - label: "Drum Roll"
@@ -164,6 +174,8 @@ say:
               value: "twenty_four"
             - label: "Sad Trombone"
               value: "sad_trombone"
+            - label: "Soft"
+              value: "soft"
             - label: "Whistle"
               value: "whistle"
             - label: "Custom 1"
@@ -391,6 +403,8 @@ say_url:
           custom_value: true
           mode: dropdown
           options:
+            - label: "Ba-Dum Tss!"
+              value: "ba_dum_tss"
             - label: "Bells"
               value: "bells"
             - label: "Bells 2"
@@ -405,6 +419,8 @@ say_url:
               value: "chord"
             - label: "Classical"
               value: "classical"
+            - label: "Crickets"
+              value: "crickets"
             - label: "Ding Dong"
               value: "ding_dong"
             - label: "Drum Roll"
@@ -433,6 +449,8 @@ say_url:
               value: "twenty_four"
             - label: "Sad Trombone"
               value: "sad_trombone"
+            - label: "Soft"
+              value: "soft"
             - label: "Whistle"
               value: "whistle"
             - label: "Custom 1"
@@ -458,6 +476,8 @@ say_url:
           custom_value: true
           mode: dropdown
           options:
+            - label: "Ba-Dum Tss!"
+              value: "ba_dum_tss"
             - label: "Bells"
               value: "bells"
             - label: "Bells 2"
@@ -472,6 +492,8 @@ say_url:
               value: "chord"
             - label: "Classical"
               value: "classical"
+            - label: "Crickets"
+              value: "crickets"
             - label: "Ding Dong"
               value: "ding_dong"
             - label: "Drum Roll"
@@ -498,6 +520,8 @@ say_url:
               value: "twenty_four"
             - label: "Sad Trombone"
               value: "sad_trombone"
+            - label: "Soft"
+              value: "soft"
             - label: "Whistle"
               value: "whistle"
             - label: "Custom 1"
