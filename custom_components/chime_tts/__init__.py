@@ -1099,7 +1099,15 @@ async def async_play_media(
         hass, media_players_array, volume_level
     )
 
-    # Play the audio (For Alexa media_players: call notify.alexa_media, and for non-Alexa media_players: call media_player.play_media)
+    play_result = await async_play_media_service_calls(hass, entity_ids, service_data, audio_dict)
+    if play_result is True:
+        return True
+
+    _LOGGER.error("Playback failed")
+    return False
+
+async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
+    """Play the final audio via media_player_play_media or notify.alexa_media."""
     alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_media_player_platform(hass, entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM]
     non_alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_media_player_platform(hass, entity_id) != ALEXA_MEDIA_PLAYER_PLATFORM]
     service_calls = []
@@ -1181,9 +1189,7 @@ async def async_play_media(
         if service_call["result"]:
             return True
 
-    _LOGGER.error("Playback failed")
     return False
-
 
 ################################
 ### Storage Helper Functions ###
