@@ -75,6 +75,13 @@ class ChimeTTSHelper:
         final_delay = float(data.get("final_delay", 0))
         message = str(data.get("message", ""))
         tts_platform = str(data.get("tts_platform", ""))
+        if tts_platform is None or tts_platform == "None" or tts_platform == "":
+            installed_tts = list((hass.data["tts_manager"].providers).keys())
+            if len(installed_tts) == 0:
+                _LOGGER.warning("No TTS platforms available.")
+            else:
+                tts_platform = installed_tts[0]
+                _LOGGER.warning("You forgot to include a TTS platform. Using %s", tts_platform)
         tts_playback_speed = float(data.get("tts_playback_speed", 100))
         volume_level = float(data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
         media_players_array = await self.async_initialize_media_players(
