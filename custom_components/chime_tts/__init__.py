@@ -139,25 +139,27 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             audio_duration = audio_dict.get(AUDIO_DURATION_KEY, 0)
 
             # Play audio with service_data
-            if media_players_array is not False and (public_path is not None or local_path is not None):
-                play_result = await async_play_media(
+            if media_players_array is False or (public_path is None and local_path is None):
+                return False
+
+            play_result = await async_play_media(
+                hass,
+                audio_dict,
+                params["entity_ids"],
+                params["announce"],
+                params["join_players"],
+                media_players_array,
+                params["volume_level"],
+            )
+            if play_result is True:
+                await async_post_playback_actions(
                     hass,
-                    audio_dict,
-                    params["entity_ids"],
-                    params["announce"],
-                    params["join_players"],
+                    audio_duration,
+                    params["final_delay"],
                     media_players_array,
                     params["volume_level"],
+                    params["unjoin_players"],
                 )
-                if play_result is True:
-                    await async_post_playback_actions(
-                        hass,
-                        audio_duration,
-                        params["final_delay"],
-                        media_players_array,
-                        params["volume_level"],
-                        params["unjoin_players"],
-                    )
 
             # Remove temporary local generated mp3
             if params["cache"] is False and local_path is not None:
@@ -1025,6 +1027,9 @@ async def async_play_media(
 
     # media_content_id
     media_source_path = audio_dict.get(LOCAL_PATH_KEY, audio_dict.get(PUBLIC_PATH_KEY, None))
+    if media_source_path is None:
+        return None
+
     media_folder = "/media/"
     media_folder_path_index = media_source_path.find(media_folder)
     if media_folder_path_index != -1:
