@@ -923,9 +923,6 @@ async def async_get_audio_from_path(hass: HomeAssistant,
                                                 params=None,
                                                 options=None,
                                                 file_hash=file_hash)
-        elif isinstance(filepath, str):
-            _LOGGER.warning("Downloaded chime %s: %s", type(filepath), str(filepath))
-            return audio
 
         _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
         try:
