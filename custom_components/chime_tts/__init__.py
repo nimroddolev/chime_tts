@@ -910,7 +910,7 @@ async def async_get_audio_from_path(hass: HomeAssistant,
         hass=hass)
 
     if filepath is not None:
-        if type(filepath) == dict:
+        if isinstance(filepath) == dict:
             # Chime downloaded from URL
             audio_dict = filepath["audio_dict"]
             file_hash = filepath["file_hash"]
@@ -922,8 +922,8 @@ async def async_get_audio_from_path(hass: HomeAssistant,
                                                 params=None,
                                                 options=None,
                                                 file_hash=file_hash)
-        elif type(filepath) != str:
-            _LOGGER.warning("Downloaded chime %s: %s", type(filepath), str(filepath))
+        elif isinstance(filepath) != str:
+            _LOGGER.warning("Downloaded chime %s: %s", isinstance(filepath), str(filepath))
             return audio
 
         _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
@@ -1234,7 +1234,7 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
         path = None
         duration = None
         # Support previous cache format of path stings
-        if type(audio_dict) == "string":
+        if isinstance(audio_dict) == "string":
             path = audio_dict
         # Support previous cache format of AUDIO_PATH_KEY dictionary key values
         elif AUDIO_PATH_KEY in audio_dict:
