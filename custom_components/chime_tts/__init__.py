@@ -1029,6 +1029,9 @@ async def async_play_media(
     volume_level,
 ):
     """Call the media_player.play_media service."""
+    # TODO: REMOVE
+    _LOGGER.debug("async_play_media - audio_dict: %s", str(audio_dict))
+
     service_data = {}
 
     # media content type
@@ -1111,12 +1114,13 @@ async def async_play_media(
 
 async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
     """Play the final audio via media_player_play_media or notify.alexa_media."""
-    alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_media_player_platform(hass, entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM]
-    non_alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_media_player_platform(hass, entity_id) != ALEXA_MEDIA_PLAYER_PLATFORM]
+    alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_is_media_player_alexa(hass, entity_id)]
+    non_alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_is_media_player_alexa(hass, entity_id)]
     service_calls = []
 
     # Prepare service call for Alexa media_players
     if len(alexa_entity_ids) > 0:
+        _LOGGER.debug(" - %s Alexa media player%s detected. Calling `notify.alexa_media` service", len(alexa_entity_ids), ("s" if len(alexa_entity_ids) != 1 else ""))
         service_calls.append({
             "domain": "notify",
             "service": "alexa_media",
@@ -1131,6 +1135,7 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
         })
     # Prepare service call for regular media_players
     if len(non_alexa_entity_ids) > 0:
+        _LOGGER.debug(" - %s Standard media player%s detected. Calling `media_player.play_media` service", len(non_alexa_entity_ids), ("s" if len(non_alexa_entity_ids) != 1 else ""))
         service_data[CONF_ENTITY_ID] = non_alexa_entity_ids
         service_calls.append({
             "domain": "media_player",

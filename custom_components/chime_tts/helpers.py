@@ -169,9 +169,15 @@ class ChimeTTSHelper:
         """Determine whether any included media_players belong to the Alexa Media Player platform."""
         ret_val = 0
         for entity_id in entity_ids:
-            if self.get_media_player_platform(hass, entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM:
+            if self.get_is_media_player_alexa(hass, entity_id):
                 ret_val = ret_val + 1
         return ret_val
+
+    def get_is_media_player_alexa(self, hass, entity_id):
+        """Determine whether a media_player belongs to the Alexa Media Player platform."""
+        # TODO: Determine acutal platform string to detect Alexa media_players
+        # return self.get_media_player_platform(hass, entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM
+        return "alexa" in str(self.get_media_player_platform(hass, entity_id)).lower()
 
     def parse_message(self, message_string):
         """Parse the message string/YAML object into segments dictionary."""
@@ -537,6 +543,9 @@ class ChimeTTSHelper:
                 continue
             else:
                 entity_found = True
+
+            # TODO: REMOVE:
+            _LOGGER.debug("``` media_player %s is from platform %s", entity_id, self.get_media_player_platform(hass, entity_id))
 
             # Ensure media player is turned on
             if entity.state == "off":
