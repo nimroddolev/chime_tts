@@ -697,10 +697,6 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         if new_audio_file is None:
             _LOGGER.debug("   ...error saving file")
             return None
-        duration = float(len(output_audio) / 1000.0)
-        audio_dict[AUDIO_DURATION_KEY] = duration
-
-        audio_dict[LOCAL_PATH_KEY if is_local else PUBLIC_PATH_KEY] = new_audio_file
 
         # Perform FFmpeg conversion
         if ffmpeg_args:
@@ -712,6 +708,10 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 new_audio_file = converted_audio_file
             else:
                 _LOGGER.warning("    ...FFmpeg audio conversion failed. Using unconverted audio file")
+
+        duration = float(len(output_audio) / 1000.0)
+        audio_dict[AUDIO_DURATION_KEY] = duration
+        audio_dict[LOCAL_PATH_KEY if is_local else PUBLIC_PATH_KEY] = new_audio_file
 
         # Save local and/or public mp3s and update cache
         for location in [
@@ -743,6 +743,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         _LOGGER.error("async_get_playback_audio_path --> No audio file generated")
         return None
 
+    _LOGGER.debug(" - Chime TTS audio generated: %s", str(audio_dict))
     return audio_dict
 
 
@@ -779,7 +780,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
 
         # Chime tag
         if segment["type"] == "chime":
-            if "path" in segment:
+            if len(segment.get("path", "")) > 0:
                 output_audio = await async_get_audio_from_path(hass=hass,
                                                                filepath=segment["path"],
                                                                cache=segment_cache,
@@ -787,18 +788,21 @@ async def async_process_segments(hass, message, output_audio, params, options):
                                                                audio=output_audio)
             else:
                 _LOGGER.warning("Chime path missing from messsage segment #%s", str(index+1))
+                continue
 
         # Delay tag
         if segment["type"] == "delay":
-            if "length" in segment:
+            if segment.get("length", None) is not None:
                 segment_delay_length = float(segment["length"])
-                output_audio = output_audio + AudioSegment.silent(duration=segment_delay_length)
+                if output_audio is not None:
+                    output_audio = output_audio + AudioSegment.silent(duration=segment_delay_length)
             else:
                 _LOGGER.warning("Delay length missing from messsage segment #%s", str(index+1))
+                continue
 
         # Request TTS audio file
         if segment["type"] == "tts":
-            if "message" in segment and len(segment["message"]) > 0:
+            if len(segment.get("message", "")) > 0:
                 segment_message = segment["message"]
                 if len(segment_message) == 0 or segment_message == "None":
                     continue
@@ -888,12 +892,16 @@ async def async_process_segments(hass, message, output_audio, params, options):
             else:
                 _LOGGER.warning("TTS message missing from messsage segment #%s: %s",
                                 str(index+1), str(segment))
+                continue
 
         # Audio Conversion with FFmpeg
         if segment_audio_conversion is not None:
-            _LOGGER.debug("Converting audio segment with FFmpeg...")
-            temp_folder = _data[TEMP_PATH_KEY]
-            output_audio = helpers.ffmpeg_convert_from_audio_segment(output_audio, segment_audio_conversion, temp_folder)
+            if output_audio is not None:
+                _LOGGER.debug("Converting audio segment with FFmpeg...")
+                temp_folder = _data[TEMP_PATH_KEY]
+                output_audio = helpers.ffmpeg_convert_from_audio_segment(output_audio, segment_audio_conversion, temp_folder)
+            else:
+                _LOGGER.warning("No audio provided for conversion with FFmpeg")
 
     return output_audio
 
@@ -1047,26 +1055,20 @@ async def async_play_media(
 
     # entity_id
     service_data[CONF_ENTITY_ID] = entity_ids
+
+    # join entity_ids as a group
     if join_players is True:
-        # join entity_ids as a group
         group_members_suppored = helpers.get_group_members_suppored(media_players_array)
         if group_members_suppored > 1:
             joint_speakers_entity_id = await async_join_media_players(hass, entity_ids)
             if joint_speakers_entity_id is not False:
                 service_data[CONF_ENTITY_ID] = joint_speakers_entity_id
             else:
-                _LOGGER.warning(
-                    "Unable to join speakers. Only 1 media_player supported."
-                )
+                _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
+        elif group_members_suppored == 1:
+            _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
         else:
-            if group_members_suppored == 1:
-                _LOGGER.warning(
-                    "Unable to join speakers. Only 1 media_player supported."
-                )
-            else:
-                _LOGGER.warning(
-                    "Unable to join speakers. No supported media_players found."
-                )
+            _LOGGER.warning("Unable to join speakers. No supported media_players found.")
 
     # Pause media if media_player's platform does not support `announce`
     for media_player_dict in media_players_array:
