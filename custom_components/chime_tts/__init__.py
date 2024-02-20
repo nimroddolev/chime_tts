@@ -340,7 +340,7 @@ async def async_post_playback_actions(
         should_change_volume = bool(media_player_dict["should_change_volume"])
         should_fade_in = media_player_dict["resume_media_player"]
         initial_volume_level = media_player_dict["initial_volume_level"]
-        if should_change_volume and initial_volume_level >= 0:
+        if (should_change_volume or should_fade_in) and initial_volume_level >= 0:
             await async_set_volume_level(
                 hass,
                 entity_id,
