@@ -160,7 +160,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                     )
 
                 # Remove temporary local generated mp3
-                if params["cache"] is False and local_path is not None:
+                if params.get("cache", False) and local_path is not None:
                     helpers.delete_file(local_path)
 
         end_time = datetime.now()
@@ -618,14 +618,14 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     """Create audio to play on media player entity."""
     output_audio = None
 
-    hass = params["hass"]
-    chime_path = params["chime_path"]
-    end_chime_path = params["end_chime_path"]
-    offset = params["offset"]
-    message = params["message"]
-    cache = params["cache"]
-    entity_ids = params["entity_ids"]
-    ffmpeg_args = params["ffmpeg_args"]
+    hass = params.get("hass", None)
+    chime_path = params.get("chime_path", None)
+    end_chime_path = params.get("end_chime_path", None)
+    offset = params.get("offset", 0)
+    message = params.get("message", None)
+    cache = params.get("cache", False)
+    entity_ids = params.get("entity_ids", [])
+    ffmpeg_args = params.get("ffmpeg_args", "")
 
     # Produce local and/or public mp3s?
     alexa_media_player_count = helpers.get_alexa_media_player_count(hass, entity_ids)
