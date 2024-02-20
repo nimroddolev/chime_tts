@@ -133,17 +133,18 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         # Validate custom chime mp3 paths
         for i in range(5):
             key = MP3_PRESET_CUSTOM_PREFIX + str(i + 1)
-            value = user_input.get(key, "")
-            if value != "":
+            value = user_input.get(key, " ")
+            LOGGER.debug("%s = %s", key, str(value))
+            if value is not None and value != "":
 
                 # URL valid?
-                is_valid = False
+                is_valid = True
                 is_url = True if (value.startswith("http://") or value.startswith("https://")) else False
                 if is_url:
                     is_valid = await self.ping_url(value)
 
                 # File not found?
-                if os.path.exists(value) is False and is_valid is False:
+                if os.path.exists(value) is False or is_valid is False:
                     # Set main error message
                     if not _errors:
                         _errors["base"] = "invalid_chime_paths"
