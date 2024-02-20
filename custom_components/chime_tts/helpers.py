@@ -223,18 +223,24 @@ class ChimeTTSHelper:
                 'message': message_string
             })
 
-        # Make all segment keys lowercase
+        # Final adjustments
         final_segments = []
-        ignore_string = ""
-        for i, segment_n in enumerate(segments):
+        for _, segment_n in enumerate(segments):
             segment = {}
             for key, value in segment_n.items():
                 if isinstance(value, dict):
                     for key_n, value_n in value.items():
                         value[key_n.lower()] = value_n
+                # Make all segment keys lowercase
                 segment[key.lower()] = value
-            final_segments.append(segment)
-            ignore_string += str(i)
+            # Dupliacte segments "repeat" times
+            repeat = segment.get("repeat", 1)
+            if isinstance(repeat, int):
+                repeat = max(segment.get("repeat", 1), 1)
+            else:
+                repeat = 1
+            for _ in range(repeat):
+                final_segments.append(segment)
 
         return final_segments
 
