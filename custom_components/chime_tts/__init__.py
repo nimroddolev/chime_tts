@@ -134,7 +134,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         audio_dict = await async_get_playback_audio_path(params, options)
         if audio_dict is not None:
             local_path = audio_dict.get(LOCAL_PATH_KEY, None)
-            public_path = helpers.create_url_to_public_file(hass, audio_dict[PUBLIC_PATH_KEY]) if PUBLIC_PATH_KEY in audio_dict else None
+            public_path = audio_dict.get(PUBLIC_PATH_KEY, None)
             audio_duration = audio_dict.get(AUDIO_DURATION_KEY, 0)
 
             if public_path is not None or local_path is not None:
@@ -733,6 +733,9 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 audio_dict[location["location_key"]] = helpers.copy_file(new_path, _data[location["dest_folder_key"]])
             if audio_dict[location["location_key"]] is not None and cache is True:
                 await async_add_audio_file_to_cache(hass, audio_dict[location["location_key"]], duration, params, options)
+
+        # Convert public path to external URL
+        audio_dict[PUBLIC_PATH_KEY] = helpers.create_url_to_public_file(hass, audio_dict[PUBLIC_PATH_KEY])
 
     # Valdiation
     if audio_dict[AUDIO_DURATION_KEY] == 0:
