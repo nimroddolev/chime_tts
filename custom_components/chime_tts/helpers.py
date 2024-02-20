@@ -23,7 +23,6 @@ from homeassistant.components.media_player.const import (
 from .const import (
     DEFAULT_DELAY_MS,
     ALEXA_FFMPEG_ARGS,
-    ALEXA_MEDIA_PLAYER_PLATFORM,
     MP3_PRESET_PATH,
     MP3_PRESETS,
     MP3_PRESET_PATH_PLACEHOLDER,  # DEPRECATED

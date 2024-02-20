@@ -1039,6 +1039,8 @@ async def async_play_media(
     # media_content_id
     media_source_path = audio_dict.get(LOCAL_PATH_KEY, audio_dict.get(PUBLIC_PATH_KEY, None))
     if media_source_path is None:
+        if entity_ids is not None and len(entity_ids) > 0:
+            _LOGGER.error("No media file path found")
         return None
 
     media_folder = "/media/"
