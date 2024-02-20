@@ -1105,11 +1105,10 @@ async def async_play_media(
     )
 
     play_result = await async_play_media_service_calls(hass, entity_ids, service_data, audio_dict)
-    if play_result is True:
-        return True
+    if play_result is False:
+        _LOGGER.error("Playback failed")
 
-    _LOGGER.error("Playback failed")
-    return False
+    return play_result
 
 async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
     """Play the final audio via media_player_play_media or notify.alexa_media."""
@@ -1142,62 +1141,50 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
             "service": SERVICE_PLAY_MEDIA,
             "service_data": service_data,
             "blocking": True,
-            "result": False
+            "result": True
         })
 
     # Fire service calls
-    retry_count = 3
     for service_call in service_calls:
-        for i in range(retry_count):
-            if service_call["result"]:
-                break
-            if i == 0:
-                _LOGGER.debug("Calling %s.%s with data:",
+        _LOGGER.debug("Calling %s.%s with data:",
+                    service_call["domain"],
+                    service_call["service"])
+        for key, value in service_call["service_data"].items():
+            _LOGGER.debug(" - %s: %s", str(key), str(value))
+        try:
+            await hass.services.async_call(
+                domain=service_call["domain"],
+                service=service_call["service"],
+                service_data=service_call["service_data"]
+            )
+            continue
+        except ServiceNotFound:
+            _LOGGER.error("Could not find service `%s.%s`.%s",
+                    service_call["domain"],
+                    service_call["service"],
+                    (" Please install the Alexa Media Player Custom Component: https://github.com/alandtse/alexa_media_player"
+                        if service_call["service"] == "alexa_media"
+                        else "")
+            )
+            return False
+        except TemplateError as err:
+            _LOGGER.error("Error while rendering Jinja2 template for audio playback: %s", err)
+            return False
+        except HomeAssistantError as err:
+            _LOGGER.error("An error occurred: %s", str(err))
+            if err == "Unknown source directory":
+                _LOGGER.warning(
+                    "Please check that media directories are enabled in your configuration.yaml file, e.g:\r\n\r\nmedia_source:\r\n media_dirs:\r\n   local: /media"
+                )
+            return False
+        except Exception as err:
+            _LOGGER.error("Unexpected error when playing audio via %s.%s: %s",
                             service_call["domain"],
-                            service_call["service"])
-                for key, value in service_call["service_data"].items():
-                    _LOGGER.debug(" - %s: %s", str(key), str(value))
-            else:
-                _LOGGER.warning("...playback retry %s/%s", str(i+1), str(retry_count))
+                            service_call["service"],
+                            str(err)
+                            )
 
-            try:
-                await hass.services.async_call(
-                    domain=service_call["domain"],
-                    service=service_call["service"],
-                    service_data=service_call["service_data"]
-                )
-                service_call["result"] = True
-            except ServiceNotFound:
-                _LOGGER.error("Could not find service `%s.%s`.%s",
-                        service_call["domain"],
-                        service_call["service"],
-                        (" Please install the Alexa Media Player Custom Component: https://github.com/alandtse/alexa_media_player"
-                         if service_call["service"] == "alexa_media"
-                         else "")
-                )
-                return False
-            except TemplateError as err:
-                _LOGGER.error("Error while rendering Jinja2 template for audio playback: %s", err)
-                return False
-            except HomeAssistantError as err:
-                _LOGGER.error("An error occurred: %s", str(err))
-                if err == "Unknown source directory":
-                    _LOGGER.warning(
-                        "Please check that media directories are enabled in your configuration.yaml file, e.g:\r\n\r\nmedia_source:\r\n media_dirs:\r\n   local: /media"
-                    )
-                return False
-            except Exception as err:
-                _LOGGER.error("Unexpected error when playing audio via %s.%s: %s",
-                              service_call["domain"],
-                              service_call["service"],
-                              str(err)
-                             )
-
-    for service_call in service_calls:
-        if service_call["result"]:
-            return True
-
-    return False
+    return True
 
 ################################
 ### Storage Helper Functions ###
