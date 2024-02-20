@@ -39,7 +39,6 @@ from .const import (
     SERVICE_SAY_URL,
     SERVICE_CLEAR_CACHE,
     VERSION,
-    ALEXA_MEDIA_PLAYER_PLATFORM,
     DATA_STORAGE_KEY,
     AUDIO_PATH_KEY,
     LOCAL_PATH_KEY,
@@ -1115,7 +1114,8 @@ async def async_play_media(
 async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
     """Play the final audio via media_player_play_media or notify.alexa_media."""
     alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_is_media_player_alexa(hass, entity_id)]
-    non_alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_is_media_player_alexa(hass, entity_id)]
+    non_alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_is_media_player_alexa(hass, entity_id) is False]
+
     service_calls = []
 
     # Prepare service call for Alexa media_players
