@@ -23,6 +23,7 @@ from homeassistant.components.media_player.const import (
 from .const import (
     DEFAULT_DELAY_MS,
     ALEXA_FFMPEG_ARGS,
+    ALEXA_MEDIA_PLAYER_PLATFORM,
     MP3_PRESET_PATH,
     MP3_PRESETS,
     MP3_PRESET_PATH_PLACEHOLDER,  # DEPRECATED
@@ -174,9 +175,7 @@ class ChimeTTSHelper:
 
     def get_is_media_player_alexa(self, hass, entity_id):
         """Determine whether a media_player belongs to the Alexa Media Player platform."""
-        # TODO: Determine acutal platform string to detect Alexa media_players
-        # return self.get_media_player_platform(hass, entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM
-        return "alexa" in str(self.get_media_player_platform(hass, entity_id)).lower()
+        return str(self.get_media_player_platform(hass, entity_id)).lower() == ALEXA_MEDIA_PLAYER_PLATFORM
 
     def parse_message(self, message_string):
         """Parse the message string/YAML object into segments dictionary."""
@@ -548,9 +547,6 @@ class ChimeTTSHelper:
                 continue
             else:
                 entity_found = True
-
-            # TODO: REMOVE:
-            _LOGGER.debug("``` media_player %s is from platform %s", entity_id, self.get_media_player_platform(hass, entity_id))
 
             # Ensure media player is turned on
             if entity.state == "off":

@@ -1028,19 +1028,15 @@ async def async_play_media(
     volume_level,
 ):
     """Call the media_player.play_media service."""
-    # TODO: REMOVE
-    _LOGGER.debug("async_play_media - audio_dict: %s", str(audio_dict))
-
     service_data = {}
 
     # media content type
     service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE_MUSIC
 
     # media_content_id
-    media_source_path = audio_dict.get(LOCAL_PATH_KEY, audio_dict.get(PUBLIC_PATH_KEY, None))
+    media_source_path = audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None)
     if media_source_path is None:
-        if entity_ids is not None and len(entity_ids) > 0:
-            _LOGGER.error("No media file path found")
+        _LOGGER.error("No media file path found")
         return None
 
     media_folder = "/media/"
