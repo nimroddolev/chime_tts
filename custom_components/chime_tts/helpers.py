@@ -66,9 +66,10 @@ class ChimeTTSHelper:
 
         return options
 
-    async def async_parse_params(self, data, hass: HomeAssistant):
+    async def async_parse_params(self, hass: HomeAssistant, data, is_say_url):
         """Parse TTS service parameters."""
-        entity_ids = self.parse_entity_ids(data, hass)
+        _LOGGER.debug("``` is_say_url = %s", str(is_say_url))
+        entity_ids = self.parse_entity_ids(data, hass) if is_say_url is False else []
         chime_path =str(data.get("chime_path", ""))
         end_chime_path = str(data.get("end_chime_path", ""))
         offset = float(data.get("delay", data.get("offset", DEFAULT_DELAY_MS)))
@@ -79,7 +80,7 @@ class ChimeTTSHelper:
         volume_level = float(data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
         media_players_array = await self.async_initialize_media_players(
             hass, entity_ids, volume_level
-        )
+        ) if is_say_url is False else []
         join_players = data.get("join_players", False)
         unjoin_players = data.get("unjoin_players", False)
         language = data.get("language", None)
@@ -476,8 +477,13 @@ class ChimeTTSHelper:
                 )
                 return None
 
-        _LOGGER.debug(" - File saved to path: %s", audio_full_path)
+        if os.path.exists(audio_full_path):
+            _LOGGER.debug(" - File saved to path: %s", audio_full_path)
+        else:
+            _LOGGER.error("Unable to access saved file: %s", audio_full_path)
+
         return audio_full_path
+
 
     def combine_audio(self,
                       audio_1: AudioSegment,
