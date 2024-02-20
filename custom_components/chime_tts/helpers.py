@@ -449,6 +449,7 @@ class ChimeTTSHelper:
 
         folder_exists = self.create_folder(folder)
         if folder_exists is False:
+            _LOGGER.warning("Unable to create folder: %s", folder)
             return None
 
         # Save to file

@@ -656,7 +656,9 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 audio_dict[PUBLIC_PATH_KEY] = helpers.copy_file(audio_dict[LOCAL_PATH_KEY], _data[WWW_PATH_KEY])
                 await async_add_audio_file_to_cache(hass, audio_dict[PUBLIC_PATH_KEY], duration, params, options)
 
-            if (is_local is False or audio_dict[LOCAL_PATH_KEY] is not None) and (is_public is False or audio_dict[PUBLIC_PATH_KEY] is not None):
+            audio_dict[PUBLIC_PATH_KEY] = helpers.create_url_to_public_file(hass, audio_dict[PUBLIC_PATH_KEY])
+
+            if (is_local is False or audio_dict.get(LOCAL_PATH_KEY, None)) and (is_public is False or audio_dict.get(PUBLIC_PATH_KEY, None)):
                 _LOGGER.debug("   ...cached audio retrieved: %s", str(audio_dict))
                 return audio_dict
         _LOGGER.debug("   ...no cached audio found")
@@ -713,37 +715,32 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         audio_dict[AUDIO_DURATION_KEY] = duration
         audio_dict[LOCAL_PATH_KEY if is_local else PUBLIC_PATH_KEY] = new_audio_file
 
-        # Save local and/or public mp3s and update cache
-        for location in [
-            {
-                "enabled": is_public,
-                "dest_folder_key": WWW_PATH_KEY,
-                "origin_folder_key": TEMP_PATH_KEY,
-                "location_key": PUBLIC_PATH_KEY
-            },
-            {
-                "enabled": is_local,
-                "dest_folder_key": TEMP_PATH_KEY,
-                "origin_folder_key": WWW_PATH_KEY,
-                "location_key": LOCAL_PATH_KEY
-            }
-        ]:
-            if location["enabled"] is True and initial_save_folder_key is location["origin_folder_key"]:
-                new_path = new_audio_file.replace(_data[location["origin_folder_key"]], _data[location["dest_folder_key"]])
-                _LOGGER.debug(" - Saving mp3 file to folder: %s", _data[location["dest_folder_key"]])
-                audio_dict[location["location_key"]] = helpers.copy_file(new_path, _data[location["dest_folder_key"]])
-            if audio_dict[location["location_key"]] is not None and cache is True:
-                await async_add_audio_file_to_cache(hass, audio_dict[location["location_key"]], duration, params, options)
+        # Save audio to local and/or public folders
+        for folder_key in [(LOCAL_PATH_KEY if is_local else None), (PUBLIC_PATH_KEY if is_public else None)]:
+            if folder_key is not None and audio_dict.get(folder_key, None) is None:
+                _LOGGER.debug(" - Saving generated audio to folder %s ...", _data[folder_key])
+                audio_dict[folder_key] = helpers.save_audio_to_folder(output_audio, _data[folder_key])
+                if audio_dict[folder_key] is None:
+                    _LOGGER.error("Error saving audio to folder %s...", _data[LOCAL_PATH_KEY])
+            # Save path to cache
+            if (cache or folder_key == PUBLIC_PATH_KEY) and audio_dict.get(folder_key, None) is not None:
+                await async_add_audio_file_to_cache(hass, audio_dict.get(folder_key, None), duration, params, options)
 
         # Convert public path to external URL
         audio_dict[PUBLIC_PATH_KEY] = helpers.create_url_to_public_file(hass, audio_dict[PUBLIC_PATH_KEY])
 
     # Valdiation
+    is_valid = True
     if audio_dict[AUDIO_DURATION_KEY] == 0:
         _LOGGER.error("async_get_playback_audio_path --> Audio has no duration")
-        return None
-    elif audio_dict[LOCAL_PATH_KEY] is None and audio_dict[PUBLIC_PATH_KEY] is None:
-        _LOGGER.error("async_get_playback_audio_path --> No audio file generated")
+        is_valid = False
+    if is_local and audio_dict[LOCAL_PATH_KEY] is None:
+        _LOGGER.error("async_get_playback_audio_path --> Unable to generate local audio file")
+        is_valid = False
+    if is_public and audio_dict[PUBLIC_PATH_KEY] is None:
+        _LOGGER.error("async_get_playback_audio_path --> Unable to generate public audio file")
+        is_valid = False
+    if is_valid is False:
         return None
 
     _LOGGER.debug(" - Chime TTS audio generated: %s", str(audio_dict))
