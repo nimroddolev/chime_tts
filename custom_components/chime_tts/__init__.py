@@ -109,7 +109,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
 
         # Add service calls to the queue with arguments
-        result = await queue.add_to_queue(async_say_execute,service)
+        result = await queue.add_to_queue(async_say_execute, service, is_say_url)
 
         if result is not False:
             return result
@@ -118,15 +118,14 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         return {}
 
 
-    async def async_say_execute(service):
+    async def async_say_execute(service, is_say_url):
         """Play TTS audio with local chime MP3 audio."""
         start_time = datetime.now()
 
         # Parse service parameters & TTS options
-        params = await helpers.async_parse_params(service.data, hass)
+        params = await helpers.async_parse_params(hass, service.data, is_say_url)
         options = helpers.parse_options_yaml(service.data)
-        media_players_array = params["media_players_array"]
-        is_say_url = len(media_players_array) == 0
+        media_players_array = params.get("media_players_array", None)
 
         # Create audio file to play on media player
         local_path = None
@@ -138,7 +137,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             public_path = audio_dict.get(PUBLIC_PATH_KEY, None)
             audio_duration = audio_dict.get(AUDIO_DURATION_KEY, 0)
 
-            if public_path is not None or local_path is not None:
+            if is_say_url is False:
 
                 # Play audio with service_data
                 play_result = await async_play_media(
