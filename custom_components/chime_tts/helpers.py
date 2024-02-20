@@ -532,7 +532,7 @@ class ChimeTTSHelper:
         """Initialize media player entities."""
         # Service call was from chime_tts.say_url, so media_players are irrelevant
         if len(entity_ids) == 0:
-            return False
+            return []
 
         entity_found = False
         media_players_array = []
@@ -586,7 +586,7 @@ class ChimeTTSHelper:
             )
         if entity_found is False:
             _LOGGER.error("No valid media player found")
-            return False
+            return []
         return media_players_array
 
     async def async_download_file(self, hass: HomeAssistant, url, folder):

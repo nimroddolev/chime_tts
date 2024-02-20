@@ -125,8 +125,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         # Parse service parameters & TTS options
         params = await helpers.async_parse_params(service.data, hass)
         options = helpers.parse_options_yaml(service.data)
-
         media_players_array = params["media_players_array"]
+        is_say_url = len(media_players_array) == 0
 
         # Create audio file to play on media player
         local_path = None
@@ -138,44 +138,43 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             public_path = helpers.create_url_to_public_file(hass, audio_dict[PUBLIC_PATH_KEY]) if PUBLIC_PATH_KEY in audio_dict else None
             audio_duration = audio_dict.get(AUDIO_DURATION_KEY, 0)
 
-            # Play audio with service_data
-            if media_players_array is False or (public_path is None and local_path is None):
-                return False
+            if public_path is not None or local_path is not None:
 
-            play_result = await async_play_media(
-                hass,
-                audio_dict,
-                params["entity_ids"],
-                params["announce"],
-                params["join_players"],
-                media_players_array,
-                params["volume_level"],
-            )
-            if play_result is True:
-                await async_post_playback_actions(
+                # Play audio with service_data
+                play_result = await async_play_media(
                     hass,
-                    audio_duration,
-                    params["final_delay"],
+                    audio_dict,
+                    params["entity_ids"],
+                    params["announce"],
+                    params["join_players"],
                     media_players_array,
                     params["volume_level"],
-                    params["unjoin_players"],
                 )
+                if play_result is True:
+                    await async_post_playback_actions(
+                        hass,
+                        audio_duration,
+                        params["final_delay"],
+                        media_players_array,
+                        params["volume_level"],
+                        params["unjoin_players"],
+                    )
 
-            # Remove temporary local generated mp3
-            if params["cache"] is False and local_path is not None:
-                helpers.delete_file(local_path)
+                # Remove temporary local generated mp3
+                if params["cache"] is False and local_path is not None:
+                    helpers.delete_file(local_path)
 
         end_time = datetime.now()
         elapsed_time = (end_time - start_time).total_seconds() * 1000
 
         # Convert public file path to external URL for chime_tts.say_url
-        if public_path is not None and audio_duration:
+        if is_say_url:
             _LOGGER.debug("Final URL = %s", public_path)
             _LOGGER.debug("----- Chime TTS Say URL Completed in %s ms -----", str(elapsed_time))
             return {
                 "url": public_path,
                 "duration": audio_duration,
-                "success": True
+                "success": (public_path is not None)
             }
 
         _LOGGER.debug("----- Chime TTS Say Completed in %s ms -----", str(elapsed_time))
