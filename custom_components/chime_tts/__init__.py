@@ -44,6 +44,7 @@ from .const import (
     LOCAL_PATH_KEY,
     PUBLIC_PATH_KEY,
     AUDIO_DURATION_KEY,
+    FADE_TRANSITION_S,
     ROOT_PATH_KEY,
     DEFAULT_TEMP_CHIMES_PATH_KEY,
     TEMP_CHIMES_PATH_KEY,
@@ -346,7 +347,7 @@ async def async_post_playback_actions(
                 entity_id,
                 initial_volume_level,
                 (0 if should_fade_in else volume_level),
-                (1.5 if should_fade_in else 0)
+                (FADE_TRANSITION_S if should_fade_in else 0)
             )
 
     # Unjoin entity_ids
@@ -987,6 +988,8 @@ async def async_set_volume_level(
     fade_duration_s: float = 0
 ):
     """Set the volume_level for a given media player entity."""
+    if target_volume_level == -1:
+        return
     target_volume_level = max(float(target_volume_level), 0)
     current_volume_level = max(float(current_volume_level), 0)
 
@@ -1084,7 +1087,7 @@ async def async_play_media(
                 _LOGGER.debug(" - Fading out playback on %s...", entity_id)
                 initial_volume_level = media_player_dict["initial_volume_level"]
                 if await async_set_volume_level(
-                    hass, entity_id, 0, initial_volume_level, 1.5
+                    hass, entity_id, 0, initial_volume_level, FADE_TRANSITION_S
                 ):
                     # Wait until volume level updated
                     await helpers.async_wait_until_media_player_volume_level(hass, entity_id, 0)
