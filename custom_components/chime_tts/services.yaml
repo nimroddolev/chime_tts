@@ -390,7 +390,7 @@ say:
 
 say_url:
   name: "Say URL"
-  description: "Creates a public URL to an audio file generated with the `chime_tts.say` service"
+  description: "Generates an audio file with the `chime_tts.say` service and returns either an external URL or a local file path, depending on the folder set in the configuration"
   fields:
     chime_path:
       name: "Chime Path"
