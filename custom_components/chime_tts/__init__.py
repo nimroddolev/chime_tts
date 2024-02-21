@@ -1257,11 +1257,12 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
         # Validate paths and add duration if missing
         has_valid_path = False
         for key in [LOCAL_PATH_KEY, PUBLIC_PATH_KEY]:
-            if key in audio_dict:
+            audio_dict[key] = audio_dict.get(key, None)
+            if audio_dict.get(key, None):
                 if os.path.exists(str(audio_dict[key])):
                     has_valid_path = True
                     # Add duration data if audio_dict is old format
-                    if AUDIO_DURATION_KEY not in audio_dict or audio_dict[AUDIO_DURATION_KEY] is None:
+                    if audio_dict.get(AUDIO_DURATION_KEY, None) is None:
                         audio = await async_get_audio_from_path(hass=hass,
                                                                 filepath=audio_dict[key],
                                                                 cache=True)
@@ -1269,13 +1270,9 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
                             audio_dict[AUDIO_DURATION_KEY] = float(len(audio) / 1000.0)
                         else:
                             _LOGGER.warning("Could not load audio from file: %s", audio_dict[key])
-            else:
-                audio_dict[key] = None
-        # await async_store_data(hass, filepath_hash, audio_dict)
+                            audio.dict[key] = None
         if has_valid_path:
             return audio_dict
-    else:
-        _LOGGER.debug(" - No cached audio found with hash %s", filepath_hash)
 
     await async_remove_cached_audio_data(hass, filepath_hash, True, True)
     return None
