@@ -1247,7 +1247,7 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
             if AUDIO_DURATION_KEY in audio_dict:
                 duration = audio_dict[AUDIO_DURATION_KEY]
         if path is not None:
-            is_public = helpers.file_exists_in_directory(path, '/www')
+            is_public = helpers.file_exists_in_directory(path, '/www') or helpers.file_exists_in_directory(_data[PUBLIC_PATH_KEY])
             audio_dict = {
                 LOCAL_PATH_KEY: path if is_public else None,
                 PUBLIC_PATH_KEY: path if is_public else None,

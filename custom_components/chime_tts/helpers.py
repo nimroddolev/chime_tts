@@ -698,6 +698,11 @@ class ChimeTTSHelper:
         """Convert public path to external URL."""
         if public_path is None:
             return None
+
+        # Return local path if file not in www folder
+        if self.file_exists_in_directory(public_path, '/config/www') is False:
+            return public_path
+
         instance_url = hass.config.external_url
         if instance_url is None:
             instance_url = str(get_url(hass))
