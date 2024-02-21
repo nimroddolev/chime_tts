@@ -688,7 +688,7 @@ class ChimeTTSHelper:
 
     def file_exists_in_directory(self, file_path, directory):
         """Determine whether a file path exists within a given directory."""
-        for root, __builtins__, files in os.walk(directory):
+        for root, _, files in os.walk(directory):
             for filename in files:
                 if os.path.join(root, filename) == file_path:
                     return True
