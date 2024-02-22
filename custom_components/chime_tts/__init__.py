@@ -914,22 +914,29 @@ async def async_get_audio_from_path(hass: HomeAssistant,
         hass=hass)
 
     if filepath is not None:
+
+        # Chime downloaded from URL
         if isinstance(filepath, dict):
-            # Chime downloaded from URL
             audio_dict = filepath["audio_dict"]
             file_hash = filepath["file_hash"]
             filepath = audio_dict[LOCAL_PATH_KEY]
-            _LOGGER.debug(" - Saving reference to downloaded chime")
-            await async_add_audio_file_to_cache(hass=hass,
-                                                audio_path=filepath,
-                                                duration=audio_dict[AUDIO_DURATION_KEY],
-                                                params=None,
-                                                options=None,
-                                                file_hash=file_hash)
+            if cache:
+                _LOGGER.debug(" - Saving reference to downloaded chime")
+                await async_add_audio_file_to_cache(hass=hass,
+                                                    audio_path=filepath,
+                                                    duration=audio_dict[AUDIO_DURATION_KEY],
+                                                    params=None,
+                                                    options=None,
+                                                    file_hash=file_hash)
 
         _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
         try:
             audio_from_path = AudioSegment.from_file(filepath)
+
+            # Remove downloaded file when cache=false
+            if cache is False and file_hash is not None:
+                helpers.delete_file(filepath)
+
             if audio_from_path is not None:
                 duration = float(len(audio_from_path) / 1000.0)
                 _LOGGER.debug(
