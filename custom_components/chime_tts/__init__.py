@@ -350,9 +350,7 @@ async def async_post_playback_actions(
             )
 
     # Unjoin entity_ids
-    if (unjoin_players is True
-        and "joint_media_player_entity_id" in _data
-        and _data["joint_media_player_entity_id"] is not None):
+    if unjoin_players is True and _data.get("joint_media_player_entity_id", None):
         _LOGGER.debug(" - Calling media_player.unjoin service...")
         for media_player_dict in media_players_array:
             if media_player_dict["group_members_supported"] is True:
@@ -644,13 +642,13 @@ async def async_get_playback_audio_path(params: dict, options: dict):
             duration = audio_dict[AUDIO_DURATION_KEY]
 
             # Make a local copy of the public file
-            if is_local and audio_dict[LOCAL_PATH_KEY] is None and audio_dict[PUBLIC_PATH_KEY] is not None:
+            if is_local and audio_dict[LOCAL_PATH_KEY] is None and audio_dict.get(PUBLIC_PATH_KEY, None):
                 _LOGGER.debug("   - Copying public file to local directory")
                 audio_dict[LOCAL_PATH_KEY] = helpers.copy_file(audio_dict[PUBLIC_PATH_KEY], _data[TEMP_PATH_KEY])
                 await async_add_audio_file_to_cache(hass, audio_dict[LOCAL_PATH_KEY], duration, params, options)
 
             # Make a public copy of the local file
-            if is_public and audio_dict[PUBLIC_PATH_KEY] is None and audio_dict[LOCAL_PATH_KEY] is not None:
+            if is_public and audio_dict[PUBLIC_PATH_KEY] is None and audio_dict.get(LOCAL_PATH_KEY, None):
                 _LOGGER.debug("    - Copying local file to public directory")
                 audio_dict[PUBLIC_PATH_KEY] = helpers.copy_file(audio_dict[LOCAL_PATH_KEY], _data[WWW_PATH_KEY])
                 await async_add_audio_file_to_cache(hass, audio_dict[PUBLIC_PATH_KEY], duration, params, options)
@@ -722,7 +720,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 if audio_dict[folder_key] is None:
                     _LOGGER.error("Error saving audio to folder %s...", _data[LOCAL_PATH_KEY])
             # Save path to cache
-            if (cache or folder_key == PUBLIC_PATH_KEY) and audio_dict.get(folder_key, None) is not None:
+            if (cache or folder_key == PUBLIC_PATH_KEY) and audio_dict.get(folder_key, None):
                 await async_add_audio_file_to_cache(hass, audio_dict.get(folder_key, None), duration, params, options)
 
         # Convert public path to external URL
@@ -803,22 +801,16 @@ async def async_process_segments(hass, message, output_audio, params, options):
         if segment["type"] == "tts":
             if len(segment.get("message", "")) > 0:
                 segment_message = segment["message"]
-                if len(segment_message) == 0 or segment_message == "None":
-                    continue
-
-                segment_tts_platform = segment["tts_platform"] if "tts_platform" in segment else params["tts_platform"]
-                segment_language = segment["language"] if "language" in segment else params["language"]
-                segment_tts_playback_speed = segment["tts_playback_speed"] if "tts_playback_speed" in segment else params["tts_playback_speed"]
+                segment_tts_platform = segment.get("tts_platform", params["tts_platform"])
+                segment_language = segment.get("language", params["language"])
+                segment_tts_playback_speed = segment.get("tts_playback_speed", params["tts_playback_speed"])
 
                 # Use exposed parameters if not present in the options dictionary
                 segment_options = segment.get("options", {})
                 exposed_option_keys = ["gender", "tld", "voice"]
                 for exposed_option_key in exposed_option_keys:
-                    value = None
-                    if exposed_option_key in segment_options:
-                        value = segment_options[exposed_option_key]
-                    elif exposed_option_key in segment:
-                        value = segment[exposed_option_key]
+                    value = (segment_options.get(exposed_option_key, None) or
+                             segment.get(exposed_option_key, None))
                     if value is not None:
                         segment_options[exposed_option_key] = value
 
@@ -1359,7 +1351,7 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
         for dictionary in [params, options]:
             if (
                 param in dictionary
-                and dictionary[param] is not None
+                and dictionary.get(param, None)
                 and len(str(dictionary[param])) > 0
             ):
                 unique_string = unique_string + "-" + str(dictionary[param])
