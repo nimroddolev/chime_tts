@@ -1072,7 +1072,7 @@ async def async_play_media(
     # Pause media if media_player's platform does not support `announce`
     for media_player_dict in media_players_array:
         entity_id = media_player_dict["entity_id"]
-        if announce and helpers.get_supported_feature(hass.states.get(entity_id), ATTR_MEDIA_ANNOUNCE) is False:
+        if announce and (helpers.get_supported_feature(hass.states.get(entity_id), ATTR_MEDIA_ANNOUNCE) is False or helpers.get_is_media_player_spotify(hass, entity_id)):
             media_player_dict["resume_media_player"] = hass.states.get(entity_id).state == "playing"
             if hass.states.get(entity_id).state == "playing":
 
