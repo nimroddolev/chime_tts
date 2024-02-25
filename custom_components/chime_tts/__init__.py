@@ -661,7 +661,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 await async_add_audio_file_to_cache(hass, audio_dict[PUBLIC_PATH_KEY], duration, params, options)
 
             audio_dict[PUBLIC_PATH_KEY] = helpers.create_url_path(hass, audio_dict[PUBLIC_PATH_KEY])
-            audio_dict[ATTR_MEDIA_CONTENT_ID] = helpers.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None))
+            audio_dict[ATTR_MEDIA_CONTENT_ID] = helpers.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None), _data[MEDIA_DIR_KEY])
 
             if (is_local is False or audio_dict.get(LOCAL_PATH_KEY, None)) and (is_public is False or audio_dict.get(PUBLIC_PATH_KEY, None)):
                 _LOGGER.debug("   ...cached audio retrieved: %s", str(audio_dict))
@@ -719,7 +719,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         duration = float(len(output_audio) / 1000.0)
         audio_dict[AUDIO_DURATION_KEY] = duration
         audio_dict[LOCAL_PATH_KEY if is_local else PUBLIC_PATH_KEY] = new_audio_file
-        audio_dict[ATTR_MEDIA_CONTENT_ID] = helpers.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None))
+        audio_dict[ATTR_MEDIA_CONTENT_ID] = helpers.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None), _data[MEDIA_DIR_KEY])
 
         # Save audio to local and/or public folders
         for folder_key in [(LOCAL_PATH_KEY if is_local else None), (PUBLIC_PATH_KEY if is_public else None)]:
@@ -925,6 +925,7 @@ async def async_get_audio_from_path(hass: HomeAssistant,
     if filepath is not None:
 
         # Chime downloaded from URL
+        file_hash = None
         if isinstance(filepath, dict):
             audio_dict = filepath["audio_dict"]
             file_hash = filepath["file_hash"]
@@ -1044,8 +1045,8 @@ async def async_play_media(
     service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE_MUSIC
 
     # media_content_id
-    media_source_path = helpers.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None))
-    service_data[ATTR_MEDIA_CONTENT_ID] = media_source_path
+    media_content_id = helpers.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None), _data[MEDIA_DIR_KEY])
+    service_data[ATTR_MEDIA_CONTENT_ID] = media_content_id
 
     # announce
     if announce is True:

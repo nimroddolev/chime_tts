@@ -33,7 +33,7 @@ AUDIO_DURATION_KEY = "audio_duration"
 ALEXA_MEDIA_PLAYER_PLATFORM = "alexa_media"
 
 ROOT_PATH_KEY = "root_path_key"
-MEDIA_FOLDER_PATH = "/media/"
+MEDIA_FOLDER_PATH = "/local/"
 PUBLIC_FOLDER_PATH = "/config/www/"
 DEFAULT_TEMP_CHIMES_PATH_KEY = "default_temp_chimes_path"
 TEMP_CHIMES_PATH_KEY = "temp_chimes_path"

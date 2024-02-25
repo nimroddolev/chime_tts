@@ -33,7 +33,7 @@ from .const import (
     LOCAL_PATH_KEY,
     PUBLIC_FOLDER_PATH,
     AUDIO_DURATION_KEY,
-    MEDIA_FOLDER_PATH
+    MEDIA_DIR_DEFAULT
 )
 _LOGGER = logging.getLogger(__name__)
 
@@ -717,17 +717,20 @@ class ChimeTTSHelper:
             .replace("www/", "local/")
         )
 
-    def get_media_content_id(self, file_path: str, media_dir: str = MEDIA_FOLDER_PATH):
+    def get_media_content_id(self, file_path: str, media_dir: str = MEDIA_DIR_DEFAULT):
         """Create the media content id for a local media directory file."""
+        _LOGGER.debug("``` file_path = %s, media_dir = %s", file_path, media_dir)
         if file_path is None:
+            _LOGGER.debug("``` No file_path included in call to get_content_media_id")
             return None
 
+        media_dir = f"/{media_dir}/".replace("//", "/")
         media_source_path = file_path
-        media_folder_path_index = media_source_path.find(media_dir)
+        media_folder_path_index = media_source_path.find("/media/")
         if media_folder_path_index != -1:
-            media_path = media_source_path[media_folder_path_index + len(media_dir) :].replace("//", "/")
+            media_path = media_source_path[media_folder_path_index + len("/media/") :].replace("//", "/")
             media_source_path = "media-source://media_source<media_dir><media_path>".replace(
-                "<media_dir>", media_dir
+                "<media_dir>", f"/{MEDIA_DIR_DEFAULT}/"
             ).replace(
                 "<media_path>", media_path)
             return media_source_path
