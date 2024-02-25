@@ -162,7 +162,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                     )
 
                 # Remove temporary local generated mp3
-                if params.get("cache", False) and local_path is not None:
+                if not params.get("cache", False) and local_path is not None:
                     helpers.delete_file(local_path)
 
         end_time = datetime.now()
@@ -1248,14 +1248,15 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
         if isinstance(audio_dict, str):
             path = audio_dict
         # Support previous cache format of AUDIO_PATH_KEY dictionary key values
-        elif AUDIO_PATH_KEY in audio_dict:
-            path = audio_dict[AUDIO_PATH_KEY]
+        else:
+            if AUDIO_PATH_KEY in audio_dict:
+                path = audio_dict[AUDIO_PATH_KEY]
             if AUDIO_DURATION_KEY in audio_dict:
                 duration = audio_dict[AUDIO_DURATION_KEY]
         if path is not None:
-            is_public = helpers.file_exists_in_directory(path, '/www') or helpers.file_exists_in_directory(_data[PUBLIC_PATH_KEY])
+            is_public = helpers.file_exists_in_directory(path, '/www')
             audio_dict = {
-                LOCAL_PATH_KEY: path if is_public else None,
+                LOCAL_PATH_KEY: None if is_public else path,
                 PUBLIC_PATH_KEY: path if is_public else None,
                 AUDIO_DURATION_KEY: duration
             }
