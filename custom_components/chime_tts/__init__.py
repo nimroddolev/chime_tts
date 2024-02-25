@@ -303,7 +303,7 @@ async def async_post_playback_actions(
     playback_ended = True
     for media_player_dict in media_players_array:
         entity_id = media_player_dict["entity_id"]
-        result = await helpers.async_wait_until_not_media_plater_state(hass, entity_id, "playing", 10) is True
+        result = await helpers.async_wait_until_media_player_state_not(hass, entity_id, "playing", 2) is True
         if result is False:
             playback_ended = False
     if playback_ended is False:
@@ -325,8 +325,8 @@ async def async_post_playback_actions(
                     },
                     blocking=True
                 )
-                # Resume audio
-                duration = 10
+                # Resume audio, wait until state changes to "playing"
+                duration = 3
                 delay = 0.2
                 while hass.states.get(entity_id).state != "playing" and duration > 0:
                     await hass.services.async_call(
@@ -338,8 +338,8 @@ async def async_post_playback_actions(
                     await hass.async_add_executor_job(helpers.sleep, delay)
                     duration = duration - delay
 
-            if hass.states.get(entity_id).state != "playing":
-                _LOGGER.warning(" - Failed to resume playback on %s", entity_id)
+                if hass.states.get(entity_id).state != "playing":
+                    _LOGGER.warning(" - Failed to resume playback on %s", entity_id)
 
     # Reset volume
     for media_player_dict in media_players_array:
@@ -1079,7 +1079,11 @@ async def async_play_media(
                 _LOGGER.debug(" - Fading out playback on %s...", entity_id)
                 initial_volume_level = media_player_dict["initial_volume_level"]
                 if await async_set_volume_level(
-                    hass, entity_id, 0, initial_volume_level, FADE_TRANSITION_S
+                    hass=hass,
+                    entity_id=entity_id,
+                    target_volume_level=0,
+                    current_volume_level=initial_volume_level,
+                    fade_duration_s=FADE_TRANSITION_S
                 ):
                     # Wait until volume level updated
                     await helpers.async_wait_until_media_player_volume_level(hass, entity_id, 0)

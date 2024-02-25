@@ -739,7 +739,7 @@ class ChimeTTSHelper:
         if os.path.exists(file_path):
             os.remove(file_path)
 
-    async def async_wait_until_not_media_plater_state(self, hass: HomeAssistant, entity_id: str, target_state: str, timeout=5):
+    async def async_wait_until_media_player_state_not(self, hass: HomeAssistant, entity_id: str, target_state: str, timeout=5):
         """Wait until a media_player's state is no longer a target state."""
         if entity_id is None or hass.states.get(entity_id) is None:
             return False
