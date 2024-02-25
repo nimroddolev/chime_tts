@@ -70,7 +70,6 @@ class ChimeTTSHelper:
 
     async def async_parse_params(self, hass: HomeAssistant, data, is_say_url):
         """Parse TTS service parameters."""
-        _LOGGER.debug("``` is_say_url = %s", str(is_say_url))
         entity_ids = self.parse_entity_ids(data, hass) if is_say_url is False else []
         chime_path =str(data.get("chime_path", ""))
         end_chime_path = str(data.get("end_chime_path", ""))
@@ -747,7 +746,7 @@ class ChimeTTSHelper:
         media_player_state = hass.states.get(entity_id).state
         if media_player_state != target_state:
             return True
-        _LOGGER.debug(" - Waiting until %s is no longer = %s...", entity_id, target_state)
+        _LOGGER.debug(" - Waiting until %s is no longer %s...", entity_id, target_state)
         delay = 0.2
         while media_player_state == target_state and timeout > 0:
             await hass.async_add_executor_job(self.sleep, delay)
