@@ -797,17 +797,17 @@ class ChimeTTSHelper:
         """Wait for a media_player to have a target volume_level."""
         if entity_id is None or hass.states.get(entity_id) is None:
             return False
-        volume = hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
-        if volume == target_volume:
+        volume = round(hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1), 3)
+        if volume == round(target_volume, 3):
             return True
         _LOGGER.debug(" - Waiting until %s's volume_level = %s...", entity_id, str(target_volume))
         delay = 0.2
         while volume != target_volume and timeout > 0:
             await hass.async_add_executor_job(self.sleep, delay)
-            volume = hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
+            volume = round(hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1), 3)
             timeout = timeout - delay
 
-        if volume == target_volume:
+        if volume == round(target_volume,3):
             _LOGGER.debug("   ...%s's volume level is now %s", entity_id, str(target_volume))
             return True
 

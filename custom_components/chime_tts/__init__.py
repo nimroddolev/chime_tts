@@ -993,7 +993,7 @@ async def async_set_volume_level(
     fade_duration_s: float = 0
 ):
     """Set the volume_level for a given media player entity."""
-    if target_volume_level == -1:
+    if target_volume_level == -1 or not helpers.get_supported_feature(hass.states.get(entity_id), ATTR_MEDIA_VOLUME_LEVEL):
         return
     target_volume_level = max(float(target_volume_level), 0)
     current_volume_level = max(float(current_volume_level), 0)
@@ -1003,26 +1003,28 @@ async def async_set_volume_level(
             " - Setting '%s' volume level to %s", entity_id, str(target_volume_level)
         )
         steps = 10 if fade_duration_s > 0 else 1
-        volume_step = (target_volume_level - current_volume_level) / steps
+        volume_step = float(float(target_volume_level - current_volume_level) / steps)
         new_volume_level = target_volume_level
         while steps > 0:
+            steps = steps - 1
             # Gradually change the volume (if specified)
-            if fade_duration_s > 1:
+            if steps > 0:
                 new_volume_level = max(current_volume_level + volume_step, 0)
                 current_volume_level = new_volume_level
+            elif steps == 0:
+                current_volume_level = target_volume_level
             try:
                 await hass.services.async_call(
                     domain="media_player",
                     service=SERVICE_VOLUME_SET,
                     service_data={
-                        ATTR_MEDIA_VOLUME_LEVEL: new_volume_level,
+                        ATTR_MEDIA_VOLUME_LEVEL: current_volume_level,
                         CONF_ENTITY_ID: entity_id
                     },
-                    blocking=(steps==1),
+                    blocking=(steps==0),
                 )
-                if steps > 1 :
+                if steps > 1:
                     await hass.async_add_executor_job(helpers.sleep, fade_duration_s / steps)
-                steps = steps - 1
             except Exception as error:
                 _LOGGER.warning(" - Error setting volume for '%s': %s", entity_id, error)
         return True
