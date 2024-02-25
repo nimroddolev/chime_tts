@@ -1113,14 +1113,14 @@ async def async_play_media(
 
 async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
     """Play the final audio via media_player_play_media or notify.alexa_media."""
-    alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_is_media_player_alexa(hass, entity_id)]
-    non_alexa_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_is_media_player_alexa(hass, entity_id) is False]
+    alexa_media_player_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_is_media_player_alexa(hass, entity_id)]
+    standard_media_player_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_is_standard_media_player(hass, entity_id)]
 
     service_calls = []
 
     # Prepare service call for Alexa media_players
-    if len(alexa_entity_ids) > 0:
-        _LOGGER.debug(" - %s Alexa media player%s detected. Calling `notify.alexa_media` service", len(alexa_entity_ids), ("s" if len(alexa_entity_ids) != 1 else ""))
+    if len(alexa_media_player_entity_ids) > 0:
+        _LOGGER.debug(" - %s Alexa media player%s detected. Calling `notify.alexa_media` service", len(alexa_media_player_entity_ids), ("s" if len(alexa_media_player_entity_ids) != 1 else ""))
         service_calls.append({
             "domain": "notify",
             "service": "alexa_media",
@@ -1129,17 +1129,17 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
                 "data": {
                     "type": "tts"
                     },
-                "target": alexa_entity_ids
+                "target": alexa_media_player_entity_ids
             },
             "result": False
         })
     # Prepare service call for regular media_players
-    if len(non_alexa_entity_ids) > 0:
+    if len(standard_media_player_entity_ids) > 0:
         if service_data[ATTR_MEDIA_CONTENT_ID] is None:
             _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
         else:
-            _LOGGER.debug(" - %s Standard media player%s detected. Calling `media_player.play_media` service", len(non_alexa_entity_ids), ("s" if len(non_alexa_entity_ids) != 1 else ""))
-            service_data[CONF_ENTITY_ID] = non_alexa_entity_ids
+            _LOGGER.debug(" - %s Standard media player%s detected. Calling `media_player.play_media` service", len(standard_media_player_entity_ids), ("s" if len(standard_media_player_entity_ids) != 1 else ""))
+            service_data[CONF_ENTITY_ID] = standard_media_player_entity_ids
             service_calls.append({
                 "domain": "media_player",
                 "service": SERVICE_PLAY_MEDIA,

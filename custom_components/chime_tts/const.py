@@ -30,7 +30,9 @@ AUDIO_PATH_KEY = "audio_path" # <-- Deprecated
 LOCAL_PATH_KEY = "local_path"
 PUBLIC_PATH_KEY = "public_path"
 AUDIO_DURATION_KEY = "audio_duration"
+
 ALEXA_MEDIA_PLAYER_PLATFORM = "alexa_media"
+SPOTIFY_PLATFORM = "spotify"
 
 ROOT_PATH_KEY = "root_path_key"
 MEDIA_FOLDER_PATH = "/local/"

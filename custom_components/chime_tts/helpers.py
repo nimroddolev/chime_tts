@@ -24,6 +24,7 @@ from .const import (
     DEFAULT_DELAY_MS,
     ALEXA_FFMPEG_ARGS,
     ALEXA_MEDIA_PLAYER_PLATFORM,
+    SPOTIFY_PLATFORM,
     MP3_PRESET_PATH,
     MP3_PRESETS,
     MP3_PRESET_PATH_PLACEHOLDER,  # DEPRECATED
@@ -178,6 +179,14 @@ class ChimeTTSHelper:
     def get_is_media_player_alexa(self, hass, entity_id):
         """Determine whether a media_player belongs to the Alexa Media Player platform."""
         return str(self.get_media_player_platform(hass, entity_id)).lower() == ALEXA_MEDIA_PLAYER_PLATFORM
+
+    def get_is_media_player_spotify(self, hass, entity_id):
+        """Determine whether a media_player belongs to the Spotify platform."""
+        return str(self.get_media_player_platform(hass, entity_id)).lower() == SPOTIFY_PLATFORM
+
+    def get_is_standard_media_player(self, hass, entity_id):
+        """Determine whether a media_player can be used with the media_player.play_media service."""
+        return str(self.get_media_player_platform(hass, entity_id)).lower() not in [ALEXA_MEDIA_PLAYER_PLATFORM, SPOTIFY_PLATFORM]
 
     def parse_message(self, message_string):
         """Parse the message string/YAML object into segments dictionary."""
