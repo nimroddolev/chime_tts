@@ -31,7 +31,9 @@ from .const import (
     MP3_PRESET_CUSTOM_KEY,
     TEMP_CHIMES_PATH_KEY,
     LOCAL_PATH_KEY,
-    AUDIO_DURATION_KEY
+    PUBLIC_FOLDER_PATH,
+    AUDIO_DURATION_KEY,
+    MEDIA_FOLDER_PATH
 )
 _LOGGER = logging.getLogger(__name__)
 
@@ -694,25 +696,44 @@ class ChimeTTSHelper:
                     return True
         return False
 
-    def create_url_to_public_file(self, hass: HomeAssistant, public_path):
-        """Convert public path to external URL."""
-        if public_path is None:
+    def create_url_path(self, hass: HomeAssistant, file_path):
+        """Convert public path to external URL or local path to media-source."""
+        if file_path is None:
+            _LOGGER.warning("Unable to create public URL - No file path provided")
             return None
 
         # Return local path if file not in www folder
-        if self.file_exists_in_directory(public_path, '/config/www') is False:
-            return public_path
+        if self.file_exists_in_directory(file_path, PUBLIC_FOLDER_PATH) is False:
+            _LOGGER.warning(f"Unable to create public URL - File: '{file_path}' is outside the public folder.")
+            return None
 
         instance_url = hass.config.external_url
         if instance_url is None:
             instance_url = str(get_url(hass))
 
         return (
-            (instance_url + "/" + public_path)
+            (instance_url + "/" + file_path)
             .replace(instance_url + "//", instance_url + "/")
             .replace("/config", "")
             .replace("www/", "local/")
         )
+
+    def get_media_content_id(self, file_path: str, media_dir: str = MEDIA_FOLDER_PATH):
+        """Create the media content id for a local media directory file."""
+        if file_path is None:
+            return None
+
+        media_source_path = file_path
+        media_folder_path_index = media_source_path.find(media_dir)
+        if media_folder_path_index != -1:
+            media_path = media_source_path[media_folder_path_index + len(media_dir) :].replace("//", "/")
+            media_source_path = "media-source://media_source<media_dir><media_path>".replace(
+                "<media_dir>", media_dir
+            ).replace(
+                "<media_path>", media_path)
+            return media_source_path
+
+        return None
 
     def delete_file(self, file_path):
         """Safely delete a file."""

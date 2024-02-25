@@ -223,6 +223,7 @@
             "timeout_sub": "Enter a valid timeout duration",
             "multiple": "Multiple issues detected",
             "invalid_chime_paths": "Invalid custom chime path detected",
+            "www_path": "Folder path must be within `/config/www/` or `/media/`",
             "custom_chime_path_1": "'Custom 1' file path invalid",
             "custom_chime_path_2": "'Custom 2' file path invalid",
             "custom_chime_path_3": "'Custom 3' file path invalid",

@@ -130,6 +130,13 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             _errors["base"] = "timeout"
             _errors[QUEUE_TIMEOUT_KEY] = "timeout_sub"
 
+        # Validate folder path used for `chime_tts.say_url`
+        path: str = user_input.get(WWW_PATH_KEY, "")
+        if not (path.startswith("/media/") or
+                path.startswith("/www/") or
+                path.startswith("/config/www/")):
+            _errors["www_path"] = "www_path"
+
         # Validate custom chime mp3 paths
         for i in range(5):
             key = MP3_PRESET_CUSTOM_PREFIX + str(i + 1)
@@ -152,7 +159,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                         _errors["base"] = "multiple"
                     # Add specific custom chime error
                     _errors[key] = key
-        if not _errors:
+        if _errors:
             return self.async_show_form(
                 step_id="init", data_schema=options_schema, errors=_errors
             )

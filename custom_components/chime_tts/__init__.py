@@ -130,11 +130,13 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         # Create audio file to play on media player
         local_path = None
         public_path = None
+        media_content_id = None
         audio_duration = 0
         audio_dict = await async_get_playback_audio_path(params, options)
         if audio_dict is not None:
             local_path = audio_dict.get(LOCAL_PATH_KEY, None)
             public_path = audio_dict.get(PUBLIC_PATH_KEY, None)
+            media_content_id = audio_dict.get(ATTR_MEDIA_CONTENT_ID, None)
             audio_duration = audio_dict.get(AUDIO_DURATION_KEY, 0)
 
             if is_say_url is False:
@@ -170,11 +172,16 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         if is_say_url:
             _LOGGER.debug("Final URL = %s", public_path)
             _LOGGER.debug("----- Chime TTS Say URL Completed in %s ms -----", str(elapsed_time))
-            return {
+            ret_value = {
                 "url": public_path,
+                ATTR_MEDIA_CONTENT_ID: media_content_id,
                 "duration": audio_duration,
-                "success": (public_path is not None)
+                "success": (public_path is not None or media_content_id is not None)
             }
+            if ret_value["success"] is False:
+                _LOGGER.warning("Check that the folder path in the configuration for `chime_tts.say_url` is within the public \"www\" folder or the local media folder")
+
+            return ret_value
 
         _LOGGER.debug("----- Chime TTS Say Completed in %s ms -----", str(elapsed_time))
 
@@ -653,7 +660,8 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 audio_dict[PUBLIC_PATH_KEY] = helpers.copy_file(audio_dict[LOCAL_PATH_KEY], _data[WWW_PATH_KEY])
                 await async_add_audio_file_to_cache(hass, audio_dict[PUBLIC_PATH_KEY], duration, params, options)
 
-            audio_dict[PUBLIC_PATH_KEY] = helpers.create_url_to_public_file(hass, audio_dict[PUBLIC_PATH_KEY])
+            audio_dict[PUBLIC_PATH_KEY] = helpers.create_url_path(hass, audio_dict[PUBLIC_PATH_KEY])
+            audio_dict[ATTR_MEDIA_CONTENT_ID] = helpers.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None))
 
             if (is_local is False or audio_dict.get(LOCAL_PATH_KEY, None)) and (is_public is False or audio_dict.get(PUBLIC_PATH_KEY, None)):
                 _LOGGER.debug("   ...cached audio retrieved: %s", str(audio_dict))
@@ -711,6 +719,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         duration = float(len(output_audio) / 1000.0)
         audio_dict[AUDIO_DURATION_KEY] = duration
         audio_dict[LOCAL_PATH_KEY if is_local else PUBLIC_PATH_KEY] = new_audio_file
+        audio_dict[ATTR_MEDIA_CONTENT_ID] = helpers.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None))
 
         # Save audio to local and/or public folders
         for folder_key in [(LOCAL_PATH_KEY if is_local else None), (PUBLIC_PATH_KEY if is_public else None)]:
@@ -723,8 +732,8 @@ async def async_get_playback_audio_path(params: dict, options: dict):
             if (cache or folder_key == PUBLIC_PATH_KEY) and audio_dict.get(folder_key, None):
                 await async_add_audio_file_to_cache(hass, audio_dict.get(folder_key, None), duration, params, options)
 
-        # Convert public path to external URL
-        audio_dict[PUBLIC_PATH_KEY] = helpers.create_url_to_public_file(hass, audio_dict[PUBLIC_PATH_KEY])
+        # Convert external URL (for public paths)
+        audio_dict[PUBLIC_PATH_KEY] = helpers.create_url_path(hass, audio_dict[PUBLIC_PATH_KEY])
 
     # Valdiation
     is_valid = True
@@ -734,7 +743,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     if is_local and audio_dict[LOCAL_PATH_KEY] is None:
         _LOGGER.error("async_get_playback_audio_path --> Unable to generate local audio file")
         is_valid = False
-    if is_public and audio_dict[PUBLIC_PATH_KEY] is None:
+    if is_public and audio_dict[PUBLIC_PATH_KEY] is None and audio_dict[ATTR_MEDIA_CONTENT_ID] is None:
         _LOGGER.error("async_get_playback_audio_path --> Unable to generate public audio file")
         is_valid = False
     if is_valid is False:
@@ -1035,19 +1044,7 @@ async def async_play_media(
     service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE_MUSIC
 
     # media_content_id
-    media_source_path = audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None)
-    if media_source_path is None:
-        _LOGGER.error("No media file path found")
-        return None
-
-    media_folder = "/media/"
-    media_folder_path_index = media_source_path.find(media_folder)
-    if media_folder_path_index != -1:
-        media_path = media_source_path[media_folder_path_index + len(media_folder) :].replace("//", "/")
-        media_source_path = "media-source://media_source/<media_dir>/<media_path>".replace(
-            "<media_dir>", _data[MEDIA_DIR_KEY]
-        ).replace(
-            "<media_path>", media_path)
+    media_source_path = helpers.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None))
     service_data[ATTR_MEDIA_CONTENT_ID] = media_source_path
 
     # announce
@@ -1133,15 +1130,18 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
         })
     # Prepare service call for regular media_players
     if len(non_alexa_entity_ids) > 0:
-        _LOGGER.debug(" - %s Standard media player%s detected. Calling `media_player.play_media` service", len(non_alexa_entity_ids), ("s" if len(non_alexa_entity_ids) != 1 else ""))
-        service_data[CONF_ENTITY_ID] = non_alexa_entity_ids
-        service_calls.append({
-            "domain": "media_player",
-            "service": SERVICE_PLAY_MEDIA,
-            "service_data": service_data,
-            "blocking": True,
-            "result": True
-        })
+        if service_data[ATTR_MEDIA_CONTENT_ID] is None:
+            _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
+        else:
+            _LOGGER.debug(" - %s Standard media player%s detected. Calling `media_player.play_media` service", len(non_alexa_entity_ids), ("s" if len(non_alexa_entity_ids) != 1 else ""))
+            service_data[CONF_ENTITY_ID] = non_alexa_entity_ids
+            service_calls.append({
+                "domain": "media_player",
+                "service": SERVICE_PLAY_MEDIA,
+                "service_data": service_data,
+                "blocking": True,
+                "result": True
+            })
 
     # Fire service calls
     for service_call in service_calls:
