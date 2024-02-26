@@ -358,11 +358,11 @@ async def async_post_playback_actions(
 
     # Unjoin entity_ids
     if unjoin_players is True and _data.get("joint_media_player_entity_id", None):
-        _LOGGER.debug(" - Calling media_player.unjoin service...")
+        _LOGGER.debug("   - Calling media_player.unjoin service...")
         for media_player_dict in media_players_array:
             if media_player_dict["group_members_supported"] is True:
                 entity_id = media_player_dict["entity_id"]
-                _LOGGER.debug("   - media_player.unjoin: %s", entity_id)
+                _LOGGER.debug("     - media_player.unjoin: %s", entity_id)
                 try:
                     await hass.services.async_call(
                         domain="media_player",
@@ -370,16 +370,16 @@ async def async_post_playback_actions(
                         service_data={CONF_ENTITY_ID: entity_id},
                         blocking=True,
                     )
-                    _LOGGER.debug("   ...done")
+                    _LOGGER.debug("    ...done")
                 except Exception as error:
                     _LOGGER.warning(
-                        " - Error calling unjoin service for %s: %s", entity_id, error
+                        "   - Error calling unjoin service for %s: %s", entity_id, error
                     )
 
 async def async_join_media_players(hass, entity_ids):
     """Join media players."""
     _LOGGER.debug(
-        " - Calling media_player.join service for %s media_player entities...",
+        "   - Calling media_player.join service for %s media_player entities...",
         len(entity_ids),
     )
 
@@ -391,7 +391,7 @@ async def async_join_media_players(hass, entity_ids):
 
     if len(supported_entity_ids) > 1:
         _LOGGER.debug(
-            " - Joining %s media_player entities...", str(len(supported_entity_ids))
+            "   - Joining %s media_player entities...", str(len(supported_entity_ids))
         )
         try:
             _data["joint_media_player_entity_id"] = supported_entity_ids[0]
@@ -404,12 +404,12 @@ async def async_join_media_players(hass, entity_ids):
                 },
                 blocking=True,
             )
-            _LOGGER.debug("   ...done")
+            _LOGGER.debug("     ...done")
             return _data["joint_media_player_entity_id"]
         except Exception as error:
-            _LOGGER.warning("   - Error joining media_player entities: %s", error)
+            _LOGGER.warning("Error joining media_player entities: %s", error)
     else:
-        _LOGGER.warning(" - Only 1 media_player entity provided. Unable to join.")
+        _LOGGER.warning("Only 1 media_player entity provided. Unable to join.")
 
     return False
 
@@ -509,7 +509,7 @@ async def async_request_tts_audio(
             )
         return None
     if media_source_id is None:
-        _LOGGER.error(" - Error: Unable to generate media_source_id")
+        _LOGGER.error("Error: Unable to generate media_source_id")
         return None
 
     audio_data = None
@@ -528,7 +528,7 @@ async def async_request_tts_audio(
             audio_bytes = audio_data[1]
             file = io.BytesIO(audio_bytes)
             if file is None:
-                _LOGGER.error(" - ...could not convert TTS bytes to audio")
+                _LOGGER.error("...could not convert TTS bytes to audio")
                 return None
             audio = AudioSegment.from_file(file)
             if audio is not None:
@@ -550,11 +550,11 @@ async def async_request_tts_audio(
                     str((end_time - start_time).total_seconds() * 1000),
                 )
                 return audio
-            _LOGGER.error(" - ...could not extract TTS audio from file")
+            _LOGGER.error("...could not extract TTS audio from file")
         else:
-            _LOGGER.error(" - ...audio_data did not contain audio bytes")
+            _LOGGER.error("...audio_data did not contain audio bytes")
     else:
-        _LOGGER.error(" - ...audio_data generation failed")
+        _LOGGER.error("...audio_data generation failed")
     return None
 
 
@@ -643,7 +643,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
     # Load previously generated audio from cache
     if cache is True:
-        _LOGGER.debug(" - Attempting to retrieve previously cached audio...")
+        _LOGGER.debug(" *** Checking Chime TTS audio cache ***")
         audio_dict = await async_get_cached_audio_data(hass, filepath_hash)
         if audio_dict is not None and AUDIO_DURATION_KEY in audio_dict:
             duration = audio_dict[AUDIO_DURATION_KEY]
@@ -664,7 +664,11 @@ async def async_get_playback_audio_path(params: dict, options: dict):
             audio_dict[ATTR_MEDIA_CONTENT_ID] = helpers.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None), _data[MEDIA_DIR_KEY])
 
             if (is_local is False or audio_dict.get(LOCAL_PATH_KEY, None)) and (is_public is False or audio_dict.get(PUBLIC_PATH_KEY, None)):
-                _LOGGER.debug("   ...cached audio retrieved: %s", str(audio_dict))
+                _LOGGER.debug("   Cached audio found:")
+                for key, value in audio_dict.items():
+                    quote = '"' if value and type(value) == str else ''
+                    value = f"{quote}{value}{quote}"
+                    _LOGGER.debug("     - %s = %s", key, value)
                 return audio_dict
         _LOGGER.debug("   ...no cached audio found")
 
@@ -714,7 +718,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 _LOGGER.debug("    ...FFmpeg audio conversion completed.")
                 new_audio_file = converted_audio_file
             else:
-                _LOGGER.warning("    ...FFmpeg audio conversion failed. Using unconverted audio file")
+                _LOGGER.warning("...FFmpeg audio conversion failed. Using unconverted audio file")
 
         duration = float(len(output_audio) / 1000.0)
         audio_dict[AUDIO_DURATION_KEY] = duration
@@ -749,7 +753,11 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     if is_valid is False:
         return None
 
-    _LOGGER.debug(" - Chime TTS audio generated: %s", str(audio_dict))
+    _LOGGER.debug(" - Chime TTS audio generated:")
+    for key, value in audio_dict.items():
+        quote = '"' if type(value) == str else ''
+        value = f"{quote}{value}{quote}"
+        _LOGGER.debug("   - %s = %s", key, value)
     return audio_dict
 
 
@@ -1026,9 +1034,9 @@ async def async_set_volume_level(
                 if steps > 1:
                     await hass.async_add_executor_job(helpers.sleep, fade_duration_s / steps)
             except Exception as error:
-                _LOGGER.warning(" - Error setting volume for '%s': %s", entity_id, error)
         return True
     return False
+                _LOGGER.warning(" Error setting volume level to %s '%s': %s", str(new_volume_level), error)
 
 
 async def async_play_media(
@@ -1115,6 +1123,7 @@ async def async_play_media(
 
 async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
     """Play the final audio via media_player_play_media or notify.alexa_media."""
+    _LOGGER.debug(" *** Chime TTS playback ***")
     alexa_media_player_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_is_media_player_alexa(hass, entity_id)]
     standard_media_player_entity_ids = [entity_id for entity_id in entity_ids if helpers.get_is_standard_media_player(hass, entity_id)]
 
@@ -1122,7 +1131,9 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
 
     # Prepare service call for Alexa media_players
     if len(alexa_media_player_entity_ids) > 0:
-        _LOGGER.debug(" - %s Alexa media player%s detected. Calling `notify.alexa_media` service", len(alexa_media_player_entity_ids), ("s" if len(alexa_media_player_entity_ids) != 1 else ""))
+        _LOGGER.debug("   %s Alexa media player%s detected:", len(alexa_media_player_entity_ids), ("s" if len(alexa_media_player_entity_ids) != 1 else ""))
+        for entity_id in alexa_media_player_entity_ids:
+            _LOGGER.debug("     - %s", entity_id)
         service_calls.append({
             "domain": "notify",
             "service": "alexa_media",
@@ -1140,7 +1151,9 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
         if service_data[ATTR_MEDIA_CONTENT_ID] is None:
             _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
         else:
-            _LOGGER.debug(" - %s Standard media player%s detected. Calling `media_player.play_media` service", len(standard_media_player_entity_ids), ("s" if len(standard_media_player_entity_ids) != 1 else ""))
+            _LOGGER.debug("   %s Standard media player%s detected:", len(standard_media_player_entity_ids), ("s" if len(standard_media_player_entity_ids) != 1 else ""))
+            for entity_id in standard_media_player_entity_ids:
+                _LOGGER.debug("     - %s", entity_id)
             service_data[CONF_ENTITY_ID] = standard_media_player_entity_ids
             service_calls.append({
                 "domain": "media_player",
@@ -1152,11 +1165,11 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
 
     # Fire service calls
     for service_call in service_calls:
-        _LOGGER.debug("Calling %s.%s with data:",
+        _LOGGER.debug("   Calling %s.%s with data: ***",
                     service_call["domain"],
                     service_call["service"])
         for key, value in service_call["service_data"].items():
-            _LOGGER.debug(" - %s: %s", str(key), str(value))
+            _LOGGER.debug("     - %s: %s", str(key), str(value))
         try:
             await hass.services.async_call(
                 domain=service_call["domain"],

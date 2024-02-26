@@ -338,7 +338,7 @@ class ChimeTTSHelper:
                     "file_hash": file_hash
                 }
 
-            _LOGGER.warning(" - Unable to downloaded chime %s", chime_path)
+            _LOGGER.warning(" Unable to downloaded chime %s", chime_path)
             return None
 
         chime_path = self.validate_path(hass, chime_path)
@@ -616,23 +616,23 @@ class ChimeTTSHelper:
             response = await hass.async_add_executor_job(requests.get, url)
             response.raise_for_status() # Raise an HTTPError for bad responses (4xx and 5xx status codes)
         except requests.exceptions.HTTPError as errh:
-            _LOGGER.warning(" - HTTP Error: %s", str(errh))
+            _LOGGER.warning(" HTTP Error: %s", str(errh))
             return None
         except requests.exceptions.ConnectionError as errc:
-            _LOGGER.warning(" - Error Connecting: %s", str(errc))
+            _LOGGER.warning(" Error Connecting: %s", str(errc))
             return None
         except requests.exceptions.Timeout as errt:
-            _LOGGER.warning(" - Timeout Error: %s", str(errt))
+            _LOGGER.warning(" Timeout Error: %s", str(errt))
             return None
         except requests.exceptions.RequestException as err:
-            _LOGGER.warning(" - Request Exception: %s", str(err))
+            _LOGGER.warning(" Request Exception: %s", str(err))
             return None
         except Exception as error:
-            _LOGGER.warning(" - An unexpected error occurred: %s", str(error))
+            _LOGGER.warning(" An unexpected error occurred: %s", str(error))
             return None
 
         if response is None:
-            _LOGGER.warning(" - Received an invalid response")
+            _LOGGER.warning(" Received an invalid response")
             return None
 
         content_type = response.headers.get('Content-Type', '')
@@ -651,7 +651,7 @@ class ChimeTTSHelper:
                     AUDIO_DURATION_KEY: audio_duration
                 }
         else:
-            _LOGGER.warning(" - Unable to extract audio from URL with content-type '%s'",
+            _LOGGER.warning(" Unable to extract audio from URL with content-type '%s'",
                             str(content_type))
         return None
 
@@ -707,7 +707,6 @@ class ChimeTTSHelper:
     def create_url_path(self, hass: HomeAssistant, file_path):
         """Convert public path to external URL or local path to media-source."""
         if file_path is None:
-            _LOGGER.warning("Unable to create public URL - No file path provided")
             return None
 
         # Return local path if file not in www folder
@@ -728,9 +727,7 @@ class ChimeTTSHelper:
 
     def get_media_content_id(self, file_path: str, media_dir: str = MEDIA_DIR_DEFAULT):
         """Create the media content id for a local media directory file."""
-        _LOGGER.debug("``` file_path = %s, media_dir = %s", file_path, media_dir)
         if file_path is None:
-            _LOGGER.debug("``` No file_path included in call to get_content_media_id")
             return None
 
         media_dir = f"/{media_dir}/".replace("//", "/")
@@ -769,7 +766,7 @@ class ChimeTTSHelper:
             _LOGGER.debug("   ...%s is now %s", entity_id, media_player_state)
             return True
 
-        _LOGGER.warning(" - Timed out waiting for %s's state to change from %s", entity_id, target_state)
+        _LOGGER.warning(" Timed out waiting for %s's state to change from %s", entity_id, target_state)
         return False
 
     async def async_wait_until_media_player_state(self, hass: HomeAssistant, entity_id: str, target_state: str, timeout=5):
@@ -790,7 +787,7 @@ class ChimeTTSHelper:
             _LOGGER.debug("   ...%s is now %s", entity_id, media_player_state)
             return True
 
-        _LOGGER.warning(" - Timed out waiting for %s to have state = %s", entity_id, target_state)
+        _LOGGER.warning(" Timed out waiting for %s to have state = %s", entity_id, target_state)
         return False
 
     async def async_wait_until_media_player_volume_level(self, hass: HomeAssistant, entity_id: str, target_volume: str, timeout=5):
