@@ -265,7 +265,7 @@ say:
               value: "yandextts"
     tts_playback_speed:
       name: TTS Playback Speed
-      description: "Playback speed of the TTS audio, between 100% - 200%"
+      description: "Set the playback speed of the TTS audio to between 100% and 200% of the original"
       example: 125
       required: false
       default: 100
@@ -341,14 +341,8 @@ say:
           options:
             - label: Alexa
               value: Alexa
-            - label: Volume 125%
-              value: Volume 125%
-            - label: Volume 150%
-              value: volume 150%
-            - label: Volume 175%
-              value: volume 175%
-            - label: Volume 200%
-              value: volume 200%
+            - label: "Volume x% (replace this text, eg: \"Volume 125%\")"
+              value: Volume 100%
             - label: Custom (replace this text with your FFmpeg arguments)
               value: Custom
     language:
@@ -634,7 +628,7 @@ say_url:
               value: "yandextts"
     tts_playback_speed:
       name: TTS Playback Speed
-      description: "Playback speed of the TTS audio, between 100% - 200%"
+      description: "Set the playback speed of the TTS audio to between 100% and 200% of the original"
       example: 125
       required: false
       default: 100
@@ -677,8 +671,11 @@ say_url:
           options:
             - label: Alexa
               value: Alexa
+            - label: "Volume x% (replace this text, eg: \"Volume 125%\")"
+              value: Volume 100%
             - label: Custom (replace this text with your FFmpeg arguments)
               value: Custom
+
     language:
       name: Language
       description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"

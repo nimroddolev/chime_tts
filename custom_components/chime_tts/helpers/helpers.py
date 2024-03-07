@@ -13,7 +13,7 @@ from homeassistant.components.media_player.const import (
 from ..const import (
     DEFAULT_DELAY_MS,
     FFMPEG_ARGS_ALEXA,
-    FFMPEG_ARGS_VOLUME
+    FFMPEG_ARGS_VOLUME,
 )
 from .media_player import MediaPlayerHelper
 from .filesystem import FilesystemHelper
@@ -268,9 +268,9 @@ class ChimeTTSHelper:
             if converted_file_path == file_path:
                 converted_file_path = file_path.replace(".mp3", "_converted.mp3")
 
-            # Overwrite existing output file
+            # Delete converted output file if it exists
             if os.path.exists(converted_file_path):
-                ffmpeg_cmd.append('-y')
+                os.remove(converted_file_path)
 
             ffmpeg_cmd.append(converted_file_path)
 
@@ -284,7 +284,7 @@ class ChimeTTSHelper:
 
             if ffmpeg_process.returncode != 0:
                 error_message = error_output.decode('utf-8')
-                _LOGGER.error(("FFmpeg conversion failed. \n - Error: \"%s\" \n - Error output: \"%s\" \n - Arguments supplied: %s"),
+                _LOGGER.error(("FFmpeg conversion failed.\n\nArguments string: \"%s\"\n\nError code: %s\n\nError output:\n%s"),
                                str(ffmpeg_process.returncode),
                                str(error_message),
                                ffmpeg_cmd_string)
