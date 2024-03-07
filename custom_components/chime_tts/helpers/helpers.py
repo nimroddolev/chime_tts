@@ -36,6 +36,7 @@ class ChimeTTSHelper:
         message = str(data.get("message", ""))
         tts_platform = str(data.get("tts_platform", ""))
         tts_playback_speed = float(data.get("tts_playback_speed", 100))
+        tts_pitch = float(data.get("tts_pitch", 0.0))
         volume_level = float(data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
         media_players_array = await media_player_helper.async_initialize_media_players(
             hass, entity_ids, volume_level
@@ -69,6 +70,7 @@ class ChimeTTSHelper:
             "language": language,
             "tts_platform": tts_platform,
             "tts_playback_speed": tts_playback_speed,
+            "tts_pitch": tts_pitch,
             "announce": announce,
             "volume_level": volume_level,
             "join_players": join_players,
@@ -309,6 +311,67 @@ class ChimeTTSHelper:
                            error, ffmpeg_cmd_string)
 
         return file_path
+
+    def change_speed_of_audiosegment(self, audio_segment: AudioSegment, speed: float = 100.0):
+        """Change the playback speed of an audio segment."""
+        _LOGGER.debug("``` change speed to %s", speed)
+        if not audio_segment or speed == 100 or speed < -100 or speed > 200:
+            if not audio_segment:
+                _LOGGER.warning("Cannot change TTS audio playback speed. No audio available")
+            elif speed != 100:
+                _LOGGER.warning("Cannot change TTS audio playback speed. Speed = %s", str(speed))
+            return audio_segment
+
+        _LOGGER.debug(
+            " -  ...changing TTS playback speed to %s percent",
+            str(speed),
+        )
+        playback_speed = float(speed / 100)
+        if speed > 150:
+            audio_segment = audio_segment.speedup(
+                playback_speed=playback_speed, chunk_size=50
+            )
+        else:
+            audio_segment = audio_segment.speedup(playback_speed=playback_speed)
+
+        return audio_segment
+
+    def change_pitch_of_audiosegment(self, audio_segment, pitch: float = 0.0, temp_folder: str = None):
+        """Change the pitch of an audio segment."""
+        _LOGGER.debug("``` change pitch to %s", pitch)
+        if not audio_segment or pitch == 0.0 or pitch < -100.0 or pitch > 100.0:
+            if not audio_segment:
+                _LOGGER.warning("Cannot change TTS audio pitch. No audio available")
+            elif pitch != 0:
+                _LOGGER.warning("Cannot change TTS audio pitch. Pitch = %s", str(pitch))
+            return audio_segment
+
+        _LOGGER.debug(
+            " -  ...changing TTS Pitch to %s percent",
+            str(pitch),
+        )
+
+        # Generate FFmpeg arguments string
+        pitch_percent: float = float(pitch / 100)
+        tempo_factor: float = 1.0
+        sample_rate_factor: float = 1.0
+
+        # Pitch up
+        if pitch_percent > 0:
+            tempo_factor = 1 - (0.2764 * pitch_percent)
+            sample_rate_factor = 0.55 + (0.2 * pitch_percent)
+        # Pitch down
+        else:
+            tempo_factor = 1 + (0.5518 * pitch_percent * -1)
+            sample_rate_factor = 0.55 - (0.2 * pitch_percent * -1)
+
+        _LOGGER.debug("``` FFmpeg calculations:\npitch_percent = %s, tempo_factor = %s, sample_rate_factor = %s", str(pitch_percent), str(tempo_factor), str(sample_rate_factor))
+        ffmpeg_args = f"-af atempo={tempo_factor},asetrate=44100*{sample_rate_factor}"
+        _LOGGER.debug("``` FFmpeg arguments: %s", ffmpeg_args)
+
+        return self.ffmpeg_convert_from_audio_segment(audio_segment=audio_segment,
+                                                      ffmpeg_args=ffmpeg_args,
+                                                      folder=temp_folder)
 
     def combine_audio(self,
                       audio_1: AudioSegment,

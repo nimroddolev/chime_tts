@@ -276,6 +276,19 @@ say:
           max: 200
           step: 5
           unit_of_measurement: '%'
+    tts_pitch:
+      name: TTS Pitch
+      description: "Change the pitch of the TTS audio to between -100% and 100%"
+      example: 125
+      required: false
+      default: 0
+      selector:
+        number:
+          mode: slider
+          min: -100
+          max: 200
+          step: 5
+          unit_of_measurement: '%'
     volume_level:
       name: Volume Level
       description: "The volume to use when playing audio"
@@ -629,6 +642,19 @@ say_url:
         number:
           mode: slider
           min: 100
+          max: 200
+          step: 5
+          unit_of_measurement: '%'
+    tts_pitch:
+      name: TTS Pitch
+      description: "Change the pitch of the TTS audio to between -100% and 100%"
+      example: 125
+      required: false
+      default: 100
+      selector:
+        number:
+          mode: slider
+          min: -100
           max: 200
           step: 5
           unit_of_measurement: '%'
