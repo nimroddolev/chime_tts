@@ -12,7 +12,8 @@ from homeassistant.components.media_player.const import (
 )
 from ..const import (
     DEFAULT_DELAY_MS,
-    ALEXA_FFMPEG_ARGS,
+    FFMPEG_ARGS_ALEXA,
+    FFMPEG_ARGS_VOLUME
 )
 from .media_player import MediaPlayerHelper
 from .filesystem import FilesystemHelper
@@ -47,20 +48,12 @@ class ChimeTTSHelper:
         announce = data.get("announce", False)
 
         # FFmpeg arguments
-        ffmpeg_args = data.get("audio_conversion", None)
-        if ffmpeg_args is not None:
-            if data.get("audio_conversion", None).lower() == "alexa":
-                ffmpeg_args = ALEXA_FFMPEG_ARGS
-            else:
-                if data.get("audio_conversion", None).lower() == "custom":
-                    ffmpeg_args = None
-                else:
-                    data.get("audio_conversion", None)
+        ffmpeg_args: str = self.parse_ffmpeg_args(data.get("audio_conversion", None))
 
         # Force "Alexa" conversion if any Alexa media_player entities included
         alexa_conversion_forced = False
         if ffmpeg_args is None and media_player_helper.get_alexa_media_player_count(hass, entity_ids) > 0:
-            ffmpeg_args = ALEXA_FFMPEG_ARGS
+            ffmpeg_args = FFMPEG_ARGS_ALEXA
             alexa_conversion_forced = True
 
         params = {
@@ -185,6 +178,23 @@ class ChimeTTSHelper:
                 final_segments.append(segment)
 
         return final_segments
+
+    def parse_ffmpeg_args(self, ffmpeg_args_str: str):
+        """Parse the FFmpeg argument string."""
+        if ffmpeg_args_str is not None:
+            if ffmpeg_args_str.lower() == "alexa":
+                return FFMPEG_ARGS_ALEXA
+            if (len(ffmpeg_args_str.split(" ")) == 2 and
+                  ffmpeg_args_str.split(" ")[0].lower() == "volume"):
+                try:
+                    volume = float(ffmpeg_args_str.split(" ")[1].replace("%","")) / 100
+                    return FFMPEG_ARGS_VOLUME.replace("X", str(volume))
+                except ValueError:
+                    _LOGGER.warning("Error parsing audio_conversion string")
+            if ffmpeg_args_str.lower() == "custom":
+                return None
+        return ffmpeg_args_str
+
 
     def ffmpeg_convert_from_audio_segment(self,
                                           audio_segment: AudioSegment,

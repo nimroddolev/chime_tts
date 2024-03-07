@@ -328,6 +328,14 @@ say:
           options:
             - label: Alexa
               value: Alexa
+            - label: Volume 125%
+              value: Volume 125%
+            - label: Volume 150%
+              value: volume 150%
+            - label: Volume 175%
+              value: volume 175%
+            - label: Volume 200%
+              value: volume 200%
             - label: Custom (replace this text with your FFmpeg arguments)
               value: Custom
     language:

@@ -10,7 +10,7 @@ DOMAIN = "chime_tts"
 NAME = "Chime TTS"
 DESCRIPTION = "A custom Home Assistant integration to play audio with text-to-speech (TTS) messages"
 
-# Get version number from manifest.json
+# Current version number from manifest.json
 integration_dir = os.path.dirname(__file__)
 manifest_path = os.path.join(integration_dir, "manifest.json")
 if os.path.isfile(manifest_path):
@@ -91,7 +91,8 @@ QUEUE_TIMEOUT_KEY = "queue_timeout"
 QUEUE_TIMEOUT_DEFAULT = 60
 
 # FFmpeg Arguments
-ALEXA_FFMPEG_ARGS = "-y -ac 2 -codec:a libmp3lame -b:a 48k -ar 24000 -write_xing 0"
+FFMPEG_ARGS_ALEXA = "-y -ac 2 -codec:a libmp3lame -b:a 48k -ar 24000 -write_xing 0"
+FFMPEG_ARGS_VOLUME = '-filter:a volume=X'
 
 # TTS Platforms
 AMAZON_POLLY = "amazon_polly"
