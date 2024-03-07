@@ -23,14 +23,19 @@ else:
 SERVICE_SAY = "say"
 SERVICE_SAY_URL = "say_url"
 SERVICE_CLEAR_CACHE = "clear_cache"
+
 DEFAULT_DELAY_MS = 450
-FADE_TRANSITION_S = 1.0
-FADE_TRANSITION_STEPS = 4
+
 DATA_STORAGE_KEY = "chime_tts_integration_data"
 AUDIO_PATH_KEY = "audio_path" # <-- Deprecated
 LOCAL_PATH_KEY = "local_path"
 PUBLIC_PATH_KEY = "public_path"
 AUDIO_DURATION_KEY = "audio_duration"
+
+PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY = "pause_media_player_dicts"
+SET_VOLUME_MEDIA_PLAYER_DICTS_KEY = "set_volume_media_player_dicts"
+FADE_TRANSITION_S = 0.5
+FADE_TRANSITION_STEPS = 5
 
 ALEXA_MEDIA_PLAYER_PLATFORM = "alexa_media"
 SPOTIFY_PLATFORM = "spotify"

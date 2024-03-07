@@ -73,6 +73,7 @@ class MediaPlayerHelper:
 
             group_member_support = self.get_supported_feature(entity, ATTR_GROUP_MEMBERS)
             announce_support = self.get_supported_feature(entity, ATTR_MEDIA_ANNOUNCE)
+            is_playing = announce_support and hass.states.get(entity_id).state == "playing"
 
             media_players_array.append(
                 {
@@ -81,7 +82,7 @@ class MediaPlayerHelper:
                     "initial_volume_level": initial_volume_level,
                     "group_members_supported": group_member_support,
                     "announce_supported": announce_support,
-                    "resume_media_player": False,
+                    "resume_media_player": is_playing,
                 }
             )
         if entity_found is False:
@@ -182,84 +183,83 @@ class MediaPlayerHelper:
 
         return None
 
-    async def async_wait_until_media_players_state_is(self, hass: HomeAssistant, entity_ids: list, target_state: str, timeout: float = 3.5):
+    async def async_wait_until_media_players_state_is(self, hass: HomeAssistant, media_player_dicts: list, target_state: str, timeout: float = 3.5):
         """Wait until the state of a list of media_players equals a target state."""
-        def property(entity_id):
+        def property(media_player_dict):
+            entity_id = media_player_dict["entity_id"]
             return hass.states.get(entity_id).state
-        def condition(entity_id):
-            p_property = property(entity_id)
+        def condition(media_player_dict):
+            p_property = property(media_player_dict)
             return p_property == target_state
 
         _LOGGER.debug(" - Waiting until %s media_player%s %s %s...",
-                      len(entity_ids),
-                      ("" if len(entity_ids) == 1 else "s"),
-                      ("is" if len(entity_ids) == 1 else "are"),
+                      len(media_player_dicts),
+                      ("" if len(media_player_dicts) == 1 else "s"),
+                      ("is" if len(media_player_dicts) == 1 else "are"),
                       target_state)
-        return await self._async_wait_until_media_players(hass, entity_ids, condition, timeout)
+        return await self._async_wait_until_media_players(hass, media_player_dicts, condition, timeout)
 
-    async def async_wait_until_media_players_state_not(self, hass: HomeAssistant, entity_ids: list, target_state: str, timeout: float = 3.5):
+    async def async_wait_until_media_players_state_not(self, hass: HomeAssistant, media_player_dicts: list, target_state: str, timeout: float = 3.5):
         """Wait until the state of a list of media_players no longer equals a target state."""
-        def property(entity_id):
+        def property(media_player_dict):
+            entity_id = media_player_dict["entity_id"]
             return hass.states.get(entity_id).state
-        def condition(entity_id):
-            p_property = property(entity_id)
+        def condition(media_player_dict):
+            p_property = property(media_player_dict)
             return p_property != target_state
 
         _LOGGER.debug(" - Waiting until %s media_player%s %s %s...",
-                      len(entity_ids),
-                      ("" if len(entity_ids) == 1 else "s"),
-                      ("isn't" if len(entity_ids) == 1 else "aren't"),
+                      len(media_player_dicts),
+                      ("" if len(media_player_dicts) == 1 else "s"),
+                      ("isn't" if len(media_player_dicts) == 1 else "aren't"),
                       target_state)
-        return await self._async_wait_until_media_players(hass, entity_ids, condition, timeout)
+        return await self._async_wait_until_media_players(hass, media_player_dicts, condition, timeout)
 
-    async def async_wait_until_media_players_volume_level_is(self, hass: HomeAssistant, entity_ids: list, target_volume: str, timeout: float = 5):
+    async def async_wait_until_media_players_volume_level_is(self, hass: HomeAssistant, media_player_dicts: list, target_volume: str, timeout: float = 5):
         """Wait for a media_player to have a target volume_level."""
-        def property(entity_id):
+        def property(media_player_dict):
+            entity_id = media_player_dict["entity_id"]
             return hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
-        def condition(entity_id):
-            p_property = property(entity_id)
+        def condition(media_player_dict):
+            p_property = property(media_player_dict)
             return p_property == target_volume
 
         _LOGGER.debug(" - Waiting until %s media_player%s volume_level %s %s...",
-                      len(entity_ids),
-                      ("" if len(entity_ids) == 1 else "s"),
-                      ("is" if len(entity_ids) == 1 else "are"),
+                      len(media_player_dicts),
+                      ("" if len(media_player_dicts) == 1 else "s"),
+                      ("is" if len(media_player_dicts) == 1 else "are"),
                       target_volume)
-        return await self._async_wait_until_media_players(hass, entity_ids, condition, timeout)
+        return await self._async_wait_until_media_players(hass, media_player_dicts, condition, timeout)
 
-    async def _async_wait_until_media_players(self, hass: HomeAssistant, entity_ids: list, condition, timeout: float = 3.5):
+    async def _async_wait_until_media_players(self, hass: HomeAssistant, media_player_dicts: list, condition, timeout: float = 3.5):
         """Wait until the state of a list of media_players equals/no longer equals a target state."""
         # Validation
-        if (hass is None or entity_ids is None or len(entity_ids) == 0 or condition is None):
+        if (hass is None or media_player_dicts is None or len(media_player_dicts) == 0 or condition is None):
             return False
-        for entity_id in entity_ids:
+        for media_player_dict in media_player_dicts:
+            entity_id = media_player_dict["entity_id"]
             if not hass.states.get(str(entity_id)):
                 _LOGGER.warning("Invalid entity_id: %s", str(entity_id))
                 return False
 
         delay = 0.2
-        all_conditions_met = False
-        still_waiting = []
-        while not all_conditions_met and timeout > 0:
-            still_waiting = []
-            all_conditions_met = True
-            for entity_id in entity_ids:
-                all_conditions_met = all_conditions_met and condition(entity_id)
-                if all_conditions_met:
-                    _LOGGER.debug("   ✔ %s", entity_id)
-                else:
-                    still_waiting.append(entity_id)
+        still_waiting = list(media_player_dicts)
+        while len(still_waiting) > 0 and timeout > 0:
+            for media_player_dict in still_waiting:
+                if condition(media_player_dict):
+                    _LOGGER.debug("   ✔ %s", media_player_dict["entity_id"])
+                    index = still_waiting.index(media_player_dict)
+                    del still_waiting[index]
             timeout = timeout - delay
 
-            if not all_conditions_met:
+            if len(still_waiting) > 0:
                 await hass.async_add_executor_job(time.sleep, delay)
 
-        if not all_conditions_met:
-            _LOGGER.debug(" - Timed out waiting for media_player%s:", ('' if len(still_waiting) == 1 else 's'))
-            for entity_id in still_waiting:
-                _LOGGER.debug("   𝘅 %s", entity_id)
+        if len(still_waiting) > 0:
+            for media_player_dict in still_waiting:
+                _LOGGER.debug("   𝘅 %s - Timed out", media_player_dict["entity_id"])
 
-        return all_conditions_met
+        return len(still_waiting) == 0
 
     async def async_wait_until_media_player_volume_level(self, hass: HomeAssistant, media_player_dicts: list, target_volume: str, timeout=5):
         """Wait for a media_player to have a target volume_level."""
