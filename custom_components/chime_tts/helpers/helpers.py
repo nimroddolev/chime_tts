@@ -243,41 +243,49 @@ class ChimeTTSHelper:
     def ffmpeg_convert_from_file(self, file_path: str, ffmpeg_args: str):
         """Convert audio file with FFmpeg and provided arguments."""
         try:
+            # Add standard arguments
             ffmpeg_cmd = [
                 'ffmpeg',
-                '-i', file_path,
+                '-i',
+                file_path,
                 *ffmpeg_args.split()
             ]
 
-            # Save to a specific file type (arguement option -f)
+            # Save to a specific file type (eg: -f wav)
             try:
-                # Use the file type specific by the -f option (eg: -f wav)
+                # Use specified file type
                 index = ffmpeg_cmd.index('-f')
-                file_extension = ffmpeg_cmd[index+1]
-                converted_file_path = file_path.replace(".mp3", f".{file_extension}")
+                if index >= 0 and len(ffmpeg_args) >= index:
+                    file_extension = ffmpeg_cmd[index+1]
+                    if file_extension != "mp3":
+                        converted_file_path = file_path.replace(".mp3", f".{file_extension}")
             except Exception:
-                # Use the default file type of mp3
+                # Use mp3 as default
                 converted_file_path = file_path.replace(".mp3", "_converted.mp3")
+
+            if converted_file_path == file_path:
+                converted_file_path = file_path.replace(".mp3", "_converted.mp3")
+
+            # Overwrite existing output file
+            if os.path.exists(converted_file_path):
+                ffmpeg_cmd.append('-y')
+
             ffmpeg_cmd.append(converted_file_path)
 
-            # Overwrite output file if it already exists
-            ffmpeg_cmd.append('-y')
-
-            # Convert the audil file
+            # Convert the audio file
             ffmpeg_cmd_string = " ".join(ffmpeg_cmd)
             ffmpeg_process = subprocess.Popen(ffmpeg_cmd,
                                               stdin=subprocess.PIPE,
                                               stdout=subprocess.PIPE,
                                               stderr=subprocess.PIPE)
-            converted_file, error_output = ffmpeg_process.communicate()
+            _, error_output = ffmpeg_process.communicate()
 
             if ffmpeg_process.returncode != 0:
                 error_message = error_output.decode('utf-8')
-                _LOGGER.error("%s, %s, output=%s, stderr=%s",
+                _LOGGER.error(("FFmpeg conversion failed. \n - Error: \"%s\" \n - Error output: \"%s\" \n - Arguments supplied: %s"),
                                str(ffmpeg_process.returncode),
-                               ' '.join(ffmpeg_cmd),
-                               converted_file_path,
-                               str(error_message))
+                               str(error_message),
+                               ffmpeg_cmd_string)
                 return False
 
             # Replace original with converted file
