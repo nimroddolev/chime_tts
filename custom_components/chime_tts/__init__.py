@@ -858,6 +858,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
                                                                filepath=segment["path"],
                                                                cache=segment_cache,
                                                                offset=segment_offset,
+                                                               audio_conversion=segment_audio_conversion,
                                                                audio=output_audio)
             else:
                 _LOGGER.warning("Chime path missing from messsage segment #%s", str(index+1))
@@ -930,14 +931,14 @@ async def async_process_segments(hass, message, output_audio, params, options):
                         options=segment_options,
                         tts_playback_speed=segment_tts_playback_speed,
                     )
-
-
-                # Combine audio
-                if tts_audio is not None:
-                    tts_audio_duration = float(len(tts_audio) / 1000.0)
-                    output_audio = helpers.combine_audio(output_audio, tts_audio, segment_offset)
-
+                if tts_audio is not None and segment_audio_conversion and len(segment_audio_conversion) > 0:
+                    _LOGGER.debug("  - Performing FFmpeg audio conversion on TTS audio...")
+                    temp_folder = _data.get(TEMP_PATH_KEY, None)
+                    tts_audio = helpers.ffmpeg_convert_from_audio_segment(audio_segment=tts_audio,
+                                                                            ffmpeg_args=segment_audio_conversion,
+                                                                            folder=temp_folder)
                     # Cache the new TTS audio?
+                    tts_audio_duration = float(len(tts_audio) / 1000.0)
                     if segment_cache is True and audio_dict is None:
                         _LOGGER.debug(" - Saving generated TTS audio to cache...")
                         tts_audio_full_path = filesystem_helper.save_audio_to_folder(
@@ -953,22 +954,15 @@ async def async_process_segments(hass, message, output_audio, params, options):
                         else:
                             _LOGGER.warning("Unable to save generated TTS audio to cache")
 
+                # Combine audio
+                if tts_audio is not None:
+                    output_audio = helpers.combine_audio(output_audio, tts_audio, segment_offset)
                 else:
                     _LOGGER.warning("Error generating TTS audio from messsage segment #%s: %s",
                                     str(index+1), str(segment))
             else:
                 _LOGGER.warning("TTS message missing from messsage segment #%s: %s",
                                 str(index+1), str(segment))
-                continue
-
-        # Audio Conversion with FFmpeg
-        if segment_audio_conversion is not None:
-            if output_audio is not None:
-                _LOGGER.debug("Converting audio segment with FFmpeg...")
-                temp_folder = _data.get(TEMP_PATH_KEY, None)
-                output_audio = helpers.ffmpeg_convert_from_audio_segment(output_audio, segment_audio_conversion, temp_folder)
-            else:
-                _LOGGER.warning("No audio provided for conversion with FFmpeg")
 
     return output_audio
 
@@ -976,6 +970,7 @@ async def async_get_audio_from_path(hass: HomeAssistant,
                                     filepath: str,
                                     cache=False,
                                     offset=0,
+                                    audio_conversion=None,
                                     audio=None):
     """Add audio from a given file path to existing audio (optional) with offset (optional)."""
     if filepath is None or filepath == "None" or len(filepath) == 0:
@@ -1007,6 +1002,9 @@ async def async_get_audio_from_path(hass: HomeAssistant,
 
         _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
         try:
+            if audio_conversion is not None and len(audio_conversion) > 0:
+                _LOGGER.debug("  - Performing FFmpeg audio conversion of audio file...")
+                helpers.ffmpeg_convert_from_file(filepath, audio_conversion)
             audio_from_path = AudioSegment.from_file(filepath)
 
             # Remove downloaded file when cache=false
@@ -1374,6 +1372,7 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
         "voice",
         "language",
         "chime_path",
+        "audio_conversion",
         "end_chime_path",
         "offset",
         "tts_playback_speed",
