@@ -17,6 +17,12 @@ from homeassistant.components.media_player.const import (
     SERVICE_UNJOIN,
     MEDIA_TYPE_MUSIC,
 )
+from .helpers.helpers import ChimeTTSHelper
+from .helpers.media_player import MediaPlayerHelper
+from .helpers.filesystem import FilesystemHelper
+from .queue_manager import ChimeTTSQueueManager
+from .config_flow import ChimeTTSOptionsFlowHandler
+
 from homeassistant.const import CONF_ENTITY_ID, SERVICE_VOLUME_SET
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceResponse, SupportsResponse
@@ -27,12 +33,6 @@ from homeassistant.exceptions import (
     ServiceNotFound,
     TemplateError,
 )
-
-from .config_flow import ChimeTTSOptionsFlowHandler
-from .queue_manager import ChimeTTSQueueManager
-from .helpers.helpers import ChimeTTSHelper
-from .helpers.media_player import MediaPlayerHelper
-from .helpers.filesystem import FilesystemHelper
 
 from .const import (
     DOMAIN,
@@ -372,7 +372,6 @@ async def async_post_playback_actions(
                                                                      media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
                                                                      volume_key="initial_volume_level",
                                                                      fade_duration=FADE_TRANSITION_S)
-
 
     # Reset volume
     if len(_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]) > 0:

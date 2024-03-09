@@ -39,6 +39,7 @@ class MediaPlayerHelper:
         for entity_id in entity_ids:
             # Validate media player entity_id
             entity = hass.states.get(entity_id)
+            media_player_is_spotify = self.get_is_media_player_spotify(hass, entity_id)
             if entity is None:
                 _LOGGER.warning('Media player entity: "%s" not found', entity_id)
                 continue
@@ -60,20 +61,15 @@ class MediaPlayerHelper:
             # Store media player's current volume level
             should_change_volume = False
             initial_volume_level = -1
-            if volume_level >= 0:
+            if volume_level >= 0 or media_player_is_spotify:
                 initial_volume_level = float(
                     entity.attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
                 )
-                if float(initial_volume_level) == float(volume_level / 100):
-                    _LOGGER.debug(
-                        "%s's volume_level is already %s", entity_id, str(volume_level)
-                    )
-                else:
-                    should_change_volume = True
+                should_change_volume = True
 
             group_member_support = self.get_supported_feature(entity, ATTR_GROUP_MEMBERS)
-            announce_support = self.get_supported_feature(entity, ATTR_MEDIA_ANNOUNCE)
-            is_playing = announce_support and hass.states.get(entity_id).state == "playing"
+            announce_supported = self.get_supported_feature(entity, ATTR_MEDIA_ANNOUNCE)
+            is_playing = hass.states.get(entity_id).state == "playing" and (not announce_supported or media_player_is_spotify)
 
             media_players_array.append(
                 {
@@ -81,7 +77,7 @@ class MediaPlayerHelper:
                     "should_change_volume": should_change_volume,
                     "initial_volume_level": initial_volume_level,
                     "group_members_supported": group_member_support,
-                    "announce_supported": announce_support,
+                    "announce_supported": announce_supported,
                     "resume_media_player": is_playing,
                 }
             )
@@ -312,7 +308,6 @@ class MediaPlayerHelper:
 
                     # Skip media_player if already at target volume
                     if target_volume == current_volume:
-                        _LOGGER.debug(" - %s's volume is already set to %s", entity_id, target_volume)
                         continue
 
                     # Determine volume steps on first loop

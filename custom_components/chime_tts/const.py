@@ -34,7 +34,7 @@ AUDIO_DURATION_KEY = "audio_duration"
 
 PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY = "pause_media_player_dicts"
 SET_VOLUME_MEDIA_PLAYER_DICTS_KEY = "set_volume_media_player_dicts"
-FADE_TRANSITION_S = 0.5
+FADE_TRANSITION_S = 0.4
 FADE_TRANSITION_STEPS = 5
 
 ALEXA_MEDIA_PLAYER_PLATFORM = "alexa_media"
