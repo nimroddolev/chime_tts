@@ -1,4 +1,12 @@
 {
+    "config": {
+        "step": {
+            "no_tts_platforms": {
+                "title": "Chime TTS",
+                "description": "ℹ️ No TTS Platforms Found.\n\nThe Chime TTS integration uses TTS platform/s already installed in your Home Assistantce Instance.\n\nPlease add at least 1 TTS platform to begin using it.\n\nFor more details please review the documentation."
+            }
+        }
+    },
     "services": {
         "clear_cache": {
             "name": "Clear Cache",
@@ -214,6 +222,7 @@
                 "description": "Configure the `chime_tts.say` and `chime_tts.say_url` services and add custom chime mp3 paths:",
                 "data": {
                     "queue_timeout": "Service call timeout (in seconds)",
+                    "tts_platform_key": "Default TTS platform",
                     "media_dir": "Media folder (default 'local')",
                     "temp_chimes_path": "Folder path to store downloaded chime audio files",
                     "temp_path": "Folder path to store tempoary TTS audio mp3 files",
@@ -229,6 +238,8 @@
         "error": {
             "timeout": "The timeout value is invalid",
             "timeout_sub": "Enter a valid timeout duration",
+            "default_tts_platform_none": "No TTS platforms were detected. Please add at least 1 TTS integration.",
+            "default_tts_platform_select": "The TTS platform entered was not detected. Please make sure it has been added before defining it as the default.",
             "multiple": "Multiple issues detected",
             "invalid_chime_paths": "Invalid custom chime path detected",
             "www_path": "Folder path must be within `/config/www/` or `/media/`",

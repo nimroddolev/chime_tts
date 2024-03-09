@@ -64,6 +64,7 @@ from .const import (
     MP3_PRESET_CUSTOM_KEY,
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
+    TTS_PLATFORM_KEY,
     AMAZON_POLLY,
     BAIDU,
     ELEVENLABS_TTS,
@@ -435,6 +436,9 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
     # Queue timeout
     _data[QUEUE_TIMEOUT_KEY] = options.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT)
 
+    # Default TTS Platform
+    _data[TTS_PLATFORM_KEY] = options.get(TTS_PLATFORM_KEY, "")
+
     # Media folder (default local)
     _data[MEDIA_DIR_KEY] = options.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)
 
@@ -466,6 +470,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
     # Debug summary
     for key_string in [
         QUEUE_TIMEOUT_KEY,
+        TTS_PLATFORM_KEY,
         TEMP_CHIMES_PATH_KEY,
         TEMP_PATH_KEY,
         WWW_PATH_KEY,
@@ -498,13 +503,10 @@ async def async_request_tts_audio(
         _LOGGER.warning("No message text provided for TTS audio")
         return None
 
-    if tts_platform is None or tts_platform == "None" or tts_platform is False or len(tts_platform) == 0:
-        installed_tts = list((hass.data["tts_manager"].providers).keys())
-        if len(installed_tts) == 0:
-            _LOGGER.warning("No TTS platforms available.")
-        else:
-            tts_platform = installed_tts[0]
-            _LOGGER.warning("You forgot to include a TTS platform. Using %s", tts_platform)
+    # Determine TTS Platform
+    if tts_platform is None or tts_platform == "None" or tts_platform is False or len(tts_platform) <= 1:
+        _LOGGER.debug(" - No TTS platform included in service call")
+        tts_platform = helpers.get_default_tts_platform(hass, _data[TTS_PLATFORM_KEY])
 
     if tts_platform == NABU_CASA_CLOUD_TTS_OLD:
         tts_platform = NABU_CASA_CLOUD_TTS

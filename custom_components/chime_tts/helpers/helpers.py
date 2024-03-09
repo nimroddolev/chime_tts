@@ -198,6 +198,31 @@ class ChimeTTSHelper:
         return ffmpeg_args_str
 
 
+    def get_default_tts_platform(self, hass: HomeAssistant, default_tts_platform: str = ""):
+        """User's default TTS platform name."""
+        tts_platform = None
+        installed_tts = list((hass.data["tts_manager"].providers).keys())
+        if default_tts_platform is not None and len(default_tts_platform) > 1:
+            # Use default TTS platform
+            if default_tts_platform in installed_tts:
+                tts_platform = default_tts_platform
+                _LOGGER.debug(" - Using default TTS platform: %s", tts_platform)
+            else:
+                # Default not installed. Use 1st available TTS platform
+                if len(installed_tts) > 0:
+                    tts_platform = installed_tts[0]
+                    _LOGGER.warning(" - The default TTS platform '%s' does not appear to be installed. Using '%'", default_tts_platform, tts_platform)
+                # No TTS platforms available
+                else:
+                    _LOGGER.warning(" - The default TTS platform '%s' does not appear to be installed.")
+        # No default. Use 1st available TTS platform
+        elif len(installed_tts) > 0:
+            tts_platform = installed_tts[0]
+            _LOGGER.warning(" - Using TTS platform '%s'", tts_platform)
+
+        return tts_platform
+
+
     def ffmpeg_convert_from_audio_segment(self,
                                           audio_segment: AudioSegment,
                                           ffmpeg_args: str,
@@ -314,7 +339,6 @@ class ChimeTTSHelper:
 
     def change_speed_of_audiosegment(self, audio_segment: AudioSegment, speed: float = 100.0):
         """Change the playback speed of an audio segment."""
-        _LOGGER.debug("``` change speed to %s", speed)
         if not audio_segment or speed == 100 or speed < -100 or speed > 200:
             if not audio_segment:
                 _LOGGER.warning("Cannot change TTS audio playback speed. No audio available")
@@ -338,7 +362,6 @@ class ChimeTTSHelper:
 
     def change_pitch_of_audiosegment(self, audio_segment, pitch: float = 0.0, temp_folder: str = None):
         """Change the pitch of an audio segment."""
-        _LOGGER.debug("``` change pitch to %s", pitch)
         if not audio_segment or pitch == 0.0 or pitch < -100.0 or pitch > 100.0:
             if not audio_segment:
                 _LOGGER.warning("Cannot change TTS audio pitch. No audio available")
@@ -365,9 +388,7 @@ class ChimeTTSHelper:
             tempo_factor = 1 + (0.5518 * pitch_percent * -1)
             sample_rate_factor = 0.55 - (0.2 * pitch_percent * -1)
 
-        _LOGGER.debug("``` FFmpeg calculations:\npitch_percent = %s, tempo_factor = %s, sample_rate_factor = %s", str(pitch_percent), str(tempo_factor), str(sample_rate_factor))
         ffmpeg_args = f"-af atempo={tempo_factor},asetrate=44100*{sample_rate_factor}"
-        _LOGGER.debug("``` FFmpeg arguments: %s", ffmpeg_args)
 
         return self.ffmpeg_convert_from_audio_segment(audio_segment=audio_segment,
                                                       ffmpeg_args=ffmpeg_args,

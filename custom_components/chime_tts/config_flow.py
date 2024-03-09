@@ -8,6 +8,7 @@ from .const import (
     DOMAIN,
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
+    TTS_PLATFORM_KEY,
     MEDIA_DIR_KEY,
     MEDIA_DIR_DEFAULT,
     TEMP_CHIMES_PATH_KEY,
@@ -39,8 +40,23 @@ class ChimeTTSFlowHandler(config_entries.ConfigFlow):
         """Chime TTS async_step_user."""
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
+
+        tts_providers = self.hass.data["tts_manager"].providers
+        if not tts_providers or len(tts_providers.keys()) == 0:
+            LOGGER.debug("No TTS Platforms detected")
+            return self.async_show_form(
+                        step_id="no_tts_platforms",
+                        data_schema=None,
+                        description_placeholders=user_input,
+                        last_step=True
+                    )
+
         return self.async_create_entry(title="Chime TTS", data={})
 
+
+    async def async_step_no_tts_platforms(self, user_input=None):
+        """Warn the user that no TTS platforms are installed."""
+        return self.async_create_entry(title="Chime TTS", data={})
 
 class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow Chime TTS integration."""
@@ -52,14 +68,21 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         """Initialize the options flow."""
 
+        installed_tts = self.get_installed_tts()
+        default_tts = installed_tts[0] if len(installed_tts) > 0 else ""
+
         options_schema = vol.Schema(
             {
                 vol.Required(
                     QUEUE_TIMEOUT_KEY,
-                    default=self.get_data_key_value(
-                        QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT
-                    ),  # type: ignore
+                    default=self.get_data_key_value(QUEUE_TIMEOUT_KEY,
+                                                    QUEUE_TIMEOUT_DEFAULT),  # type: ignore
                 ): int,
+                vol.Optional(
+                    TTS_PLATFORM_KEY,
+                    default=self.get_data_key_value(TTS_PLATFORM_KEY,
+                                                    default_tts),  # type: ignore
+                ): str,
                 vol.Required(
                     MEDIA_DIR_KEY,
                     default=self.get_data_key_value(MEDIA_DIR_KEY,
@@ -130,14 +153,24 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             _errors["base"] = "timeout"
             _errors[QUEUE_TIMEOUT_KEY] = "timeout_sub"
 
-        # Validate folder path used for `chime_tts.say_url`
+        # Default TTS Platform
+        if user_input[TTS_PLATFORM_KEY] is not None and len(user_input[TTS_PLATFORM_KEY]) > 0:
+            default_tts_provider = user_input[TTS_PLATFORM_KEY]
+            installed_tts = self.get_installed_tts()
+            if len(installed_tts) == 0:
+                 _errors[TTS_PLATFORM_KEY] = "default_tts_platform_none"
+            elif default_tts_provider not in installed_tts:
+                _errors[TTS_PLATFORM_KEY] = "default_tts_platform_select"
+
+
+        # Folder path used for `chime_tts.say_url`
         path: str = user_input.get(WWW_PATH_KEY, "")
         if not (path.startswith("/media/") or
                 path.startswith("/www/") or
                 path.startswith("/config/www/")):
             _errors["www_path"] = "www_path"
 
-        # Validate custom chime mp3 paths
+        # Custom chime mp3 paths
         for i in range(5):
             key = MP3_PRESET_CUSTOM_PREFIX + str(i + 1)
             value = user_input.get(key, " ")
@@ -198,3 +231,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             LOGGER.warning("Error: Failed to connect to %s", url)
 
         return False
+
+    def get_installed_tts(self):
+        """List of installed TTS platforms."""
+        return list((self.hass.data["tts_manager"].providers).keys())
