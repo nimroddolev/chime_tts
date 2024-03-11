@@ -9,7 +9,10 @@ logger:
 
 homeassistant:
   media_dirs:
-    local: /media
+    local: /workspaces/chime_tts/media
+  allowlist_external_dirs:
+    - "/workspaces/chime_tts/media"
+    - "/workspaces/chime_tts/config/www"
 
 media_source:
 
