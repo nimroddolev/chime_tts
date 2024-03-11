@@ -36,8 +36,8 @@ class ChimeTTSHelper:
         final_delay = float(data.get("final_delay", 0))
         message = str(data.get("message", ""))
         tts_platform = str(data.get("tts_platform", ""))
-        tts_playback_speed = float(data.get("tts_playback_speed", 100))
-        tts_pitch = float(data.get("tts_pitch", 0.0))
+        tts_speed = float(data.get("tts_playback_speed", data.get("tts_speed", 100)))
+        tts_pitch = data.get("tts_pitch", 0)
         volume_level = float(data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
         media_players_array = await media_player_helper.async_initialize_media_players(
             hass, entity_ids, volume_level
@@ -70,7 +70,7 @@ class ChimeTTSHelper:
             "message": message,
             "language": language,
             "tts_platform": tts_platform,
-            "tts_playback_speed": tts_playback_speed,
+            "tts_speed": tts_speed,
             "tts_pitch": tts_pitch,
             "announce": announce,
             "volume_level": volume_level,
@@ -236,40 +236,45 @@ class ChimeTTSHelper:
         # Save to temp file
         temp_filename = "temp_segment.mp3"
         temp_audio_file = filesystem_helper.save_audio_to_folder(audio=audio_segment,
-                                                    folder=folder,
-                                                    file_name=temp_filename)
-        if temp_audio_file is None:
-            _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to store audio segment")
+                                                                 folder=folder,
+                                                                 file_name=temp_filename)
+        if not temp_audio_file:
+            full_path = f"{folder}/{temp_filename}"
+            _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to store audio segment to: %s", full_path)
             return ret_val
 
         # Convert with FFmpeg
         converted_audio_file = self.ffmpeg_convert_from_file(temp_audio_file, ffmpeg_args)
         if converted_audio_file is None or converted_audio_file is False or len(converted_audio_file) < 5:
-            _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable convert audio segment")
+            _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to convert audio segment from file %s", temp_audio_file)
 
         # Load new AudioSegment from converted file
         else:
             try:
                 ret_val = AudioSegment.from_file(str(converted_audio_file))
             except Exception as error:
-                _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to load converted audio segment from file: %s. Error: %s", str(converted_audio_file), error)
+                _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to load converted audio segment from file: %s. Error: %s",
+                                str(converted_audio_file), error)
 
         # Delete temp file & converted file
-        if os.path.exists(temp_audio_file):
-            try:
-                os.remove(temp_audio_file)
-            except Exception as error:
-                _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to delete temp file: %s. Error: %s", str(temp_audio_file), error)
-        if os.path.exists(converted_audio_file):
-            try:
-                os.remove(converted_audio_file)
-            except Exception as error:
-                _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to delete converted audio file: %s. Error: %s", str(converted_audio_file), error)
+        for file_path in [temp_audio_file, converted_audio_file]:
+            if (file_path
+                and isinstance(file_path, str)
+                and os.path.exists(file_path)):
+                try:
+                    os.remove(file_path)
+                except Exception as error:
+                    _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to delete file: %s. Error: %s",
+                                    str(file_path), error)
 
         return ret_val
 
     def ffmpeg_convert_from_file(self, file_path: str, ffmpeg_args: str):
         """Convert audio file with FFmpeg and provided arguments."""
+        if not os.path.exists(file_path):
+            _LOGGER.warning("Unable to perform FFmpeg conversion: source file not found on file system: %s", file_path)
+            return False
+
         try:
             # Add standard arguments
             ffmpeg_cmd = [
@@ -302,12 +307,13 @@ class ChimeTTSHelper:
 
             # Convert the audio file
             ffmpeg_cmd_string = " ".join(ffmpeg_cmd)
-            _LOGGER.debug("Converting audio with FFmpeg arguments: \"%s\"", ffmpeg_cmd_string)
+            _LOGGER.debug("Converting audio: \"%s\"", ffmpeg_cmd_string)
             ffmpeg_process = subprocess.Popen(ffmpeg_cmd,
                                               stdin=subprocess.PIPE,
                                               stdout=subprocess.PIPE,
                                               stderr=subprocess.PIPE)
             _, error_output = ffmpeg_process.communicate()
+
 
             if ffmpeg_process.returncode != 0:
                 error_message = error_output.decode('utf-8')
@@ -339,61 +345,71 @@ class ChimeTTSHelper:
 
         return file_path
 
-    def change_speed_of_audiosegment(self, audio_segment: AudioSegment, speed: float = 100.0):
+    def add_atempo_values_to_ffmpeg_args_string(self, tempo: float, ffmpeg_args_string: str = None):
+        """Add atempo values (supporting values less than 0.5) to an FFmpeg argument string."""
+        tempos = []
+        if tempo < 0.5:
+            tempos = [0.5]
+            remaining = tempo
+            while remaining < 0.5:
+                remaining /= 0.5
+                if remaining >= 0.5:
+                    tempos.append(remaining)
+                    break
+                tempos.append(0.5)
+        else:
+            tempos = [tempo]
+
+        for tempo_n in tempos:
+            if ffmpeg_args_string is None:
+                ffmpeg_args_string = f"-af atempo={tempo_n}"
+            else:
+                ffmpeg_args_string += f",atempo={tempo_n}"
+
+        return ffmpeg_args_string
+
+
+    def change_speed_of_audiosegment(self, audio_segment: AudioSegment, speed: float = 100.0, temp_folder: str = None):
         """Change the playback speed of an audio segment."""
-        if not audio_segment or speed == 100 or speed < -100 or speed > 200:
+        if not audio_segment or speed == 100 or speed < 1 or speed > 500:
             if not audio_segment:
                 _LOGGER.warning("Cannot change TTS audio playback speed. No audio available")
             elif speed != 100:
-                _LOGGER.warning("Cannot change TTS audio playback speed. Speed = %s", str(speed))
+                _LOGGER.warning(f"TTS audio playback speed values must be between 1% and 500%")
             return audio_segment
 
-        _LOGGER.debug(
-            " -  ...changing TTS playback speed to %s percent",
-            str(speed),
-        )
-        playback_speed = float(speed / 100)
-        if speed > 150:
-            audio_segment = audio_segment.speedup(
-                playback_speed=playback_speed, chunk_size=50
-            )
-        else:
-            audio_segment = audio_segment.speedup(playback_speed=playback_speed)
+        _LOGGER.debug(f" -  ...changing TTS playback speed to {str(speed)}% of original")
 
-        return audio_segment
+        tempo = float(speed / 100)
 
-    def change_pitch_of_audiosegment(self, audio_segment, pitch: float = 0.0, temp_folder: str = None):
+        ffmpeg_args_string = self.add_atempo_values_to_ffmpeg_args_string(tempo)
+
+        return self.ffmpeg_convert_from_audio_segment(audio_segment=audio_segment,
+                                                      ffmpeg_args=ffmpeg_args_string,
+                                                      folder=temp_folder)
+
+    def change_pitch_of_audiosegment(self, audio_segment: AudioSegment, pitch: int = 0, temp_folder: str = None):
         """Change the pitch of an audio segment."""
-        if not audio_segment or pitch == 0.0 or pitch < -100.0 or pitch > 100.0:
-            if not audio_segment:
-                _LOGGER.warning("Cannot change TTS audio pitch. No audio available")
-            elif pitch != 0:
-                _LOGGER.warning("Cannot change TTS audio pitch. Pitch = %s", str(pitch))
+        if not audio_segment:
+            _LOGGER.warning("Cannot change TTS audio pitch. No audio available")
+            return audio_segment
+        elif pitch == 0.0:
             return audio_segment
 
         _LOGGER.debug(
-            " -  ...changing TTS Pitch to %s percent",
+            " -  ...changing pitch of TTS audio by %s semitone%s",
             str(pitch),
+            ("" if pitch == 1 else "s")
         )
 
         # Generate FFmpeg arguments string
-        pitch_percent: float = float(pitch / 100)
-        tempo_factor: float = 1.0
-        sample_rate_factor: float = 1.0
-
-        # Pitch up
-        if pitch_percent > 0:
-            tempo_factor = 1 - (0.2764 * pitch_percent)
-            sample_rate_factor = 0.55 + (0.2 * pitch_percent)
-        # Pitch down
-        else:
-            tempo_factor = 1 + (0.5518 * pitch_percent * -1)
-            sample_rate_factor = 0.55 - (0.2 * pitch_percent * -1)
-
-        ffmpeg_args = f"-af atempo={tempo_factor},asetrate=44100*{sample_rate_factor}"
-
+        pitch_shift = 2 ** (pitch / 12)
+        tempo_adjustment = 1 / pitch_shift
+        frame_rate = audio_segment.frame_rate
+        ffmpeg_args_string = f"-af asetrate={frame_rate}*{pitch_shift}"
+        ffmpeg_args_string = self.add_atempo_values_to_ffmpeg_args_string(tempo_adjustment, ffmpeg_args_string)
         return self.ffmpeg_convert_from_audio_segment(audio_segment=audio_segment,
-                                                      ffmpeg_args=ffmpeg_args,
+                                                      ffmpeg_args=ffmpeg_args_string,
                                                       folder=temp_folder)
 
     def combine_audio(self,

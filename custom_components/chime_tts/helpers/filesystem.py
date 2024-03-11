@@ -127,7 +127,10 @@ class FilesystemHelper:
             try:
                 # Make file name safe
                 audio_full_path = self.get_downloaded_chime_path(url=file_name, folder=folder)
-                audio.export(audio_full_path, format="mp3")
+                if audio_full_path and isinstance(audio_full_path, str):
+                    if os.path.exists(audio_full_path):
+                        os.remove(audio_full_path)
+                    audio.export(audio_full_path, format="mp3")
             except Exception as error:
                 _LOGGER.warning(
                     "An error occurred when creating the mp3 file: %s", error

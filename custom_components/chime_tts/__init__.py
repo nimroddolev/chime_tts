@@ -894,7 +894,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
                 segment_message = segment["message"]
                 segment_tts_platform = segment.get("tts_platform", params.get("tts_platform", None))
                 segment_language = segment.get("language", params.get("language", None))
-                segment_tts_playback_speed = float(segment.get("tts_playback_speed", params.get("tts_playback_speed", 100)))
+                segment_tts_speed = float(segment.get("tts_speed", params.get("tts_speed", 100)))
                 segment_tts_pitch = float(segment.get("tts_pitch", params.get("tts_pitch", 0)))
 
                 # Use exposed parameters if not present in the options dictionary
@@ -914,7 +914,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
                     "tts_platform": segment_tts_platform,
                     "language": segment_language,
                     "cache": segment_cache,
-                    "tts_playback_speed": segment_tts_playback_speed,
+                    "tts_speed": segment_tts_speed,
                     "tts_pitch": segment_tts_pitch
                 }
                 segment_filepath_hash = get_filename_hash_from_service_data({**segment_params}, {**segment_options})
@@ -966,8 +966,10 @@ async def async_process_segments(hass, message, output_audio, params, options):
 
                 # TTS Audio manipulations
                 if tts_audio is not None:
-                    tts_audio = helpers.change_speed_of_audiosegment(tts_audio, segment_tts_playback_speed)
-                    tts_audio = helpers.change_pitch_of_audiosegment(tts_audio, segment_tts_pitch, _data.get(TEMP_PATH_KEY, None))
+                    temp_folder =  _data.get(TEMP_PATH_KEY, None)
+                    tts_audio = helpers.change_speed_of_audiosegment(tts_audio, segment_tts_speed, temp_folder)
+                    tts_audio = helpers.change_pitch_of_audiosegment(tts_audio, segment_tts_pitch, temp_folder)
+                    tts_audio = helpers.ffmpeg_convert_from_audio_segment(tts_audio, segment_audio_conversion, temp_folder)
 
                 # Combine audio
                 if tts_audio is not None:
@@ -1394,6 +1396,7 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
         "end_chime_path",
         "offset",
         "tts_playback_speed",
+        "tts_speed",
         "tts_pitch"
     ]
     for param in relevant_params:

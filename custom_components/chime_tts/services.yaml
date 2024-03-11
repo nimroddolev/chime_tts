@@ -263,32 +263,30 @@ say:
               value: "voicerss"
             - label: "Yandex TTS"
               value: "yandextts"
-    tts_playback_speed:
-      name: TTS Playback Speed
-      description: "Set the playback speed of the TTS audio to between 100% and 200% of the original"
+    tts_speed:
+      name: TTS Speed
+      description: "Set the speed of the TTS audio to between 1% and 500% of the original"
       example: 125
       required: false
       default: 100
       selector:
         number:
           mode: slider
-          min: 100
-          max: 200
+          min: 1
+          max: 500
           step: 5
           unit_of_measurement: '%'
     tts_pitch:
       name: TTS Pitch
-      description: "Change the pitch of the TTS audio to between -100% and 100%"
-      example: 125
+      description: "Change the the TTS pitch in semitones. Negative values for lower, positive for higher"
+      example: 3
       required: false
       default: 0
       selector:
         number:
           mode: slider
-          min: -100
-          max: 200
-          step: 5
-          unit_of_measurement: '%'
+          step: 1
+          unit_of_measurement: 'semitones'
     volume_level:
       name: Volume Level
       description: "The volume to use when playing audio"
@@ -626,32 +624,30 @@ say_url:
               value: "voicerss"
             - label: "Yandex TTS"
               value: "yandextts"
-    tts_playback_speed:
-      name: TTS Playback Speed
-      description: "Set the playback speed of the TTS audio to between 100% and 200% of the original"
+    tts_speed:
+      name: TTS Speed
+      description: "Set the speed of the TTS audio to between 1% and 500% of the original"
       example: 125
       required: false
       default: 100
       selector:
         number:
           mode: slider
-          min: 100
-          max: 200
+          min: 1
+          max: 500
           step: 5
           unit_of_measurement: '%'
     tts_pitch:
       name: TTS Pitch
-      description: "Change the pitch of the TTS audio to between -100% and 100%"
-      example: 125
+      description: "Change the the TTS pitch in semitones. Negative values for lower, positive for higher"
+      example: 3
       required: false
-      default: 100
+      default: 0
       selector:
         number:
           mode: slider
-          min: -100
-          max: 200
-          step: 5
-          unit_of_measurement: '%'
+          step: 1
+          unit_of_measurement: 'semitones'
     cache:
       name: Cache
       description: "Whether or not to save/reuse the generated audio file in a local cache"
