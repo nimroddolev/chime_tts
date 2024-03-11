@@ -11,7 +11,8 @@ from homeassistant.components.media_player.const import (
     ATTR_MEDIA_VOLUME_LEVEL,
 )
 from ..const import (
-    DEFAULT_DELAY_MS,
+    OFFSET_KEY,
+    DEFAULT_OFFSET_MS,
     FFMPEG_ARGS_ALEXA,
     FFMPEG_ARGS_VOLUME,
 )
@@ -31,7 +32,7 @@ class ChimeTTSHelper:
         entity_ids = media_player_helper.parse_entity_ids(data, hass) if is_say_url is False else []
         chime_path =str(data.get("chime_path", ""))
         end_chime_path = str(data.get("end_chime_path", ""))
-        offset = float(data.get("delay", data.get("offset", DEFAULT_DELAY_MS)))
+        offset = float(data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)))
         final_delay = float(data.get("final_delay", 0))
         message = str(data.get("message", ""))
         tts_platform = str(data.get("tts_platform", ""))

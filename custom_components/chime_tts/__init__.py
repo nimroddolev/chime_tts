@@ -65,6 +65,7 @@ from .const import (
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
     TTS_PLATFORM_KEY,
+    OFFSET_KEY,
     AMAZON_POLLY,
     BAIDU,
     ELEVENLABS_TTS,
@@ -438,6 +439,9 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
     # Default TTS Platform
     _data[TTS_PLATFORM_KEY] = options.get(TTS_PLATFORM_KEY, "")
 
+    # Default offset
+    _data[OFFSET_KEY] = options.get(OFFSET_KEY, 0)
+
     # Media folder (default local)
     _data[MEDIA_DIR_KEY] = options.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)
 
@@ -467,16 +471,31 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
         _data[MP3_PRESET_CUSTOM_KEY][key] = value
 
     # Debug summary
+    _LOGGER.debug("Chime TTS Configuration Values:")
     for key_string in [
         QUEUE_TIMEOUT_KEY,
         TTS_PLATFORM_KEY,
+        OFFSET_KEY,
         TEMP_CHIMES_PATH_KEY,
         TEMP_PATH_KEY,
         WWW_PATH_KEY,
         MEDIA_DIR_KEY,
         MP3_PRESET_CUSTOM_KEY,
     ]:
-        _LOGGER.debug("%s = %s", key_string, str(_data.get(key_string, "None")))
+        value = _data.get(key_string, None)
+        if value and isinstance(value, dict):
+            _LOGGER.debug(" - %s:", key_string)
+            for dict_key, dict_value in value.items():
+                quote = ("'" if (
+                    isinstance(dict_value, str)
+                    and dict_value is not None
+                    and dict_value != ""
+                    and dict_value != "None"
+                    ) else "")
+                _LOGGER.debug("   - %s: %s%s%s", dict_key, quote, str(_data.get(dict_value, "None")), quote)
+        else:
+            quote = "'" if isinstance(value, str) and value is not None and value != 'None' else ""
+            _LOGGER.debug(" - %s: %s%s%s", key_string, quote, str(value), quote)
 
 ####################################
 ### Retrieve TTS Audio Functions ###
@@ -676,7 +695,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     hass = params.get("hass", None)
     chime_path = params.get("chime_path", None)
     end_chime_path = params.get("end_chime_path", None)
-    offset = params.get("offset", 0)
+    offset = params.get("offset", _data[OFFSET_KEY])
     message = params.get("message", None)
     cache = params.get("cache", False)
     entity_ids = params.get("entity_ids", [])
@@ -817,20 +836,20 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
 def get_segment_offset(output_audio, segment, params):
     """Offset value for segment."""
-    segment_offset = 0
+    segment_offset: float = 0
     if output_audio is not None:
         # Get "offset" parameter
         if "offset" in segment:
-            segment_offset = segment["offset"]
+            segment_offset = float(segment["offset"])
 
         # Support deprecated "delay" parmeter
         else:
             if "delay" in segment:
-                segment_offset = segment["delay"]
+                segment_offset = float(segment["delay"])
             elif "delay" in params:
-                segment_offset = params["delay"]
+                segment_offset = float(params["delay"])
             elif "offset" in params:
-                segment_offset = params["offset"]
+                segment_offset = float(params["offset"])
 
     return segment_offset
 

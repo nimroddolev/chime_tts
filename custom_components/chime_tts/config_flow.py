@@ -9,6 +9,8 @@ from .const import (
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
     TTS_PLATFORM_KEY,
+    OFFSET_KEY,
+    DEFAULT_OFFSET_MS,
     MEDIA_DIR_KEY,
     MEDIA_DIR_DEFAULT,
     TEMP_CHIMES_PATH_KEY,
@@ -82,6 +84,11 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                     default=self.get_data_key_value(TTS_PLATFORM_KEY,
                                                     default_tts),  # type: ignore
                 ): str,
+                vol.Optional(
+                    OFFSET_KEY,
+                    default=self.get_data_key_value(OFFSET_KEY,
+                                                    user_input.get(OFFSET_KEY, DEFAULT_OFFSET_MS)),  # type: ignore
+                ): int,
                 vol.Required(
                     MEDIA_DIR_KEY,
                     default=self.get_data_key_value(MEDIA_DIR_KEY,

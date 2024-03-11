@@ -223,6 +223,7 @@
                 "data": {
                     "queue_timeout": "Service call timeout (in seconds)",
                     "tts_platform_key": "Default TTS platform",
+                    "offset": "Default offset value (ms) between chimes & TTS audio",
                     "media_dir": "Media folder (default 'local')",
                     "temp_chimes_path": "Folder path to store downloaded chime audio files",
                     "temp_path": "Folder path to store tempoary TTS audio mp3 files",
