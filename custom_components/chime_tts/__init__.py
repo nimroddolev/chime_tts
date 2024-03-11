@@ -318,7 +318,7 @@ async def async_post_playback_actions(
                                                                                  timeout=5):
             _LOGGER.warning("Timed out waiting for %s media_player%s to pause",
                             str(len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY])),
-                            ("" if len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY] == 1) else "s"))
+                            ("" if len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) == 1 else "s"))
 
         # 2. Set media_players volume to 0
         _LOGGER.debug("     - Setting volume to 0")
@@ -561,7 +561,7 @@ async def async_request_tts_audio(
         "tts_platform":  f"'{tts_platform}'",
         "message":  f"'{message}'",
         "cache":  str(use_cache),
-        "language":  f"'{str(language) if language is not None else 'None'}'",
+        "language":  '\"'+str(language)+'\"' if language is not None else 'None',
         "options":  str(tts_options)
 
     }.items():
@@ -617,7 +617,7 @@ async def async_request_tts_audio(
                 completion_time_string = (f"{completion_time}s"
                                           if completion_time >= 1
                                           else f"{completion_time * 1000}ms")
-                _LOGGER.debug("   ...TTS audio completed in %s", completion_time_string)
+                _LOGGER.debug("   ...TTS audio generated in %s", completion_time_string)
                 return audio
             _LOGGER.error("...could not extract TTS audio from file")
         else:
@@ -791,7 +791,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
             else:
                 _LOGGER.warning("...FFmpeg audio conversion failed. Continuing using the original audio file")
 
-        duration = float(len(output_audio) / 1000.0)
+        duration = len(AudioSegment.from_file(new_audio_file)) / 1000.0
         audio_dict[AUDIO_DURATION_KEY] = duration
         audio_dict[LOCAL_PATH_KEY if is_local else PUBLIC_PATH_KEY] = new_audio_file
         audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None)
@@ -861,9 +861,9 @@ async def async_process_segments(hass, message, output_audio, params, options):
         return output_audio
 
     for index, segment in enumerate(segments):
-        segment_cache = segment["cache"] if "cache" in segment else params["cache"]
-        segment_audio_conversion = segment.get("audio_conversion", None)
-        segment_offset = get_segment_offset(output_audio, segment, params)
+        segment_cache: bool = segment["cache"] if "cache" in segment else params["cache"]
+        segment_audio_conversion: str = segment.get("audio_conversion", "")
+        segment_offset: float = get_segment_offset(output_audio, segment, params)
 
         # Chime tag
         if segment["type"] == "chime":
@@ -892,10 +892,10 @@ async def async_process_segments(hass, message, output_audio, params, options):
         if segment["type"] == "tts":
             if len(segment.get("message", "")) > 0:
                 segment_message = segment["message"]
-                segment_tts_platform = segment.get("tts_platform", params["tts_platform"])
-                segment_language = segment.get("language", params["language"])
-                segment_tts_playback_speed = segment.get("tts_playback_speed", params["tts_playback_speed"])
-                segment_tts_pitch = segment.get("tts_pitch", params["tts_pitch"])
+                segment_tts_platform = segment.get("tts_platform", params.get("tts_platform", None))
+                segment_language = segment.get("language", params.get("language", None))
+                segment_tts_playback_speed = float(segment.get("tts_playback_speed", params.get("tts_playback_speed", 100)))
+                segment_tts_pitch = float(segment.get("tts_pitch", params.get("tts_pitch", 0)))
 
                 # Use exposed parameters if not present in the options dictionary
                 segment_options = segment.get("options", {})
@@ -948,21 +948,21 @@ async def async_process_segments(hass, message, output_audio, params, options):
                     )
 
                     # Cache the new TTS audio?
-                    tts_audio_duration = float(len(tts_audio) / 1000.0)
-                    if segment_cache is True and audio_dict is None:
-                        _LOGGER.debug(" - Saving generated TTS audio to cache...")
-                        tts_audio_full_path = filesystem_helper.save_audio_to_folder(
-                            tts_audio, _data.get(TEMP_PATH_KEY, None))
-                        if tts_audio_full_path is not None:
-                            audio_dict = {
-                                LOCAL_PATH_KEY: tts_audio_full_path,
-                                AUDIO_DURATION_KEY: tts_audio_duration
-                            }
-                            await async_store_data(hass, segment_filepath_hash, audio_dict)
-                            _LOGGER.debug("  ...TTS audio saved to cache")
-
-                        else:
-                            _LOGGER.warning("Unable to save generated TTS audio to cache")
+                    if tts_audio is not None:
+                        tts_audio_duration = float(len(tts_audio) / 1000.0)
+                        if segment_cache is True and audio_dict is None:
+                            _LOGGER.debug(" - Saving generated TTS audio to cache...")
+                            tts_audio_full_path = filesystem_helper.save_audio_to_folder(
+                                tts_audio, _data.get(TEMP_PATH_KEY, None))
+                            if tts_audio_full_path is not None:
+                                audio_dict = {
+                                    LOCAL_PATH_KEY: tts_audio_full_path,
+                                    AUDIO_DURATION_KEY: tts_audio_duration
+                                }
+                                await async_store_data(hass, segment_filepath_hash, audio_dict)
+                                _LOGGER.debug("  ...TTS audio saved to cache")
+                            else:
+                                _LOGGER.warning("Unable to save generated TTS audio to cache")
 
                 # TTS Audio manipulations
                 if tts_audio is not None:
@@ -976,17 +976,17 @@ async def async_process_segments(hass, message, output_audio, params, options):
                     _LOGGER.warning("Error generating TTS audio from messsage segment #%s: %s",
                                     str(index+1), str(segment))
             else:
-                _LOGGER.warning("TTS message missing from messsage segment #%s: %s",
+                _LOGGER.warning("TTS 'message' value missing from messsage segment #%s: %s",
                                 str(index+1), str(segment))
 
     return output_audio
 
 async def async_get_audio_from_path(hass: HomeAssistant,
                                     filepath: str,
-                                    cache=False,
-                                    offset=0,
-                                    audio_conversion=None,
-                                    audio=None):
+                                    cache: bool = False,
+                                    offset: float = 0,
+                                    audio_conversion: str = "",
+                                    audio: AudioSegment = None):
     """Add audio from a given file path to existing audio (optional) with offset (optional)."""
     if filepath is None or filepath == "None" or len(filepath) == 0:
         return audio

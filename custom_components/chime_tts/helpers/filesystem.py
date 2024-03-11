@@ -137,7 +137,7 @@ class FilesystemHelper:
         if os.path.exists(audio_full_path):
             _LOGGER.debug(" - File saved to path: %s", audio_full_path)
         else:
-            _LOGGER.error("Unable to access saved file: %s", audio_full_path)
+            _LOGGER.error("Saved file inaccessible, something went wrong. Path = %s", audio_full_path)
 
         return audio_full_path
 
@@ -196,11 +196,11 @@ class FilesystemHelper:
                 return True
             except OSError as error:
                 _LOGGER.warning(
-                    "  - An OSError occurred while creating the folder '%s': %s",
+                    "An OSError occurred while creating the folder '%s': %s",
                     folder, error)
             except Exception as error:
                 _LOGGER.warning(
-                    "  - An error occurred while creating the folder '%s': %s",
+                    "An error occurred while creating the folder '%s': %s",
                     folder, error)
             return False
         return True
