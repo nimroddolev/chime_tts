@@ -419,16 +419,16 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
 
     # Prepare default paths
     if hass is not None:
-        _data[ROOT_PATH_KEY] = hass.config.path("").replace("/config", "")
+        _data[ROOT_PATH_KEY] = hass.config.path("").replace("/config/", "")
 
     if DEFAULT_TEMP_PATH_KEY not in _data:
-        _data[DEFAULT_TEMP_PATH_KEY] = hass.config.path(TEMP_PATH_DEFAULT)
+        _data[DEFAULT_TEMP_PATH_KEY] = f"{_data[ROOT_PATH_KEY]}{TEMP_PATH_DEFAULT}"
 
     if DEFAULT_TEMP_CHIMES_PATH_KEY not in _data:
-        _data[DEFAULT_TEMP_CHIMES_PATH_KEY] = hass.config.path(TEMP_CHIMES_PATH_DEFAULT)
+        _data[DEFAULT_TEMP_CHIMES_PATH_KEY] = f"{_data[ROOT_PATH_KEY]}{TEMP_CHIMES_PATH_DEFAULT}"
 
     if DEFAULT_WWW_PATH_KEY not in _data:
-        _data[DEFAULT_WWW_PATH_KEY] = hass.config.path(WWW_PATH_DEFAULT)
+        _data[DEFAULT_WWW_PATH_KEY] = f"{_data[ROOT_PATH_KEY]}{WWW_PATH_DEFAULT}"
 
     # Set configurable values
     options = config_entry.options
@@ -447,7 +447,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
 
     # www / local folder path
     _data[WWW_PATH_KEY] = hass.config.path(
-        options.get(WWW_PATH_KEY, WWW_PATH_DEFAULT)
+        options.get(WWW_PATH_KEY, _data.get(DEFAULT_WWW_PATH_KEY, WWW_PATH_DEFAULT))
     )
     _data[WWW_PATH_KEY] = (_data.get(WWW_PATH_KEY, "") + "/").replace("//", "/")
 

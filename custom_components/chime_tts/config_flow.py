@@ -72,7 +72,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         installed_tts = self.get_installed_tts()
         default_tts = installed_tts[0] if len(installed_tts) > 0 else ""
         user_input = user_input if user_input is not None else {}
-
+        root_path = self.hass.config.path("").replace("/config/", "")
 
         options_schema = vol.Schema(
             {
@@ -99,17 +99,17 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(
                     TEMP_CHIMES_PATH_KEY,
                     default=self.get_data_key_value(TEMP_CHIMES_PATH_KEY,
-                                                    user_input.get(TEMP_CHIMES_PATH_KEY, TEMP_CHIMES_PATH_DEFAULT)),  # type: ignore
+                                                    user_input.get(TEMP_CHIMES_PATH_KEY, f"{root_path}{TEMP_CHIMES_PATH_DEFAULT}")),  # type: ignore
                 ): str,
                 vol.Required(
                     TEMP_PATH_KEY,
                     default=self.get_data_key_value(TEMP_PATH_KEY,
-                                                    user_input.get(TEMP_PATH_KEY, TEMP_PATH_DEFAULT)),  # type: ignore
+                                                    user_input.get(TEMP_PATH_KEY, f"{root_path}{TEMP_PATH_DEFAULT}")),  # type: ignore
                 ): str,
                 vol.Required(
                     WWW_PATH_KEY,
                     default=self.get_data_key_value(WWW_PATH_KEY,
-                                                    user_input.get(WWW_PATH_KEY, WWW_PATH_DEFAULT)),  # type: ignore
+                                                    user_input.get(WWW_PATH_KEY, f"{root_path}{WWW_PATH_DEFAULT}")),  # type: ignore
                 ): str,
                 vol.Optional(
                     MP3_PRESET_CUSTOM_PREFIX + str(1),
@@ -172,9 +172,8 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
         # Folder path used for `chime_tts.say_url`
         www_path: str = user_input.get(WWW_PATH_KEY, "")
-        root_path = self.hass.config.path("").replace('/config', '')
-        if not (www_path.startswith(f"{root_path}media/") != -1 or
-                www_path.startswith(f"{root_path}config/www/") != -1):
+        if not (www_path.startswith(f"{root_path}/media/") != -1 or
+                www_path.startswith(f"{root_path}/config/www/") != -1):
             _errors["www_path"] = "www_path"
 
         # Custom chime mp3 paths
