@@ -861,12 +861,16 @@ async def async_process_segments(hass, message, output_audio, params, options):
         return output_audio
 
     for index, segment in enumerate(segments):
-        segment_cache: bool = segment["cache"] if "cache" in segment else params["cache"]
+        segment_cache: bool = segment.get("cache", params.get("cache", False))
         segment_audio_conversion: str = segment.get("audio_conversion", "")
         segment_offset: float = get_segment_offset(output_audio, segment, params)
+        segment_type =  segment.get("type", None)
+        if not segment_type:
+            _LOGGER.warning("Segment #%s has no type.", str(index+1))
+            return output_audio
 
         # Chime tag
-        if segment["type"] == "chime":
+        if segment_type == "chime":
             if len(segment.get("path", "")) > 0:
                 output_audio = await async_get_audio_from_path(hass=hass,
                                                                filepath=segment["path"],
@@ -879,17 +883,17 @@ async def async_process_segments(hass, message, output_audio, params, options):
                 continue
 
         # Delay tag
-        if segment["type"] == "delay":
-            if segment.get("length", None) is not None:
+        if segment_type == "delay":
+            if segment.get("length", None):
                 segment_delay_length = float(segment["length"])
-                if output_audio is not None:
+                if output_audio:
                     output_audio = output_audio + AudioSegment.silent(duration=segment_delay_length)
             else:
                 _LOGGER.warning("Delay length missing from messsage segment #%s", str(index+1))
                 continue
 
         # Request TTS audio file
-        if segment["type"] == "tts":
+        if segment_type == "tts":
             if len(segment.get("message", "")) > 0:
                 segment_message = segment["message"]
                 segment_tts_platform = segment.get("tts_platform", params.get("tts_platform", None))

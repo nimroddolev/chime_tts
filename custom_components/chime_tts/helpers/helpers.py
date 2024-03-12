@@ -124,8 +124,10 @@ class ChimeTTSHelper:
         if len(message_string) == 0 or message_string == "None":
             return []
 
-        if (message_string.find("'type':") > -1 or message_string.find('"type":') > -1):
-
+        contains_keys = True
+        for key in ["type", "tts", "chime", "delay"]:
+            contains_keys = contains_keys or message_string.find(f"'{key}':") > -1 or message_string.find(f'"{key}":') > -1
+        if contains_keys:
             # Convert message string to YAML object
             message_yaml = None
             try:
@@ -147,8 +149,26 @@ class ChimeTTSHelper:
                 is_valid = True
                 for elem in message_yaml:
                     if isinstance(elem, dict):
-                        if "type" not in elem:
-                            is_valid = False
+
+                        # Convert new short format to old format
+                        if not "type" in elem:
+                            # Chime
+                            if "chime" in elem:
+                                elem["type"] = "chime"
+                                elem["path"] = elem["chime"]
+                                del elem["chime"]
+                            # TTS
+                            elif "tts" in elem:
+                                elem["type"] = "tts"
+                                elem["message"] = elem["tts"]
+                                del elem["tts"]
+                            # Delay
+                            elif "delay" in elem:
+                                elem["type"] = "delay"
+                                elem["length"] = elem["delay"]
+                                del elem["delay"]
+                            else:
+                                is_valid = False
                     else:
                         is_valid = False
                 if is_valid is True:
@@ -171,7 +191,16 @@ class ChimeTTSHelper:
                         value[key_n.lower()] = value_n
                 # Make all segment keys lowercase
                 segment[key.lower()] = value
-            # Dupliacte segments "repeat" times
+
+            # Support alternate key names
+            if segment.get("speed"):
+                segment["tts_speed"] = segment.get("speed")
+                del segment["speed"]
+            if segment.get("pitch"):
+                segment["tts_pitch"] = segment.get("pitch")
+                del segment["pitch"]
+
+            # Duplicate segments "repeat" times
             repeat = segment.get("repeat", 1)
             if isinstance(repeat, int):
                 repeat = max(segment.get("repeat", 1), 1)
