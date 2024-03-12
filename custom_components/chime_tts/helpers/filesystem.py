@@ -19,7 +19,6 @@ from ..const import (
     MP3_PRESET_CUSTOM_KEY,
     TEMP_CHIMES_PATH_KEY,
     LOCAL_PATH_KEY,
-    PUBLIC_FOLDER_PATH,
     AUDIO_DURATION_KEY,
 )
 from .media_player import MediaPlayerHelper
@@ -238,7 +237,12 @@ class FilesystemHelper:
             return None
 
         # Return local path if file not in www folder
-        if self.file_exists_in_directory(file_path, PUBLIC_FOLDER_PATH) is False:
+        public_dir = hass.config.path('www')
+        if public_dir is None:
+            _LOGGER.warning("Unable to locate public 'www' folder. Please check that the folder: /config/www exists.")
+            return None
+
+        if self.file_exists_in_directory(file_path, public_dir) is False:
             _LOGGER.warning(f"Unable to create public URL - File: '{file_path}' is outside the public folder.")
             return None
 
