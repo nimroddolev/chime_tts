@@ -66,23 +66,25 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         """Initialize options flow."""
         self.config_entry = config_entry
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(self, user_input={}):
         """Initialize the options flow."""
 
         installed_tts = self.get_installed_tts()
         default_tts = installed_tts[0] if len(installed_tts) > 0 else ""
+        user_input = user_input if user_input is not None else {}
+
 
         options_schema = vol.Schema(
             {
                 vol.Required(
                     QUEUE_TIMEOUT_KEY,
                     default=self.get_data_key_value(QUEUE_TIMEOUT_KEY,
-                                                    QUEUE_TIMEOUT_DEFAULT),  # type: ignore
+                                                    user_input.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))  # type: ignore
                 ): int,
                 vol.Optional(
                     TTS_PLATFORM_KEY,
                     default=self.get_data_key_value(TTS_PLATFORM_KEY,
-                                                    default_tts),  # type: ignore
+                                                    user_input.get(TTS_PLATFORM_KEY, default_tts)),  # type: ignore
                 ): str,
                 vol.Optional(
                     OFFSET_KEY,
@@ -92,22 +94,22 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(
                     MEDIA_DIR_KEY,
                     default=self.get_data_key_value(MEDIA_DIR_KEY,
-                                                    MEDIA_DIR_DEFAULT),  # type: ignore
+                                                    user_input.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)),  # type: ignore
                 ): str,
                 vol.Required(
                     TEMP_CHIMES_PATH_KEY,
                     default=self.get_data_key_value(TEMP_CHIMES_PATH_KEY,
-                                                    TEMP_CHIMES_PATH_DEFAULT),  # type: ignore
+                                                    user_input.get(TEMP_CHIMES_PATH_KEY, TEMP_CHIMES_PATH_DEFAULT)),  # type: ignore
                 ): str,
                 vol.Required(
                     TEMP_PATH_KEY,
                     default=self.get_data_key_value(TEMP_PATH_KEY,
-                                                    TEMP_PATH_DEFAULT),  # type: ignore
+                                                    user_input.get(TEMP_PATH_KEY, TEMP_PATH_DEFAULT)),  # type: ignore
                 ): str,
                 vol.Required(
                     WWW_PATH_KEY,
                     default=self.get_data_key_value(WWW_PATH_KEY,
-                                                    WWW_PATH_DEFAULT),  # type: ignore
+                                                    user_input.get(WWW_PATH_KEY, WWW_PATH_DEFAULT)),  # type: ignore
                 ): str,
                 vol.Optional(
                     MP3_PRESET_CUSTOM_PREFIX + str(1),
@@ -144,7 +146,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         _errors = {}
 
         # Show the form with the current options
-        if user_input is None:
+        if user_input is None or user_input == {}:
             return self.async_show_form(
                 step_id="init",
                 data_schema=options_schema,
@@ -168,12 +170,11 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             elif default_tts_provider not in installed_tts:
                 _errors[TTS_PLATFORM_KEY] = "default_tts_platform_select"
 
-
         # Folder path used for `chime_tts.say_url`
-        path: str = user_input.get(WWW_PATH_KEY, "")
-        if not (path.startswith("/media/") or
-                path.startswith("/www/") or
-                path.startswith("/config/www/")):
+        www_path: str = user_input.get(WWW_PATH_KEY, "")
+        root_path = self.hass.config.path("").replace('/config', '')
+        if not (www_path.startswith(f"{root_path}media/") != -1 or
+                www_path.startswith(f"{root_path}config/www/") != -1):
             _errors["www_path"] = "www_path"
 
         # Custom chime mp3 paths
