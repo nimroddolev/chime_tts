@@ -151,7 +151,7 @@ class ChimeTTSHelper:
                     if isinstance(elem, dict):
 
                         # Convert new short format to old format
-                        if not "type" in elem:
+                        if "type" not in elem:
                             # Chime
                             if "chime" in elem:
                                 elem["type"] = "chime"
@@ -404,7 +404,7 @@ class ChimeTTSHelper:
             if not audio_segment:
                 _LOGGER.warning("Cannot change TTS audio playback speed. No audio available")
             elif speed != 100:
-                _LOGGER.warning(f"TTS audio playback speed values must be between 1% and 500%")
+                _LOGGER.warning("TTS audio playback speed values must be between 1% and 500%")
             return audio_segment
 
         _LOGGER.debug(f" -  ...changing TTS playback speed to {str(speed)}% of original")
