@@ -1,0 +1,25 @@
+{
+  "title": "Recent posts",
+  "items": [
+    {
+      "title": "Welcome",
+      "permalink": "/chime_tts/blog/welcome",
+      "unlisted": false
+    },
+    {
+      "title": "MDX Blog Post",
+      "permalink": "/chime_tts/blog/mdx-blog-post",
+      "unlisted": false
+    },
+    {
+      "title": "Long Blog Post",
+      "permalink": "/chime_tts/blog/long-blog-post",
+      "unlisted": false
+    },
+    {
+      "title": "First Blog Post",
+      "permalink": "/chime_tts/blog/first-blog-post",
+      "unlisted": false
+    }
+  ]
+}
