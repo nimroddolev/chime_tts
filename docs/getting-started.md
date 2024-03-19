@@ -61,7 +61,7 @@ Chime TTS offers various features that enhance TTS audio playback experience:
 
 Follow these easy steps to get started with Chime TTS:
 
-1. [Installation](Installation) - Quickly install Chime TTS via HACS or manually.
+1. [Installation](https://github.com/nimroddolev/chime_tts/wiki/Installation#1-installation) - Quickly install Chime TTS via HACS or manually.
 2. [Add the Integration](https://github.com/nimroddolev/chime_tts/wiki/Installation#2-add-the-chime-tts-integration) - Add Chime TTS to your Home Assistant instance.
 
 ***
