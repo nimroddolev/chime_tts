@@ -1,0 +1,126 @@
+@keyframes animationFrames {
+    0% {
+        background-position: 0px 0px;
+    }
+
+    7.14% {
+        background-position: -80px 0px;
+    }
+
+    14.28% {
+        background-position: -160px 0px;
+    }
+
+    21.42% {
+        background-position: -240px 0px;
+    }
+
+    28.56% {
+        background-position: -320px 0px;
+    }
+
+    35.7% {
+        background-position: -400px 0px;
+    }
+
+    42.84% {
+        background-position: -480px 0px;
+    }
+
+    49.98% {
+        background-position: -560px 0px;
+    }
+
+    57.12% {
+        background-position: -640px 0px;
+    }
+
+    64.26% {
+        background-position: -720px 0px;
+    }
+
+    71.4% {
+        background-position: -800px 0px;
+    }
+
+    78.54% {
+        background-position: -880px 0px;
+    }
+
+    85.68% {
+        background-position: -960px 0px;
+    }
+
+    92.82% {
+        background-position: -1040px 0px;
+    }
+
+    100% {
+        background-position: -1120px 0px;
+    }
+}
+
+.animation {
+    width: 80px;
+    height: 70px;
+    background-image: url('../../../../static/img/animations/puff_animation.png');
+    animation: animationFrames 0.7s steps(14);
+    animation-timing-function: steps(1);
+    animation-delay: 1.75s;
+}
+
+@keyframes fadeout {
+    0% {
+        opacity: 100;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes fadein {
+    0% {
+        opacity: 00;
+    }
+
+    100% {
+        opacity: 100;
+    }
+}
+
+.hideAnimation {
+    animation: fadeout 0.25s forwards;
+    animation-delay: 2s;
+}
+
+.showAnimation {
+    animation: fadein 0.25s forwards;
+    animation-delay: 2s;
+}
+
+.animContainer {
+    position: relative;
+    margin-left: 200px;
+    width: 200px;
+    height: 200px;
+    left: 75px;
+}
+
+.bottom-image,
+.top-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.top-image {
+    z-index: 2;
+    transform: scale(3)translate(-15%, -15%);
+    top: 50%;
+    left: 50%;
+}
+
+.hidden {
+    opacity: 0;
+}
