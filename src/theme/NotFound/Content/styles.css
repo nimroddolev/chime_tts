@@ -101,10 +101,8 @@
 
 .animContainer {
     position: relative;
-    margin-left: 200px;
     width: 200px;
     height: 200px;
-    left: 75px;
 }
 
 .bottom-image,
@@ -123,4 +121,8 @@
 
 .hidden {
     opacity: 0;
+}
+
+.row {
+    justify-content: center;
 }
