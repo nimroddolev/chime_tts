@@ -5,7 +5,8 @@
  */
 
 /* You can override the default Infima variables here. */
-:root {
+
+/* :root {
   --ifm-color-primary: #2e8555;
   --ifm-color-primary-dark: #29784c;
   --ifm-color-primary-darker: #277148;
@@ -18,6 +19,7 @@
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
+/*
 [data-theme='dark'] {
   --ifm-color-primary: #25c2a0;
   --ifm-color-primary-dark: #21af90;
@@ -26,5 +28,43 @@
   --ifm-color-primary-light: #29d5b0;
   --ifm-color-primary-lighter: #32d8b4;
   --ifm-color-primary-lightest: #4fddbf;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+} */
+
+:root {
+  --ifm-color-primary: #e6b412;
+  /* Rich gold */
+  --ifm-color-primary-dark: #c0a031;
+  /* Darker gold */
+  --ifm-color-primary-darker: #ab912b;
+  /* Even darker gold */
+  --ifm-color-primary-darkest: #8c7825;
+  /* Deepest gold, almost brown */
+  --ifm-color-primary-light: #ffc166;
+  /* Light gold with a hint of yellow */
+  --ifm-color-primary-lighter: #ffd79b;
+  /* Lighter gold */
+  --ifm-color-primary-lightest: #ffe6cf;
+  /* Very light gold, almost cream */
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(14, 14, 14, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #d79d35;
+  /* Muted gold */
+  --ifm-color-primary-dark: #b3873a;
+  /* Darker muted gold */
+  --ifm-color-primary-darker: #9f7631;
+  /* Even darker muted gold */
+  --ifm-color-primary-darkest: #7c5d28;
+  /* Deepest muted gold, almost brown */
+  --ifm-color-primary-light: #e0a96b;
+  /* Light muted gold with a hint of yellow */
+  --ifm-color-primary-lighter: #e6b480;
+  /* Lighter muted gold */
+  --ifm-color-primary-lightest: #f2c994;
+  /* Very light muted gold, almost cream */
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }

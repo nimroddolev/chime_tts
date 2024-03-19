@@ -4,12 +4,12 @@
 // There are various equivalent ways to declare your Docusaurus config.
 // See: https://docusaurus.io/docs/api/docusaurus-config
 
-import {themes as prismThemes} from 'prism-react-renderer';
+import { themes as prismThemes } from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'Chime TTS',
-  tagline: 'THe official Chime TTS wiki for documentation & usage examples',
+  title: 'Chime TTS Wiki',
+  tagline: 'The official Chime TTS wiki for documentation, explanations and usage examples',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
@@ -67,10 +67,10 @@ const config = {
       // Replace with your project's social card
       image: 'img/docusaurus-social-card.jpg',
       navbar: {
-        title: 'My Site',
+        title: 'Home',
         logo: {
-          alt: 'My Site Logo',
-          src: 'img/logo.svg',
+          alt: 'Chime TTS Logo',
+          src: 'img/chime_tts.png',
         },
         items: [
           {
@@ -79,9 +79,9 @@ const config = {
             position: 'left',
             label: 'Tutorial',
           },
-          {to: '/blog', label: 'Blog', position: 'left'},
+          { to: '/blog', label: 'Blog', position: 'left' },
           {
-            href: 'https://github.com/facebook/docusaurus',
+            href: 'https://github.com/nimroddolev/chime_tts',
             label: 'GitHub',
             position: 'right',
           },
@@ -103,16 +103,12 @@ const config = {
             title: 'Community',
             items: [
               {
-                label: 'Stack Overflow',
-                href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+                label: 'Home Assistant Forum',
+                href: 'https://community.home-assistant.io/t/chime-tts-play-audio-before-after-tts-audio-lag-free/578430',
               },
               {
-                label: 'Discord',
-                href: 'https://discordapp.com/invite/docusaurus',
-              },
-              {
-                label: 'Twitter',
-                href: 'https://twitter.com/docusaurus',
+                label: 'Discussion on GitHub',
+                href: 'https://github.com/nimroddolev/chime_tts/discussions',
               },
             ],
           },
@@ -125,12 +121,12 @@ const config = {
               },
               {
                 label: 'GitHub',
-                href: 'https://github.com/facebook/docusaurus',
+                href: 'https://github.com/nimroddolev/chime_tts',
               },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Nimrod Dolev.`,
       },
       prism: {
         theme: prismThemes.github,

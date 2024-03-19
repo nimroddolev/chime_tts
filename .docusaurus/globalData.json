@@ -8,8 +8,13 @@
           "label": "Next",
           "isLast": true,
           "path": "/chime_tts/docs",
-          "mainDocId": "intro",
+          "mainDocId": "getting-started",
           "docs": [
+            {
+              "id": "getting-started",
+              "path": "/chime_tts/docs/getting-started",
+              "sidebar": "tutorialSidebar"
+            },
             {
               "id": "intro",
               "path": "/chime_tts/docs/intro",
@@ -70,8 +75,8 @@
           "sidebars": {
             "tutorialSidebar": {
               "link": {
-                "path": "/chime_tts/docs/intro",
-                "label": "intro"
+                "path": "/chime_tts/docs/getting-started",
+                "label": "getting-started"
               }
             }
           }

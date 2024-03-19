@@ -64,15 +64,15 @@ export default [
   },
   {
     path: '/chime_tts/docs',
-    component: ComponentCreator('/chime_tts/docs', 'cb6'),
+    component: ComponentCreator('/chime_tts/docs', 'b51'),
     routes: [
       {
         path: '/chime_tts/docs',
-        component: ComponentCreator('/chime_tts/docs', '900'),
+        component: ComponentCreator('/chime_tts/docs', '5d5'),
         routes: [
           {
             path: '/chime_tts/docs',
-            component: ComponentCreator('/chime_tts/docs', 'e6b'),
+            component: ComponentCreator('/chime_tts/docs', '0b3'),
             routes: [
               {
                 path: '/chime_tts/docs/category/tutorial---basics',
@@ -83,6 +83,12 @@ export default [
               {
                 path: '/chime_tts/docs/category/tutorial---extras',
                 component: ComponentCreator('/chime_tts/docs/category/tutorial---extras', 'c2e'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/chime_tts/docs/getting-started',
+                component: ComponentCreator('/chime_tts/docs/getting-started', '46a'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },

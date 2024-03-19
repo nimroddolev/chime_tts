@@ -16,6 +16,10 @@
     "sidebar_position": 1
   },
   "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Chime TTS Wiki",
+    "permalink": "/chime_tts/docs/getting-started"
+  },
   "next": {
     "title": "Tutorial - Basics",
     "permalink": "/chime_tts/docs/category/tutorial---basics"

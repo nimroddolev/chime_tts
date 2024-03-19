@@ -11,6 +11,13 @@
     "tutorialSidebar": [
       {
         "type": "link",
+        "label": "Chime TTS Wiki",
+        "href": "/chime_tts/docs/getting-started",
+        "docId": "getting-started",
+        "unlisted": false
+      },
+      {
+        "type": "link",
         "label": "Tutorial Intro",
         "href": "/chime_tts/docs/intro",
         "docId": "intro",
@@ -93,6 +100,12 @@
     ]
   },
   "docs": {
+    "getting-started": {
+      "id": "getting-started",
+      "title": "Chime TTS Wiki",
+      "description": "Chime TTS logo",
+      "sidebar": "tutorialSidebar"
+    },
     "intro": {
       "id": "intro",
       "title": "Tutorial Intro",

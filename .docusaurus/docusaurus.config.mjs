@@ -4,8 +4,8 @@
  * Modify the docusaurus.config.js file at your site's root instead.
  */
 export default {
-  "title": "My Site",
-  "tagline": "Dinosaurs are cool",
+  "title": "Chime TTS Wiki",
+  "tagline": "The official Chime TTS wiki for documentation, explanations and usage examples",
   "favicon": "img/favicon.ico",
   "url": "https://github.com",
   "baseUrl": "/chime_tts/",
@@ -43,10 +43,10 @@ export default {
   "themeConfig": {
     "image": "img/docusaurus-social-card.jpg",
     "navbar": {
-      "title": "My Site",
+      "title": "Home",
       "logo": {
-        "alt": "My Site Logo",
-        "src": "img/logo.svg"
+        "alt": "Chime TTS Logo",
+        "src": "img/chime_tts.png"
       },
       "items": [
         {
@@ -61,7 +61,7 @@ export default {
           "position": "left"
         },
         {
-          "href": "https://github.com/facebook/docusaurus",
+          "href": "https://github.com/nimroddolev/chime_tts",
           "label": "GitHub",
           "position": "right"
         }
@@ -84,16 +84,12 @@ export default {
           "title": "Community",
           "items": [
             {
-              "label": "Stack Overflow",
-              "href": "https://stackoverflow.com/questions/tagged/docusaurus"
+              "label": "Home Assistant Forum",
+              "href": "https://community.home-assistant.io/t/chime-tts-play-audio-before-after-tts-audio-lag-free/578430"
             },
             {
-              "label": "Discord",
-              "href": "https://discordapp.com/invite/docusaurus"
-            },
-            {
-              "label": "Twitter",
-              "href": "https://twitter.com/docusaurus"
+              "label": "Discussion on GitHub",
+              "href": "https://github.com/nimroddolev/chime_tts/discussions"
             }
           ]
         },
@@ -106,12 +102,12 @@ export default {
             },
             {
               "label": "GitHub",
-              "href": "https://github.com/facebook/docusaurus"
+              "href": "https://github.com/nimroddolev/chime_tts"
             }
           ]
         }
       ],
-      "copyright": "Copyright © 2024 My Project, Inc. Built with Docusaurus."
+      "copyright": "Copyright © 2024 Nimrod Dolev."
     },
     "prism": {
       "theme": {
