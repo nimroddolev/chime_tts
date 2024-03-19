@@ -2,6 +2,7 @@ import React from 'react';
 import clsx from 'clsx';
 import Translate from '@docusaurus/Translate';
 import Heading from '@theme/Heading';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 import './styles.css'
 
@@ -11,8 +12,8 @@ export default function NotFoundContent({ className }) {
       <div className="row">
         {/* <div className="col col--6 col--offset-3"> */}
         <div class="animContainer">
-          <img src="./img/chime_tts.png" class="bottom-image hideAnimation" />
-          <img src="./img/animations/missing_chime_tts.png" class="bottom-image showAnimation hidden" />
+          <img src={useBaseUrl('/img/chime_tts.png')} class="bottom-image hideAnimation" />
+          <img src={useBaseUrl('/img/animations/missing_chime_tts.png')} class="bottom-image showAnimation hidden" />
           <div class="top-image animation"></div>
         </div>
         {/* </div> */}

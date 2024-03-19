@@ -2,6 +2,7 @@
 sidebar_position: 1
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import './getting-started.css'
 
 # Chime TTS Wiki
@@ -27,9 +28,9 @@ Chime TTS is a custom Home Assistant integration that eliminates the audio lag b
 
 ### The Problem:
 
-<div id="problemDiv">
-    <img src="../img/the_problem.png" />
-    <img src="../img/travolta.gif" class="travolta" />
+<div id='problemDiv'>
+    <img src={useBaseUrl('/img/the_problem.png')} />
+    <img src={useBaseUrl('/img/travolta.gif')} class='travolta' />
 </div>
 
 Home Assistant's Text-To-Speech (TTS) audio messages are a great way to provide real-time updates, but by the time you hear a message playing you've missed the start of the message! 🙈
