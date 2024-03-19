@@ -1,0 +1,15 @@
+#buyMeACoffee {
+    height: 45px;
+    transform: translate(0px, 25%);
+    margin-left: 5px;
+}
+
+#problemDiv {
+    display: flex;
+}
+
+.travolta {
+    position: relative;
+    left: -59%;
+    transform: translate(-50%, -26%);
+}

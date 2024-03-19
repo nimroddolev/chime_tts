@@ -2,13 +2,15 @@
 sidebar_position: 1
 ---
 
+import './getting-started.css'
+
 # Chime TTS Wiki
 
 ![Chime TTS logo](/img/chime_tts.png)
 
 Chime TTS is a custom Home Assistant integration that eliminates the audio lag between playing a chime/notification sound effect before a TTS audio notification.
 
-#### If you find Chime TTS useful, consider showing your support: [![Buy me a coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/nimroddolev)
+#### If you find Chime TTS useful, consider showing your support: <a href="https://www.buymeacoffee.com/nimroddolev" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy me a coffee" id="buyMeACoffee" /></a>
 
 ---
 
@@ -25,7 +27,10 @@ Chime TTS is a custom Home Assistant integration that eliminates the audio lag b
 
 ### The Problem:
 
-![no_chime_tts-dark](https://github.com/nimroddolev/chime_tts/assets/1849295/3398b7ce-5125-4c65-b880-8c8ea785a248)
+<div id="problemDiv">
+    <img src="../img/the_problem.png" />
+    <img src="../img/travolta.gif" class="travolta" />
+</div>
 
 Home Assistant's Text-To-Speech (TTS) audio messages are a great way to provide real-time updates, but by the time you hear a message playing you've missed the start of the message! 🙈
 
