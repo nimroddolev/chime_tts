@@ -70,3 +70,7 @@
   /* Very light muted gold, almost cream */
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+
+.breadcrumbs__link {
+  font-weight: 900 !important;
+}
