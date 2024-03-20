@@ -64,16 +64,22 @@ export default [
   },
   {
     path: '/chime_tts/docs',
-    component: ComponentCreator('/chime_tts/docs', '013'),
+    component: ComponentCreator('/chime_tts/docs', '35d'),
     routes: [
       {
         path: '/chime_tts/docs',
-        component: ComponentCreator('/chime_tts/docs', '175'),
+        component: ComponentCreator('/chime_tts/docs', 'd1e'),
         routes: [
           {
             path: '/chime_tts/docs',
-            component: ComponentCreator('/chime_tts/docs', 'c32'),
+            component: ComponentCreator('/chime_tts/docs', 'f9d'),
             routes: [
+              {
+                path: '/chime_tts/docs/category/quick-start',
+                component: ComponentCreator('/chime_tts/docs/category/quick-start', 'bb2'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
               {
                 path: '/chime_tts/docs/category/tutorial---basics',
                 component: ComponentCreator('/chime_tts/docs/category/tutorial---basics', '52d'),
@@ -93,8 +99,20 @@ export default [
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/chime_tts/docs/intro',
-                component: ComponentCreator('/chime_tts/docs/intro', '44a'),
+                path: '/chime_tts/docs/quick-start/adding-the-integration',
+                component: ComponentCreator('/chime_tts/docs/quick-start/adding-the-integration', '4ca'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/chime_tts/docs/quick-start/configuration',
+                component: ComponentCreator('/chime_tts/docs/quick-start/configuration', '358'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/chime_tts/docs/quick-start/installing-chime-tts',
+                component: ComponentCreator('/chime_tts/docs/quick-start/installing-chime-tts', '611'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },

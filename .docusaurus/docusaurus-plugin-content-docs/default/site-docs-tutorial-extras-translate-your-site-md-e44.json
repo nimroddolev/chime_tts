@@ -1,7 +1,7 @@
 {
   "id": "tutorial-extras/translate-your-site",
   "title": "Translate your site",
-  "description": "Let's translate docs/intro.md to French.",
+  "description": "Let's translate docs/getting-started.md to French.",
   "source": "@site/docs/tutorial-extras/translate-your-site.md",
   "sourceDirName": "tutorial-extras",
   "slug": "/tutorial-extras/translate-your-site",

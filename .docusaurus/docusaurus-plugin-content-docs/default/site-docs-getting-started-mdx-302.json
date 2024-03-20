@@ -17,7 +17,7 @@
   },
   "sidebar": "tutorialSidebar",
   "next": {
-    "title": "Tutorial Intro",
-    "permalink": "/chime_tts/docs/intro"
+    "title": "Quick Start",
+    "permalink": "/chime_tts/docs/category/quick-start"
   }
 }

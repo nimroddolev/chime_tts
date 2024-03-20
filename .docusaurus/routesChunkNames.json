@@ -143,18 +143,22 @@
     },
     "content": "393be207"
   },
-  "/chime_tts/docs-013": {
+  "/chime_tts/docs-35d": {
     "__comp": "5e95c892",
     "__context": {
       "plugin": "a402b73c"
     }
   },
-  "/chime_tts/docs-175": {
+  "/chime_tts/docs-d1e": {
     "__comp": "a7bd4aaa",
     "version": "935f2afb"
   },
-  "/chime_tts/docs-c32": {
+  "/chime_tts/docs-f9d": {
     "__comp": "a94703ab"
+  },
+  "/chime_tts/docs/category/quick-start-bb2": {
+    "__comp": "14eb3368",
+    "categoryGeneratedIndex": "71e06841"
   },
   "/chime_tts/docs/category/tutorial---basics-52d": {
     "__comp": "14eb3368",
@@ -168,9 +172,17 @@
     "__comp": "17896441",
     "content": "3021cf83"
   },
-  "/chime_tts/docs/intro-44a": {
+  "/chime_tts/docs/quick-start/adding-the-integration-4ca": {
     "__comp": "17896441",
-    "content": "0e384e19"
+    "content": "786b7750"
+  },
+  "/chime_tts/docs/quick-start/configuration-358": {
+    "__comp": "17896441",
+    "content": "acb70103"
+  },
+  "/chime_tts/docs/quick-start/installing-chime-tts-611": {
+    "__comp": "17896441",
+    "content": "0ed01f1d"
   },
   "/chime_tts/docs/tutorial-basics/congratulations-ab9": {
     "__comp": "17896441",

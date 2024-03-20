@@ -16,8 +16,18 @@
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "intro",
-              "path": "/chime_tts/docs/intro",
+              "id": "quick-start/adding-the-integration",
+              "path": "/chime_tts/docs/quick-start/adding-the-integration",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "quick-start/configuration",
+              "path": "/chime_tts/docs/quick-start/configuration",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "quick-start/installing-chime-tts",
+              "path": "/chime_tts/docs/quick-start/installing-chime-tts",
               "sidebar": "tutorialSidebar"
             },
             {
@@ -58,6 +68,11 @@
             {
               "id": "tutorial-extras/translate-your-site",
               "path": "/chime_tts/docs/tutorial-extras/translate-your-site",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/quick-start",
+              "path": "/chime_tts/docs/category/quick-start",
               "sidebar": "tutorialSidebar"
             },
             {

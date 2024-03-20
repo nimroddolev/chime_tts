@@ -17,11 +17,34 @@
         "unlisted": false
       },
       {
-        "type": "link",
-        "label": "Tutorial Intro",
-        "href": "/chime_tts/docs/intro",
-        "docId": "intro",
-        "unlisted": false
+        "type": "category",
+        "label": "Quick Start",
+        "collapsible": true,
+        "collapsed": true,
+        "items": [
+          {
+            "type": "link",
+            "label": "1. Installing Chime TTS",
+            "href": "/chime_tts/docs/quick-start/installing-chime-tts",
+            "docId": "quick-start/installing-chime-tts",
+            "unlisted": false
+          },
+          {
+            "type": "link",
+            "label": "2. Adding the Integration",
+            "href": "/chime_tts/docs/quick-start/adding-the-integration",
+            "docId": "quick-start/adding-the-integration",
+            "unlisted": false
+          },
+          {
+            "type": "link",
+            "label": "3. Configuration",
+            "href": "/chime_tts/docs/quick-start/configuration",
+            "docId": "quick-start/configuration",
+            "unlisted": false
+          }
+        ],
+        "href": "/chime_tts/docs/category/quick-start"
       },
       {
         "type": "category",
@@ -106,10 +129,22 @@
       "description": "Chime TTS logo",
       "sidebar": "tutorialSidebar"
     },
-    "intro": {
-      "id": "intro",
-      "title": "Tutorial Intro",
-      "description": "Let's discover Docusaurus in less than 5 minutes.",
+    "quick-start/adding-the-integration": {
+      "id": "quick-start/adding-the-integration",
+      "title": "2. Adding the Integration",
+      "description": "1. Click this button:",
+      "sidebar": "tutorialSidebar"
+    },
+    "quick-start/configuration": {
+      "id": "quick-start/configuration",
+      "title": "3. Configuration",
+      "description": "You can customise the following elements for the chimetts.say and chimetts.say_url services through the configuration page, located at:",
+      "sidebar": "tutorialSidebar"
+    },
+    "quick-start/installing-chime-tts": {
+      "id": "quick-start/installing-chime-tts",
+      "title": "1. Installing Chime TTS",
+      "description": "The easiest way to install Chime TTS is though HACS (the Home Assistant Community Store)",
       "sidebar": "tutorialSidebar"
     },
     "tutorial-basics/congratulations": {
@@ -157,7 +192,7 @@
     "tutorial-extras/translate-your-site": {
       "id": "tutorial-extras/translate-your-site",
       "title": "Translate your site",
-      "description": "Let's translate docs/intro.md to French.",
+      "description": "Let's translate docs/getting-started.md to French.",
       "sidebar": "tutorialSidebar"
     }
   }
