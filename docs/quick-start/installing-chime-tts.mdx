@@ -1,0 +1,40 @@
+---
+sidebar_position: 1
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+# 1. Installing Chime TTS
+
+The easiest way to install Chime TTS is though [HACS (the Home Assistant Community Store)](https://hacs.xyz/)
+
+### Via HACS (Recommended)
+
+1. If you don't have HACS installed yet, follow the [official installation guide](https://hacs.xyz/docs/installation/manual).
+
+2. Add the Chime TTS repository to HACS by clicking here: <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=nimroddolev&repository=chime_tts&category=integration" alt="Chime TTS HACS repository" target="_blank"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" /></a>
+
+3. Click `ADD`:
+<img src={useBaseUrl('/img/quick-start/add_custom_repository.png')} />
+
+
+4. Click `DOWNLOAD`:
+<img src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/wiki/installation/download_button.png" />
+
+5. Restart Home Assistant.
+
+Or:
+
+### Manual Installation
+
+1. Using your file browser of choice open the directory for your HA configuration (where you find configuration.yaml).
+
+2. Create a ```custom_components``` directory if it does not already exist.
+
+3. Add a subdirectory inside ```custom_components``` named ```chime_tts```.
+
+4. Download all the files from the ```custom_components/chime_tts/``` directory in this repository.
+
+5. Place them into the new ```custom_components/chime_tts``` directory you created.
+
+6. Restart Home Assistant.

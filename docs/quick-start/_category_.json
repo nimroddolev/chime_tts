@@ -1,0 +1,8 @@
+{
+  "label": "Quick Start",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "How to install and add the integration to Home Assistant."
+  }
+}
