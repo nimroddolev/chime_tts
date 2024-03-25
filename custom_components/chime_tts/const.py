@@ -75,6 +75,7 @@ MP3_PRESETS = [
     "fanfare",
     "glockenspiel",
     "hail",
+    "knock",
     "marimba",
     "mario_coin",
     "microphone_tap",
