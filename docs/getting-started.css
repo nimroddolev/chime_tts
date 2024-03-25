@@ -1,6 +1,10 @@
+a img,
+p img {
+    vertical-align: middle;
+}
+
 #buyMeACoffee {
     height: 45px;
-    transform: translate(0px, 25%);
     margin-left: 5px;
 }
 

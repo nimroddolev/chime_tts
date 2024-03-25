@@ -74,3 +74,11 @@
 .breadcrumbs__link {
   font-weight: 900 !important;
 }
+
+h1 code,
+h2 code,
+h3 code,
+h4 code,
+h5 code {
+  vertical-align: bottom;
+}
