@@ -289,6 +289,8 @@ say:
       selector:
         number:
           mode: slider
+          min: -100
+          max: 100
           step: 1
           unit_of_measurement: 'semitones'
     volume_level:
@@ -654,6 +656,8 @@ say_url:
       selector:
         number:
           mode: slider
+          min: -100
+          max: 100
           step: 1
           unit_of_measurement: 'semitones'
     cache:
