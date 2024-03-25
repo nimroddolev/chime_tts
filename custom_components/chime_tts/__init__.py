@@ -492,7 +492,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
                     and dict_value != ""
                     and dict_value != "None"
                     ) else "")
-                _LOGGER.debug("   - %s: %s%s%s", dict_key, quote, str(_data.get(dict_value, "None")), quote)
+                _LOGGER.debug("   - %s: %s%s%s", dict_key, quote, str(value.get(dict_key, "None")), quote)
         else:
             quote = "'" if isinstance(value, str) and value is not None and value != 'None' else ""
             _LOGGER.debug(" - %s: %s%s%s", key_string, quote, str(value), quote)
