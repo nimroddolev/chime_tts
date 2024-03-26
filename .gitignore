@@ -18,3 +18,10 @@ config/*
 
 # Docusaurus build folder
 build/*
+.docusaurus/globalData.json
+.docusaurus/registry.js
+.docusaurus/routes.js
+.docusaurus/routesChunkNames.json
+node_modules
+.docusaurus/docusaurus-plugin-content-docs
+.docusaurus/docusaurus-plugin-content-blog
