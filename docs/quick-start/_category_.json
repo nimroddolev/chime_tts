@@ -1,8 +1,8 @@
 {
   "label": "Quick Start",
-  "position": 3,
+  "position": 2,
   "link": {
     "type": "generated-index",
-    "description": "How to install and add the integration to Home Assistant."
+    "description": "The following pages outline how to install, add & configure the Chime TTS integration in Home Assistant."
   }
 }

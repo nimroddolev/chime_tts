@@ -1,0 +1,7 @@
+audio {
+    left: 100%;
+    position: relative;
+    transform: translate(-100%, -74px);
+    margin-bottom: -65px;
+    display: block;
+}

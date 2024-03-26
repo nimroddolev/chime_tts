@@ -1,0 +1,32 @@
+---
+sidebar_position: 5
+title: Clear Cache Service
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+# `chime_tts.clear_cache` Service
+
+The `chime_tts.clear_cache` service can be used to remove cached audio files from the [`chime_tts.say`](./say-service/service) and [`chime_tts.say_url`](./say_url-service/service) services as well as Home Assistant's TTS cache.
+
+## Parameters
+The following parameters allow you to control which cache/s to clear:
+
+| Parameter | Description |
+|---|---|
+| `clear_chimes_cache` | Remove the cached local chime files downloaded by Chime TTS |
+| `clear_temp_tts_cache` | Remove the local temporary audio files stored in the Chime TTS cache |
+| `clear_www_tts_cache` | Remove the publicly accessible audio files stored in the Chime TTS cache |
+| `clear_ha_tts_cache` | Remove the TTS audio files stored in the Home Assistant TTS cache |
+
+
+## YAML Example
+
+```
+service: chime_tts.clear_cache
+data:
+  clear_chimes_cache: true
+  clear_temp_tts_cache: true
+  clear_www_tts_cache: true
+  clear_ha_tts_cache: true
+```
