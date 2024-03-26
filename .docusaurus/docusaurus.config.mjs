@@ -4,8 +4,8 @@
  * Modify the docusaurus.config.js file at your site's root instead.
  */
 export default {
-  "title": "Chime TTS Wiki",
-  "tagline": "The official Chime TTS wiki for documentation, explanations and usage examples",
+  "title": "Official Chime TTS Wiki",
+  "tagline": "The official Chime TTS wiki including documentation, explanations and usage examples",
   "favicon": "img/favicon.ico",
   "url": "https://github.com",
   "baseUrl": "/chime_tts/",
@@ -27,12 +27,10 @@ export default {
       "classic",
       {
         "docs": {
-          "sidebarPath": "./sidebars.js",
-          "editUrl": "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/"
+          "sidebarPath": "./sidebars.js"
         },
         "blog": {
-          "showReadingTime": true,
-          "editUrl": "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/"
+          "showReadingTime": true
         },
         "theme": {
           "customCss": "./src/css/custom.css"
@@ -41,7 +39,7 @@ export default {
     ]
   ],
   "themeConfig": {
-    "image": "img/docusaurus-social-card.jpg",
+    "image": "img/chime_tts.jpg",
     "navbar": {
       "title": "Home",
       "logo": {
@@ -54,11 +52,6 @@ export default {
           "sidebarId": "tutorialSidebar",
           "position": "left",
           "label": "Tutorial"
-        },
-        {
-          "to": "/blog",
-          "label": "Blog",
-          "position": "left"
         },
         {
           "href": "https://github.com/nimroddolev/chime_tts",
@@ -75,8 +68,24 @@ export default {
           "title": "Docs",
           "items": [
             {
-              "label": "Tutorial",
+              "label": "Chime TTS",
               "to": "/docs/getting-started"
+            },
+            {
+              "label": "Quick Start",
+              "to": "/docs/category/quick-start"
+            },
+            {
+              "label": "Say Service",
+              "to": "/docs/category/say-url-service"
+            },
+            {
+              "label": "Say URL Service",
+              "to": "/docs/category/say-url-service"
+            },
+            {
+              "label": "Clear Cache Service",
+              "to": "/docs/clear-cache-service"
             }
           ]
         },
@@ -97,12 +106,12 @@ export default {
           "title": "More",
           "items": [
             {
-              "label": "Blog",
-              "to": "/blog"
-            },
-            {
               "label": "GitHub",
               "href": "https://github.com/nimroddolev/chime_tts"
+            },
+            {
+              "label": "Have an Issue?",
+              "href": "https://github.com/nimroddolev/chime_tts/issues"
             }
           ]
         }

@@ -1,0 +1,13 @@
+a img,
+p img {
+    vertical-align: middle;
+}
+
+p {
+    margin: 5px;
+    font-size: 12pt;
+}
+
+#buyMeACoffee {
+    height: 45px;
+}
