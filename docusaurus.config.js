@@ -78,9 +78,11 @@ const config = {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
-            label: 'Tutorial',
+            label: 'Wiki',
           },
-          // { to: '/blog', label: 'Blog', position: 'left' },
+          { to: '/docs/category/quick-start', label: 'Quick Start', position: 'left' },
+          { to: '/docs/category/say-service', label: 'Documentation', position: 'left' },
+          { to: '/docs/say-service/examples', label: 'YAML Examples', position: 'left' },
           {
             href: 'https://github.com/nimroddolev/chime_tts',
             label: 'GitHub',
