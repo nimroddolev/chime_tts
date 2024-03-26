@@ -10,6 +10,11 @@
   width: 200px;
 }
 
+.cell {
+  padding-top: 18px !important;
+  padding-bottom: 18px !important;
+}
+
 /* Animations */
 
 @keyframes mergeAnimation {
