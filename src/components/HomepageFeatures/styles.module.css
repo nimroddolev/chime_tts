@@ -121,7 +121,7 @@
 
 .spacer img {
   opacity: 0;
-  animation: mergeAnimation 4.0s ease-out infinite;
+  animation: mergeAnimation 5.0s ease-out infinite;
 }
 
 /* .chime {
@@ -132,7 +132,7 @@
 .tts {
   display: inline-block;
   opacity: 1;
-  animation: fadeReset 4.0s ease-out infinite;
+  animation: fadeReset 5.0s ease-out infinite;
   /* margin-top: 52px; */
   /* margin-bottom: 52px; */
 }
@@ -140,7 +140,7 @@
 .chime p,
 .tts p {
   font-size: 10pt;
-  animation: media_player-play_media 4.0s linear infinite;
+  animation: media_player-play_media 5.0s linear infinite;
 }
 
 /* .chime p {
@@ -152,7 +152,7 @@
   position: absolute;
   transform: translate(-50%, -100%);
   opacity: 0;
-  animation: chime_tts-say 4.0s infinite linear;
+  animation: chime_tts-say 5.0s infinite linear;
 }
 
 /* Puzzle pieces animation */
@@ -187,7 +187,7 @@
   left: 50%;
   position: relative;
   transform: translate(-50%, 0px);
-  animation: puzzleAnim 5s infinite linear;
+  animation: puzzleAnim 5.0s infinite linear;
   margin-bottom: 17px;
 }
 
@@ -198,11 +198,6 @@
   width: 175px;
   height: 175px;
   left: 0px;
-  /* opacity: 0; */
-  /* animation: puzzleAnim 5s infinite linear; */
-  /* animation-fill-mode: both; */
-  /* animation: delay 0.0s ease-in-out infinite, puzzlePieceAnim 5s 0.0s infinite linear, delay 0.0s ease-in-out infinite; */
-  /* }puzzlePieceAnim 3s 2s infinite linear; */
 }
 
 @keyframes puzzlePieceAnim1 {
@@ -361,39 +356,39 @@
 }
 
 .puzzleContainer> :nth-child(1) {
-  animation: puzzlePieceAnim1 5s infinite ease-out;
+  animation: puzzlePieceAnim1 5.0s infinite ease-out;
 }
 
 .puzzleContainer> :nth-child(2) {
-  animation: puzzlePieceAnim2 5s infinite ease-out;
+  animation: puzzlePieceAnim2 5.0s infinite ease-out;
 }
 
 .puzzleContainer> :nth-child(3) {
-  animation: puzzlePieceAnim3 5s infinite ease-out;
+  animation: puzzlePieceAnim3 5.0s infinite ease-out;
 }
 
 .puzzleContainer> :nth-child(4) {
-  animation: puzzlePieceAnim4 5s infinite ease-out;
+  animation: puzzlePieceAnim4 5.0s infinite ease-out;
 }
 
 .puzzleContainer> :nth-child(5) {
-  animation: puzzlePieceAnim5 5s infinite ease-out;
+  animation: puzzlePieceAnim5 5.0s infinite ease-out;
 }
 
 .puzzleContainer> :nth-child(6) {
-  animation: puzzlePieceAnim6 5s infinite ease-out;
+  animation: puzzlePieceAnim6 5.0s infinite ease-out;
 }
 
 .puzzleContainer> :nth-child(7) {
-  animation: puzzlePieceAnim7 5s infinite ease-out;
+  animation: puzzlePieceAnim7 5.0s infinite ease-out;
 }
 
 .puzzleContainer> :nth-child(8) {
-  animation: puzzlePieceAnim8 5s infinite ease-out;
+  animation: puzzlePieceAnim8 5.0s infinite ease-out;
 }
 
 .puzzleContainer> :nth-child(9) {
-  animation: puzzlePieceAnim9 5s infinite ease-out;
+  animation: puzzlePieceAnim9 5.0s infinite ease-out;
 }
 
 /*******************/
@@ -422,35 +417,35 @@
 .knifeChimes {
   position: absolute;
   transform: translate(calc(-50% - 21px), calc(50% - 5px)) rotate(-180deg);
-  animation: chimes 5s ease-in-out infinite;
+  animation: chimes 5.0s ease-in-out infinite;
   filter: sepia(80%) saturate(268%) brightness(62%) hue-rotate(180deg);
 }
 
 .knifeTtsPlatform {
   position: absolute;
   transform: translate(calc(-50% - 18px), calc(50% - 18px)) rotate(0deg);
-  animation: tts_platform 5s ease-in-out infinite;
+  animation: tts_platform 5.0s ease-in-out infinite;
   filter: sepia(80%) saturate(268%) brightness(62%) hue-rotate(180deg);
 }
 
 .knifeSpeed {
   position: absolute;
   transform: translate(calc(-100% - 27px), 82%) rotate(180deg);
-  animation: speed 5s ease-in-out infinite;
+  animation: speed 5.0s ease-in-out infinite;
   filter: sepia(80%) saturate(268%) brightness(62%) hue-rotate(180deg);
 }
 
 .knifePitch {
   position: absolute;
   transform: translate(calc(-100% - 45px), 50%) rotate(180deg);
-  animation: pitch 5s ease-in-out infinite;
+  animation: pitch 5.0s ease-in-out infinite;
   filter: sepia(80%) saturate(268%) brightness(62%) hue-rotate(180deg);
 }
 
 .knifeOffset {
   position: absolute;
   transform: translate(calc(-100% + 5px), calc(-100% + 33px)) rotate(90deg);
-  animation: offset 5s ease-in-out infinite;
+  animation: offset 5.0s ease-in-out infinite;
   filter: sepia(80%) saturate(268%) brightness(62%) hue-rotate(180deg);
 }
 
