@@ -40,11 +40,11 @@
     opacity: 0;
   }
 
-  2.5% {
+  5% {
     opacity: 0;
   }
 
-  5% {
+  15% {
     opacity: 1;
   }
 
@@ -79,7 +79,7 @@
   }
 
   97.5% {
-    opacity: 0;
+    opacity: 1;
   }
 
   100% {
@@ -100,7 +100,7 @@
     opacity: 0;
   }
 
-  97.5% {
+  100% {
     opacity: 0;
   }
 }
@@ -124,17 +124,11 @@
   animation: mergeAnimation 5.0s ease-out infinite;
 }
 
-/* .chime {
-  width: 178px;
-} */
-
 .chime,
 .tts {
   display: inline-block;
   opacity: 1;
-  animation: fadeReset 5.0s ease-out infinite;
-  /* margin-top: 52px; */
-  /* margin-bottom: 52px; */
+  animation: fadeReset 5.0s linear infinite;
 }
 
 .chime p,
@@ -142,11 +136,6 @@
   font-size: 10pt;
   animation: media_player-play_media 5.0s linear infinite;
 }
-
-/* .chime p {
-  width: 150%;
-  transform: translate(-16%, 0px);
-} */
 
 .spacer p {
   position: absolute;
@@ -156,12 +145,13 @@
 }
 
 /* Puzzle pieces animation */
+
 @keyframes puzzleAnim {
   0% {
     opacity: 1;
   }
 
-  90% {
+  97.5% {
     opacity: 1;
   }
 
@@ -183,11 +173,10 @@
 .puzzleContainer {
   width: 175px;
   height: 175px;
-  /* background-color: black; */
   left: 50%;
   position: relative;
   transform: translate(-50%, 0px);
-  animation: puzzleAnim 5.0s infinite linear;
+  animation: fadeReset 5.0s linear infinite;
   margin-bottom: 17px;
 }
 
@@ -208,7 +197,7 @@
 
   15% {
     opacity: 0;
-    transform: scale(1.15);
+    transform: scale(1.15) rotate(7deg);
   }
 
   35% {
@@ -225,7 +214,7 @@
 
   36% {
     opacity: 0;
-    transform: scale(1.15);
+    transform: scale(1.15) rotate(-4deg);
   }
 
   56% {
@@ -242,7 +231,7 @@
 
   23% {
     opacity: 0;
-    transform: scale(1.15);
+    transform: scale(1.15) rotate(-7deg);
   }
 
   43% {
@@ -259,7 +248,7 @@
 
   47% {
     opacity: 0;
-    transform: scale(1.15);
+    transform: scale(1.15) rotate(-5deg);
   }
 
   67% {
@@ -278,7 +267,7 @@
 
   30% {
     opacity: 0;
-    transform: scale(1.15);
+    transform: scale(1.15) rotate(5deg);
   }
 
   50% {
@@ -295,7 +284,7 @@
 
   40% {
     opacity: 0;
-    transform: scale(1.15);
+    transform: scale(1.15) rotate(-3.5deg);
   }
 
   60% {
@@ -312,7 +301,7 @@
 
   33% {
     opacity: 0;
-    transform: scale(1.15);
+    transform: scale(1.15) rotate(6deg);
   }
 
   53% {
@@ -329,7 +318,7 @@
 
   21% {
     opacity: 0;
-    transform: scale(1.15);
+    transform: scale(1.15) rotate(-3deg);
   }
 
   41% {
@@ -346,7 +335,7 @@
 
   34% {
     opacity: 0;
-    transform: scale(1.15);
+    transform: scale(1.15) rotate(9deg);
   }
 
   54% {
