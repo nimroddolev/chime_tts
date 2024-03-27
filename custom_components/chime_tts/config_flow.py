@@ -42,8 +42,20 @@ class ChimeTTSFlowHandler(config_entries.ConfigFlow):
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
 
-        tts_providers = self.hass.data["tts_manager"].providers
-        if not tts_providers or len(tts_providers.keys()) == 0:
+        # Installed TTS Providers
+        tts_providers = list((self.hass.data["tts_manager"].providers).keys())
+
+        # Installed TTS Platform Entities
+        tts_entities = []
+        all_entities = self.hass.states.async_all()
+        for entity in all_entities:
+            if str(entity.entity_id).startswith("tts."):
+                tts_entities.append(str(entity.entity_id))
+
+        # TTS Platforms
+        tts_platforms = tts_providers + tts_entities
+        LOGGER.debug("```Installed TTS platforms: %s", str(tts_platforms))
+        if len(tts_platforms) == 0:
             LOGGER.debug("No TTS Platforms detected")
             return self.async_show_form(
                         step_id="no_tts_platforms",
@@ -167,8 +179,11 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             installed_tts = self.get_installed_tts()
             if len(installed_tts) == 0:
                  _errors[TTS_PLATFORM_KEY] = "default_tts_platform_none"
-            elif default_tts_provider not in installed_tts:
-                _errors[TTS_PLATFORM_KEY] = "default_tts_platform_select"
+            else:
+                tts_provider_installed = default_tts_provider in installed_tts
+                tts_entity_exists = self.hass.states.get(default_tts_provider) is not None
+                if not (tts_provider_installed or tts_entity_exists):
+                    _errors[TTS_PLATFORM_KEY] = "default_tts_platform_select"
 
         # Folder path used for `chime_tts.say_url`
         www_path: str = user_input.get(WWW_PATH_KEY, "")

@@ -230,27 +230,21 @@ class ChimeTTSHelper:
 
     def get_default_tts_platform(self, hass: HomeAssistant, default_tts_platform: str = ""):
         """User's default TTS platform name."""
-        tts_platform = None
         installed_tts = list((hass.data["tts_manager"].providers).keys())
-        if default_tts_platform is not None and len(default_tts_platform) > 1:
-            # Use default TTS platform
-            if default_tts_platform in installed_tts:
-                tts_platform = default_tts_platform
-                _LOGGER.debug(" - Using default TTS platform: %s", tts_platform)
-            else:
-                # Default not installed. Use 1st available TTS platform
-                if len(installed_tts) > 0:
-                    tts_platform = installed_tts[0]
-                    _LOGGER.warning(" - The default TTS platform '%s' does not appear to be installed. Using '%'", default_tts_platform, tts_platform)
-                # No TTS platforms available
-                else:
-                    _LOGGER.warning(" - The default TTS platform '%s' does not appear to be installed.")
-        # No default. Use 1st available TTS platform
-        elif len(installed_tts) > 0:
-            tts_platform = installed_tts[0]
-            _LOGGER.warning(" - Using TTS platform '%s'", tts_platform)
+        # Default TTS platform / TTS entity found
+        if default_tts_platform is not None and len(default_tts_platform) > 1 and default_tts_platform in installed_tts or hass.states.get(default_tts_platform):
+            _LOGGER.debug(" - Using default TTS platform: %s", default_tts_platform)
+            return default_tts_platform
 
-        return tts_platform
+        # Use 1st available TTS platform
+        if len(installed_tts) > 0:
+            tts_platform = installed_tts[0]
+            _LOGGER.warning(" - The default TTS platform '%s' does not appear to be installed. Using '%'", default_tts_platform, tts_platform)
+            return tts_platform
+
+        # No TTS platforms available
+        _LOGGER.warning(" - The default TTS platform '%s' does not appear to be installed.")
+        return default_tts_platform
 
 
     def ffmpeg_convert_from_audio_segment(self,

@@ -3,7 +3,7 @@
         "step": {
             "no_tts_platforms": {
                 "title": "Chime TTS",
-                "description": "ℹ️ No TTS Platforms Found.\n\nThe Chime TTS integration uses TTS platform/s already installed in your Home Assistantce Instance.\n\nPlease add at least 1 TTS platform to begin using it.\n\nFor more details please review the documentation."
+                "description": "ℹ️ No TTS Platforms Found.\n\nThe Chime TTS integration uses TTS platform/s already installed in your Home Assistant Instance.\n\nPlease add at least 1 TTS platform to begin using it.\n\nFor more details please review the documentation."
             }
         }
     },
