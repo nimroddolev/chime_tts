@@ -229,20 +229,21 @@ class ChimeTTSHelper:
 
 
     def get_installed_tts_platforms(self, hass: HomeAssistant):
+        """List of installed tts platforms."""
         # Installed TTS Providers
-            tts_providers = list((hass.data["tts_manager"].providers).keys())
+        tts_providers = list((hass.data["tts_manager"].providers).keys())
 
-            # Installed TTS Platform Entities
-            tts_entities = []
-            all_entities = hass.states.async_all()
-            for entity in all_entities:
-                if str(entity.entity_id).startswith("tts."):
-                    tts_entities.append(str(entity.entity_id))
+        # Installed TTS Platform Entities
+        tts_entities = []
+        all_entities = hass.states.async_all()
+        for entity in all_entities:
+            if str(entity.entity_id).startswith("tts."):
+                tts_entities.append(str(entity.entity_id))
 
-            # TTS Platforms
-            installed_tts_platforms = tts_providers + tts_entities
+        # TTS Platforms
+        installed_tts_platforms = tts_providers + tts_entities
 
-            return installed_tts_platforms
+        return installed_tts_platforms
 
     def get_default_tts_platform(self, hass: HomeAssistant, default_tts_platform: str = ""):
         """User's default TTS platform name."""

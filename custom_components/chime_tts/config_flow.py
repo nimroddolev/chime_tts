@@ -32,7 +32,6 @@ from .const import (
     MICROSOFT_EDGE_TTS,
     MICROSOFT_TTS,
     NABU_CASA_CLOUD_TTS,
-    NABU_CASA_CLOUD_TTS_OLD,
     OPENAI_TTS,
     PICOTTS,
     PIPER,
@@ -225,7 +224,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
             if len(stripped_tts_platforms) == 0:
                 _errors[TTS_PLATFORM_KEY] = "default_tts_platform_none"
-            elif not default_tts_provider in stripped_tts_platforms:
+            elif default_tts_provider not in stripped_tts_platforms:
                 LOGGER.debug("Unable to find TTS platform %s", user_input[TTS_PLATFORM_KEY])
                 _errors[TTS_PLATFORM_KEY] = "default_tts_platform_select"
             else:
