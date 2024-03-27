@@ -241,7 +241,7 @@
             "timeout": "The timeout value is invalid",
             "timeout_sub": "Enter a valid timeout duration",
             "default_tts_platform_none": "No TTS platforms were detected. Please add at least 1 TTS integration.",
-            "default_tts_platform_select": "The TTS platform entered was not detected. Please make sure it has been added before defining it as the default.",
+            "default_tts_platform_select": "The TTS platform was not found. Please make sure it has been installed before setting it as the default.",
             "multiple": "Multiple issues detected",
             "invalid_chime_paths": "Invalid custom chime path detected",
             "www_path": "Folder path must be within `/config/www/` or `/media/`",

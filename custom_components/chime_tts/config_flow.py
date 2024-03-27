@@ -4,6 +4,7 @@ import os
 import requests
 import voluptuous as vol
 from homeassistant import config_entries
+from .helpers.helpers import ChimeTTSHelper
 from .const import (
     DOMAIN,
     QUEUE_TIMEOUT_KEY,
@@ -19,10 +20,28 @@ from .const import (
     TEMP_PATH_DEFAULT,
     WWW_PATH_KEY,
     WWW_PATH_DEFAULT,
-    MP3_PRESET_CUSTOM_PREFIX
+    MP3_PRESET_CUSTOM_PREFIX,
+
+    AMAZON_POLLY,
+    BAIDU,
+    ELEVENLABS_TTS,
+    GOOGLE_CLOUD,
+    GOOGLE_TRANSLATE,
+    IBM_WATSON_TTS,
+    MARYTTS,
+    MICROSOFT_EDGE_TTS,
+    MICROSOFT_TTS,
+    NABU_CASA_CLOUD_TTS,
+    NABU_CASA_CLOUD_TTS_OLD,
+    OPENAI_TTS,
+    PICOTTS,
+    PIPER,
+    VOICE_RSS,
+    YANDEX_TTS
 )
 
 LOGGER = logging.getLogger(__name__)
+helpers = ChimeTTSHelper()
 
 @config_entries.HANDLERS.register(DOMAIN)
 class ChimeTTSFlowHandler(config_entries.ConfigFlow):
@@ -42,19 +61,7 @@ class ChimeTTSFlowHandler(config_entries.ConfigFlow):
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
 
-        # Installed TTS Providers
-        tts_providers = list((self.hass.data["tts_manager"].providers).keys())
-
-        # Installed TTS Platform Entities
-        tts_entities = []
-        all_entities = self.hass.states.async_all()
-        for entity in all_entities:
-            if str(entity.entity_id).startswith("tts."):
-                tts_entities.append(str(entity.entity_id))
-
-        # TTS Platforms
-        tts_platforms = tts_providers + tts_entities
-        LOGGER.debug("```Installed TTS platforms: %s", str(tts_platforms))
+        tts_platforms = helpers.get_installed_tts_platforms(self.hass)
         if len(tts_platforms) == 0:
             LOGGER.debug("No TTS Platforms detected")
             return self.async_show_form(
@@ -81,8 +88,8 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input={}):
         """Initialize the options flow."""
 
-        installed_tts = self.get_installed_tts()
-        default_tts = installed_tts[0] if len(installed_tts) > 0 else ""
+        stripped_tts_platforms = self.get_installed_tts()
+        default_tts = stripped_tts_platforms[0] if len(stripped_tts_platforms) > 0 else ""
         user_input = user_input if user_input is not None else {}
         root_path = self.hass.config.path("").replace("/config/", "")
 
@@ -174,16 +181,58 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             _errors[QUEUE_TIMEOUT_KEY] = "timeout_sub"
 
         # Default TTS Platform
-        if user_input[TTS_PLATFORM_KEY] is not None and len(user_input[TTS_PLATFORM_KEY]) > 0:
-            default_tts_provider = user_input[TTS_PLATFORM_KEY]
-            installed_tts = self.get_installed_tts()
-            if len(installed_tts) == 0:
-                 _errors[TTS_PLATFORM_KEY] = "default_tts_platform_none"
+        if user_input.get(TTS_PLATFORM_KEY, None) and len(user_input[TTS_PLATFORM_KEY]) > 0:
+
+            # Replace friendly name with entity/platform name
+            default_tts_provider = user_input[TTS_PLATFORM_KEY].replace(" ", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "").lower()
+            if default_tts_provider == "amazonpolly":
+               default_tts_provider = AMAZON_POLLY
+            elif default_tts_provider == "baidu":
+               default_tts_provider = BAIDU
+            elif default_tts_provider == "elevenlabstts":
+               default_tts_provider = ELEVENLABS_TTS
+            elif default_tts_provider == "googlecloud":
+               default_tts_provider = GOOGLE_CLOUD
+            elif default_tts_provider == "googletranslate":
+               default_tts_provider = GOOGLE_TRANSLATE
+            elif default_tts_provider == "watsontts":
+               default_tts_provider = IBM_WATSON_TTS
+            elif default_tts_provider == "marytts":
+               default_tts_provider = MARYTTS
+            elif default_tts_provider == "microsofttts":
+               default_tts_provider = MICROSOFT_TTS
+            elif default_tts_provider == "microsoftedgetts":
+               default_tts_provider = MICROSOFT_EDGE_TTS
+            elif default_tts_provider in ["nabucasacloudtts",
+                                        "nabucasacloud",
+                                        "nabucasa",
+                                        "cloudsay"]:
+               default_tts_provider = NABU_CASA_CLOUD_TTS
+            elif default_tts_provider == "openaitts":
+               default_tts_provider = OPENAI_TTS
+            elif default_tts_provider == "picotts":
+               default_tts_provider = PICOTTS
+            elif default_tts_provider == "piper":
+               default_tts_provider = PIPER
+            elif default_tts_provider == "voicerss":
+               default_tts_provider = VOICE_RSS
+            elif default_tts_provider == "yandextts":
+               default_tts_provider = YANDEX_TTS
+
+            # Find platform in list of installed platforms
+            stripped_tts_platforms = [platform.lower().replace("tts", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "") for platform in helpers.get_installed_tts_platforms(self.hass)]
+            default_tts_provider = default_tts_provider.lower().replace("tts", "").replace(" ", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "")
+
+            if len(stripped_tts_platforms) == 0:
+                _errors[TTS_PLATFORM_KEY] = "default_tts_platform_none"
+            elif not default_tts_provider in stripped_tts_platforms:
+                LOGGER.debug("Unable to find TTS platform %s", user_input[TTS_PLATFORM_KEY])
+                _errors[TTS_PLATFORM_KEY] = "default_tts_platform_select"
             else:
-                tts_provider_installed = default_tts_provider in installed_tts
-                tts_entity_exists = self.hass.states.get(default_tts_provider) is not None
-                if not (tts_provider_installed or tts_entity_exists):
-                    _errors[TTS_PLATFORM_KEY] = "default_tts_platform_select"
+                index = stripped_tts_platforms.index(default_tts_provider)
+                default_tts_provider = helpers.get_installed_tts_platforms(self.hass)[index]
+
+            user_input[TTS_PLATFORM_KEY] = default_tts_provider
 
         # Folder path used for `chime_tts.say_url`
         www_path: str = user_input.get(WWW_PATH_KEY, "")
