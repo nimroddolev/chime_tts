@@ -11,6 +11,7 @@
         "clear_cache": {
             "name": "Clear Cache",
             "description": "Removes all locally cached TTS audio files created from Chime TTS",
+            "icon": "mdi:delete-forever",
             "fields": {
                 "clear_chimes_cache": {
                     "name": "Temporary Chimes Cache",
@@ -33,6 +34,7 @@
         "say": {
             "name": "Say",
             "description": "Play an audio file before TTS audio",
+            "icon": "mdi:speaker-message",
             "fields": {
                 "chime_path": {
                     "name": "Chime Path",
@@ -112,6 +114,7 @@
         "say_url": {
             "name": "Say URL",
             "description": "Generates an audio file with the `chime_tts.say` service and returns either an external URL or a local file path, depending on the folder set in the configuration",
+            "icon": "mdi:speaker-stop",
             "fields": {
                 "chime_path": {
                     "name": "Chime Path",
