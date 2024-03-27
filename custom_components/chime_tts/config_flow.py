@@ -21,22 +21,6 @@ from .const import (
     WWW_PATH_KEY,
     WWW_PATH_DEFAULT,
     MP3_PRESET_CUSTOM_PREFIX,
-
-    AMAZON_POLLY,
-    BAIDU,
-    ELEVENLABS_TTS,
-    GOOGLE_CLOUD,
-    GOOGLE_TRANSLATE,
-    IBM_WATSON_TTS,
-    MARYTTS,
-    MICROSOFT_EDGE_TTS,
-    MICROSOFT_TTS,
-    NABU_CASA_CLOUD_TTS,
-    OPENAI_TTS,
-    PICOTTS,
-    PIPER,
-    VOICE_RSS,
-    YANDEX_TTS
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -183,42 +167,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input.get(TTS_PLATFORM_KEY, None) and len(user_input[TTS_PLATFORM_KEY]) > 0:
 
             # Replace friendly name with entity/platform name
-            default_tts_provider = user_input[TTS_PLATFORM_KEY].replace(" ", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "").lower()
-            if default_tts_provider == "amazonpolly":
-               default_tts_provider = AMAZON_POLLY
-            elif default_tts_provider == "baidu":
-               default_tts_provider = BAIDU
-            elif default_tts_provider == "elevenlabstts":
-               default_tts_provider = ELEVENLABS_TTS
-            elif default_tts_provider == "googlecloud":
-               default_tts_provider = GOOGLE_CLOUD
-            elif default_tts_provider == "googletranslate":
-               default_tts_provider = GOOGLE_TRANSLATE
-            elif default_tts_provider == "watsontts":
-               default_tts_provider = IBM_WATSON_TTS
-            elif default_tts_provider == "marytts":
-               default_tts_provider = MARYTTS
-            elif default_tts_provider == "microsofttts":
-               default_tts_provider = MICROSOFT_TTS
-            elif default_tts_provider == "microsoftedgetts":
-               default_tts_provider = MICROSOFT_EDGE_TTS
-            elif default_tts_provider in ["nabucasacloudtts",
-                                        "nabucasacloud",
-                                        "nabucasa",
-                                        "cloudsay"]:
-               default_tts_provider = NABU_CASA_CLOUD_TTS
-            elif default_tts_provider == "openaitts":
-               default_tts_provider = OPENAI_TTS
-            elif default_tts_provider == "picotts":
-               default_tts_provider = PICOTTS
-            elif default_tts_provider == "piper":
-               default_tts_provider = PIPER
-            elif default_tts_provider == "voicerss":
-               default_tts_provider = VOICE_RSS
-            elif default_tts_provider == "yandextts":
-               default_tts_provider = YANDEX_TTS
-
-            # Find platform in list of installed platforms
+            default_tts_provider = helpers.get_stripped_tts_platform(self.hass, user_input[TTS_PLATFORM_KEY])
             stripped_tts_platforms = [platform.lower().replace("tts", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "") for platform in helpers.get_installed_tts_platforms(self.hass)]
             default_tts_provider = default_tts_provider.lower().replace("tts", "").replace(" ", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "")
 

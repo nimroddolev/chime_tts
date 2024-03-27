@@ -15,6 +15,21 @@ from ..const import (
     DEFAULT_OFFSET_MS,
     FFMPEG_ARGS_ALEXA,
     FFMPEG_ARGS_VOLUME,
+    AMAZON_POLLY,
+    BAIDU,
+    ELEVENLABS_TTS,
+    GOOGLE_CLOUD,
+    GOOGLE_TRANSLATE,
+    IBM_WATSON_TTS,
+    MARYTTS,
+    MICROSOFT_EDGE_TTS,
+    MICROSOFT_TTS,
+    NABU_CASA_CLOUD_TTS,
+    OPENAI_TTS,
+    PICOTTS,
+    PIPER,
+    VOICE_RSS,
+    YANDEX_TTS
 )
 from .media_player import MediaPlayerHelper
 from .filesystem import FilesystemHelper
@@ -226,6 +241,45 @@ class ChimeTTSHelper:
             if ffmpeg_args_str.lower() == "custom":
                 return None
         return ffmpeg_args_str
+
+    def get_stripped_tts_platform(self, hass, tts_provider):
+        """Validate the TTS platform name."""
+        stripped_tts_provider = tts_provider.replace(" ", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "").lower()
+        if stripped_tts_provider == "amazonpolly":
+            tts_provider = AMAZON_POLLY
+        elif stripped_tts_provider == "baidu":
+            tts_provider = BAIDU
+        elif stripped_tts_provider == "elevenlabstts":
+            tts_provider = ELEVENLABS_TTS
+        elif stripped_tts_provider == "googlecloud":
+            tts_provider = GOOGLE_CLOUD
+        elif stripped_tts_provider == "googletranslate":
+            tts_provider = GOOGLE_TRANSLATE
+        elif stripped_tts_provider == "watsontts":
+            tts_provider = IBM_WATSON_TTS
+        elif stripped_tts_provider == "marytts":
+            tts_provider = MARYTTS
+        elif stripped_tts_provider == "microsofttts":
+            tts_provider = MICROSOFT_TTS
+        elif stripped_tts_provider == "microsoftedgetts":
+            tts_provider = MICROSOFT_EDGE_TTS
+        elif stripped_tts_provider in ["nabucasacloudtts",
+                                    "nabucasacloud",
+                                    "nabucasa",
+                                    "cloudsay"]:
+            tts_provider = NABU_CASA_CLOUD_TTS
+        elif stripped_tts_provider == "openaitts":
+            tts_provider = OPENAI_TTS
+        elif stripped_tts_provider == "picotts":
+            tts_provider = PICOTTS
+        elif stripped_tts_provider == "piper":
+            tts_provider = PIPER
+        elif stripped_tts_provider == "voicerss":
+            tts_provider = VOICE_RSS
+        elif stripped_tts_provider == "yandextts":
+            tts_provider = YANDEX_TTS
+
+        return tts_provider
 
 
     def get_installed_tts_platforms(self, hass: HomeAssistant):
