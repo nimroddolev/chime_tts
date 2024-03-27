@@ -75,10 +75,25 @@
   font-weight: 900 !important;
 }
 
+.breadcrumbs__item--active {
+  border-color: var(--ifm-breadcrumb-color-active);
+  border-width: thin;
+  border-style: solid;
+  border-radius: 30px;
+}
+
 h1 code,
 h2 code,
 h3 code,
 h4 code,
 h5 code {
   vertical-align: bottom;
+}
+
+.button {
+  border-radius: 30px;
+  border-width: medium;
+  border-color: saddlebrown;
+  background-color: saddlebrown;
+  color: white !important;
 }
