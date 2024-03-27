@@ -1,0 +1,7 @@
+{
+    "services": {
+        "say": "mdi:speaker-message",
+        "say_url": "mdi:speaker-stop",
+        "clear_cache": "mdi:delete-forever"
+    }
+}
