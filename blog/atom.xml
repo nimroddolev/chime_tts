@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://github.com/chime_tts/blog</id>
-    <title>Official Chime TTS Wiki Blog</title>
+    <title>Combine TTS and audio locally in Home Assistant. Blog</title>
     <updated>2021-08-26T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://github.com/chime_tts/blog"/>
-    <subtitle>Official Chime TTS Wiki Blog</subtitle>
+    <subtitle>Combine TTS and audio locally in Home Assistant. Blog</subtitle>
     <icon>https://github.com/chime_tts/img/favicon.ico</icon>
     <entry>
         <title type="html"><![CDATA[Welcome]]></title>
