@@ -68,21 +68,66 @@ const config = {
       // image: 'img/docusaurus-social-card.jpg',
       image: 'img/chime_tts.jpg',
       navbar: {
-        title: 'Home',
+        title: 'Chime TTS',
         logo: {
-          alt: 'Chime TTS Logo',
+          alt: 'Chime TTS logo',
           src: 'img/chime_tts.png',
         },
         items: [
+          // {
+          //   type: 'docSidebar',
+          //   sidebarId: 'tutorialSidebar',
+          //   position: 'left',
+          //   label: 'Wiki',
+          // },
+          { to: '/docs/getting-started', label: 'Wiki', position: 'left' },
+          // { to: '/docs/quick-start', label: 'Quick Start', position: 'left' },
           {
-            type: 'docSidebar',
-            sidebarId: 'tutorialSidebar',
-            position: 'left',
-            label: 'Wiki',
+            type: "dropdown",
+            label: "Quick Start",
+            position: "left",
+            items: [
+              {
+                type: "doc",
+                label: "Installation",
+                docId: "quick-start/installing-chime-tts"
+              },
+              {
+                type: "doc",
+                label: "Adding the Integration",
+                docId: "quick-start/adding-the-integration"
+              },
+              {
+                type: "doc",
+                label: "Configuration",
+                docId: "quick-start/configuration"
+              },
+            ]
           },
-          { to: '/docs/category/quick-start', label: 'Quick Start', position: 'left' },
-          { to: '/docs/category/say-service', label: 'Documentation', position: 'left' },
-          { to: '/docs/say-service/examples', label: 'YAML Examples', position: 'left' },
+          {
+            type: "dropdown",
+            label: "Documentation",
+            position: "left",
+            items: [
+              {
+                type: "doc",
+                label: "Say Service",
+                docId: "documentation/say-service/service"
+              },
+              {
+                type: "doc",
+                label: "Say URL Service",
+                docId: "documentation/say_url-service/service"
+              },
+              {
+                type: "doc",
+                label: "Clear Cache Service",
+                docId: "documentation/clear-cache-service"
+              }
+            ]
+          },
+          // { to: '/docs/category/documentation', label: 'Documentation', position: 'left' },
+          // { to: '/docs/documentation/say-service/examples', label: 'YAML Examples', position: 'left' },
           {
             href: 'https://github.com/nimroddolev/chime_tts',
             label: 'GitHub',
@@ -102,11 +147,11 @@ const config = {
               },
               {
                 label: 'Quick Start',
-                to: '/docs/category/quick-start',
+                to: '/docs/quick-start',
               },
               {
                 label: 'Say Service',
-                to: '/docs/category/say-url-service',
+                to: '/docs/category/say-service',
               },
               {
                 label: 'Say URL Service',
@@ -114,7 +159,7 @@ const config = {
               },
               {
                 label: 'Clear Cache Service',
-                to: '/docs/clear-cache-service',
+                to: '/docs/documentation/clear-cache-service',
               },
             ],
           },

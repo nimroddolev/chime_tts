@@ -9,7 +9,7 @@ import './chime_tts.say.css'
 # `chime_tts.say` Service
 The `chime_tts.say` service joins together audio files, or *"chimes"*, and TTS audio, and then streams it to `media_player` target/s.
 
-**Please note** that Chime TTS works __with__ [TTS Platform integrations](https://www.home-assistant.io/integrations/#text-to-speech), but you need to add them to your Home Assistant instance beforehand.
+**Please note** that Chime TTS utilizes [TTS Platforms](https://www.home-assistant.io/integrations/#text-to-speech), and therefore works __with__ these platforms. You need to add them to your Home Assistant instance separately.
 
 ---
 
@@ -19,25 +19,27 @@ Chimes are audio files that can be incorporated into notifications. You can find
 You can add chimes to your notifications in different places:
 - **Before** TTS audio *(see the* [`chime_path`](../say-service/parameters#chime_path) *parameter).*
 - **After** TTS audio *(see the* [`end_chime_path`](../say-service/parameters#end_chime_path) *parameter)*, and
-- **Between** TTS audio *(see the use of* [`message`](../say-service/parameters#advanced-usage-segment-sequences) *segments).*
+- **Between** TTS audio segments *(see the use of* [`message`](../say-service/parameters#advanced-usage-segment-sequences) *segments).*
 
-There are 3 different ways to define which chime/s to include in your notification:
+There are 3 ways you can define which chime/s to include in your notification:
 
-### 1. Select chimes from the user-interface
-Use the drop-down chime list in the UI to select a preset chime sound effect:
+### 1. Selecting chimes from the user-interface
+Use the drop-down chime list in the UI to set a preset chime sound effect:
 
 ![chime_options](https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/wiki/chimes/chime_options.gif)
 
 
 ### 2. Custom local audio files and external URLs
 
+You can specify both local file paths or external URLs to your own audio files.
+
 * #### Local Files
-  You can specify local file paths to your own audio files from your Home Assistant instance's media folder, or any other folder.
+  You can specify absolute local file paths to audio files in your Home Assistant instance's media folder, or any other folder.
 
   ![chime_path](https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/wiki/chimes/chime_path.png)
 
 * #### External audio file URLs
-  You can also specify URLs to audio files hosted online. Chime TTS will download the files and you can optionally save them to your chimes folder if the [`cache`](../say-service/parameters#cache) property is set to `true`.
+  You can also specify URLs to audio files hosted online, which will be downloaded and optionally saved locally them to your [Downloaded Chimes Folder](../../quick-start/configuration) when the [`cache`](../say-service/parameters#cache) property is set to `true`.
 
   ![external_chime_path](https://github.com/nimroddolev/chime_tts/assets/1849295/91adf68c-f77d-4c45-b341-93e392792e31)
 
