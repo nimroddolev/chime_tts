@@ -29,7 +29,7 @@ export default function HomepageFeatures() {
               </div>
               <div className="text--center padding-horiz--md">
                 <Heading as="h3">No More Lag</Heading>
-                <p>Combine chimes and TTS audio together in a single service call without any lag during playback.</p>
+                <p>Locally combine chimes and TTS audio before playback in a single service call, for lag-free playback.</p>
               </div>
             </div>
           </div>
@@ -51,7 +51,7 @@ export default function HomepageFeatures() {
               </div>
               <div className="text--center padding-horiz--md">
                 <Heading as="h3">Customizable</Heading>
-                <p>Combine different TTS platforms & chimes,customize speed & pitch, and more.</p>
+                <p>Mix TTS platforms & chimes together to create fully personalized notifications.</p>
               </div>
             </div>
           </div>
@@ -69,8 +69,8 @@ export default function HomepageFeatures() {
                     <img src={useBaseUrl('/img/animations/knife/offset.png')} className={styles.knifeOffset} />
                   </div>
                 </div>
-                <Heading as="h3">Easy to Implement</Heading>
-                <p>Create complicated audio notifications from a simple yet powerful user-interface.</p>
+                <Heading as="h3">Full Customization</Heading>
+                <p>Tweak your audio to create rich notifications with a powerful and clear user-interface.</p>
               </div>
             </div>
           </div>
