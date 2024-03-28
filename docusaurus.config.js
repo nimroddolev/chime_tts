@@ -129,6 +129,12 @@ const config = {
           // { to: '/docs/category/documentation', label: 'Documentation', position: 'left' },
           // { to: '/docs/documentation/say-service/examples', label: 'YAML Examples', position: 'left' },
           {
+            href: "https://www.buymeacoffee.com/nimroddolev",
+            position: "right",
+            className: "header-buymeacoffee-link",
+            "aria-label": "Buy me a coffee",
+          },
+          {
             href: 'https://github.com/nimroddolev/chime_tts',
             label: 'GitHub',
             position: 'right',
