@@ -23,7 +23,7 @@ export default function HomepageFeatures() {
                   </div>
                   <div className={styles.tts}>
                     <img src={useBaseUrl('/img/animations/audio_tts.png')} className={styles.tts} />
-                    <p>media_player.play_media</p>
+                    <p>tts.speak <i>or</i> tts.*_say</p>
                   </div>
                 </div>
               </div>

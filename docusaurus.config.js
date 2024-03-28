@@ -8,8 +8,8 @@ import { themes as prismThemes } from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'Official Chime TTS Wiki',
-  tagline: 'The official Chime TTS wiki including documentation, explanations and usage examples',
+  title: 'Combine TTS and audio locally in Home Assistant.',
+  tagline: 'The official site for Chime TTS documentation, explanations and usage examples.',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
