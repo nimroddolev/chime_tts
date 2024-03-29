@@ -7,13 +7,18 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 import './chime_tts.say.css'
 
 # `chime_tts.say` Service
+
 The `chime_tts.say` service joins together audio files, or *"chimes"*, and TTS audio, and then streams it to `media_player` target/s.
 
-**Please note** that Chime TTS utilizes [TTS Platforms](https://www.home-assistant.io/integrations/#text-to-speech), and therefore works __with__ these platforms. You need to add them to your Home Assistant instance separately.
+## TTS Platforms
 
----
+Chime TTS utilizes [TTS Platforms](https://www.home-assistant.io/integrations/#text-to-speech) that have been added to your Home Assistant instance, and is not a TTS platform itself. Any TTS platform you wish to use will need to be configured separately.
+
+### TTS Platform-Specific Options
+Each TTS platform offers its own set of options, which can also be used with Chime TTS in the `options` parameter. Several key TTS platform parameters exist as separate parameters in Chime TTS (see `chime_tts.say`'s [parameters](../say-service/parameters) documentation for more).
 
 ## Selecting Chimes
+
 Chimes are audio files that can be incorporated into notifications. You can find the preset chimes that ship with Chime TTS [here](https://github.com/nimroddolev/chime_tts/tree/main/custom_components/chime_tts/mp3s).
 
 You can add chimes to your notifications in different places:
