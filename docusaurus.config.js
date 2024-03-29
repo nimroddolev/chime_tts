@@ -68,7 +68,7 @@ const config = {
       // image: 'img/docusaurus-social-card.jpg',
       image: 'img/chime_tts.jpg',
       navbar: {
-        title: 'Chime TTS',
+        title: 'Home',
         logo: {
           alt: 'Chime TTS logo',
           src: 'img/chime_tts.png',
@@ -80,7 +80,7 @@ const config = {
           //   position: 'left',
           //   label: 'Wiki',
           // },
-          { to: '/docs/getting-started', label: 'Wiki', position: 'left' },
+          { to: '/docs/getting-started', label: 'Chime TTS', position: 'left' },
           // { to: '/docs/quick-start', label: 'Quick Start', position: 'left' },
           {
             type: "dropdown",
