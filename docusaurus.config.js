@@ -8,7 +8,7 @@ import { themes as prismThemes } from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'Combine TTS and audio locally in Home Assistant.',
+  title: 'Locally combine TTS and audio in Home Assistant.',
   tagline: 'The official site for Chime TTS documentation, explanations and usage examples.',
   favicon: 'img/favicon.ico',
 

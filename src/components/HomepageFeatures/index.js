@@ -29,7 +29,7 @@ export default function HomepageFeatures() {
               </div>
               <div className="text--center padding-horiz--md">
                 <Heading as="h3">No More Lag</Heading>
-                <p>Locally combine chimes and TTS audio before playback in a single service call, for lag-free playback.</p>
+                <p>Locally combine chimes and TTS audio for lag-free playback in a single service call.</p>
               </div>
             </div>
           </div>
@@ -70,7 +70,7 @@ export default function HomepageFeatures() {
                   </div>
                 </div>
                 <Heading as="h3">Full Customization</Heading>
-                <p>Tweak your audio to create rich notifications with a powerful and clear user-interface.</p>
+                <p>Make fine-tuned adjustments to TTS audio with a suite of tools and a simple user-interface.</p>
               </div>
             </div>
           </div>
