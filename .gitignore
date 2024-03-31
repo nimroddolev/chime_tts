@@ -27,3 +27,4 @@ node_modules
 .docusaurus/docusaurus-plugin-content-blog
 README.md
 docusaurus.config.mjs
+package-lock.json
