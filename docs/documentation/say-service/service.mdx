@@ -22,9 +22,9 @@ Each TTS platform offers its own set of options, which can also be used with Chi
 Chimes are audio files that can be incorporated into notifications. You can find the preset chimes that ship with Chime TTS [here](https://github.com/nimroddolev/chime_tts/tree/main/custom_components/chime_tts/mp3s).
 
 You can add chimes to your notifications in different places:
-- **Before** TTS audio *(see the* [`chime_path`](../say-service/parameters#chime_path) *parameter).*
-- **After** TTS audio *(see the* [`end_chime_path`](../say-service/parameters#end_chime_path) *parameter)*, and
-- **Between** TTS audio segments *(see the use of* [`message`](../say-service/parameters#advanced-usage-segment-sequences) *segments).*
+- **Before** TTS audio *(using the* [`chime_path`](../say-service/parameters#chime_path) *parameter).*
+- **After** TTS audio *(using the* [`end_chime_path`](../say-service/parameters#end_chime_path) *parameter)*, and
+- **Between** TTS audio segments *(using* [`message`](../say-service/parameters#advanced-usage-segment-sequences) *segments).*
 
 There are 3 ways you can define which chime/s to include in your notification:
 
@@ -50,7 +50,7 @@ You can specify both local file paths or external URLs to your own audio files.
 
 ### 3. Custom chime slots for the chime list UI
 You can set up to 5 custom chime slots which appear at the end of the drop-down list in the UI, allowing you to easily select your custom chimes when creating automations.
-To configure the custom chime slots, open the Chime TTS configuration page and enter the full file path to your local custom audio file, or the URL to an audio file hosted online.
+To configure the custom chime slots, open the [Chime TTS configuration page](../../quick-start/configuration) and enter the full file path to your local custom audio file, or the URL to an audio file hosted online.
 
 The configuration page is located at:
 
