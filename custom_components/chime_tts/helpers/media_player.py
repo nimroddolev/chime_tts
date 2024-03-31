@@ -58,18 +58,21 @@ class MediaPlayerHelper:
                     blocking=True
                 )
 
+            group_member_support = self.get_supported_feature(entity, ATTR_GROUP_MEMBERS)
+            announce_supported = self.get_supported_feature(entity, ATTR_MEDIA_ANNOUNCE)
+            is_playing = (hass.states.get(entity_id).state == "playing"
+                          and (not announce_supported or media_player_is_spotify)
+                          and hass.states.get(entity_id).attributes.get("media_duration", -1) != 0) # Check that media_player is _actually_ playing (HomePods can incorrectly have the state "playing" when no media is playing)
+
             # Store media player's current volume level
             should_change_volume = False
             initial_volume_level = -1
-            if volume_level >= 0 or media_player_is_spotify:
+            should_change_volume = volume_level >= 0 or media_player_is_spotify
+
+            if volume_level >= 0 or media_player_is_spotify or is_playing:
                 initial_volume_level = float(
                     entity.attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
                 )
-                should_change_volume = True
-
-            group_member_support = self.get_supported_feature(entity, ATTR_GROUP_MEMBERS)
-            announce_supported = self.get_supported_feature(entity, ATTR_MEDIA_ANNOUNCE)
-            is_playing = hass.states.get(entity_id).state == "playing" and (not announce_supported or media_player_is_spotify)
 
             media_players_array.append(
                 {
@@ -84,6 +87,7 @@ class MediaPlayerHelper:
         if entity_found is False:
             _LOGGER.error("No valid media player found")
             return []
+        _LOGGER.debug("```Media players found: %s", str(media_players_array))
         return media_players_array
 
     def parse_entity_ids(self, data, hass):
