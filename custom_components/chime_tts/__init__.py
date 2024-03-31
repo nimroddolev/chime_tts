@@ -295,12 +295,12 @@ async def async_post_playback_actions(
     _LOGGER.debug(" - Waiting %ss for audio playback to complete...", str(total_delay_s))
     await hass.async_add_executor_job(time.sleep, total_delay_s)
 
-    # Ensure playback has ended
+    # Wait for playback to end on all media_players
     playing_media_player_dicts = []
     for media_player_dict in media_players_array:
         if not media_player_helper.get_is_media_player_spotify(hass, media_player_dict["entity_id"]):
             playing_media_player_dicts.append(media_player_dict)
-    if not await media_player_helper.async_wait_until_media_players_state_not(hass, playing_media_player_dicts, "playing", 2.5):
+    if not await media_player_helper.async_wait_until_media_players_state_not(hass, playing_media_player_dicts, "playing"):
         _LOGGER.warning("Timed out waiting for playback to complete")
 
     # Write to log if post-playback actions are to be performed
@@ -1196,7 +1196,7 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
 
     # Fire service calls
     for service_call in service_calls:
-        _LOGGER.debug("   Calling %s.%s with data: ***",
+        _LOGGER.debug("   Calling %s.%s with data:",
                     service_call["domain"],
                     service_call["service"])
         for key, value in service_call["service_data"].items():
