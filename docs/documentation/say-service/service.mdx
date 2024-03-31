@@ -15,16 +15,16 @@ The `chime_tts.say` service joins together audio files, or *"chimes"*, and TTS a
 Chime TTS utilizes [TTS Platforms](https://www.home-assistant.io/integrations/#text-to-speech) that have been added to your Home Assistant instance, and is not a TTS platform itself. Any TTS platform you wish to use will need to be configured separately.
 
 ### TTS Platform-Specific Options
-Each TTS platform offers its own set of options, which can also be used with Chime TTS in the `options` parameter. Several key TTS platform parameters exist as separate parameters in Chime TTS (*see* `chime_tts.say`*'s [additional parameters](../say-service/parameters#additional-parameters) documentation for more*).
+Each TTS platform offers its own set of options, which can also be used with Chime TTS in the `options` parameter. Several key TTS platform parameters exist as separate parameters in Chime TTS (*see* `chime_tts.say`*'s [additional parameters](./parameters#additional-parameters) documentation for more*).
 
 ## Selecting Chimes
 
 Chimes are audio files that can be incorporated into notifications. You can find the preset chimes that ship with Chime TTS [here](https://github.com/nimroddolev/chime_tts/tree/main/custom_components/chime_tts/mp3s).
 
 You can add chimes to your notifications in different places:
-- **Before** TTS audio *(using the* [`chime_path`](../say-service/parameters#chime_path) *parameter).*
-- **After** TTS audio *(using the* [`end_chime_path`](../say-service/parameters#end_chime_path) *parameter)*, and
-- **Between** TTS audio segments *(using* [`message`](../say-service/parameters#advanced-usage-segment-sequences) *segments).*
+- **Before** TTS audio *(using the* [`chime_path`](./parameters#chime_path) *parameter).*
+- **After** TTS audio *(using the* [`end_chime_path`](./parameters#end_chime_path) *parameter)*, and
+- **Between** TTS audio segments *(using* [`message`](./parameters#advanced-usage-segment-sequences) *segments).*
 
 There are 3 ways you can define which chime/s to include in your notification:
 
