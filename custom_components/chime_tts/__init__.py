@@ -886,8 +886,11 @@ async def async_process_segments(hass, message, output_audio, params, options):
         if segment_type == "delay":
             if segment.get("length", None):
                 segment_delay_length = float(segment["length"])
+                delay_audio = AudioSegment.silent(duration=segment_delay_length)
                 if output_audio:
-                    output_audio = output_audio + AudioSegment.silent(duration=segment_delay_length)
+                    output_audio = output_audio + delay_audio
+                else:
+                    output_audio = delay_audio
             else:
                 _LOGGER.warning("Delay length missing from messsage segment #%s", str(index+1))
                 continue
