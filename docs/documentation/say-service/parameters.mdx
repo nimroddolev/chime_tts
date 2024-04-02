@@ -32,7 +32,6 @@ The `message` parameter can also define a YAML sequence built from 3 different "
 
 <img src={useBaseUrl('/img/say/message_segments.png')} />
 
-
 ```
 service: chime_tts.say
 target:
@@ -113,7 +112,7 @@ When including the `options` parameter in a TTS segment, the included parameters
 
 The chime segment allows you to insert chimes anywhere in your messages, *(not just at the start via* [`chime_path`](#chime_path)) *or end via* [`end_chime_path`](#end_chime_path)*)*, and supports the [`offset`](#offset) and [`audio_conversion`](#audio_conversion) parameters.
 
-The chime path value can be set to a preset chime, a local path to your own custom files or a URL to a remote audio file (see [Selecting Chimes](./service#selecting-chimes)).
+The chime path value can be set to a preset chime, a local path to your own custom files or a URL to a remote audio file (see [chimes](./#chimes)).
 
 ```
 service: chime_tts.say

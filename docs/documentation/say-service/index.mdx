@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-title: Service
+title: Say Service
 ---
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
@@ -8,7 +8,30 @@ import './chime_tts.say.css'
 
 # `chime_tts.say` Service
 
-The `chime_tts.say` service joins together audio files, or *"chimes"*, and TTS audio, and then streams it to `media_player` target/s.
+The `chime_tts.say` service joins together audio files (*"chimes"*) and TTS audio as a new MP3 file, locally, for playback on `media_player` target/s.
+
+---
+
+## Service Calls
+
+Each service call is run synchronously so that any additional calls in the automation/script are delayed until the notification has finished playback.
+
+If additional calls are made before the current call is finished, it is added to a queue and run once the current service call has completed.
+
+---
+
+## Parameters
+The [parameters](./parameters) page provides explanations for each parameter supported by Chime TTS
+
+---
+
+## Examples
+The [examples](./examples) page demonstates the full scope of what's possible with Chime TTS.
+- See [basic](./examples#basic-tts-audio) notification examples cover simple calls
+- See [complex](./examples#more-complex-examples) notifications which involve adjusting audio properties
+- See [message segments](./examples#message-segments), used for messages with multiple chimes and TTS, and offers more options.
+
+---
 
 ## TTS Platforms
 

@@ -112,12 +112,12 @@ const config = {
               {
                 type: "doc",
                 label: "Say Service",
-                docId: "documentation/say-service/service"
+                docId: "documentation/say-service/index"
               },
               {
                 type: "doc",
                 label: "Say URL Service",
-                docId: "documentation/say_url-service/service"
+                docId: "documentation/say_url-service/index"
               },
               {
                 type: "doc",
@@ -126,8 +126,6 @@ const config = {
               }
             ]
           },
-          // { to: '/docs/category/documentation', label: 'Documentation', position: 'left' },
-          // { to: '/docs/documentation/say-service/examples', label: 'YAML Examples', position: 'left' },
           {
             href: "https://www.buymeacoffee.com/nimroddolev",
             position: "right",
@@ -156,12 +154,12 @@ const config = {
                 to: '/docs/quick-start',
               },
               {
-                label: 'Say Service',
-                to: '/docs/category/say-service',
+                label: "Say Service",
+                to: "/docs/documentation/say-service"
               },
               {
                 label: 'Say URL Service',
-                to: '/docs/category/say-url-service',
+                to: '/docs/documentation/say_url-service',
               },
               {
                 label: 'Clear Cache Service',
