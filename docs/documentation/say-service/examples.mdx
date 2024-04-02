@@ -138,6 +138,119 @@ data:
 ```
 <audio controls src={useBaseUrl('/audio/examples/pitch_lower.mp3')} />
 
+#### Musical Fun
+```
+service: chime_tts.say
+target:
+  entity_id:
+    - media_player.kitchen
+    - media_player.dining_room
+data:
+  tts_platform: google_translate
+  message:
+    - tts: Laah
+      pitch: -12
+      speed: 90
+    - tts: Laah
+      pitch: 0
+      speed: 125
+      offset: -400
+    - tts: Laah
+      pitch: 4
+      speed: 90
+      offset: -400
+    - tts: Laah
+      pitch: 7
+      speed: 125
+      offset: -400
+    - tts: Laah
+      pitch: -15
+      speed: 90
+      offset: -400
+    - tts: Laah
+      pitch: -3
+      speed: 125
+      offset: -400
+    - tts: Laah
+      pitch: 1
+      speed: 90
+      offset: -400
+    - tts: Laah
+      pitch: 4
+      speed: 125
+      offset: -400
+    - tts: Laah
+      pitch: -19
+      speed: 90
+      offset: -400
+    - tts: Laah
+      pitch: -7
+      speed: 125
+      offset: -400
+    - tts: Laah
+      pitch: -3
+      speed: 90
+      offset: -400
+    - tts: Laah
+      pitch: 0
+      speed: 125
+      offset: -400
+    - tts: Laah
+      pitch: -17
+      speed: 90
+      offset: -400
+    - tts: Laah
+      pitch: -5
+      speed: 125
+      offset: -400
+    - tts: Laah
+      pitch: -1
+      speed: 90
+      offset: -400
+    - tts: Laah
+      pitch: 2
+      speed: 125
+      offset: -400
+    - tts: Laah
+      pitch: 12
+      speed: 70
+      offset: -4916
+    - tts: Laah
+      pitch: 12
+      speed: 70
+      offset: -4340
+    - tts: Laah
+      pitch: 12
+      speed: 39.05
+      offset: -3950
+    - tts: Laah
+      pitch: 12
+      speed: 125
+      offset: -2300
+    - tts: Laah
+      pitch: 11
+      speed: 90
+      offset: -2150
+    - tts: Laah
+      pitch: 9
+      speed: 125
+      offset: -1800
+    - tts: Laah
+      pitch: 11
+      speed: 90
+      offset: -1600
+    - tts: Laah
+      pitch: 12
+      speed: 125
+      offset: -1200
+    - tts: Laah
+      pitch: 15
+      speed: 90
+      offset: -1000
+```
+<audio controls src={useBaseUrl('/audio/examples/musical_fun.mp3')} />
+
+
 ### `offset`
 Use the [`offset`](./parameters#offset) parameter to shift the start of chime/TTS audio backward (to overlap) or forward (to add a delay)
 
@@ -151,7 +264,7 @@ target:
     - media_player.dining_room
 data:
   chime_path: drumroll
-  chime_path_end: tada
+  end_chime_path: tada
   message: The suspense is killing me
   tts_platform: google_translate
   offset: 2000
