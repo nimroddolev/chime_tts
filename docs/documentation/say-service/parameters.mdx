@@ -30,7 +30,8 @@ The `chime_tts.say` service has [standard parameters](#standard-parameters) used
 
 The `message` parameter can also define a YAML sequence built from 3 different "segment" types: [`tts`](#tts-segment-type), [`chime`](#chime-segment-type) and [`delay`](#delay-segment-type). These segments can be used together to create any combination, for example:
 
-![advanced_message_segments](https://github.com/nimroddolev/chime_tts/assets/1849295/574a0f4e-12e4-44ab-ae69-b8e3b46f5ce9)
+<img src={useBaseUrl('/img/say/message_segments.png')} />
+
 
 ```
 service: chime_tts.say
@@ -203,10 +204,11 @@ Chime TTS works with [TTS Platform integrations](https://www.home-assistant.io/i
 | **Default:**     | `450`                                                                                          |
 
 When using a value greater than 0, a delay is added between audio components:
-![delay](https://github.com/nimroddolev/chime_tts/assets/1849295/9cc5a8c9-695f-4e7c-a2a8-fa6a8d17cb8f)
+<img src={useBaseUrl('/img/say/offset_positive.gif')} />
+
 
 When using a negative value the audio components are overlaid:
-![overlay](https://github.com/nimroddolev/chime_tts/assets/1849295/3daaef9b-5284-4398-ba04-8055c1352935)
+<img src={useBaseUrl('/img/say/offset_negative.gif')} />
 
 ---
 
