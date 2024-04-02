@@ -154,6 +154,26 @@ data:
 
 ---
 
+#### `repeat`
+
+All message segment types can include a `repeat` parameter to specofy the number of times to repeat the segment.
+
+```
+service: chime_tts.say
+target:
+  entity_id: media_player.macbook_air
+data:
+  tts_platform: google_translate
+  message:
+    - chime: https://www.zapsplat.com/wp-content/uploads/2015/sound-effects-three/household_clock_cuckoo_strike_001.mp3
+      repeat: 3
+      offset: -800
+    - tts: It's 3 o'clock
+```
+<audio controls src={useBaseUrl('/audio/parameters/repeat.mp3')} />
+
+---
+
 ### `tts_platform`
 
 Chime TTS works with [TTS Platform integrations](https://www.home-assistant.io/integrations/#text-to-speech), but you need to add them to your Home Assistant instance yourself beforehand.
