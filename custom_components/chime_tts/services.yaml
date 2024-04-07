@@ -388,22 +388,17 @@ say:
               value: pt
             - label: es
               value: es
-    gender:
-      name: Gender
-      description: "Use a male or female voice (Nabu Casa)"
-      example: "female"
+    voice:
+      name: Voice
+      description: "Define the voice for the TTS audio (on supported TTS platforms)"
+      example: "en-AU"
       required: false
       selector:
-        select:
-          options:
-            - label: "Male"
-              value: "male"
-            - label: "Female"
-              value: "female"
+        text:
     options:
       name: Options
-      description: "YAML Options to pass to TTS services (will override `tld` and `gender` fields)"
-      example: "tld: com.au\ngender: female"
+      description: "YAML Options to pass to TTS services (will override `tld` and `voice` fields)"
+      example: "tld: com.au\voice: en-AU"
       required: false
       selector:
         text:
@@ -725,22 +720,17 @@ say_url:
               value: pt
             - label: es
               value: es
-    gender:
-      name: Gender
-      description: "Use a male or female voice (Nabu Casa)"
-      example: "female"
+    voice:
+      name: Voice
+      description: "Define the voice for the TTS audio (on supported TTS platforms)"
+      example: "en-AU"
       required: false
       selector:
-        select:
-          options:
-            - label: "Male"
-              value: "male"
-            - label: "Female"
-              value: "female"
+        text:
     options:
       name: Options
-      description: "YAML Options to pass to TTS services (will override `tld` and `gender` fields)"
-      example: "tld: com.au\ngender: female"
+      description: "YAML Options to pass to TTS services (will override `tld` and `voice` fields)"
+      example: "tld: com.au\voice: en-AU"
       required: false
       selector:
         text:

@@ -119,7 +119,7 @@ class ChimeTTSHelper:
             _LOGGER.error("An unexpected error occurred while parsing options YAML: %s",
                           str(error))
 
-        for key in ["tld", "gender"]:
+        for key in ["tld", "voice"]:
             if key not in options:
                 value = data.get(key, None)
                 if value is not None:

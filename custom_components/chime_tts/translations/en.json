@@ -95,13 +95,13 @@
                     "name": "TLD",
                     "description": "The dialect Domain (supported by Google Translate)"
                 },
-                "gender": {
-                    "name": "Gender",
-                    "description": "Use a male or female voice (supported by Nabu Casa)"
+                "voice": {
+                    "name": "Voice",
+                    "description": "Define the voice for the TTS audio (on supported TTS platforms)"
                 },
                 "options": {
                     "name": "Options",
-                    "description": "YAML Options to pass to TTS services (will override `tld` and `gender` fields)"
+                    "description": "YAML Options to pass to TTS services (will override `tld` and `voice` fields)"
                 },
                 "audio_conversion": {
                     "name": "Audio Conversion",
@@ -158,13 +158,13 @@
                     "name": "TLD",
                     "description": "The dialect Domain (supported by Google Translate)"
                 },
-                "gender": {
-                    "name": "Gender",
-                    "description": "Use a male or female voice (supported by Nabu Casa)"
+                "voice": {
+                    "name": "Voice",
+                    "description": "Define the voice for the TTS audio (on supported TTS platforms)"
                 },
                 "options": {
                     "name": "Options",
-                    "description": "YAML Options to pass to TTS services (will override `tld` and `gender` fields)"
+                    "description": "YAML Options to pass to TTS services (will override `tld` and `voice` fields)"
                 },
                 "audio_conversion": {
                     "name": "Audio Conversion",

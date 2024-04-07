@@ -523,7 +523,7 @@ async def async_request_tts_audio(
 
     # Determine TTS Platform
     if tts_platform is None or tts_platform == "None" or tts_platform is False or len(tts_platform) <= 1:
-        _LOGGER.debug(" - No TTS platform included in service call")
+        _LOGGER.warning(" - No TTS platform included in service call")
         tts_platform = helpers.get_default_tts_platform(hass, _data[TTS_PLATFORM_KEY])
 
     if tts_platform == NABU_CASA_CLOUD_TTS_OLD:
@@ -538,22 +538,24 @@ async def async_request_tts_audio(
         IBM_WATSON_TTS,
         MICROSOFT_EDGE_TTS,
     ]:
-        if tts_platform is IBM_WATSON_TTS:
+        if tts_platform is IBM_WATSON_TTS and tts_options.get("voice") is None:
             tts_options["voice"] = language
+            language = None
     else:
         language = None
 
+    # Log warning if Nabu Casa has `voice` but no `language`
+    if (tts_platform == NABU_CASA_CLOUD_TTS
+        and len(tts_options.get("voice", "")) > 0
+        and (language is None or len(language) == 0)):
+        _LOGGER.warning("When setting Nabu Casa Cloud TTS `voice` you must also set `language`.")
+
     # Cache
-    use_cache = True if cache is True and tts_platform not in [GOOGLE_TRANSLATE, NABU_CASA_CLOUD_TTS] else False
+    use_cache = bool(cache) and tts_platform not in [GOOGLE_TRANSLATE, NABU_CASA_CLOUD_TTS]
 
     # tld
     if "tld" in tts_options and tts_platform not in [GOOGLE_TRANSLATE]:
         del tts_options["tld"]
-
-    # Gender
-    if "gender" in tts_options and tts_platform not in [NABU_CASA_CLOUD_TTS]:
-        del tts_options["gender"]
-
 
     # Debug log
     _LOGGER.debug(" - Generating new TTS audio with parameters:")
@@ -915,7 +917,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
 
                 # Use exposed parameters if not present in the options dictionary
                 segment_options = segment.get("options", {})
-                exposed_option_keys = ["gender", "tld", "voice"]
+                exposed_option_keys = ["tld", "voice"]
                 for exposed_option_key in exposed_option_keys:
                     value = (segment_options.get(exposed_option_key, None) or
                              segment.get(exposed_option_key, None))
@@ -1410,7 +1412,6 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
     relevant_params = [
         "message",
         "tts_platform",
-        "gender",
         "tld",
         "voice",
         "language",
