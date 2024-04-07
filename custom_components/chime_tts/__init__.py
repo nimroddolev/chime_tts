@@ -1168,18 +1168,20 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
         _LOGGER.debug("   %s Alexa media player%s detected:", len(alexa_media_player_entity_ids), ("s" if len(alexa_media_player_entity_ids) != 1 else ""))
         for entity_id in alexa_media_player_entity_ids:
             _LOGGER.debug("     - %s", entity_id)
-        service_calls.append({
-            "domain": "notify",
-            "service": "alexa_media",
-            "service_data": {
-                "message": f"<audio src=\"{audio_dict.get(PUBLIC_PATH_KEY, None)}\"/>",
-                "data": {
-                    "type": "tts"
-                    },
-                "target": alexa_media_player_entity_ids
-            },
-            "result": False
-        })
+        if len(audio_dict.get(PUBLIC_PATH_KEY, '')) > 0:
+            message_string = f"<audio src=\"{audio_dict.get(PUBLIC_PATH_KEY, '')}\"/>"
+            service_calls.append({
+                "domain": "notify",
+                "service": "alexa_media",
+                "service_data": {
+                    "message": message_string,
+                    "data": {"type": "tts"},
+                    "target": alexa_media_player_entity_ids
+                },
+                "result": False
+            })
+        else:
+            _LOGGER.warning("Unable to play audio on Alexa device. No public URL found.")
     # Prepare service call for regular media_players
     if len(standard_media_player_entity_ids) > 0:
         if service_data[ATTR_MEDIA_CONTENT_ID] is None:
