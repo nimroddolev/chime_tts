@@ -53,7 +53,7 @@ class ChimeTTSHelper:
         tts_platform = str(data.get("tts_platform", ""))
         tts_speed = float(data.get("tts_playback_speed", data.get("tts_speed", 100)))
         tts_pitch = data.get("tts_pitch", 0)
-        volume_level = float(data.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
+        volume_level = data.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
         media_players_array = await media_player_helper.async_initialize_media_players(
             hass, entity_ids, volume_level
         ) if is_say_url is False else []

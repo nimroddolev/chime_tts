@@ -152,7 +152,6 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                     params["announce"],
                     params["join_players"],
                     media_players_array,
-                    params["volume_level"],
                 )
                 if play_result is True:
                     await async_post_playback_actions(
@@ -337,7 +336,8 @@ async def async_post_playback_actions(
                 blocking=True
             )
         except Exception as error:
-            _LOGGER.warning("Unable to set volume to 0 for: %s. Error: %s", entity_id, (", ".join(map(str, resume_entity_ids))), error)
+            _LOGGER.warning("Unable to set %s's volume to 0 for: %s. Error: %s",
+                            entity_id, (", ".join(map(str, resume_entity_ids))), error)
 
 
         # 3. Call `media_play` until all media_players' states are "playing"
@@ -376,6 +376,9 @@ async def async_post_playback_actions(
 
     # Reset volume
     if len(_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]) > 0:
+        for media_player_dict in _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]:
+            if media_player_dict["initial_volume_level"] != -1:
+                _LOGGER.debug(" - Returning %s's volume level to %s", media_player_dict["entity_id"], media_player_dict["initial_volume_level"])
         await media_player_helper.async_set_volume_for_media_players(hass=hass,
                                                                      media_player_dicts=_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY],
                                                                      volume_key="initial_volume_level",
@@ -1069,7 +1072,6 @@ async def async_play_media(
     announce,
     join_players,
     media_players_array,
-    volume_level,
 ):
     """Call the media_player.play_media service."""
     _LOGGER.debug(" *** Pre-Playback Actions *** ")
@@ -1107,7 +1109,6 @@ async def async_play_media(
             _LOGGER.warning("Unable to join speakers. No supported media_players found.")
 
     # Fade out and pause media_players manually if their platforms do not support the `announce` feature
-
     _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY] = []
     _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY] = []
     for media_player_dict in media_players_array:
@@ -1147,17 +1148,12 @@ async def async_play_media(
                                                                           media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
                                                                           target_state="paused",
                                                                           timeout=1.5)
-
+        
     # Set media_players' volume_level
-    if volume_level >= 0 and len(_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]) > 0:
-        _LOGGER.debug(" - Setting volume level to %s for %s non-fade in/out media_player%s",
-                    str(volume_level),
-                    str(len(_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY])),
-                    ("s" if len(_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]) != 1 else ""))
-        await media_player_helper.async_set_volume_for_media_players(hass=hass,
-                                                                     media_player_dicts=_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY],
-                                                                     volume_key=volume_level,
-                                                                     fade_duration=0)
+    await media_player_helper.async_set_volume_for_media_players(hass=hass,
+                                                                 media_player_dicts=_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY],
+                                                                 volume_key="playback_volume_level",
+                                                                 fade_duration=0)
 
     # Play Chime TTS notification
     play_result = await async_play_media_service_calls(hass, entity_ids, service_data, audio_dict)

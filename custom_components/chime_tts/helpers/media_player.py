@@ -27,7 +27,7 @@ class MediaPlayerHelper:
             self,
             hass: HomeAssistant,
             entity_ids,
-            volume_level: float
+            volume_level
     ):
         """Initialize media player entities."""
         # Service call was from chime_tts.say_url, so media_players are irrelevant
@@ -64,12 +64,17 @@ class MediaPlayerHelper:
                           and (not announce_supported or media_player_is_spotify)
                           and hass.states.get(entity_id).attributes.get("media_duration", -1) != 0) # Check that media_player is _actually_ playing (HomePods can incorrectly have the state "playing" when no media is playing)
 
+            # Playback volume level
+            playback_volume_level = volume_level
+            if isinstance(volume_level, dict) and volume_level.get(entity_id, None):
+                playback_volume_level = volume_level.get(entity_id, -1)
+
             # Store media player's current volume level
             should_change_volume = False
             initial_volume_level = -1
-            should_change_volume = volume_level >= 0 or media_player_is_spotify
+            should_change_volume = playback_volume_level >= 0 or media_player_is_spotify
 
-            if volume_level >= 0 or media_player_is_spotify or is_playing:
+            if playback_volume_level >= 0 or media_player_is_spotify or is_playing:
                 initial_volume_level = float(
                     entity.attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
                 )
@@ -79,6 +84,7 @@ class MediaPlayerHelper:
                     "entity_id": entity_id,
                     "should_change_volume": should_change_volume,
                     "initial_volume_level": initial_volume_level,
+                    "playback_volume_level": playback_volume_level,
                     "group_members_supported": group_member_support,
                     "announce_supported": announce_supported,
                     "resume_media_player": is_playing,
@@ -87,7 +93,6 @@ class MediaPlayerHelper:
         if entity_found is False:
             _LOGGER.error("No valid media player found")
             return []
-        _LOGGER.debug("```Media players found: %s", str(media_players_array))
         return media_players_array
 
     def parse_entity_ids(self, data, hass):
