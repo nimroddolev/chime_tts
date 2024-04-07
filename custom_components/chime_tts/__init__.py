@@ -1264,7 +1264,9 @@ async def async_store_data(hass: HomeAssistant, key: str, value):
 async def async_retrieve_data(hass: HomeAssistant, key: str):
     """Retrieve a value from the integration's stored data based on the provided key."""
     await async_refresh_stored_data(hass)
-    return _data[DATA_STORAGE_KEY].get(key, None)
+    if _data.get(DATA_STORAGE_KEY, None):
+        return _data[DATA_STORAGE_KEY].get(key, None)
+    return None
 
 
 async def async_save_data(hass: HomeAssistant):
