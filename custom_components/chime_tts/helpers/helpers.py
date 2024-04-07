@@ -146,6 +146,7 @@ class ChimeTTSHelper:
             # Convert message string to YAML object
             message_yaml = None
             try:
+                message_string = message_string.replace("'", "\\'").replace("\\\\'", "|||||").replace("\\'", "'")
                 message_yaml = yaml.safe_load(message_string)
             except yaml.YAMLError as exc:
                 if hasattr(exc, 'problem_mark'):
@@ -170,12 +171,12 @@ class ChimeTTSHelper:
                             # Chime
                             if "chime" in elem:
                                 elem["type"] = "chime"
-                                elem["path"] = elem["chime"]
+                                elem["path"] = elem["chime"].replace("|||||", "'")
                                 del elem["chime"]
                             # TTS
                             elif "tts" in elem:
                                 elem["type"] = "tts"
-                                elem["message"] = elem["tts"]
+                                elem["message"] = elem["tts"].replace("|||||", "'")
                                 del elem["tts"]
                             # Delay
                             elif "delay" in elem:
