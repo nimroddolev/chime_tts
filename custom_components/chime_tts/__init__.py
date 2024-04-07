@@ -742,7 +742,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                     _LOGGER.debug("     - %s = %s", key, value)
 
                 # Apply audio conversion
-                if len(ffmpeg_args) > 0:
+                if ffmpeg_args is not None and len(ffmpeg_args) > 0:
                     _LOGGER.debug("   Apply audio conversion")
                     if audio_dict.get(LOCAL_PATH_KEY, None):
                         helpers.ffmpeg_convert_from_file(audio_dict.get(LOCAL_PATH_KEY, None), ffmpeg_args)
@@ -1257,9 +1257,10 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
 async def async_refresh_stored_data(hass: HomeAssistant):
     """Refresh the stored data of the integration."""
     store = storage.Store(hass, 1, DATA_STORAGE_KEY)
-    if _data is None:
-        _data = {}
-    _data[DATA_STORAGE_KEY] = await store.async_load()
+    try:
+        _data[DATA_STORAGE_KEY] = await store.async_load()
+    except Exception as error:
+        _LOGGER.error("Unable to retrieve stored data. Error: %s", error)
 
 
 async def async_store_data(hass: HomeAssistant, key: str, value):
