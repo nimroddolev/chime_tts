@@ -740,6 +740,15 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                     quote = '"' if value and isinstance(value, str) else ''
                     value = f"{quote}{value}{quote}"
                     _LOGGER.debug("     - %s = %s", key, value)
+
+                # Apply audio conversion
+                if len(ffmpeg_args) > 0:
+                    _LOGGER.debug("   Apply audio conversion")
+                    if audio_dict.get(LOCAL_PATH_KEY, None):
+                        helpers.ffmpeg_convert_from_file(audio_dict.get(LOCAL_PATH_KEY, None), ffmpeg_args)
+                    if audio_dict.get(PUBLIC_PATH_KEY, None):
+                        helpers.ffmpeg_convert_from_file(audio_dict.get(PUBLIC_PATH_KEY, None), ffmpeg_args)
+
                 return audio_dict
         _LOGGER.debug("   ...no cached audio found")
 
