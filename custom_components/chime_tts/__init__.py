@@ -1248,6 +1248,8 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
 async def async_refresh_stored_data(hass: HomeAssistant):
     """Refresh the stored data of the integration."""
     store = storage.Store(hass, 1, DATA_STORAGE_KEY)
+    if _data is None:
+        _data = {}
     _data[DATA_STORAGE_KEY] = await store.async_load()
 
 
