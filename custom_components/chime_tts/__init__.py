@@ -1148,7 +1148,7 @@ async def async_play_media(
                                                                           media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
                                                                           target_state="paused",
                                                                           timeout=1.5)
-        
+
     # Set media_players' volume_level
     await media_player_helper.async_set_volume_for_media_players(hass=hass,
                                                                  media_player_dicts=_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY],
