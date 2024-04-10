@@ -17,6 +17,8 @@ from homeassistant.components.media_player.const import (
     SERVICE_UNJOIN,
     MEDIA_TYPE_MUSIC,
 )
+
+from hass_nabucasa import voice
 from .helpers.helpers import ChimeTTSHelper
 from .helpers.media_player import MediaPlayerHelper
 from .helpers.filesystem import FilesystemHelper
@@ -547,11 +549,15 @@ async def async_request_tts_audio(
     else:
         language = None
 
-    # Log warning if Nabu Casa has `voice` but no `language`
+    # Assign `language` for Nabu Casa if missing, when `voice` provided
+    p_voice = tts_options.get("voice", None)
     if (tts_platform == NABU_CASA_CLOUD_TTS
-        and len(tts_options.get("voice", "")) > 0
+        and p_voice
         and (language is None or len(language) == 0)):
-        _LOGGER.warning("When setting Nabu Casa Cloud TTS `voice` you must also set `language`.")
+        for key, value in voice.TTS_VOICES.items():
+            if p_voice in value:
+                language = key
+                _LOGGER.debug(" - languge set to '%s' for voice: '%s'.", language, p_voice)
 
     # Cache
     use_cache = bool(cache) and tts_platform not in [GOOGLE_TRANSLATE, NABU_CASA_CLOUD_TTS]
