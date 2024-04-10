@@ -48,7 +48,6 @@ say:
       name: "Chime Path"
       description: "A preset or custom audio file to be played before TTS audio"
       example: "custom_components/chime_tts/mp3s/bells.mp3"
-      default: ""
       required: false
       selector:
         select:
@@ -123,7 +122,6 @@ say:
       name: "End Chime Path"
       description: "A preset or custom audio file to be played after TTS audio"
       example: "custom_components/chime_tts/mp3s/tada.mp3"
-      default: ""
       required: false
       selector:
         select:
@@ -199,7 +197,6 @@ say:
       description: "Adds a delay between audio segments when value > 0, or overlays audio segments when value < 0."
       example: 450
       required: false
-      default: 450
       selector:
         number:
           mode: box
@@ -212,7 +209,6 @@ say:
       description: "Final delay (ms) added to the end of the audio"
       example: 100
       required: false
-      default: 0
       selector:
         number:
           mode: box
@@ -232,7 +228,7 @@ say:
       name: "TTS Platform"
       description: "TTS platform used to generate TTS audio"
       example: "google_translate"
-      required: true
+      required: false
       selector:
         select:
           multiple: false
@@ -274,7 +270,6 @@ say:
       description: "Set the speed of the TTS audio to between 1% and 500% of the original"
       example: 125
       required: false
-      default: 100
       selector:
         number:
           mode: slider
@@ -287,7 +282,6 @@ say:
       description: "Change the the TTS pitch in semitones. Negative values for lower, positive for higher"
       example: 3
       required: false
-      default: 0
       selector:
         number:
           mode: slider
@@ -299,7 +293,6 @@ say:
       name: Volume Level
       description: "The volume to use when playing audio"
       required: false
-      default: 1.0
       selector:
         number:
           min: 0.0
@@ -412,7 +405,6 @@ say_url:
       name: "Chime Path"
       description: "A preset or custom audio file to be played before TTS audio"
       example: "custom_components/chime_tts/mp3s/bells.mp3"
-      default: ""
       required: false
       selector:
         select:
@@ -487,7 +479,6 @@ say_url:
       name: "End Chime Path"
       description: "A preset or custom audio file to be played after TTS audio"
       example: "custom_components/chime_tts/mp3s/tada.mp3"
-      default: ""
       required: false
       selector:
         select:
@@ -563,7 +554,6 @@ say_url:
       description: "Adds a delay between audio segments when value > 0, or overlays audio segments when value < 0."
       example: 450
       required: false
-      default: 450
       selector:
         number:
           mode: box
@@ -576,7 +566,6 @@ say_url:
       description: "Final delay (ms) added to the end of the audio"
       example: 100
       required: false
-      default: 0
       selector:
         number:
           mode: box
@@ -596,7 +585,7 @@ say_url:
       name: "TTS Platform"
       description: "TTS platform used to generate TTS audio"
       example: "google_translate"
-      required: true
+      required: false
       selector:
         select:
           multiple: false
@@ -638,7 +627,6 @@ say_url:
       description: "Set the speed of the TTS audio to between 1% and 500% of the original"
       example: 125
       required: false
-      default: 100
       selector:
         number:
           mode: slider
@@ -651,7 +639,6 @@ say_url:
       description: "Change the the TTS pitch in semitones. Negative values for lower, positive for higher"
       example: 3
       required: false
-      default: 0
       selector:
         number:
           mode: slider
@@ -682,7 +669,6 @@ say_url:
               value: Volume 100%
             - label: Custom (replace this text with your FFmpeg arguments)
               value: Custom
-
     language:
       name: Language
       description: "The TTS language (supported by Google Translate, Microsoft Edge TTS and Nabu Casa Cloud TTS)"
