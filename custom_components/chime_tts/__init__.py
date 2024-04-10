@@ -302,7 +302,7 @@ async def async_post_playback_actions(
         if not media_player_helper.get_is_media_player_spotify(hass, media_player_dict["entity_id"]):
             playing_media_player_dicts.append(media_player_dict)
     if not await media_player_helper.async_wait_until_media_players_state_not(hass, playing_media_player_dicts, "playing"):
-        _LOGGER.warning("Timed out waiting for playback to complete")
+        _LOGGER.debug(" - Timed out waiting for playback to complete")
 
     # Write to log if post-playback actions are to be performed
     if (len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) > 0
