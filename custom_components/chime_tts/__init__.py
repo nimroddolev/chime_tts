@@ -528,7 +528,6 @@ async def async_request_tts_audio(
 
     # Determine TTS Platform
     if tts_platform is None or tts_platform == "None" or tts_platform is False or len(tts_platform) <= 1:
-        _LOGGER.warning(" - No TTS platform included in service call")
         tts_platform = helpers.get_default_tts_platform(hass, _data[TTS_PLATFORM_KEY])
 
     if tts_platform == NABU_CASA_CLOUD_TTS_OLD:

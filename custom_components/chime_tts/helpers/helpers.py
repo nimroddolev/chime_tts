@@ -305,17 +305,20 @@ class ChimeTTSHelper:
         installed_tts = list((hass.data["tts_manager"].providers).keys())
         # Default TTS platform / TTS entity found
         if default_tts_platform is not None and len(default_tts_platform) > 1 and default_tts_platform in installed_tts or hass.states.get(default_tts_platform):
-            _LOGGER.debug(" - Using default TTS platform: %s", default_tts_platform)
+            _LOGGER.debug(" - Using default TTS platform: '%s'", default_tts_platform)
             return default_tts_platform
 
         # Use 1st available TTS platform
         if len(installed_tts) > 0:
             tts_platform = installed_tts[0]
-            _LOGGER.warning(" - The default TTS platform '%s' does not appear to be installed. Using '%'", default_tts_platform, tts_platform)
+            if default_tts_platform is None or len(default_tts_platform) == 0:
+                _LOGGER.warning("No TTS platform provided. Using '%s'", tts_platform)
+            else:
+                _LOGGER.warning("The default TTS platform '%s' does not appear to be installed. Using '%s'", default_tts_platform, tts_platform)
             return tts_platform
 
         # No TTS platforms available
-        _LOGGER.warning(" - The default TTS platform '%s' does not appear to be installed.")
+        _LOGGER.warning("The default TTS platform '%s' does not appear to be installed.", default_tts_platform)
         return default_tts_platform
 
 
