@@ -1,0 +1,49 @@
+---
+sidebar_position: 2
+title: Adding Notifications
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+# Adding Chime TTS Notifications
+
+1. Open your Home Assistant `configuration.yaml` file.
+2. Locate or add the `notify` section within your configuration.
+3. Add 1 or more notification entires (see the example below).
+4. Include any [`chime_tts.say`](../say-service) [parameters](../say-service/parameters) and set the default values.
+
+### Basic Chime TTS notify entry
+_configuration.yaml_
+```
+notify:
+  - name: announcements  # (required) Choose a recognizable name for your notifications
+    platform: chime_tts # (required)
+    entity_id:  # (required) List of media players for notifications
+      - media_player.kitchen
+      - media_player.office
+    chime_path: soft
+    tts_platform: cloud
+    language: en-AU
+```
+
+### Advanced Chime TTS notify entry
+_configuration.yaml_
+```
+notify:
+  - name: reminder
+    platform: chime_tts
+    chime_path: whistle
+    entity_id:
+      - media_player.kitchen
+      - media_player.living_room
+      - media_player.study
+      - media_player.bedroom
+      - media_player.spotify
+    tts_platform: cloud
+    language: en-AU
+    voice: TinaNeural
+    volume_level: 1
+    announce: true
+    join_players: true
+    unjoin_players: true
+```

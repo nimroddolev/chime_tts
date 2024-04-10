@@ -121,6 +121,11 @@ const config = {
               },
               {
                 type: "doc",
+                label: "Notify",
+                docId: "documentation/notify/index"
+              },
+              {
+                type: "doc",
                 label: "Clear Cache Service",
                 docId: "documentation/clear-cache-service"
               }
@@ -160,6 +165,10 @@ const config = {
               {
                 label: 'Say URL Service',
                 to: '/docs/documentation/say_url-service',
+              },
+              {
+                label: 'Notify',
+                to: '/docs/documentation/notify',
               },
               {
                 label: 'Clear Cache Service',

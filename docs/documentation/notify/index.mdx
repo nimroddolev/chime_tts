@@ -1,0 +1,28 @@
+---
+sidebar_position: 1
+title: Notify
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+# Chime TTS Notify Platform
+
+The Chime TTS notification platform allows you to define default settings for Chime TTS notifications within your `configuration.yaml` file instead of repeatedly having to use the [`chime_tts.say`](../say-service) service and define parameter values each time.
+
+This allows you to create as many notification entries as you like, each fully customized to your needs based on the type of announcement, the time of day, or any other use case you might have.
+
+## Example Notifications
+
+- An "evening" notification entry to only target specific media_players, with a specific chime and volume level.
+
+- An "announcement" notification entry to use for home-wide announcements at full volume with a loud chime.
+
+- A "calendar" notification entry used to remind you about upcoming events.
+
+## Benefits
+
+**Convenience**: Set any [`chime_tts.say`](../say-service) [parameter](../say-service/parameters) value (chime paths, media players, TTS platform, language, voice, etc) for all your use-cases, all in one place.
+
+**Efficiency**: Avoid repetitive service calls, simplifying configurations and easily add/change [parameters](../say-service/parameters) across your scripts & automations.
+
+**Flexibility**: Override the default notification settings for specific notifications when needed.

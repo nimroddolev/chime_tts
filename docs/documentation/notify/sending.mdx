@@ -1,0 +1,28 @@
+---
+sidebar_position: 3
+title: Sending Notifications
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+# Sending Notifications
+
+See the below example for how to send Chime TTS notifications:
+
+### Basic example
+```
+  service: notify.reminder
+  data:
+    message: "Don't forget to pick up the kids!"
+```
+
+### Example with parameter overrides
+In the below example, the [`chime_path`](../say-service/parameters#chime_path) and [`volume_level`](../say-service/parameters#volume_level) values defined in the `reminder` notification entry are overridden with custom values:
+```
+  service: notify.reminder
+  data:
+    message: "Don't forget to pick up the kids!"
+    data:
+      chime_path: /media/sounds/chimes/urgent.mp3
+      volume_level: 0.75
+```
