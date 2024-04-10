@@ -263,11 +263,28 @@ When using a negative value the audio components are overlaid:
 
 ### `volume_level`
 
-| **Description:** | The volume level (between 0.0 - 1.0) to play the audio.<br/>The original volume is restored after playback. |
-| ---------------- | -----------------------------------------------------------------------------------------------------------|
-| **Required:**    | No                                                                                                         |
-| **Example:**     | `0.75`                                                                                                     |
-| **Default:**     | `1.0`                                                                                                      |
+The `volume_level` parameter can be used to set the volume of the media_player/s included in the service call to a specific volume for the Chime TTS announcement, and return the volume level back to the original value once completed.
+
+#### Basic Usage
+When the `volume_level` parameter is defined as a float value, it will be applied to **all media_player entities** included in the service call.
+
+| **Description:** | The volume level (between 0.0 - 1.0) to play the audio. |
+| ---------------- | --------------------------------------------------------|
+| **Required:**    | No                                                      |
+| **Example:**     | `0.75`                                                  |
+| **Default:**     | `1.0`                                                   |
+
+#### Advanced Usage
+To set the volume level for each individual media_player, you can set the `volume_level` as a dictioary value, allowing you to **set a specific volume_level for each media_player entity** included in the service call.
+
+Example:
+```
+volume_level:
+  - media_player.kitchen: 1.00
+  - media_player.bedroom: 0.45
+  - media_player.living_room: 0.75
+  - media_player.study: 0.5
+```
 
 ---
 
