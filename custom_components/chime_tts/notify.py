@@ -51,6 +51,10 @@ class ChimeTTSNotificationService(BaseNotificationService):
                     "audio_conversion"]:
             if key in self._config:
                 kwargs[key] = self._config.get(key)
+            # Override parameters from data dictionary
+            if key in kwargs["data"]:
+                kwargs[key] = kwargs["data"][key]
+                del kwargs["data"][key]
 
         for key in kwargs:
             _LOGGER.debug("kwarg %s = %s", key, str(kwargs[key]))
