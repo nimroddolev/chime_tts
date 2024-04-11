@@ -303,8 +303,12 @@ class ChimeTTSHelper:
     def get_default_tts_platform(self, hass: HomeAssistant, default_tts_platform: str = ""):
         """User's default TTS platform name."""
         installed_tts = list((hass.data["tts_manager"].providers).keys())
+
         # Default TTS platform / TTS entity found
-        if default_tts_platform is not None and len(default_tts_platform) > 1 and default_tts_platform in installed_tts or hass.states.get(default_tts_platform):
+        if (default_tts_platform is not None
+            and len(default_tts_platform) > 0
+            and (default_tts_platform in installed_tts or
+                 hass.states.get(default_tts_platform))):
             _LOGGER.debug(" - Using default TTS platform: '%s'", default_tts_platform)
             return default_tts_platform
 
@@ -312,13 +316,13 @@ class ChimeTTSHelper:
         if len(installed_tts) > 0:
             tts_platform = installed_tts[0]
             if default_tts_platform is None or len(default_tts_platform) == 0:
-                _LOGGER.warning("No TTS platform provided. Using '%s'", tts_platform)
+                _LOGGER.debug(" - No `tts_platform` parameter provided. Using '%s'", tts_platform)
             else:
-                _LOGGER.warning("The default TTS platform '%s' does not appear to be installed. Using '%s'", default_tts_platform, tts_platform)
+                _LOGGER.warning("The `tts_platform` '%s' does not appear to be installed. Using '%s' instead", default_tts_platform, tts_platform)
             return tts_platform
 
         # No TTS platforms available
-        _LOGGER.warning("The default TTS platform '%s' does not appear to be installed.", default_tts_platform)
+        _LOGGER.warning("Chime TTS could not find any TTS platforms installed. Please add at least 1 TTS integration: https://www.home-assistant.io/integrations/#text-to-speech")
         return default_tts_platform
 
 
