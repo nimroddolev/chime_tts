@@ -132,6 +132,17 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         options = helpers.parse_options_yaml(service.data)
         media_players_array = params.get("media_players_array", None)
 
+        if not (params["message"] or params["chime_path"] or params["end_chime_path"]):
+            _LOGGER.error("No chime paths or message was provided.")
+            if is_say_url:
+                return {
+                    "url": None,
+                    ATTR_MEDIA_CONTENT_ID: None,
+                    "duration": 0,
+                    "success": False
+                }
+            return False
+
         # Create audio file to play on media player
         local_path = None
         public_path = None

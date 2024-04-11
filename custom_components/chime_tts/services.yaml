@@ -220,7 +220,7 @@ say:
       name: Message
       description: "Text converted into TTS audio"
       example: "Hello world!"
-      required: true
+      required: false
       selector:
         text:
           multiline: true
@@ -577,7 +577,7 @@ say_url:
       name: Message
       description: "Text converted into TTS audio"
       example: "Hello world!"
-      required: true
+      required: false
       selector:
         text:
           multiline: true
