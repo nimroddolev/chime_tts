@@ -1112,20 +1112,6 @@ async def async_play_media(
     # entity_id
     service_data[CONF_ENTITY_ID] = entity_ids
 
-    # join entity_ids as a group
-    if join_players is True:
-        group_members_suppored = media_player_helper.get_group_members_suppored(media_players_array)
-        if group_members_suppored > 1:
-            _data["join_media_player_entity_id"] = await media_player_helper.async_join_media_players(hass, entity_ids)
-            if _data["join_media_player_entity_id"] is not False:
-                service_data[CONF_ENTITY_ID] = _data["join_media_player_entity_id"]
-            else:
-                _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
-        elif group_members_suppored == 1:
-            _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
-        else:
-            _LOGGER.warning("Unable to join speakers. No supported media_players found.")
-
     # Fade out and pause media_players manually if their platforms do not support the `announce` feature
     _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY] = []
     _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY] = []
@@ -1172,6 +1158,28 @@ async def async_play_media(
                                                                  media_player_dicts=_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY],
                                                                  volume_key="playback_volume_level",
                                                                  fade_duration=0)
+
+    # join entity_ids as a group
+    if join_players is True:
+        group_members_supported = media_player_helper.get_group_members_suppored(media_players_array)
+        if group_members_supported > 1:
+            _data["join_media_player_entity_id"] = await media_player_helper.async_join_media_players(hass, entity_ids)
+            if _data["join_media_player_entity_id"] is not False:
+                service_data[CONF_ENTITY_ID] = [_data["join_media_player_entity_id"]]
+                volume_level = media_players_array[0]["playback_volume_level"]
+                # Replace media_player array elements with the new joined media_player dictionary
+                joint_media_player_dict = await media_player_helper.async_get_media_player_dict(hass,
+                                                                                                _data["join_media_player_entity_id"],
+                                                                                                volume_level)
+                _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY] = {
+                     _data["join_media_player_entity_id"] : joint_media_player_dict
+                }
+            else:
+                _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
+        elif group_members_supported == 1:
+            _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
+        else:
+            _LOGGER.warning("Unable to join speakers. %s supported media_player%s found (minimum is 2).", str(group_members_supported), ("" if group_members_supported == 1 else "s"))
 
     # Play Chime TTS notification
     play_result = await async_play_media_service_calls(hass, entity_ids, service_data, audio_dict)

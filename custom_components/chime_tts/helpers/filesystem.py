@@ -256,7 +256,7 @@ class FilesystemHelper:
             .replace("/config", "")
             .replace("www/", "local/")
         )
-    
+
     def get_local_path(self, hass: HomeAssistant, file_path):
         """Convert external URL to local public path."""
         instance_url = hass.config.external_url

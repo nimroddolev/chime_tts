@@ -23,77 +23,74 @@ _LOGGER = logging.getLogger(__name__)
 class MediaPlayerHelper:
     """Media player helper functions for Chime TTS."""
 
-    async def async_initialize_media_players(
-            self,
-            hass: HomeAssistant,
-            entity_ids,
-            volume_level
-    ):
+    async def async_initialize_media_players(self, hass: HomeAssistant, entity_ids, volume_level):
         """Initialize media player entities."""
         # Service call was from chime_tts.say_url, so media_players are irrelevant
         if len(entity_ids) == 0:
             return []
 
-        entity_found = False
         media_players_array = []
         for entity_id in entity_ids:
-            # Validate media player entity_id
-            entity = hass.states.get(entity_id)
-            media_player_is_spotify = self.get_is_media_player_spotify(hass, entity_id)
-            if entity is None:
-                _LOGGER.warning('Media player entity: "%s" not found', entity_id)
-                continue
-            else:
-                entity_found = True
+            media_player_dict = await self.async_get_media_player_dict(hass, entity_id, volume_level)
+            if media_player_dict:
+                media_players_array.append(media_player_dict)
 
-            # Ensure media player is turned on
-            if entity.state == "off":
-                _LOGGER.info(
-                    'Media player entity "%s" is turned off. Turning on...', entity_id
-                )
-                await hass.services.async_call(
-                    domain="media_player",
-                    service=SERVICE_TURN_ON,
-                    service_data={CONF_ENTITY_ID: entity_id},
-                    blocking=True
-                )
+        if len(media_players_array) == 0:
+            _LOGGER.error("No valid media players found")
 
-            group_member_support = self.get_supported_feature(entity, ATTR_GROUP_MEMBERS)
-            announce_supported = self.get_supported_feature(entity, ATTR_MEDIA_ANNOUNCE)
-            is_playing = (hass.states.get(entity_id).state == "playing"
-                          and (not announce_supported or media_player_is_spotify)
-                          and hass.states.get(entity_id).attributes.get("media_duration", -1) != 0) # Check that media_player is _actually_ playing (HomePods can incorrectly have the state "playing" when no media is playing)
-
-            # Playback volume level
-            playback_volume_level = volume_level
-            if isinstance(volume_level, dict) and volume_level.get(entity_id, None):
-                playback_volume_level = volume_level.get(entity_id, -1)
-
-            # Store media player's current volume level
-            should_change_volume = False
-            initial_volume_level = -1
-            should_change_volume = playback_volume_level >= 0 or media_player_is_spotify
-
-            if playback_volume_level >= 0 or media_player_is_spotify or is_playing:
-                initial_volume_level = float(
-                    entity.attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
-                )
-
-            media_players_array.append(
-                {
-                    "entity_id": entity_id,
-                    "should_change_volume": should_change_volume,
-                    "initial_volume_level": initial_volume_level,
-                    "playback_volume_level": playback_volume_level,
-                    "group_members_supported": group_member_support,
-                    "announce_supported": announce_supported,
-                    "resume_media_player": is_playing,
-                }
-            )
-        if entity_found is False:
-            _LOGGER.error("No valid media player found")
-            return []
         return media_players_array
+
+    async def async_get_media_player_dict(self, hass: HomeAssistant, entity_id, volume_level):
+        """Create a media player dictionary object for a given entity_id."""
+        # Validate media player entity_id
+        entity = hass.states.get(entity_id)
+        media_player_is_spotify = self.get_is_media_player_spotify(hass, entity_id)
+        if entity is None:
+            _LOGGER.warning('Media player entity: "%s" not found', entity_id)
+            return None
+
+        # Ensure media player is turned on
+        if entity.state == "off":
+            _LOGGER.info(
+                'Media player entity "%s" is turned off. Turning on...', entity_id
+            )
+            await hass.services.async_call(
+                domain="media_player",
+                service=SERVICE_TURN_ON,
+                service_data={CONF_ENTITY_ID: entity_id},
+                blocking=True
+            )
+
+        group_member_support = self.get_supported_feature(entity, ATTR_GROUP_MEMBERS)
+        announce_supported = self.get_supported_feature(entity, ATTR_MEDIA_ANNOUNCE)
+        is_playing = (hass.states.get(entity_id).state == "playing"
+                        and (not announce_supported or media_player_is_spotify)
+                        and hass.states.get(entity_id).attributes.get("media_duration", -1) != 0) # Check that media_player is _actually_ playing (HomePods can incorrectly have the state "playing" when no media is playing)
+
+        # Playback volume level
+        playback_volume_level = volume_level
+        if isinstance(volume_level, dict) and volume_level.get(entity_id, None):
+            playback_volume_level = volume_level.get(entity_id, -1)
+
+        # Store media player's current volume level
+        should_change_volume = False
+        initial_volume_level = -1
+        should_change_volume = playback_volume_level >= 0 or media_player_is_spotify
+
+        if playback_volume_level >= 0 or media_player_is_spotify or is_playing:
+            initial_volume_level = float(
+                entity.attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
+            )
+
+        return {
+            "entity_id": entity_id,
+            "should_change_volume": should_change_volume,
+            "initial_volume_level": initial_volume_level,
+            "playback_volume_level": playback_volume_level,
+            "group_members_supported": group_member_support,
+            "announce_supported": announce_supported,
+            "resume_media_player": is_playing,
+        }
 
     def parse_entity_ids(self, data, hass):
         """Parse media_player entity_ids into list object."""
