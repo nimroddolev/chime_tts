@@ -713,7 +713,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     """Create audio to play on media player entity."""
     output_audio = None
 
-    hass = params.get("hass", None)
+    hass: HomeAssistant = params.get("hass", None)
     chime_path = params.get("chime_path", None)
     end_chime_path = params.get("end_chime_path", None)
     offset = params.get("offset", _data[OFFSET_KEY])
@@ -750,7 +750,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.copy_file(audio_dict.get(LOCAL_PATH_KEY, None), _data.get(WWW_PATH_KEY, None))
                 await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, None), duration, params, options)
 
-            audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.create_url_path(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
+            audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.get_external_url(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
             audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or
                                                                                          audio_dict.get(PUBLIC_PATH_KEY, None),
                                                                                          _data.get(MEDIA_DIR_KEY, None))
@@ -768,7 +768,9 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                     if audio_dict.get(LOCAL_PATH_KEY, None):
                         helpers.ffmpeg_convert_from_file(audio_dict.get(LOCAL_PATH_KEY, None), ffmpeg_args)
                     if audio_dict.get(PUBLIC_PATH_KEY, None):
-                        helpers.ffmpeg_convert_from_file(audio_dict.get(PUBLIC_PATH_KEY, None), ffmpeg_args)
+                        # Convert public path to local path
+                        local_public_file_path = filesystem_helper.get_local_path(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
+                        helpers.ffmpeg_convert_from_file(local_public_file_path, ffmpeg_args)
 
                 return audio_dict
         _LOGGER.debug("   ...no cached audio found")
@@ -840,7 +842,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 await async_add_audio_file_to_cache(hass, audio_dict.get(folder_key, None), duration, params, options)
 
         # Convert external URL (for public paths)
-        audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.create_url_path(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
+        audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.get_external_url(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
 
     # Valdiation
     is_valid = True

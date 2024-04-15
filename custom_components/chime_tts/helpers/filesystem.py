@@ -231,8 +231,8 @@ class FilesystemHelper:
                     return True
         return False
 
-    def create_url_path(self, hass: HomeAssistant, file_path):
-        """Convert public path to external URL or local path to media-source."""
+    def get_external_url(self, hass: HomeAssistant, file_path):
+        """Convert local public path to external URL or local path to media-source."""
         if file_path is None:
             return None
 
@@ -256,6 +256,14 @@ class FilesystemHelper:
             .replace("/config", "")
             .replace("www/", "local/")
         )
+    
+    def get_local_path(self, hass: HomeAssistant, file_path):
+        """Convert external URL to local public path."""
+        instance_url = hass.config.external_url
+        if instance_url is None:
+            instance_url = str(get_url(hass))
+        public_dir = hass.config.path('www')
+        return file_path.replace(instance_url, public_dir).replace('/www/local/', '/www/')
 
     def delete_file(self, file_path):
         """Safely delete a file."""
