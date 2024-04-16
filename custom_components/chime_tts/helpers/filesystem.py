@@ -172,9 +172,13 @@ class FilesystemHelper:
         content_type = response.headers.get('Content-Type', '')
         if 'audio' in content_type:
             _LOGGER.debug(" - Audio downloaded successfully")
-            file_name, file_extension = os.path.splitext(url)
-            audio_content = AudioSegment.from_file(BytesIO(response.content),
-                                                   format=file_extension.replace(".", ""))
+            _, file_extension = os.path.splitext(url)
+            try:
+                audio_content = AudioSegment.from_file(BytesIO(response.content),
+                                                       format=file_extension.replace(".", ""))
+            except Exception as error:
+                _LOGGER.warning("Error when loading audio from downloaded file: %s", str(error))
+                return None
             if audio_content is not None:
                 audio_file_path = self.save_audio_to_folder(audio=audio_content,
                                                             folder=folder,
@@ -184,8 +188,10 @@ class FilesystemHelper:
                     LOCAL_PATH_KEY: audio_file_path,
                     AUDIO_DURATION_KEY: audio_duration
                 }
+            else:
+                _LOGGER.warning("Downloaded file did not contain audio: %s", url)
         else:
-            _LOGGER.warning(" Unable to extract audio from URL with content-type '%s'",
+            _LOGGER.warning("Unable to extract audio from URL with content-type '%s'",
                             str(content_type))
         return None
 
