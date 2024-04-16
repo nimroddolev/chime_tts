@@ -503,7 +503,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
     ]:
         value = _data.get(key_string, None)
         if value and isinstance(value, dict):
-            _LOGGER.debug(" - %s:", key_string)
+            _LOGGER.debug(" - %s:", key_string.replace("_key", ""))
             for dict_key, dict_value in value.items():
                 quote = ("'" if (
                     isinstance(dict_value, str)
@@ -511,10 +511,10 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
                     and dict_value != ""
                     and dict_value != "None"
                     ) else "")
-                _LOGGER.debug("   - %s: %s%s%s", dict_key, quote, str(value.get(dict_key, "None")), quote)
+                _LOGGER.debug("   - %s: %s%s%s", dict_key.replace("_key", ""), quote, str(value.get(dict_key, "None")), quote)
         else:
             quote = "'" if isinstance(value, str) and value is not None and value != 'None' else ""
-            _LOGGER.debug(" - %s: %s%s%s", key_string, quote, str(value), quote)
+            _LOGGER.debug(" - %s: %s%s%s", key_string.replace("_key", ""), quote, str(value), quote)
 
 ####################################
 ### Retrieve TTS Audio Functions ###
