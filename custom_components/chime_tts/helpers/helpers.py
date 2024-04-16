@@ -64,6 +64,10 @@ class ChimeTTSHelper:
         announce = data.get("announce", False)
         fade_audio = data.get("fade_audio", False)
 
+        # No valid media players included
+        if len(media_players_array) == 0 and is_say_url is False:
+            return None
+
         # FFmpeg arguments
         ffmpeg_args: str = self.parse_ffmpeg_args(data.get("audio_conversion", None))
 
@@ -97,9 +101,14 @@ class ChimeTTSHelper:
 
         _LOGGER.debug("----- General Parameters -----")
         for key, value in params.items():
-            if value is not None and value != "" and key not in ["hass", "media_players_array"]:
+            if value is not None and value != "" and key not in ["hass"]:
                 p_key = "audio_conversion" if key == "ffmpeg_args" else key
-                _LOGGER.debug(" * %s = %s", p_key, str(value))
+                if isinstance(value, list) and len(value) > 1 and p_key != "audio_conversion":
+                    _LOGGER.debug(" * %s:", p_key)
+                    for i in range(0, len(value)):
+                        _LOGGER.debug("   - %s: %s", str(i), str(value[i]))
+                else:
+                    _LOGGER.debug(" * %s = %s", p_key, str(value))
 
         if alexa_conversion_forced is True:
             _LOGGER.debug(" --- Audio will be converted to Alexa-friendly format as Alexa speaker/s detected ---")

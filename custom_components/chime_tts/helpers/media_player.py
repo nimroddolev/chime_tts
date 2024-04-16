@@ -46,7 +46,6 @@ class MediaPlayerHelper:
         entity = hass.states.get(entity_id)
         media_player_is_spotify = self.get_is_media_player_spotify(hass, entity_id)
         if entity is None:
-            _LOGGER.warning('Media player entity: "%s" not found', entity_id)
             return None
 
         # Ensure media player is turned on
@@ -84,6 +83,7 @@ class MediaPlayerHelper:
 
         return {
             "entity_id": entity_id,
+            "platform": self.get_media_player_platform(hass, entity_id),
             "should_change_volume": should_change_volume,
             "initial_volume_level": initial_volume_level,
             "playback_volume_level": playback_volume_level,

@@ -130,11 +130,22 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
         # Parse service parameters & TTS options
         params = await helpers.async_parse_params(hass, service.data, is_say_url)
-        options = helpers.parse_options_yaml(service.data)
-        media_players_array = params.get("media_players_array", None)
+        if params is not None:
+            options = helpers.parse_options_yaml(service.data)
+            media_players_array = params.get("media_players_array", None)
+        # Unable to continue
+        else:
+            if is_say_url:
+                return {
+                    "url": None,
+                    ATTR_MEDIA_CONTENT_ID: None,
+                    "duration": 0,
+                    "success": False
+                }
+            return False
 
         if not (params["message"] or params["chime_path"] or params["end_chime_path"]):
-            _LOGGER.error("No chime paths or message was provided.")
+            _LOGGER.error("No chime paths or message provided.")
             if is_say_url:
                 return {
                     "url": None,
