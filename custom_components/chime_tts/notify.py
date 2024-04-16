@@ -29,8 +29,8 @@ class ChimeTTSNotificationService(BaseNotificationService):
 
     async def async_send_message(self, message="", **kwargs):
         """Send a notification with the Chime TTS Notify Service."""
-        _LOGGER.debug("_config = %s", str(self._config))
         kwargs["message"] = message
+        data = kwargs.get("data", {})
         for key in ["entity_id",
                     "chime_path",
                     "end_chime_path",
@@ -53,11 +53,13 @@ class ChimeTTSNotificationService(BaseNotificationService):
             if key in self._config:
                 kwargs[key] = self._config.get(key)
             # Override parameters from data dictionary
-            if key in kwargs["data"]:
-                kwargs[key] = kwargs["data"][key]
-                del kwargs["data"][key]
+            if data and key in data:
+                kwargs[key] = data[key]
 
+        _LOGGER.debug("----- Chime TTS Notify -----")
         for key in kwargs:
-            _LOGGER.debug("kwarg %s = %s", key, str(kwargs[key]))
+            value = kwargs[key]
+            quote = "'" if isinstance(value, str) else ""
+            _LOGGER.debug(" - %s = %s%s%s", key, quote, str(value), quote)
 
         await self.hass.services.async_call("chime_tts", "say", kwargs, blocking=True)
