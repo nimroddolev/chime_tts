@@ -2,6 +2,7 @@
 
 import logging
 import time
+import math
 from homeassistant.core import HomeAssistant, State
 from homeassistant.const import CONF_ENTITY_ID, SERVICE_TURN_ON, SERVICE_VOLUME_SET
 
@@ -15,8 +16,7 @@ from ..const import (
     ALEXA_MEDIA_PLAYER_PLATFORM,
     SPOTIFY_PLATFORM,
     MEDIA_DIR_DEFAULT,
-    FADE_TRANSITION_STEPS,
-    FADE_TRANSITION_S
+    TRANSITION_STEP_MS
 )
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ class MediaPlayerHelper:
             "playback_volume_level": playback_volume_level,
             "group_members_supported": group_member_support,
             "announce_supported": announce_supported,
-            "resume_media_player": is_playing,
+            "is_playing": is_playing,
         }
 
     def parse_entity_ids(self, data, hass):
@@ -297,13 +297,14 @@ class MediaPlayerHelper:
 
         return True
 
-    async def async_set_volume_for_media_players(self, hass: HomeAssistant, media_player_dicts, volume_key, fade_duration: float):
+    async def async_set_volume_for_media_players(self, hass: HomeAssistant, media_player_dicts, volume_key, fade_duration: int):
         """Fade media players to a volume level."""
         if media_player_dicts is None or len(media_player_dicts) == 0:
             return
 
-        fade_steps = FADE_TRANSITION_STEPS if fade_duration > 0 else 1
-        delay_s = float(FADE_TRANSITION_S / fade_steps)
+        fade_duration = fade_duration / 1000 # Convert from miliseconds to seconds
+        fade_steps = math.ceil((fade_duration*1000)/TRANSITION_STEP_MS) if fade_duration > 0 else 1
+        delay_s = float(fade_duration / fade_steps)
 
         if fade_steps > 1:
             for step in range(0, fade_steps):
@@ -313,17 +314,22 @@ class MediaPlayerHelper:
                     current_volume = float(hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, 0))
 
                     # Skip media_player if already at target volume
-                    if target_volume == current_volume:
+                    if target_volume == current_volume and step == 0:
+                        continue
+
+                    # Skip media_player if target volume is -1
+                    if target_volume == -1:
                         continue
 
                     # Determine volume steps on first loop
                     if step == 0:
                         volume_step = (target_volume - current_volume) / fade_steps
-                        _LOGGER.debug(" - Fading %s %s's volume from %s to %s",
+                        _LOGGER.debug(" - Fading %s %s's volume from %s to %s over %ss",
                                     ("in" if volume_step > 0 else "out"),
                                     entity_id,
                                     str(current_volume),
-                                    str(target_volume))
+                                    str(target_volume),
+                                    str(fade_duration))
                         media_player_dict["volume_steps"] = []
                         for i in range(1, fade_steps):
                             volume_step_i = current_volume + (volume_step * i)
@@ -348,9 +354,13 @@ class MediaPlayerHelper:
         else:
             for media_player_dict in media_player_dicts:
                 entity_id = media_player_dict["entity_id"]
+                current_volume = float(hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, 0))
                 target_volume = media_player_dict.get(str(volume_key), volume_key)
                 if target_volume >= 0:
-                    _LOGGER.debug(" - Setting %s's volume to %s", entity_id, target_volume)
+                    if target_volume - current_volume > 0:
+                        _LOGGER.debug(" - Increasing %s's volume from %s to %s", entity_id, str(current_volume), str(target_volume))
+                    else:
+                        _LOGGER.debug(" - Decresing %s's volume from %s to %s", entity_id, str(current_volume), str(target_volume))
                     try:
                         await hass.services.async_call(
                             domain="media_player",

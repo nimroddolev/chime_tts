@@ -49,7 +49,8 @@ from .const import (
     PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY,
     SET_VOLUME_MEDIA_PLAYER_DICTS_KEY,
     AUDIO_DURATION_KEY,
-    FADE_TRANSITION_S,
+    FADE_TRANSITION_KEY,
+    DEFAULT_FADE_TRANSITION_MS,
     ROOT_PATH_KEY,
     DEFAULT_TEMP_CHIMES_PATH_KEY,
     TEMP_CHIMES_PATH_KEY,
@@ -163,6 +164,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                     audio_dict,
                     params["entity_ids"],
                     params["announce"],
+                    params["fade_audio"],
                     params["join_players"],
                     media_players_array,
                 )
@@ -385,13 +387,10 @@ async def async_post_playback_actions(
         await media_player_helper.async_set_volume_for_media_players(hass=hass,
                                                                      media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
                                                                      volume_key="initial_volume_level",
-                                                                     fade_duration=FADE_TRANSITION_S)
+                                                                     fade_duration=_data[FADE_TRANSITION_KEY])
 
     # Reset volume
     if len(_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]) > 0:
-        for media_player_dict in _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]:
-            if media_player_dict["initial_volume_level"] != -1:
-                _LOGGER.debug(" - Returning %s's volume level to %s", media_player_dict["entity_id"], media_player_dict["initial_volume_level"])
         await media_player_helper.async_set_volume_for_media_players(hass=hass,
                                                                      media_player_dicts=_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY],
                                                                      volume_key="initial_volume_level",
@@ -458,6 +457,9 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
     # Default offset
     _data[OFFSET_KEY] = options.get(OFFSET_KEY, 0)
 
+    # Default audio fade transition duration
+    _data[FADE_TRANSITION_KEY] = options.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)
+
     # Media folder (default local)
     _data[MEDIA_DIR_KEY] = options.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)
 
@@ -492,6 +494,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
         QUEUE_TIMEOUT_KEY,
         TTS_PLATFORM_KEY,
         OFFSET_KEY,
+        FADE_TRANSITION_KEY,
         TEMP_CHIMES_PATH_KEY,
         TEMP_PATH_KEY,
         WWW_PATH_KEY,
@@ -1088,6 +1091,7 @@ async def async_play_media(
     audio_dict,
     entity_ids,
     announce,
+    fade_audio,
     join_players,
     media_players_array,
 ):
@@ -1117,7 +1121,7 @@ async def async_play_media(
     _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY] = []
     for media_player_dict in media_players_array:
         entity_id = media_player_dict["entity_id"]
-        if (announce and not media_player_dict["announce_supported"] and media_player_dict["resume_media_player"]):
+        if ((fade_audio or (announce and not media_player_dict["announce_supported"])) and media_player_dict["is_playing"]):
             media_player_dict["fade_out_volume"] = (0.1 if media_player_helper.get_is_media_player_spotify(hass, entity_id) else 0)
             _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY].append(media_player_dict)
         if media_player_dict["should_change_volume"] and not media_player_helper.get_is_media_player_spotify(hass, entity_id):
@@ -1129,7 +1133,7 @@ async def async_play_media(
         await media_player_helper.async_set_volume_for_media_players(hass=hass,
                                                                      media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
                                                                      volume_key="fade_out_volume",
-                                                                     fade_duration=FADE_TRANSITION_S)
+                                                                     fade_duration=_data[FADE_TRANSITION_KEY])
 
     # Pause playing media_players
     if len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) > 0:

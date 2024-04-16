@@ -85,7 +85,11 @@
                 },
                 "announce": {
                     "name": "Announce",
-                    "description": "Pauses media during announcement and resumes when completed (on supported devices)"
+                    "description": "Reduce volume of currently playing audio during during announcement (on supported devices)"
+                },
+                "fade_audio": {
+                    "name": "Fade Audio",
+                    "description": "Fade out playing audio during announcement, fade back in when completed (on supported devices)"
                 },
                 "language": {
                     "name": "Language",
@@ -225,6 +229,7 @@
                     "queue_timeout": "Service call timeout (in seconds)",
                     "tts_platform_key": "Default TTS platform",
                     "offset": "Default offset value (ms) between chimes & TTS audio",
+                    "fade_transition_key": "Fade transition for currently playing audio (in milliseconds) for `announce` and `fade_audio`",
                     "media_dir": "Media folder (default 'local')",
                     "temp_chimes_path": "Folder path to store downloaded chime audio files",
                     "temp_path": "Folder path to store tempoary TTS audio mp3 files",

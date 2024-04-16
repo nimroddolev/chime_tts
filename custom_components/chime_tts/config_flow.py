@@ -12,6 +12,8 @@ from .const import (
     TTS_PLATFORM_KEY,
     OFFSET_KEY,
     DEFAULT_OFFSET_MS,
+    FADE_TRANSITION_KEY,
+    DEFAULT_FADE_TRANSITION_MS,
     MEDIA_DIR_KEY,
     MEDIA_DIR_DEFAULT,
     TEMP_CHIMES_PATH_KEY,
@@ -92,6 +94,11 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                     OFFSET_KEY,
                     default=self.get_data_key_value(OFFSET_KEY,
                                                     user_input.get(OFFSET_KEY, DEFAULT_OFFSET_MS)),  # type: ignore
+                ): int,
+                vol.Optional(
+                    FADE_TRANSITION_KEY,
+                    default=self.get_data_key_value(FADE_TRANSITION_KEY,
+                                                    user_input.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)),  # type: ignore
                 ): int,
                 vol.Required(
                     MEDIA_DIR_KEY,

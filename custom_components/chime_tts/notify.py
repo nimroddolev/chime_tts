@@ -44,6 +44,7 @@ class ChimeTTSNotificationService(BaseNotificationService):
                     "unjoin_players",
                     "cache",
                     "announce",
+                    "fade_audio",
                     "language",
                     "tld",
                     "voice",

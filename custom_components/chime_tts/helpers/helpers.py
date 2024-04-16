@@ -61,8 +61,8 @@ class ChimeTTSHelper:
         unjoin_players = data.get("unjoin_players", False)
         language = data.get("language", None)
         cache = data.get("cache", False)
-
         announce = data.get("announce", False)
+        fade_audio = data.get("fade_audio", False)
 
         # FFmpeg arguments
         ffmpeg_args: str = self.parse_ffmpeg_args(data.get("audio_conversion", None))
@@ -88,6 +88,7 @@ class ChimeTTSHelper:
             "tts_speed": tts_speed,
             "tts_pitch": tts_pitch,
             "announce": announce,
+            "fade_audio": fade_audio,
             "volume_level": volume_level,
             "join_players": join_players,
             "unjoin_players": unjoin_players,
