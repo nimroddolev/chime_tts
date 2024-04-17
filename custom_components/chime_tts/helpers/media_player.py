@@ -69,7 +69,7 @@ class MediaPlayerHelper:
 
         # Playback volume level
         playback_volume_level = volume_level
-        if isinstance(volume_level, dict) and volume_level.get(entity_id, None):
+        if isinstance(volume_level, dict):
             playback_volume_level = volume_level.get(entity_id, -1)
 
         # Store media player's current volume level
