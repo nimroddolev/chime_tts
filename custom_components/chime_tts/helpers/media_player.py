@@ -70,17 +70,14 @@ class MediaPlayerHelper:
         # Playback volume level
         playback_volume_level = volume_level
         if isinstance(volume_level, dict):
-            playback_volume_level = volume_level.get(entity_id, -1)
+            playback_volume_level = volume_level.get(entity_id, -1.0)
 
         # Store media player's current volume level
         should_change_volume = False
-        initial_volume_level = -1
         should_change_volume = playback_volume_level >= 0 or media_player_is_spotify
-
-        if playback_volume_level >= 0 or media_player_is_spotify or is_playing:
-            initial_volume_level = float(
-                entity.attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
-            )
+        initial_volume_level = float(
+            entity.attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1.0)
+        )
 
         return {
             "entity_id": entity_id,
