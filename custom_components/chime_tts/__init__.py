@@ -1084,17 +1084,18 @@ async def async_play_media(
         elif group_members_supported == 1:
             _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
         else:
-            _LOGGER.warning("Unable to join speakers. %s supported media_player%s found (minimum is 2).", str(group_members_supported), ("" if group_members_supported == 1 else "s"))
+            _LOGGER.warning("Unable to join speakers. %s supported media_player%s found (minimum is 2).",
+                            str(group_members_supported), ("" if group_members_supported == 1 else "s"))
 
     # Play Chime TTS notification
-    media_service_calls = await async_prepare_media_service_calls(hass, entity_ids, service_data, audio_dict, media_players_array)
+    media_service_calls = prepare_media_service_calls(hass, entity_ids, service_data, audio_dict, media_players_array)
     play_result = await async_fire_media_service_calls(hass, media_service_calls)
     if play_result is False:
         _LOGGER.error("Playback failed")
 
     return play_result
 
-async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict, media_players_array):
+def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict, media_players_array):
     """Prepare the media_player service calls for audio playback."""
     _LOGGER.debug(" *** Chime TTS playback ***")
     standard_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_standard_media_player(hass, entity_id)]
@@ -1108,7 +1109,9 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
         if service_data[ATTR_MEDIA_CONTENT_ID] is None:
             _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
         else:
-            _LOGGER.debug("   %s Standard media player%s detected:", len(standard_media_player_entity_ids), ("s" if len(standard_media_player_entity_ids) != 1 else ""))
+            _LOGGER.debug("   %s Standard media player%s detected:",
+                          len(standard_media_player_entity_ids),
+                          ("s" if len(standard_media_player_entity_ids) != 1 else ""))
             for entity_id in standard_media_player_entity_ids:
                 _LOGGER.debug("     - %s", entity_id)
             service_data[CONF_ENTITY_ID] = standard_media_player_entity_ids
@@ -1122,7 +1125,9 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
 
     # Prepare service call for Alexa media_players
     if len(alexa_media_player_entity_ids) > 0:
-        _LOGGER.debug("   %s Alexa media player%s detected:", len(alexa_media_player_entity_ids), ("s" if len(alexa_media_player_entity_ids) != 1 else ""))
+        _LOGGER.debug("   %s Alexa media player%s detected:",
+                      len(alexa_media_player_entity_ids),
+                      ("s" if len(alexa_media_player_entity_ids) != 1 else ""))
         for entity_id in alexa_media_player_entity_ids:
             _LOGGER.debug("     - %s", entity_id)
         if len(audio_dict.get(PUBLIC_PATH_KEY, '')) > 0:
@@ -1145,7 +1150,9 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
         if service_data[ATTR_MEDIA_CONTENT_ID] is None:
             _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
         else:
-            _LOGGER.debug("   %s Sonos media player%s detected:", len(sonos_media_player_entity_ids), ("s" if len(sonos_media_player_entity_ids) != 1 else ""))
+            _LOGGER.debug("   %s Sonos media player%s detected:",
+                          len(sonos_media_player_entity_ids),
+                          ("s" if len(sonos_media_player_entity_ids) != 1 else ""))
             # Determine whether each Sonos should play at the same, or media_player-specific volume
             def find_media_player_dict(p_entity_id: str):
                 """Find the media_player dictionary matching the given entity_id."""
