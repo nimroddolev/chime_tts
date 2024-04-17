@@ -127,14 +127,22 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     async def async_say_execute(service, is_say_url):
         """Play TTS audio with local chime MP3 audio."""
         start_time = datetime.now()
+        parse_result = True
 
         # Parse service parameters & TTS options
         params = await helpers.async_parse_params(hass, service.data, is_say_url)
         if params is not None:
             options = helpers.parse_options_yaml(service.data)
             media_players_array = params.get("media_players_array", None)
+
+            if not (params["message"] or params["chime_path"] or params["end_chime_path"]):
+                _LOGGER.error("No chime paths or message provided.")
+                parse_result = False
         # Unable to continue
         else:
+            parse_result = False
+
+        if not parse_result:
             if is_say_url:
                 return {
                     "url": None,
@@ -144,76 +152,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                 }
             return False
 
-        if not (params["message"] or params["chime_path"] or params["end_chime_path"]):
-            _LOGGER.error("No chime paths or message provided.")
-            if is_say_url:
-                return {
-                    "url": None,
-                    ATTR_MEDIA_CONTENT_ID: None,
-                    "duration": 0,
-                    "success": False
-                }
-            return False
-
-        # Create audio file to play on media player
-        local_path = None
-        public_path = None
-        media_content_id = None
-        audio_duration = 0
-        audio_dict = await async_get_playback_audio_path(params, options)
-        if audio_dict is not None:
-            local_path = audio_dict.get(LOCAL_PATH_KEY, None)
-            public_path = audio_dict.get(PUBLIC_PATH_KEY, None)
-            media_content_id = audio_dict.get(ATTR_MEDIA_CONTENT_ID, None)
-            audio_duration = audio_dict.get(AUDIO_DURATION_KEY, 0)
-
-            if is_say_url is False:
-
-                # Play audio with service_data
-                play_result = await async_play_media(
-                    hass,
-                    audio_dict,
-                    params["entity_ids"],
-                    params["announce"],
-                    params["fade_audio"],
-                    params["join_players"],
-                    media_players_array,
-                )
-                if play_result is True:
-                    await async_post_playback_actions(
-                        hass,
-                        audio_duration,
-                        params["final_delay"],
-                        media_players_array,
-                        params["unjoin_players"],
-                    )
-
-                # Remove temporary local generated mp3
-                if not params.get("cache", False) and local_path is not None:
-                    filesystem_helper.delete_file(local_path)
-
-        end_time = datetime.now()
-        completion_time = round((end_time - start_time).total_seconds(), 2)
-        elapsed_time = (f"{completion_time} s"
-                                    if completion_time >= 1
-                                    else f"{completion_time * 1000} ms")
-
-        # Convert public file path to external URL for chime_tts.say_url
-        if is_say_url:
-            _LOGGER.debug("Final URL = %s", public_path)
-            _LOGGER.debug("----- Chime TTS Say URL Completed in %s -----", str(elapsed_time))
-            ret_value = {
-                "url": public_path,
-                ATTR_MEDIA_CONTENT_ID: media_content_id,
-                "duration": audio_duration,
-                "success": (public_path is not None or media_content_id is not None)
-            }
-            if ret_value["success"] is False:
-                _LOGGER.warning("Check that the folder path in the configuration for `chime_tts.say_url` is within the public \"www\" folder or the local media folder")
-
-            return ret_value
-
-        _LOGGER.debug("----- Chime TTS Say Completed in %s -----", str(elapsed_time))
+        return async_prepare_media(hass, params, options, media_players_array, start_time)
 
     hass.services.async_register(DOMAIN,
                                  SERVICE_SAY,
@@ -231,7 +170,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                                  async_say_url,
                                  supports_response=SupportsResponse.ONLY)
 
-    # Clear Cahce Service #
+    # Clear Cache Service #
 
     async def async_clear_cache(service):
         """Play TTS audio with local chime MP3 audio."""
@@ -296,6 +235,68 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                                  async_clear_cache)
 
     return True
+
+async def async_prepare_media(hass: HomeAssistant, params, options, media_players_array, is_say_url, start_time):
+    """Prepare and play media."""
+    # Create audio file to play on media player
+    local_path = None
+    public_path = None
+    media_content_id = None
+    audio_duration = 0
+    audio_dict = await async_get_playback_audio_path(params, options)
+    if audio_dict is not None:
+        local_path = audio_dict.get(LOCAL_PATH_KEY, None)
+        public_path = audio_dict.get(PUBLIC_PATH_KEY, None)
+        media_content_id = audio_dict.get(ATTR_MEDIA_CONTENT_ID, None)
+        audio_duration = audio_dict.get(AUDIO_DURATION_KEY, 0)
+
+        if is_say_url is False:
+
+            # Play audio with service_data
+            play_result = await async_play_media(
+                hass,
+                audio_dict,
+                params["entity_ids"],
+                params["announce"],
+                params["fade_audio"],
+                params["join_players"],
+                media_players_array,
+            )
+            if play_result is True:
+                await async_post_playback_actions(
+                    hass,
+                    audio_duration,
+                    params["final_delay"],
+                    media_players_array,
+                    params["unjoin_players"],
+                )
+
+            # Remove temporary local generated mp3
+            if not params.get("cache", False) and local_path is not None:
+                filesystem_helper.delete_file(local_path)
+
+    end_time = datetime.now()
+    completion_time = round((end_time - start_time).total_seconds(), 2)
+    elapsed_time = (f"{completion_time} s"
+                                if completion_time >= 1
+                                else f"{completion_time * 1000} ms")
+
+    # Convert public file path to external URL for chime_tts.say_url
+    if is_say_url:
+        _LOGGER.debug("Final URL = %s", public_path)
+        _LOGGER.debug("----- Chime TTS Say URL Completed in %s -----", str(elapsed_time))
+        ret_value = {
+            "url": public_path,
+            ATTR_MEDIA_CONTENT_ID: media_content_id,
+            "duration": audio_duration,
+            "success": (public_path is not None or media_content_id is not None)
+        }
+        if ret_value["success"] is False:
+            _LOGGER.warning("Check that the folder path in the configuration for `chime_tts.say_url` is within the public \"www\" folder or the local media folder")
+
+        return ret_value
+
+    _LOGGER.debug("----- Chime TTS Say Completed in %s -----", str(elapsed_time))
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
