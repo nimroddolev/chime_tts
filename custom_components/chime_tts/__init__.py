@@ -1203,10 +1203,14 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
                     "result": True
                 })
 
+    return service_calls
+
 
 async def async_fire_media_service_calls(hass: HomeAssistant, media_service_calls):
     """Fire the array of media service_calls."""
-
+    if media_service_calls is None:
+        _LOGGER.error("No service calls to fire")
+        return False
     for service_call in media_service_calls:
         _LOGGER.debug("   Calling %s.%s with data:",
                     service_call["domain"],
