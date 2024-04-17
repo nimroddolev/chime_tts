@@ -15,6 +15,7 @@ from homeassistant.components.media_player.const import (
 from ..const import (
     ALEXA_MEDIA_PLAYER_PLATFORM,
     SPOTIFY_PLATFORM,
+    SONOS_PLATFORM,
     MEDIA_DIR_DEFAULT,
     TRANSITION_STEP_MS
 )
@@ -130,17 +131,23 @@ class MediaPlayerHelper:
                 ret_val = ret_val + 1
         return ret_val
 
+    def get_is_standard_media_player(self, hass, entity_id):
+        """Determine whether a media_player can be used with the media_player.play_media service."""
+        return not (self.get_is_media_player_alexa(hass, entity_id) or
+                    self.get_is_media_player_sonos(hass, entity_id) or
+                    self.get_is_media_player_spotify(hass, entity_id))
+
     def get_is_media_player_alexa(self, hass, entity_id):
         """Determine whether a media_player belongs to the Alexa Media Player platform."""
         return str(self.get_media_player_platform(hass, entity_id)).lower() == ALEXA_MEDIA_PLAYER_PLATFORM
 
+    def get_is_media_player_sonos(self, hass, entity_id):
+        """Determine whether a media_player belongs to the Sonos platform."""
+        return str(self.get_media_player_platform(hass, entity_id)).lower() == SONOS_PLATFORM
+
     def get_is_media_player_spotify(self, hass, entity_id):
         """Determine whether a media_player belongs to the Spotify platform."""
         return str(self.get_media_player_platform(hass, entity_id)).lower() == SPOTIFY_PLATFORM
-
-    def get_is_standard_media_player(self, hass, entity_id):
-        """Determine whether a media_player can be used with the media_player.play_media service."""
-        return str(self.get_media_player_platform(hass, entity_id)).lower() not in [ALEXA_MEDIA_PLAYER_PLATFORM, SPOTIFY_PLATFORM]
 
     def get_supported_feature(self, entity: State, feature: str):
         """Whether a feature is supported by the media_player device."""

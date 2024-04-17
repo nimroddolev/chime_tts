@@ -152,7 +152,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                 }
             return False
 
-        return async_prepare_media(hass, params, options, media_players_array, start_time)
+        return await async_prepare_media(hass, params, options, media_players_array, is_say_url, start_time)
 
     hass.services.async_register(DOMAIN,
                                  SERVICE_SAY,
@@ -1015,22 +1015,29 @@ async def async_play_media(
     _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY] = []
     for media_player_dict in media_players_array:
         entity_id = media_player_dict["entity_id"]
-        if ((fade_audio or (announce and not media_player_dict["announce_supported"])) and media_player_dict["is_playing"]):
+        # Announce on unsupported media_player platform
+        if ((fade_audio or (announce and not media_player_dict["announce_supported"]))
+            and media_player_dict["is_playing"]):
             media_player_dict["fade_out_volume"] = (0.1 if media_player_helper.get_is_media_player_spotify(hass, entity_id) else 0)
             _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY].append(media_player_dict)
-        if media_player_dict["should_change_volume"] and not media_player_helper.get_is_media_player_spotify(hass, entity_id):
+        # Volume should be changed
+        if (media_player_dict["should_change_volume"]
+              and not media_player_helper.get_is_media_player_spotify(hass, entity_id)
+              and not media_player_helper.get_is_media_player_sonos(hass, entity_id)):
             _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY].append(media_player_dict)
 
-    # Fade out media players manually if platform does not support `announce`
+    # FADE OUT & PAUSE
+
     if len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) > 0:
+
+        # Fade out media players manually if platform does not support `announce`
         _LOGGER.debug(" - Fading out media_players currently playing")
         await media_player_helper.async_set_volume_for_media_players(hass=hass,
                                                                      media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
                                                                      volume_key="fade_out_volume",
                                                                      fade_duration=_data[FADE_TRANSITION_KEY])
 
-    # Pause playing media_players
-    if len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) > 0:
+        # Pause playing media_players
         pause_entity_ids = []
         for media_player_dict in _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]:
             pause_entity_ids.append(media_player_dict["entity_id"])
@@ -1080,19 +1087,38 @@ async def async_play_media(
             _LOGGER.warning("Unable to join speakers. %s supported media_player%s found (minimum is 2).", str(group_members_supported), ("" if group_members_supported == 1 else "s"))
 
     # Play Chime TTS notification
-    play_result = await async_play_media_service_calls(hass, entity_ids, service_data, audio_dict)
+    media_service_calls = await async_prepare_media_service_calls(hass, entity_ids, service_data, audio_dict, media_players_array)
+    play_result = await async_fire_media_service_calls(hass, media_service_calls)
     if play_result is False:
         _LOGGER.error("Playback failed")
 
     return play_result
 
-async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
-    """Play the final audio via media_player_play_media or notify.alexa_media."""
+async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict, media_players_array):
+    """Prepare the media_player service calls for audio playback."""
     _LOGGER.debug(" *** Chime TTS playback ***")
-    alexa_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_alexa(hass, entity_id)]
     standard_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_standard_media_player(hass, entity_id)]
+    alexa_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_alexa(hass, entity_id)]
+    sonos_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_sonos(hass, entity_id)]
 
     service_calls = []
+
+    # Prepare service call for regular media_players
+    if len(standard_media_player_entity_ids) > 0:
+        if service_data[ATTR_MEDIA_CONTENT_ID] is None:
+            _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
+        else:
+            _LOGGER.debug("   %s Standard media player%s detected:", len(standard_media_player_entity_ids), ("s" if len(standard_media_player_entity_ids) != 1 else ""))
+            for entity_id in standard_media_player_entity_ids:
+                _LOGGER.debug("     - %s", entity_id)
+            service_data[CONF_ENTITY_ID] = standard_media_player_entity_ids
+            service_calls.append({
+                "domain": "media_player",
+                "service": SERVICE_PLAY_MEDIA,
+                "service_data": service_data,
+                "blocking": True,
+                "result": True
+            })
 
     # Prepare service call for Alexa media_players
     if len(alexa_media_player_entity_ids) > 0:
@@ -1113,25 +1139,68 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
             })
         else:
             _LOGGER.warning("Unable to play audio on Alexa device. No public URL found.")
-    # Prepare service call for regular media_players
-    if len(standard_media_player_entity_ids) > 0:
+
+    # Prepare service call for Sonos media_players
+    if len(sonos_media_player_entity_ids) > 0:
         if service_data[ATTR_MEDIA_CONTENT_ID] is None:
             _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
         else:
-            _LOGGER.debug("   %s Standard media player%s detected:", len(standard_media_player_entity_ids), ("s" if len(standard_media_player_entity_ids) != 1 else ""))
-            for entity_id in standard_media_player_entity_ids:
-                _LOGGER.debug("     - %s", entity_id)
-            service_data[CONF_ENTITY_ID] = standard_media_player_entity_ids
-            service_calls.append({
-                "domain": "media_player",
-                "service": SERVICE_PLAY_MEDIA,
-                "service_data": service_data,
-                "blocking": True,
-                "result": True
-            })
+            _LOGGER.debug("   %s Sonos media player%s detected:", len(sonos_media_player_entity_ids), ("s" if len(sonos_media_player_entity_ids) != 1 else ""))
+            # Determine whether each Sonos should play at the same, or media_player-specific volume
+            def find_media_player_dict(p_entity_id: str):
+                """Find the media_player dictionary matching the given entity_id."""
+                for media_player_dict in media_players_array:
+                    if media_player_dict["entity_id"] == p_entity_id:
+                        return media_player_dict
+                return None
 
-    # Fire service calls
-    for service_call in service_calls:
+            is_uniform_level = True
+            last_volume = -1
+            volume_map = {}
+            for entity_id in sonos_media_player_entity_ids:
+                _LOGGER.debug("     - %s", entity_id)
+                if is_uniform_level:
+                    sonos_media_player_dict = find_media_player_dict(entity_id)
+                    _LOGGER.debug("sonos_media_player_dict = %s", str(sonos_media_player_dict))
+                    p_volume = sonos_media_player_dict["playback_volume_level"]
+                    volume_map[entity_id] = p_volume
+                    if last_volume != p_volume:
+                        is_uniform_level = False
+                        break
+            # Add a single service call for all Sonos media_players
+            if is_uniform_level:
+                service_data[CONF_ENTITY_ID] = sonos_media_player_entity_ids
+                if last_volume != -1:
+                    service_data["extra"] = {
+                        "volume": last_volume
+                    }
+                service_calls.append({
+                    "domain": "media_player",
+                    "service": SERVICE_PLAY_MEDIA,
+                    "service_data": service_data,
+                    "blocking": True,
+                    "result": True
+                })
+            # Add 1 service call for each Sonos media_player
+            for key, value in volume_map.items():
+                service_data[CONF_ENTITY_ID] = [key]
+                if value != -1:
+                    service_data["extra"] = {
+                        "volume": value
+                }
+                service_calls.append({
+                    "domain": "media_player",
+                    "service": SERVICE_PLAY_MEDIA,
+                    "service_data": service_data,
+                    "blocking": True,
+                    "result": True
+                })
+
+
+async def async_fire_media_service_calls(hass: HomeAssistant, media_service_calls):
+    """Fire the array of media service_calls."""
+
+    for service_call in media_service_calls:
         _LOGGER.debug("   Calling %s.%s with data:",
                     service_call["domain"],
                     service_call["service"])

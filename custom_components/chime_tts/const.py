@@ -41,6 +41,7 @@ TRANSITION_STEP_MS = 150
 
 ALEXA_MEDIA_PLAYER_PLATFORM = "alexa_media"
 SPOTIFY_PLATFORM = "spotify"
+SONOS_PLATFORM = "sonos"
 
 ROOT_PATH_KEY = "root_path_key"
 MEDIA_FOLDER_PATH = "/local/"
