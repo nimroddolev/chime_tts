@@ -309,126 +309,6 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     await async_setup_entry(hass, config_entry)
     await async_setup(hass, config_entry)
 
-async def async_post_playback_actions(
-    hass: HomeAssistant,
-    audio_duration: float,
-    final_delay: float,
-    media_players_array: list,
-    unjoin_players: bool):
-    """Run post playback actions."""
-    # Wait the audio playback duration
-    total_delay_s = round(audio_duration + ((final_delay/1000) if final_delay > 0 else 0),3)
-    _LOGGER.debug(" - Waiting %ss for audio playback to complete...", str(total_delay_s))
-    await hass.async_add_executor_job(time.sleep, total_delay_s)
-
-    # Wait for playback to end on all media_players
-    playing_media_player_dicts = []
-    for media_player_dict in media_players_array:
-        if not media_player_helper.get_is_media_player_spotify(hass, media_player_dict["entity_id"]):
-            playing_media_player_dicts.append(media_player_dict)
-    if not await media_player_helper.async_wait_until_media_players_state_not(hass, playing_media_player_dicts, "playing"):
-        _LOGGER.debug(" - Timed out waiting for playback to complete")
-
-    # Write to log if post-playback actions are to be performed
-    if (len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) > 0
-        or len(_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]) > 0
-        or (unjoin_players is True and _data.get("join_media_player_entity_id", None))):
-        _LOGGER.debug(" *** Post-Playback Actions ***")
-
-    # Resume previous playback
-    if len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) > 0:
-        # 1. Wait until all media_players paused
-        if not await media_player_helper.async_wait_until_media_players_state_is(hass=hass,
-                                                                                 media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
-                                                                                 target_state="paused",
-                                                                                 timeout=5):
-            _LOGGER.warning("Timed out waiting for %s media_player%s to pause",
-                            str(len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY])),
-                            ("" if len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) == 1 else "s"))
-
-        # 2. Set media_players volume to 0
-        _LOGGER.debug("     - Setting volume to 0")
-        resume_entity_ids = []
-        for media_player_dict in _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]:
-            entity_id = media_player_dict["entity_id"]
-            resume_entity_ids.append(entity_id)
-        try:
-            await hass.services.async_call(
-                domain="media_player",
-                service=SERVICE_VOLUME_SET,
-                service_data={
-                    ATTR_MEDIA_VOLUME_LEVEL: 0,
-                    CONF_ENTITY_ID: resume_entity_ids
-                },
-                blocking=True
-            )
-        except Exception as error:
-            _LOGGER.warning("Unable to set %s's volume to 0 for: %s. Error: %s",
-                            entity_id, (", ".join(map(str, resume_entity_ids))), error)
-
-
-        # 3. Call `media_play` until all media_players' states are "playing"
-        _LOGGER.debug("   - Resuming %s media_player%s",
-                      str(len(resume_entity_ids)),
-                      ("" if len(resume_entity_ids) == 1 else "s"))
-        retry_duration = 3
-        delay_s = 0.2
-        is_playing = False
-        while not is_playing and retry_duration > 0:
-            try:
-                await hass.services.async_call(
-                    domain="media_player",
-                    service="media_play",
-                    service_data={CONF_ENTITY_ID: resume_entity_ids},
-                    blocking=True,
-                )
-                is_playing = True
-            except Exception as error:
-                _LOGGER.warning("Unable to resume playback: %s", error)
-
-            for entity_id in resume_entity_ids:
-                is_playing = is_playing and hass.states.get(entity_id).state == "playing"
-            if not is_playing:
-                await hass.async_add_executor_job(time.sleep, delay_s)
-            retry_duration = retry_duration - delay_s
-
-        if is_playing is False:
-            _LOGGER.warning("Failed to resume playback on %s", entity_id)
-
-        # 4. Fade in all media players at the same time
-        await media_player_helper.async_set_volume_for_media_players(hass=hass,
-                                                                     media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
-                                                                     volume_key="initial_volume_level",
-                                                                     fade_duration=_data[FADE_TRANSITION_KEY])
-
-    # Reset volume
-    if len(_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]) > 0:
-        await media_player_helper.async_set_volume_for_media_players(hass=hass,
-                                                                     media_player_dicts=_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY],
-                                                                     volume_key="initial_volume_level",
-                                                                     fade_duration=0)
-
-    # Unjoin entity_ids
-    if unjoin_players is True and _data.get("join_media_player_entity_id", None):
-        _LOGGER.debug("   - Calling media_player.unjoin service...")
-        for media_player_dict in media_players_array:
-            if media_player_dict["group_members_supported"] is True:
-                entity_id = media_player_dict["entity_id"]
-                _LOGGER.debug("     - media_player.unjoin: %s", entity_id)
-                try:
-                    await hass.services.async_call(
-                        domain="media_player",
-                        service=SERVICE_UNJOIN,
-                        service_data={CONF_ENTITY_ID: entity_id},
-                        blocking=True,
-                    )
-                    _LOGGER.debug("    ...done")
-                except Exception as error:
-                    _LOGGER.warning(
-                        "   - Error calling unjoin service for %s: %s", entity_id, error
-                    )
-
-
 # Integration options #
 
 async def async_options(self, entry: ConfigEntry):
@@ -1098,6 +978,8 @@ async def async_get_audio_from_path(hass: HomeAssistant,
             _LOGGER.warning('Unable to extract audio from file: "%s"', error)
     return audio
 
+##################
+
 async def async_play_media(
     hass: HomeAssistant,
     audio_dict,
@@ -1289,6 +1171,126 @@ async def async_play_media_service_calls(hass: HomeAssistant, entity_ids, servic
                             )
 
     return True
+
+async def async_post_playback_actions(
+    hass: HomeAssistant,
+    audio_duration: float,
+    final_delay: float,
+    media_players_array: list,
+    unjoin_players: bool):
+    """Run post playback actions."""
+    # Wait the audio playback duration
+    total_delay_s = round(audio_duration + ((final_delay/1000) if final_delay > 0 else 0),3)
+    _LOGGER.debug(" - Waiting %ss for audio playback to complete...", str(total_delay_s))
+    await hass.async_add_executor_job(time.sleep, total_delay_s)
+
+    # Wait for playback to end on all media_players
+    playing_media_player_dicts = []
+    for media_player_dict in media_players_array:
+        if not media_player_helper.get_is_media_player_spotify(hass, media_player_dict["entity_id"]):
+            playing_media_player_dicts.append(media_player_dict)
+    if not await media_player_helper.async_wait_until_media_players_state_not(hass, playing_media_player_dicts, "playing"):
+        _LOGGER.debug(" - Timed out waiting for playback to complete")
+
+    # Write to log if post-playback actions are to be performed
+    if (len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) > 0
+        or len(_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]) > 0
+        or (unjoin_players is True and _data.get("join_media_player_entity_id", None))):
+        _LOGGER.debug(" *** Post-Playback Actions ***")
+
+    # Resume previous playback
+    if len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) > 0:
+        # 1. Wait until all media_players paused
+        if not await media_player_helper.async_wait_until_media_players_state_is(hass=hass,
+                                                                                 media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
+                                                                                 target_state="paused",
+                                                                                 timeout=5):
+            _LOGGER.warning("Timed out waiting for %s media_player%s to pause",
+                            str(len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY])),
+                            ("" if len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) == 1 else "s"))
+
+        # 2. Set media_players volume to 0
+        _LOGGER.debug("     - Setting volume to 0")
+        resume_entity_ids = []
+        for media_player_dict in _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]:
+            entity_id = media_player_dict["entity_id"]
+            resume_entity_ids.append(entity_id)
+        try:
+            await hass.services.async_call(
+                domain="media_player",
+                service=SERVICE_VOLUME_SET,
+                service_data={
+                    ATTR_MEDIA_VOLUME_LEVEL: 0,
+                    CONF_ENTITY_ID: resume_entity_ids
+                },
+                blocking=True
+            )
+        except Exception as error:
+            _LOGGER.warning("Unable to set %s's volume to 0 for: %s. Error: %s",
+                            entity_id, (", ".join(map(str, resume_entity_ids))), error)
+
+
+        # 3. Call `media_play` until all media_players' states are "playing"
+        _LOGGER.debug("   - Resuming %s media_player%s",
+                      str(len(resume_entity_ids)),
+                      ("" if len(resume_entity_ids) == 1 else "s"))
+        retry_duration = 3
+        delay_s = 0.2
+        is_playing = False
+        while not is_playing and retry_duration > 0:
+            try:
+                await hass.services.async_call(
+                    domain="media_player",
+                    service="media_play",
+                    service_data={CONF_ENTITY_ID: resume_entity_ids},
+                    blocking=True,
+                )
+                is_playing = True
+            except Exception as error:
+                _LOGGER.warning("Unable to resume playback: %s", error)
+
+            for entity_id in resume_entity_ids:
+                is_playing = is_playing and hass.states.get(entity_id).state == "playing"
+            if not is_playing:
+                await hass.async_add_executor_job(time.sleep, delay_s)
+            retry_duration = retry_duration - delay_s
+
+        if is_playing is False:
+            _LOGGER.warning("Failed to resume playback on %s", entity_id)
+
+        # 4. Fade in all media players at the same time
+        await media_player_helper.async_set_volume_for_media_players(hass=hass,
+                                                                     media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
+                                                                     volume_key="initial_volume_level",
+                                                                     fade_duration=_data[FADE_TRANSITION_KEY])
+
+    # Reset volume
+    if len(_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]) > 0:
+        await media_player_helper.async_set_volume_for_media_players(hass=hass,
+                                                                     media_player_dicts=_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY],
+                                                                     volume_key="initial_volume_level",
+                                                                     fade_duration=0)
+
+    # Unjoin entity_ids
+    if unjoin_players is True and _data.get("join_media_player_entity_id", None):
+        _LOGGER.debug("   - Calling media_player.unjoin service...")
+        for media_player_dict in media_players_array:
+            if media_player_dict["group_members_supported"] is True:
+                entity_id = media_player_dict["entity_id"]
+                _LOGGER.debug("     - media_player.unjoin: %s", entity_id)
+                try:
+                    await hass.services.async_call(
+                        domain="media_player",
+                        service=SERVICE_UNJOIN,
+                        service_data={CONF_ENTITY_ID: entity_id},
+                        blocking=True,
+                    )
+                    _LOGGER.debug("    ...done")
+                except Exception as error:
+                    _LOGGER.warning(
+                        "   - Error calling unjoin service for %s: %s", entity_id, error
+                    )
+
 
 ################################
 ### Storage Helper Functions ###
