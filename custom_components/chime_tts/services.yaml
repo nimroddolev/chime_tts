@@ -206,7 +206,7 @@ say:
           unit_of_measurement: ms
     final_delay:
       name: Final Delay
-      description: "Final delay (ms) added to the end of the audio"
+      description: "Final delay (in milliseconds) added to the end of the audio"
       example: 100
       required: false
       selector:
@@ -328,7 +328,7 @@ say:
       required: false
       selector:
         boolean:
-    fade_audio: 
+    fade_audio:
       name: Fade Audio
       description: "Fade out playing audio during announcement, fade back in when completed (on supported devices)"
       example: "True"
@@ -570,7 +570,7 @@ say_url:
           unit_of_measurement: ms
     final_delay:
       name: Final Delay
-      description: "Final delay (ms) added to the end of the audio"
+      description: "Final delay (in milliseconds) added to the end of the audio"
       example: 100
       required: false
       selector:
