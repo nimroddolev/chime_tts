@@ -64,8 +64,7 @@ class MediaPlayerHelper:
         group_member_support = self.get_supported_feature(entity, ATTR_GROUP_MEMBERS)
         announce_supported = self.get_supported_feature(entity, ATTR_MEDIA_ANNOUNCE)
         is_playing = (hass.states.get(entity_id).state == "playing"
-                        and (not announce_supported or media_player_is_spotify)
-                        and hass.states.get(entity_id).attributes.get("media_duration", -1) != 0) # Check that media_player is _actually_ playing (HomePods can incorrectly have the state "playing" when no media is playing)
+                        and hass.states.get(entity_id).attributes.get("media_duration", -1) != 0) # Check that media_player is actually playing (HomePods can incorrectly have the state "playing" when no media is playing)
 
         # Playback volume level
         playback_volume_level = volume_level

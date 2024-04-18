@@ -1016,12 +1016,11 @@ async def async_play_media(
     for media_player_dict in media_players_array:
         entity_id = media_player_dict["entity_id"]
         # Announce on unsupported media_player platform
-        if ((fade_audio or (announce and not media_player_dict["announce_supported"]))
-            and media_player_dict["is_playing"]):
-            media_player_dict["fade_out_volume"] = (0.1 if media_player_helper.get_is_media_player_spotify(hass, entity_id) else 0)
+        if ((fade_audio or (announce and not media_player_dict["announce_supported"])) and media_player_dict["is_playing"]):
+            media_player_dict["fade_out_volume"] = 0
             _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY].append(media_player_dict)
         # Volume should be changed
-        if (media_player_dict["should_change_volume"]
+        elif (media_player_dict["should_change_volume"]
               and not media_player_helper.get_is_media_player_spotify(hass, entity_id)
               and not media_player_helper.get_is_media_player_sonos(hass, entity_id)):
             _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY].append(media_player_dict)
@@ -1171,7 +1170,7 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
                     _LOGGER.debug("sonos_media_player_dict = %s", str(sonos_media_player_dict))
                     p_volume = sonos_media_player_dict["playback_volume_level"]
                     volume_map[entity_id] = p_volume
-                    if last_volume != p_volume:
+                    if last_volume != p_volume and p_volume != -1:
                         is_uniform_level = False
                         break
             # Add a single service call for all Sonos media_players
@@ -1316,8 +1315,8 @@ async def async_post_playback_actions(
                       ("" if len(resume_entity_ids) == 1 else "s"))
         retry_duration = 3
         delay_s = 0.2
-        is_playing = False
-        while not is_playing and retry_duration > 0:
+        is_media_player_playing = False
+        while not is_media_player_playing and retry_duration > 0:
             try:
                 await hass.services.async_call(
                     domain="media_player",
@@ -1325,17 +1324,17 @@ async def async_post_playback_actions(
                     service_data={CONF_ENTITY_ID: resume_entity_ids},
                     blocking=True,
                 )
-                is_playing = True
+                is_media_player_playing = True
             except Exception as error:
                 _LOGGER.warning("Unable to resume playback: %s", error)
 
             for entity_id in resume_entity_ids:
-                is_playing = is_playing and hass.states.get(entity_id).state == "playing"
-            if not is_playing:
+                is_media_player_playing = is_media_player_playing and hass.states.get(entity_id).state == "playing"
+            if not is_media_player_playing:
                 await hass.async_add_executor_job(time.sleep, delay_s)
             retry_duration = retry_duration - delay_s
 
-        if is_playing is False:
+        if is_media_player_playing is False:
             _LOGGER.warning("Failed to resume playback on %s", entity_id)
 
         # 4. Fade in all media players at the same time
