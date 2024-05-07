@@ -50,6 +50,19 @@ class FilesystemHelper:
 
         return ret_value
 
+    def path_to_parent_folder(self, folder):
+        """The absolute path to a parent folder"""
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        count = 0
+        while not os.path.basename(current_dir) == folder and count < 100:
+            parent_dir = os.path.dirname(current_dir)
+            if parent_dir == current_dir:
+                _LOGGER.warning("%s folder not found", folder)
+                return None
+            current_dir = parent_dir
+            count = count + 1
+        return current_dir
+
     async def async_get_chime_path(self, chime_path, cache, data, hass: HomeAssistant):
         """Retrieve preset chime path if selected."""
 
@@ -61,7 +74,13 @@ class FilesystemHelper:
 
         # Preset chime mp3 path?
         if chime_path in MP3_PRESETS:
-            return MP3_PRESET_PATH + chime_path + ".mp3"
+            # Validate MP3 preset path before use
+            mp3_path = MP3_PRESET_PATH
+            if True:#not os.path.exists(mp3_path):
+                absolute_custom_comopnents_dir = self.path_to_parent_folder('custom_components')
+                if absolute_custom_comopnents_dir:
+                    mp3_path = MP3_PRESET_PATH.replace("custom_components", absolute_custom_comopnents_dir)
+            return mp3_path + chime_path + ".mp3"
 
         # Custom chime mp3 path?
         if chime_path.startswith(MP3_PRESET_CUSTOM_PREFIX):
