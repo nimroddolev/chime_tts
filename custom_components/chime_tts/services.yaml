@@ -115,7 +115,7 @@ say:
             - label: "Custom 3"
               value: "custom_chime_path_3"
             - label: "Custom 4"
-              value: "custom_chime_path_5"
+              value: "custom_chime_path_4"
             - label: "Custom 5"
               value: "custom_chime_path_5"
     end_chime_path:
@@ -189,7 +189,7 @@ say:
             - label: "Custom 3"
               value: "custom_chime_path_3"
             - label: "Custom 4"
-              value: "custom_chime_path_$"
+              value: "custom_chime_path_4"
             - label: "Custom 5"
               value: "custom_chime_path_5"
     offset:
