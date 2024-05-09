@@ -274,7 +274,6 @@ class FilesystemHelper:
             return None
 
         if self.file_exists_in_directory(file_path, public_dir) is False:
-            _LOGGER.warning(f"Unable to create public URL - File: '{file_path}' is outside the public folder.")
             return None
 
         instance_url = hass.config.external_url
