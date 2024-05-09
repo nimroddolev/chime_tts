@@ -162,13 +162,13 @@ class MediaPlayerHelper:
 
         return False
 
-    def get_group_members_suppored(self, media_players_array):
-        """Get the number of media player which support the join feature."""
-        group_members_supported = 0
+    def get_join_suppored_entity_ids(self, media_players_array):
+        """Get the entity_ids of media player which support the join feature."""
+        group_members_suppored_entity_ids = []
         for media_player_dict in media_players_array:
-            if "group_member_support" in media_player_dict and media_player_dict["group_member_support"] is True:
-                group_members_supported += 1
-        return group_members_supported
+            if media_player_dict.get("group_members_supported", None):
+                group_members_suppored_entity_ids.append(media_player_dict["entity_id"])
+        return group_members_suppored_entity_ids
 
     def get_media_content_id(self, file_path: str, media_dir: str = MEDIA_DIR_DEFAULT):
         """Create the media content id for a local media directory file."""
@@ -392,8 +392,10 @@ class MediaPlayerHelper:
 
         if len(supported_entity_ids) > 1:
             _LOGGER.debug(
-                "   - Joining %s media_player entities...", str(len(supported_entity_ids))
+                "   - Joining %s media_player entities:", str(len(supported_entity_ids))
             )
+            for supported_entity_id in supported_entity_ids:
+                _LOGGER.debug("     - %s", supported_entity_id)
             try:
                 join_media_player_entity_id = supported_entity_ids[0]
                 await hass.services.async_call(

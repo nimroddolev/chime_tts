@@ -1066,10 +1066,13 @@ async def async_play_media(
                                                                  fade_duration=0)
 
     # join entity_ids as a group
+    _data["join_media_player_entity_id"] = None
+    _data["joined_media_players_entity_ids"] = None
     if join_players is True:
-        group_members_supported = media_player_helper.get_group_members_suppored(media_players_array)
-        if group_members_supported > 1:
+        join_supported_entity_ids = media_player_helper.get_join_suppored_entity_ids(media_players_array)
+        if len(join_supported_entity_ids) > 1:
             _data["join_media_player_entity_id"] = await media_player_helper.async_join_media_players(hass, entity_ids)
+            _data["joined_media_players_entity_ids"] = join_supported_entity_ids
             if _data["join_media_player_entity_id"] is not False:
                 service_data[CONF_ENTITY_ID] = [_data["join_media_player_entity_id"]]
                 volume_level = media_players_array[0]["playback_volume_level"]
@@ -1077,16 +1080,14 @@ async def async_play_media(
                 joint_media_player_dict = await media_player_helper.async_get_media_player_dict(hass,
                                                                                                 _data["join_media_player_entity_id"],
                                                                                                 volume_level)
-                _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY] = {
-                     _data["join_media_player_entity_id"] : joint_media_player_dict
-                }
+                _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY] = [joint_media_player_dict]
             else:
                 _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
-        elif group_members_supported == 1:
+        elif len(join_supported_entity_ids) == 1:
             _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
         else:
             _LOGGER.warning("Unable to join speakers. %s supported media_player%s found (minimum is 2).",
-                            str(group_members_supported), ("" if group_members_supported == 1 else "s"))
+                            str(len(join_supported_entity_ids)), ("" if join_supported_entity_ids == 1 else "s"))
 
     # Play Chime TTS notification
     media_service_calls = prepare_media_service_calls(hass, entity_ids, service_data, audio_dict, media_players_array)
@@ -1102,6 +1103,18 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
     standard_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_standard_media_player(hass, entity_id)]
     alexa_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_alexa(hass, entity_id)]
     sonos_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_sonos(hass, entity_id)]
+
+    # Remove any joined media_players from the media_player lists
+    if _data.get("joined_media_players_entity_ids", None):
+        _LOGGER.debug("Removing joined entity_ids: %s", str(_data["joined_media_players_entity_ids"]))
+        for joined_media_player_entity_id in _data["joined_media_players_entity_ids"]:
+            for media_player_array in [standard_media_player_entity_ids, alexa_media_player_entity_ids, sonos_media_player_entity_ids]:
+                if joined_media_player_entity_id in media_player_array:
+                    index = media_player_array.index(joined_media_player_entity_id)
+                    if index != -1:
+                        del media_player_array[index]
+        # Add the joined media player entity_id to the list of standard media players
+        standard_media_player_entity_ids.append(_data["join_media_player_entity_id"])
 
     service_calls = []
 
