@@ -976,6 +976,8 @@ async def async_get_audio_from_path(hass: HomeAssistant,
             _LOGGER.warning("Unable to find audio at filepath: %s", filepath)
         except Exception as error:
             _LOGGER.warning('Unable to extract audio from file: "%s"', error)
+
+    _LOGGER.warning("Unable to generate local audio filepath")
     return audio
 
 ##################

@@ -51,10 +51,10 @@ class FilesystemHelper:
         return ret_value
 
     def path_to_parent_folder(self, folder):
-        """The absolute path to a parent folder"""
+        """Absolute path to a parent folder."""
         current_dir = os.path.dirname(os.path.abspath(__file__))
         count = 0
-        while not os.path.basename(current_dir) == folder and count < 100:
+        while os.path.basename(current_dir) != folder and count < 100:
             parent_dir = os.path.dirname(current_dir)
             if parent_dir == current_dir:
                 _LOGGER.warning("%s folder not found", folder)
@@ -65,7 +65,6 @@ class FilesystemHelper:
 
     async def async_get_chime_path(self, chime_path, cache, data, hass: HomeAssistant):
         """Retrieve preset chime path if selected."""
-
         custom_chime_paths_dict = data[MP3_PRESET_CUSTOM_KEY]
         temp_chimes_path = data[TEMP_CHIMES_PATH_KEY]
 
@@ -76,11 +75,12 @@ class FilesystemHelper:
         if chime_path in MP3_PRESETS:
             # Validate MP3 preset path before use
             mp3_path = MP3_PRESET_PATH
-            if True:#not os.path.exists(mp3_path):
-                absolute_custom_comopnents_dir = self.path_to_parent_folder('custom_components')
-                if absolute_custom_comopnents_dir:
-                    mp3_path = MP3_PRESET_PATH.replace("custom_components", absolute_custom_comopnents_dir)
-            return mp3_path + chime_path + ".mp3"
+            absolute_custom_comopnents_dir = self.path_to_parent_folder('custom_components')
+            if absolute_custom_comopnents_dir:
+                mp3_path = MP3_PRESET_PATH.replace("custom_components", absolute_custom_comopnents_dir)
+            final_chime_path = mp3_path + chime_path + ".mp3"
+            _LOGGER.debug("Local path to chime: %s", final_chime_path)
+            return final_chime_path
 
         # Custom chime mp3 path?
         if chime_path.startswith(MP3_PRESET_CUSTOM_PREFIX):
@@ -90,27 +90,33 @@ class FilesystemHelper:
                     "MP3 file path missing for custom chime path `Custom #%s`",
                     chime_path.replace(MP3_PRESET_CUSTOM_PREFIX, ""),
                 )
+            elif os.path.exists(chime_path):
+                    return chime_path
+            else:
+                _LOGGER.debug("Custom chime not found at path: %s", chime_path)
+                return None
 
         # External URL?
         if chime_path.startswith("http://") or chime_path.startswith("https://"):
             # Use cached version?
             if cache is True:
                 local_file = self.get_downloaded_chime_path(folder=temp_chimes_path, url=chime_path)
-                if local_file is not None:
+                if local_file is not None and os.path.exists(local_file):
+                    _LOGGER.debug("Chime found in cache")
                     return local_file
-                _LOGGER.debug(" - Chime does not exist in cache")
+                _LOGGER.debug("External chime not found in cache")
 
             # Download from URL
             audio_dict = await self.async_download_file(hass, chime_path, temp_chimes_path)
             if audio_dict is not None:
-                _LOGGER.debug(" - Chime downloaded successfully")
+                _LOGGER.debug("Chime downloaded successfully")
                 file_hash = self.get_hash_for_string(chime_path)
                 return {
                     "audio_dict": audio_dict,
                     "file_hash": file_hash
                 }
 
-            _LOGGER.warning(" Unable to downloaded chime %s", chime_path)
+            _LOGGER.warning("Unable to downloaded chime from URL: %s", chime_path)
             return None
 
         chime_path = self.validate_path(hass, chime_path)
