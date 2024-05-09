@@ -359,7 +359,7 @@ class MediaPlayerHelper:
                 entity_id = media_player_dict["entity_id"]
                 current_volume = float(hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, 0))
                 target_volume = media_player_dict.get(str(volume_key), volume_key)
-                if target_volume >= 0:
+                if target_volume >= 0 and target_volume != current_volume:
                     if target_volume - current_volume > 0:
                         _LOGGER.debug(" - Increasing %s's volume from %s to %s", entity_id, str(current_volume), str(target_volume))
                     else:
