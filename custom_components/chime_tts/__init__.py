@@ -953,10 +953,10 @@ async def async_get_audio_from_path(hass: HomeAssistant,
 
         _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
         try:
+            audio_from_path: AudioSegment = AudioSegment.from_file(filepath)
             if audio_conversion is not None and len(audio_conversion) > 0:
                 _LOGGER.debug("  - Performing FFmpeg audio conversion of audio file...")
-                helpers.ffmpeg_convert_from_file(filepath, audio_conversion)
-            audio_from_path = AudioSegment.from_file(filepath)
+                audio_from_path = helpers.ffmpeg_convert_from_audio_segment(audio_from_path)
 
             # Remove downloaded file when cache=false
             if cache is False and file_hash is not None:
