@@ -1018,13 +1018,12 @@ async def async_play_media(
     for media_player_dict in media_players_array:
         entity_id = media_player_dict["entity_id"]
         # Announce on unsupported media_player platform
-        if ((fade_audio or (announce and not media_player_dict["announce_supported"])) and media_player_dict["is_playing"]):
+        if (media_player_dict["is_playing"] and (fade_audio or (announce and not media_player_dict["announce_supported"])) ):
             media_player_dict["fade_out_volume"] = 0
             _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY].append(media_player_dict)
         # Volume should be changed
         elif (media_player_dict["should_change_volume"]
-              and not media_player_helper.get_is_media_player_spotify(hass, entity_id)
-              and not media_player_helper.get_is_media_player_sonos(hass, entity_id)):
+              and not media_player_helper.get_is_media_player_spotify(hass, entity_id)):
             _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY].append(media_player_dict)
 
     # FADE OUT & PAUSE
