@@ -380,7 +380,7 @@ class MediaPlayerHelper:
     async def async_join_media_players(self, hass: HomeAssistant, entity_ids):
         """Join media players."""
         _LOGGER.debug(
-            "   - Calling media_player.join service for %s media_player entities...",
+            "- Calling media_player.join service for %s media_player entities...",
             len(entity_ids),
         )
 
@@ -392,10 +392,10 @@ class MediaPlayerHelper:
 
         if len(supported_entity_ids) > 1:
             _LOGGER.debug(
-                "   - Joining %s media_player entities:", str(len(supported_entity_ids))
+                "- Joining %s media_player entities:", str(len(supported_entity_ids))
             )
             for supported_entity_id in supported_entity_ids:
-                _LOGGER.debug("     - %s", supported_entity_id)
+                _LOGGER.debug("  - %s", supported_entity_id)
             try:
                 join_media_player_entity_id = supported_entity_ids[0]
                 await hass.services.async_call(

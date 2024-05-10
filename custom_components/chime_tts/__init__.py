@@ -757,7 +757,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     for key, value in audio_dict.items():
         quote = '"' if isinstance(value, str) else ''
         value = f"{quote}{value}{quote}"
-        _LOGGER.debug("   - %s = %s", key, value)
+        _LOGGER.debug("   * %s = %s", key, value)
     return audio_dict
 
 
@@ -1064,7 +1064,7 @@ async def async_play_media(
                                                                  volume_key="playback_volume_level",
                                                                  fade_duration=0)
 
-    # join entity_ids as a group
+    # Join media player entity_ids as a group
     _data["join_media_player_entity_id"] = None
     _data["joined_media_players_entity_ids"] = None
     if join_players is True:

@@ -162,7 +162,7 @@ class FilesystemHelper:
                 return None
 
         if os.path.exists(audio_full_path):
-            _LOGGER.debug(" - File saved to path: %s", audio_full_path)
+            _LOGGER.debug("File saved to path: %s", audio_full_path)
         else:
             _LOGGER.error("Saved file inaccessible, something went wrong. Path = %s", audio_full_path)
 
@@ -175,28 +175,28 @@ class FilesystemHelper:
             response = await hass.async_add_executor_job(requests.get, url)
             response.raise_for_status() # Raise an HTTPError for bad responses (4xx and 5xx status codes)
         except requests.exceptions.HTTPError as errh:
-            _LOGGER.warning(" HTTP Error: %s", str(errh))
+            _LOGGER.warning("HTTP Error: %s", str(errh))
             return None
         except requests.exceptions.ConnectionError as errc:
-            _LOGGER.warning(" Error Connecting: %s", str(errc))
+            _LOGGER.warning("Error Connecting: %s", str(errc))
             return None
         except requests.exceptions.Timeout as errt:
-            _LOGGER.warning(" Timeout Error: %s", str(errt))
+            _LOGGER.warning("Timeout Error: %s", str(errt))
             return None
         except requests.exceptions.RequestException as err:
-            _LOGGER.warning(" Request Exception: %s", str(err))
+            _LOGGER.warning("Request Exception: %s", str(err))
             return None
         except Exception as error:
-            _LOGGER.warning(" An unexpected error occurred: %s", str(error))
+            _LOGGER.warning("An unexpected error occurred: %s", str(error))
             return None
 
         if response is None:
-            _LOGGER.warning(" Received an invalid response")
+            _LOGGER.warning("Received an invalid response")
             return None
 
         content_type = response.headers.get('Content-Type', '')
         if 'audio' in content_type:
-            _LOGGER.debug(" - Audio downloaded successfully")
+            _LOGGER.debug("Audio downloaded successfully")
             _, file_extension = os.path.splitext(url)
             try:
                 audio_content = AudioSegment.from_file(BytesIO(response.content),
@@ -223,7 +223,7 @@ class FilesystemHelper:
     def create_folder(self, folder):
         """Create folder if it doesn't already exist."""
         if os.path.exists(folder) is False:
-            _LOGGER.debug("  - Creating audio folder: %s", folder)
+            _LOGGER.debug("Creating audio folder: %s", folder)
             try:
                 os.makedirs(folder)
                 return True
