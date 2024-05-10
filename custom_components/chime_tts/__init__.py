@@ -38,9 +38,10 @@ from homeassistant.exceptions import (
 
 from .const import (
     DOMAIN,
+    SERVICE_CLEAR_CACHE,
+    SERVICE_REPLAY,
     SERVICE_SAY,
     SERVICE_SAY_URL,
-    SERVICE_CLEAR_CACHE,
     VERSION,
     DATA_STORAGE_KEY,
     AUDIO_PATH_KEY,
@@ -113,7 +114,10 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
     async def async_say(service, is_say_url = False):
         if is_say_url is False:
-            _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
+            if service is None:
+                _LOGGER.debug("----- Chime TTS Replay Called. Version %s -----", VERSION)
+            else:
+                _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
 
         # Add service calls to the queue with arguments
         result = await queue.add_to_queue(async_say_execute, service, is_say_url)
@@ -128,6 +132,15 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         """Play TTS audio with local chime MP3 audio."""
         start_time = datetime.now()
         parse_result = True
+
+        if service is None:
+            # Replay service called: use previous service object
+            service = _data.get("service")
+            if service is None:
+                _LOGGER.warning("No previous service call made to chime_tts.say")
+                return
+        else:
+            _data["service"] = service
 
         # Parse service parameters & TTS options
         params = await helpers.async_parse_params(hass, service.data, is_say_url)
@@ -170,10 +183,19 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
                                  async_say_url,
                                  supports_response=SupportsResponse.ONLY)
 
+    # Replay Service #
+    async def async_replay(service):
+        """Repeat the last service call to chime_tts.say with the same parameters."""
+        return await async_say(None, False)
+
+    hass.services.async_register(DOMAIN,
+                                 SERVICE_REPLAY,
+                                 async_replay)
+
     # Clear Cache Service #
 
     async def async_clear_cache(service):
-        """Play TTS audio with local chime MP3 audio."""
+        """Clear TTS cache files."""
         _LOGGER.debug("----- Chime TTS Clear Cache Called -----")
         clear_chimes_cache = bool(service.data.get("clear_chimes_cache", False))
         clear_temp_tts_cache = bool(service.data.get("clear_temp_tts_cache", False))

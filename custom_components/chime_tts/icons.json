@@ -1,7 +1,8 @@
 {
     "services": {
+        "clear_cache": "mdi:delete-forever",
+        "replay": "mdi:speaker-multiple",
         "say": "mdi:speaker-message",
-        "say_url": "mdi:speaker-stop",
-        "clear_cache": "mdi:delete-forever"
+        "say_url": "mdi:speaker-stop"
     }
 }

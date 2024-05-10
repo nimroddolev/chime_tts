@@ -20,9 +20,10 @@ if os.path.isfile(manifest_path):
 else:
     VERSION = None
 
+SERVICE_CLEAR_CACHE = "clear_cache"
+SERVICE_REPLAY = "replay"
 SERVICE_SAY = "say"
 SERVICE_SAY_URL = "say_url"
-SERVICE_CLEAR_CACHE = "clear_cache"
 
 OFFSET_KEY = "offset"
 DEFAULT_OFFSET_MS = 450
