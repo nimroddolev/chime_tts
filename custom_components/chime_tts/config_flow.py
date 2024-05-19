@@ -75,9 +75,11 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
         stripped_tts_platforms = self.get_installed_tts()
         default_tts = stripped_tts_platforms[0] if len(stripped_tts_platforms) > 0 else ""
-        user_input = user_input if user_input is not None else {}
         root_path = self.hass.config.path("").replace("/config/", "")
 
+        # Fetch entered values
+        if user_input is None:
+            user_input = {}
         options_schema = vol.Schema(
             {
                 vol.Required(
@@ -154,8 +156,9 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         )
         _errors = {}
 
-        # Show the form with the current options
-        if user_input is None or user_input == {}:
+        # Display the configuration form with the current values
+        if user_input == {} or user_input is None:
+            user_input = None
             return self.async_show_form(
                 step_id="init",
                 data_schema=options_schema,
