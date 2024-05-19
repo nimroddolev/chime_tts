@@ -79,8 +79,11 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
         stripped_tts_platforms = self.get_installed_tts()
         default_tts = stripped_tts_platforms[0] if len(stripped_tts_platforms) > 0 else ""
-        user_input = user_input if user_input is not None else {}
-        root_path = self.hass.config.path("").replace("/config/", "")
+        if self.hass is not None:
+            root_path = self.hass.config.path("").replace("/config/", "")
+        else:
+            LOGGER.warning("Unable to determine root path")
+            root_path = ""
 
         options_schema = vol.Schema(
             {
