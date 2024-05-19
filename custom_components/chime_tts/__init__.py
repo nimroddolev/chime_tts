@@ -107,7 +107,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
 async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up the Chime TTS integration."""
-    _LOGGER.info("The Chime TTS integration is set up.")
+    _LOGGER.info("----- Chime TTS Version %s is set up -----", VERSION)
 
     # Say Service #
 
