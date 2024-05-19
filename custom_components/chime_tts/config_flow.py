@@ -7,6 +7,7 @@ from homeassistant import config_entries
 from .helpers.helpers import ChimeTTSHelper
 from .const import (
     DOMAIN,
+    VERSION,
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
     TTS_PLATFORM_KEY,
@@ -43,6 +44,8 @@ class ChimeTTSFlowHandler(config_entries.ConfigFlow):
 
     async def async_step_user(self, user_input=None):
         """Chime TTS async_step_user."""
+        LOGGER.debug("----- Adding Chime TTS Version %s -----", VERSION)
+
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
 
@@ -68,6 +71,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
+        LOGGER.debug("-----  Chime TTS Version %s Configuration -----", VERSION)
         self.config_entry = config_entry
 
     async def async_step_init(self, user_input={}):
