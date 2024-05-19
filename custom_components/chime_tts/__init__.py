@@ -1413,8 +1413,14 @@ async def async_store_data(hass: HomeAssistant, key: str, value):
 async def async_retrieve_data(hass: HomeAssistant, key: str):
     """Retrieve a value from the integration's stored data based on the provided key."""
     await async_refresh_stored_data(hass)
-    if _data.get(DATA_STORAGE_KEY, None):
-        return _data[DATA_STORAGE_KEY].get(key, None)
+    if (_data is None
+        or not isinstance(_data, dict)
+        or key is None
+        or len(key) == 0):
+        return None
+    cached_data = _data.get(DATA_STORAGE_KEY, None)
+    if cached_data:
+        return cached_data.get(key, None)
     return None
 
 
