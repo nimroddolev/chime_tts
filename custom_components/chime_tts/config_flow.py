@@ -159,7 +159,6 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 ): str,
             }
         )
-        _errors = {}
 
         # Show the form with the current options
         if user_input is None or user_input == {}:
@@ -170,7 +169,10 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 last_step=True,
             )
 
+
         # Validation
+
+        _errors = {}
 
         # Timeout
         if user_input[QUEUE_TIMEOUT_KEY] < 0:

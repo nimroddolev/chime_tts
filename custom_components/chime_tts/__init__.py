@@ -6,7 +6,7 @@ import io
 import time
 from datetime import datetime
 
-from pydub import AudioSegment
+from pydub import AudioSegment # type: ignore
 
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_CONTENT_ID,
@@ -602,7 +602,6 @@ def missing_tts_platform_error(tts_platform):
 ##############################
 ### Audio Helper Functions ###
 ##############################
-
 
 async def async_get_playback_audio_path(params: dict, options: dict):
     """Create audio to play on media player entity."""
