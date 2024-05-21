@@ -31,10 +31,10 @@ from ..const import (
     VOICE_RSS,
     YANDEX_TTS
 )
-from .media_player import MediaPlayerHelper
+from .media_player_helper import MediaPlayerHelper
+from .media_player import ChimeTTSMediaPlayer
 from .filesystem import FilesystemHelper
 
-media_player_helper = MediaPlayerHelper()
 filesystem_helper = FilesystemHelper()
 
 _LOGGER = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ _LOGGER = logging.getLogger(__name__)
 class ChimeTTSHelper:
     """Helper functions for Chime TTS."""
 
-    async def async_parse_params(self, hass: HomeAssistant, data, is_say_url):
+    async def async_parse_params(self, hass: HomeAssistant, data, is_say_url, media_player_helper: MediaPlayerHelper):
         """Parse TTS service parameters."""
         entity_ids = media_player_helper.parse_entity_ids(data, hass) if is_say_url is False else []
         chime_path =str(data.get("chime_path", ""))
@@ -54,15 +54,15 @@ class ChimeTTSHelper:
         tts_speed = float(data.get("tts_playback_speed", data.get("tts_speed", 100)))
         tts_pitch = data.get("tts_pitch", 0)
         volume_level = data.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
-        media_players_array = await media_player_helper.async_initialize_media_players(
-            hass, entity_ids, volume_level
-        ) if is_say_url is False else []
         join_players = data.get("join_players", False)
         unjoin_players = data.get("unjoin_players", False)
         language = data.get("language", None)
         cache = data.get("cache", False)
         announce = data.get("announce", False)
         fade_audio = data.get("fade_audio", False)
+        media_players_array = await media_player_helper.async_initialize_media_players(
+            hass, entity_ids, volume_level, join_players, unjoin_players, announce, fade_audio
+        ) if is_say_url is False else []
 
         # No valid media players included
         if len(media_players_array) == 0 and is_say_url is False:
@@ -85,7 +85,6 @@ class ChimeTTSHelper:
             "cache": cache,
             "offset": offset,
             "final_delay": final_delay,
-            "media_players_array": media_players_array,
             "message": message,
             "language": language,
             "tts_platform": tts_platform,
@@ -97,16 +96,27 @@ class ChimeTTSHelper:
             "join_players": join_players,
             "unjoin_players": unjoin_players,
             "ffmpeg_args": ffmpeg_args,
+            "media_players_array": media_players_array,
         }
 
         _LOGGER.debug("----- General Parameters -----")
         for key, value in params.items():
             if value is not None and value != "" and key not in ["hass"]:
                 p_key = "audio_conversion" if key == "ffmpeg_args" else key
-                if isinstance(value, list) and len(value) > 1 and p_key != "audio_conversion":
+                if isinstance(value, list) and ((p_key != "audio_conversion" and len(value) > 1) or (p_key == "media_players_array" and len(value) > 0)):
                     _LOGGER.debug(" * %s:", p_key)
                     for i in range(0, len(value)):
-                        _LOGGER.debug("   - %s: %s", str(i), str(value[i]))
+                        if isinstance(value[i], ChimeTTSMediaPlayer):
+                            media_player_i = value[i]
+                            _LOGGER.debug("   - entity_id: %s", str(media_player_i.entity_id))
+                            _LOGGER.debug("     platform: %s", str(media_player_i.platform))
+                            _LOGGER.debug("     initial volume: %s", str(media_player_i.initial_volume_level))
+                            _LOGGER.debug("     target volume: %s", str(media_player_i.target_volume_level))
+                            _LOGGER.debug("     now playing: %s", str(media_player_i.initially_playing))
+                            _LOGGER.debug("     join supported: %s", str(media_player_i.join_supported))
+                            _LOGGER.debug("     announce supported: %s", str(media_player_i.announce_supported))
+                        else:
+                            _LOGGER.debug("   - %s: %s", str(i), str(value[i]))
                 else:
                     _LOGGER.debug(" * %s = %s", p_key, str(value))
 

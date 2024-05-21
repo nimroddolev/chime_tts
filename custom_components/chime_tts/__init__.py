@@ -12,20 +12,18 @@ from homeassistant.components.media_player.const import (
     ATTR_MEDIA_CONTENT_ID,
     ATTR_MEDIA_CONTENT_TYPE,
     ATTR_MEDIA_ANNOUNCE,
-    ATTR_MEDIA_VOLUME_LEVEL,
     SERVICE_PLAY_MEDIA,
-    SERVICE_UNJOIN,
     MEDIA_TYPE_MUSIC,
 )
 
 from hass_nabucasa import voice
 from .helpers.helpers import ChimeTTSHelper
-from .helpers.media_player import MediaPlayerHelper
+from .helpers.media_player_helper import MediaPlayerHelper
 from .helpers.filesystem import FilesystemHelper
 from .queue_manager import ChimeTTSQueueManager
 from .config_flow import ChimeTTSOptionsFlowHandler
 
-from homeassistant.const import CONF_ENTITY_ID, SERVICE_VOLUME_SET
+from homeassistant.const import CONF_ENTITY_ID
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceResponse, SupportsResponse
 from homeassistant.helpers import storage
@@ -46,8 +44,6 @@ from .const import (
     AUDIO_PATH_KEY,
     LOCAL_PATH_KEY,
     PUBLIC_PATH_KEY,
-    PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY,
-    SET_VOLUME_MEDIA_PLAYER_DICTS_KEY,
     AUDIO_DURATION_KEY,
     FADE_TRANSITION_KEY,
     DEFAULT_FADE_TRANSITION_MS,
@@ -67,6 +63,7 @@ from .const import (
     MP3_PRESET_CUSTOM_KEY,
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
+    SPOTIFY_PLATFORM,
     TTS_PLATFORM_KEY,
     OFFSET_KEY,
     AMAZON_POLLY,
@@ -130,7 +127,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         parse_result = True
 
         # Parse service parameters & TTS options
-        params = await helpers.async_parse_params(hass, service.data, is_say_url)
+        params = await helpers.async_parse_params(hass, service.data, is_say_url, media_player_helper)
         if params is not None:
             options = helpers.parse_options_yaml(service.data)
             media_players_array = params.get("media_players_array", None)
@@ -216,11 +213,14 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         # CLEAR HA TTS CACHE #
         if clear_ha_tts_cache:
             _LOGGER.debug("Clearing cached Home Assistant TTS audio files...")
-            await hass.services.async_call(
-                domain="TTS",
-                service="clear_cache",
-                blocking=True
-            )
+            try:
+                await hass.services.async_call(
+                    domain="TTS",
+                    service="clear_cache",
+                    blocking=True
+                )
+            except Exception as error:
+                _LOGGER.error("Error when clearing TTS cache: %s", error)
 
         # Summary
         elapsed_time = (datetime.now() - start_time).total_seconds() * 1000
@@ -258,8 +258,6 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
                 audio_dict,
                 params["entity_ids"],
                 params["announce"],
-                params["fade_audio"],
-                params["join_players"],
                 media_players_array,
             )
             if play_result is True:
@@ -268,7 +266,6 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
                     audio_duration,
                     params["final_delay"],
                     media_players_array,
-                    params["unjoin_players"],
                 )
 
             # Remove temporary local generated mp3
@@ -986,106 +983,35 @@ async def async_play_media(
     audio_dict,
     entity_ids,
     announce,
-    fade_audio,
-    join_players,
     media_players_array,
 ):
     """Call the media_player.play_media service."""
     _LOGGER.debug(" *** Pre-Playback Actions *** ")
 
-    service_data = {}
+    # Fade out and pause media players
+    await media_player_helper.async_fade_out_and_pause(hass, _data[FADE_TRANSITION_KEY])
 
-    # media content type
-    service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE_MUSIC
-
-    # media_content_id
-    media_content_id = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or
-                                                                audio_dict.get(PUBLIC_PATH_KEY, None),
-                                                                _data.get(MEDIA_DIR_KEY))
-    service_data[ATTR_MEDIA_CONTENT_ID] = media_content_id
-
-    # announce
-    if announce is True:
-        service_data[ATTR_MEDIA_ANNOUNCE] = announce
-
-    # entity_id
-    service_data[CONF_ENTITY_ID] = entity_ids
-
-    # Fade out and pause media_players manually if their platforms do not support the `announce` feature
-    _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY] = []
-    _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY] = []
-    for media_player_dict in media_players_array:
-        entity_id = media_player_dict["entity_id"]
-        # Announce on unsupported media_player platform
-        if (media_player_dict["is_playing"] and (fade_audio or (announce and not media_player_dict["announce_supported"])) ):
-            media_player_dict["fade_out_volume"] = 0
-            _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY].append(media_player_dict)
-        # Volume should be changed
-        elif (media_player_dict["should_change_volume"]
-              and not media_player_helper.get_is_media_player_spotify(hass, entity_id)):
-            _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY].append(media_player_dict)
-
-    # FADE OUT & PAUSE
-
-    if len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) > 0:
-
-        # Fade out media players manually if platform does not support `announce`
-        _LOGGER.debug(" - Fading out media_players currently playing")
-        await media_player_helper.async_set_volume_for_media_players(hass=hass,
-                                                                     media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
-                                                                     volume_key="fade_out_volume",
-                                                                     fade_duration=_data[FADE_TRANSITION_KEY])
-
-        # Pause playing media_players
-        pause_entity_ids = []
-        for media_player_dict in _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]:
-            pause_entity_ids.append(media_player_dict["entity_id"])
-        _LOGGER.debug(" - Pausing %s media_player", str(len(pause_entity_ids)))
-        try:
-            await hass.services.async_call(
-                domain="media_player",
-                service="media_pause",
-                service_data={CONF_ENTITY_ID: pause_entity_ids},
-                blocking=True
-            )
-        except Exception as error:
-            _LOGGER.warning("Unable to pause media player%s: %s", ("" if len(pause_entity_ids) == 1 else "s"), str(error))
-
-        # Wait until media_players are actually paused
-        await media_player_helper.async_wait_until_media_players_state_is(hass=hass,
-                                                                          media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
-                                                                          target_state="paused",
-                                                                          timeout=1.5)
+    # Snapshot Sonos media players
+    await media_player_helper.async_sonos_snapshot(hass)
 
     # Set media_players' volume_level
     await media_player_helper.async_set_volume_for_media_players(hass=hass,
-                                                                 media_player_dicts=_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY],
-                                                                 volume_key="playback_volume_level",
+                                                                 media_players=media_player_helper.get_set_volume_media_players(),
+                                                                 volume_key="target_volume_level",
                                                                  fade_duration=0)
 
-    # Join media player entity_ids as a group
-    _data["join_media_player_entity_id"] = None
-    _data["joined_media_players_entity_ids"] = None
-    if join_players is True:
-        join_supported_entity_ids = media_player_helper.get_join_suppored_entity_ids(media_players_array)
-        if len(join_supported_entity_ids) > 1:
-            _data["join_media_player_entity_id"] = await media_player_helper.async_join_media_players(hass, entity_ids)
-            _data["joined_media_players_entity_ids"] = join_supported_entity_ids
-            if _data["join_media_player_entity_id"] is not False:
-                service_data[CONF_ENTITY_ID] = [_data["join_media_player_entity_id"]]
-                volume_level = media_players_array[0]["playback_volume_level"]
-                # Replace media_player array elements with the new joined media_player dictionary
-                joint_media_player_dict = await media_player_helper.async_get_media_player_dict(hass,
-                                                                                                _data["join_media_player_entity_id"],
-                                                                                                volume_level)
-                _data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY] = [joint_media_player_dict]
-            else:
-                _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
-        elif len(join_supported_entity_ids) == 1:
-            _LOGGER.warning("Unable to join speakers. Only 1 media_player supported.")
-        else:
-            _LOGGER.warning("Unable to join speakers. %s supported media_player%s found (minimum is 2).",
-                            str(len(join_supported_entity_ids)), ("" if join_supported_entity_ids == 1 else "s"))
+    # Join media players
+    _data["joined_entity_id"] = await media_player_helper.async_join_media_players(hass,
+                                                                                   entity_ids)
+
+    # Prepare service call data
+    service_data = {}
+    service_data[CONF_ENTITY_ID] = entity_ids
+    service_data[ATTR_MEDIA_ANNOUNCE] = announce
+    service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE_MUSIC
+    service_data[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None)
+                                                                                   or audio_dict.get(PUBLIC_PATH_KEY, None),
+                                                                                   _data.get(MEDIA_DIR_KEY))
 
     # Play Chime TTS notification
     media_service_calls = prepare_media_service_calls(hass, entity_ids, service_data, audio_dict, media_players_array)
@@ -1098,21 +1024,20 @@ async def async_play_media(
 def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict, media_players_array):
     """Prepare the media_player service calls for audio playback."""
     _LOGGER.debug(" *** Chime TTS playback ***")
+
+    joined_media_player_entity_id = _data["joined_entity_id"]
+
     standard_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_standard_media_player(hass, entity_id)]
     alexa_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_alexa(hass, entity_id)]
     sonos_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_sonos(hass, entity_id)]
 
     # Remove any joined media_players from the media_player lists
-    if _data.get("joined_media_players_entity_ids", None):
-        _LOGGER.debug("Removing joined entity_ids: %s", str(_data["joined_media_players_entity_ids"]))
-        for joined_media_player_entity_id in _data["joined_media_players_entity_ids"]:
-            for media_player_array in [standard_media_player_entity_ids, alexa_media_player_entity_ids, sonos_media_player_entity_ids]:
-                if joined_media_player_entity_id in media_player_array:
-                    index = media_player_array.index(joined_media_player_entity_id)
-                    if index != -1:
-                        del media_player_array[index]
-        # Add the joined media player entity_id to the list of standard media players
-        standard_media_player_entity_ids.append(_data["join_media_player_entity_id"])
+    if joined_media_player_entity_id:
+        joined_media_players = media_player_helper.media_players_not_joined
+        for array in [standard_media_player_entity_ids, alexa_media_player_entity_ids, sonos_media_player_entity_ids]:
+            for joined_media_player in joined_media_players:
+                while joined_media_player in array:
+                    array.remove(joined_media_player)
 
     service_calls = []
 
@@ -1264,13 +1189,14 @@ async def async_fire_media_service_calls(hass: HomeAssistant, media_service_call
 
     return True
 
-async def async_post_playback_actions(
-    hass: HomeAssistant,
-    audio_duration: float,
-    final_delay: float,
-    media_players_array: list,
-    unjoin_players: bool):
+async def async_post_playback_actions(hass: HomeAssistant,
+                                      audio_duration: float,
+                                      final_delay: float,
+                                      media_players_array: list):
     """Run post playback actions."""
+
+    sonos_restored = False
+
     # Wait the audio playback duration
     total_delay_s = round(audio_duration + ((final_delay/1000) if final_delay > 0 else 0),3)
     _LOGGER.debug(" - Waiting %ss for audio playback to complete...", str(total_delay_s))
@@ -1278,111 +1204,36 @@ async def async_post_playback_actions(
 
     # Wait for playback to end on all media_players
     playing_media_player_dicts = []
-    for media_player_dict in media_players_array:
-        if not media_player_helper.get_is_media_player_spotify(hass, media_player_dict["entity_id"]):
-            playing_media_player_dicts.append(media_player_dict)
+    for media_player in media_players_array:
+        if media_player.platform != SPOTIFY_PLATFORM:
+            playing_media_player_dicts.append(media_player)
     if not await media_player_helper.async_wait_until_media_players_state_not(hass, playing_media_player_dicts, "playing"):
         _LOGGER.debug(" - Timed out waiting for playback to complete")
 
+    fade_in_media_players = media_player_helper.get_fade_in_out_media_players()
+    set_volume_media_players = media_player_helper.get_set_volume_media_players()
+
     # Write to log if post-playback actions are to be performed
-    if (len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) > 0
-        or len(_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]) > 0
-        or (unjoin_players is True and _data.get("join_media_player_entity_id", None))):
+    if (len(fade_in_media_players) > 0
+        or len(set_volume_media_players) > 0
+        or (media_player_helper.unjoin_players is True and media_player_helper.joined_entity_id)):
         _LOGGER.debug(" *** Post-Playback Actions ***")
 
     # Resume previous playback
-    if len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) > 0:
-        # 1. Wait until all media_players paused
-        if not await media_player_helper.async_wait_until_media_players_state_is(hass=hass,
-                                                                                 media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
-                                                                                 target_state="paused",
-                                                                                 timeout=5):
-            _LOGGER.warning("Timed out waiting for %s media_player%s to pause",
-                            str(len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY])),
-                            ("" if len(_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]) == 1 else "s"))
-
-        # 2. Set media_players volume to 0
-        _LOGGER.debug("     - Setting volume to 0")
-        resume_entity_ids = []
-        for media_player_dict in _data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY]:
-            entity_id = media_player_dict["entity_id"]
-            resume_entity_ids.append(entity_id)
-        try:
-            await hass.services.async_call(
-                domain="media_player",
-                service=SERVICE_VOLUME_SET,
-                service_data={
-                    ATTR_MEDIA_VOLUME_LEVEL: 0,
-                    CONF_ENTITY_ID: resume_entity_ids
-                },
-                blocking=True
-            )
-        except Exception as error:
-            _LOGGER.warning("Unable to set %s's volume to 0 for: %s. Error: %s",
-                            entity_id, (", ".join(map(str, resume_entity_ids))), error)
-
-
-        # 3. Call `media_play` until all media_players' states are "playing"
-        _LOGGER.debug("   - Resuming %s media_player%s",
-                      str(len(resume_entity_ids)),
-                      ("" if len(resume_entity_ids) == 1 else "s"))
-        retry_duration = 3
-        delay_s = 0.2
-        is_media_player_playing = False
-        while not is_media_player_playing and retry_duration > 0:
-            try:
-                await hass.services.async_call(
-                    domain="media_player",
-                    service="media_play",
-                    service_data={CONF_ENTITY_ID: resume_entity_ids},
-                    blocking=True,
-                )
-                is_media_player_playing = True
-            except Exception as error:
-                _LOGGER.warning("Unable to resume playback: %s", error)
-
-            for entity_id in resume_entity_ids:
-                is_media_player_playing = is_media_player_playing and hass.states.get(entity_id).state == "playing"
-            if not is_media_player_playing:
-                await hass.async_add_executor_job(time.sleep, delay_s)
-            retry_duration = retry_duration - delay_s
-
-        if is_media_player_playing is False:
-            _LOGGER.warning("Failed to resume playback on %s", entity_id)
-
-        # 4. Fade in all media players at the same time
-        await media_player_helper.async_set_volume_for_media_players(hass=hass,
-                                                                     media_player_dicts=_data[PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY],
-                                                                     volume_key="initial_volume_level",
-                                                                     fade_duration=_data[FADE_TRANSITION_KEY])
+    await media_player_helper.async_resume_playback(hass, _data[FADE_TRANSITION_KEY])
 
     # Reset volume
-    if len(_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY]) > 0:
-        await media_player_helper.async_set_volume_for_media_players(hass=hass,
-                                                                     media_player_dicts=_data[SET_VOLUME_MEDIA_PLAYER_DICTS_KEY],
-                                                                     volume_key="initial_volume_level",
-                                                                     fade_duration=0)
+    await media_player_helper.async_set_volume_for_media_players(hass=hass,
+                                                                 media_players=set_volume_media_players,
+                                                                 volume_key="initial_volume_level",
+                                                                 fade_duration=0)
 
     # Unjoin entity_ids
-    if unjoin_players is True and _data.get("join_media_player_entity_id", None):
-        _LOGGER.debug("   - Calling media_player.unjoin service...")
-        for media_player_dict in media_players_array:
-            if media_player_dict["group_members_supported"] is True:
-                entity_id = media_player_dict["entity_id"]
-                _LOGGER.debug("     - media_player.unjoin: %s", entity_id)
-                try:
-                    await hass.services.async_call(
-                        domain="media_player",
-                        service=SERVICE_UNJOIN,
-                        service_data={CONF_ENTITY_ID: entity_id},
-                        blocking=True,
-                    )
-                    _LOGGER.debug("    ...done")
-                except Exception as error:
-                    _LOGGER.warning(
-                        "   - Error calling unjoin service for %s: %s", entity_id, error
-                    )
+    await media_player_helper.async_unjoin_media_players(hass)
 
+    # Restore from Sonos snapshot
+    if sonos_restored is False:
+        await media_player_helper.async_sonos_restore(hass)
 
 ################################
 ### Storage Helper Functions ###
