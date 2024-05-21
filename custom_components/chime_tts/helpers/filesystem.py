@@ -21,7 +21,7 @@ from ..const import (
     LOCAL_PATH_KEY,
     AUDIO_DURATION_KEY,
 )
-from .media_player import MediaPlayerHelper
+from .media_player_helper import MediaPlayerHelper
 media_player_helper = MediaPlayerHelper()
 
 _LOGGER = logging.getLogger(__name__)
