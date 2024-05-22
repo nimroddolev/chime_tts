@@ -773,6 +773,7 @@ It also works in Deno and modern browsers.
 | `security`                   | `security`                     | `html`        |
 | `seed`                       | `seed`                         | `svg`         |
 | `selected`                   | `selected`                     | `html`        |
+| `shadowRootClonable`         | `shadowrootclonable`           | `html`        |
 | `shadowRootDelegatesFocus`   | `shadowrootdelegatesfocus`     | `html`        |
 | `shadowRootMode`             | `shadowrootmode`               | `html`        |
 | `shape`                      | `shape`                        | `html`        |
@@ -877,6 +878,7 @@ It also works in Deno and modern browsers.
 | `wordSpacing`                | `word-spacing`                 | `svg`         |
 | `wrap`                       | `wrap`                         | `html`        |
 | `writingMode`                | `writing-mode`                 | `svg`         |
+| `writingSuggestions`         | `writingsuggestions`           | `html`        |
 | `x`                          | `x`                            | `svg`         |
 | `x1`                         | `x1`                           | `svg`         |
 | `x2`                         | `x2`                           | `svg`         |

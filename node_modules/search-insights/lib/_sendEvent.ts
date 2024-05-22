@@ -41,6 +41,10 @@ export function makeSendEvents(requestFn: RequestFnType) {
       return payload;
     });
 
+    if (events.length === 0) {
+      return Promise.resolve(false);
+    }
+
     return sendRequest(
       requestFn,
       this._ua,

@@ -1,6 +1,6 @@
 {
   "name": "postcss-modules-extract-imports",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "A CSS Modules transform to extract local aliases for inline imports",
   "main": "src/index.js",
   "engines": {

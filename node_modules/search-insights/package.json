@@ -1,7 +1,7 @@
 {
   "name": "search-insights",
   "description": "Library for reporting click, conversion and view metrics using the Algolia Insights API",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "jsdelivr": "dist/search-insights.min.js",
   "main": "index-node.cjs.js",
   "types": "index-node.cjs.d.ts",

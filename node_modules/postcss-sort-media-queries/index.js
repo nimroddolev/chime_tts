@@ -12,6 +12,7 @@ module.exports = (opts = {}) => {
     {
       sort: 'mobile-first',
       configuration: false,
+      onlyTopLevel: false,
     },
     opts
   )
@@ -26,26 +27,48 @@ module.exports = (opts = {}) => {
       let atRules = [];
 
       root.walkAtRules('media', atRule => {
-        let query = atRule.params
+        if (opts.onlyTopLevel && atRule.parent.type === 'root') {
+          let query = atRule.params
 
-        if (!atRules[query]) {
-          atRules[query] = new AtRule({
-            name: atRule.name,
-            params: atRule.params,
-            source: atRule.source
+          if (!atRules[query]) {
+            atRules[query] = new AtRule({
+              name: atRule.name,
+              params: atRule.params,
+              source: atRule.source
+            })
+          }
+
+          atRule.nodes.forEach(node => {
+            atRules[query].append(node.clone())
           })
+
+          atRule.remove()
         }
 
-        atRule.nodes.forEach(node => {
-          atRules[query].append(node.clone())
+        if (!opts.onlyTopLevel) {
+          let query = atRule.params
+
+          if (!atRules[query]) {
+            atRules[query] = new AtRule({
+              name: atRule.name,
+              params: atRule.params,
+              source: atRule.source
+            })
+          }
+
+          atRule.nodes.forEach(node => {
+            atRules[query].append(node.clone())
+          })
+
+          atRule.remove()
+        }
+      })
+
+      if (atRules) {
+        sortAtRules(Object.keys(atRules), opts.sort, sortCSSmq).forEach(query => {
+          root.append(atRules[query])
         })
-
-        atRule.remove()
-      })
-
-      sortAtRules(Object.keys(atRules), opts.sort, sortCSSmq).forEach(query => {
-        root.append(atRules[query])
-      })
+      }
     }
   }
 }

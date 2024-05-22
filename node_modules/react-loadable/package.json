@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "5.5.2",
+  "version": "6.0.0",
   "description": "A higher order component for loading components with promises",
   "main": "lib/index.js",
   "types": "index.d.ts",
@@ -23,8 +23,7 @@
     "prepare": "yarn build"
   },
   "dependencies": {
-    "@types/react": "*",
-    "prop-types": "^15.6.2"
+    "@types/react": "*"
   },
   "devDependencies": {
     "@babel/cli": "^7.1.2",

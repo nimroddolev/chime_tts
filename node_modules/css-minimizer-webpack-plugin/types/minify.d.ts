@@ -1,8 +1,6 @@
 export type MinimizedResult = import("./index.js").MinimizedResult;
-export type RawSourceMap = import("source-map").RawSourceMap;
 export type InternalResult = import("./index.js").InternalResult;
 /** @typedef {import("./index.js").MinimizedResult} MinimizedResult */
-/** @typedef {import("source-map").RawSourceMap} RawSourceMap */
 /** @typedef {import("./index.js").InternalResult} InternalResult */
 /**
  * @template T

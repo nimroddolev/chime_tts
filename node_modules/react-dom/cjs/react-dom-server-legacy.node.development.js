@@ -17,7 +17,7 @@ if (process.env.NODE_ENV !== "production") {
 var React = require('react');
 var stream = require('stream');
 
-var ReactVersion = '18.2.0';
+var ReactVersion = '18.3.1';
 
 var ReactSharedInternals = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
 
@@ -5706,6 +5706,7 @@ var didWarnAboutModulePatternComponent = {};
 var didWarnAboutContextTypeOnFunctionComponent = {};
 var didWarnAboutGetDerivedStateOnFunctionComponent = {};
 var didWarnAboutReassigningProps = false;
+var didWarnAboutDefaultPropsOnFunctionComponent = {};
 var didWarnAboutGenerators = false;
 var didWarnAboutMaps = false;
 var hasWarnedAboutUsingContextAsConsumer = false; // This would typically be a function component but we still support module pattern
@@ -5798,6 +5799,16 @@ function validateFunctionComponentInDev(Component) {
     if (Component) {
       if (Component.childContextTypes) {
         error('%s(...): childContextTypes cannot be defined on a function component.', Component.displayName || Component.name || 'Component');
+      }
+    }
+
+    if ( Component.defaultProps !== undefined) {
+      var componentName = getComponentNameFromType(Component) || 'Unknown';
+
+      if (!didWarnAboutDefaultPropsOnFunctionComponent[componentName]) {
+        error('%s: Support for defaultProps will be removed from function components ' + 'in a future major release. Use JavaScript default parameters instead.', componentName);
+
+        didWarnAboutDefaultPropsOnFunctionComponent[componentName] = true;
       }
     }
 
@@ -7058,6 +7069,10 @@ function renderToNodeStream(children, options) {
 }
 
 function renderToStaticNodeStream(children, options) {
+  {
+    error('ReactDOMServer.renderToStaticNodeStream() is deprecated.' + ' Use ReactDOMServer.renderToPipeableStream() and wait to `pipe` until the `onAllReady`' + ' callback has been called instead.');
+  }
+
   return renderToNodeStreamImpl(children, options);
 }
 

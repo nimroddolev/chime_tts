@@ -540,31 +540,33 @@ module.exports = (options = {}) => {
                 });
               });
             } else if (/scope$/i.test(atRule.name)) {
-              atRule.params = atRule.params
-                .split("to")
-                .map((item) => {
-                  const selector = item.trim().slice(1, -1).trim();
-                  const context = localizeNode(
-                    selector,
-                    options.mode,
-                    localAliasMap
-                  );
-
-                  context.options = options;
-                  context.localAliasMap = localAliasMap;
-
-                  if (pureMode && context.hasPureGlobals) {
-                    throw atRule.error(
-                      'Selector in at-rule"' +
-                        selector +
-                        '" is not pure ' +
-                        "(pure selectors must contain at least one local class or id)"
+              if (atRule.params) {
+                atRule.params = atRule.params
+                  .split("to")
+                  .map((item) => {
+                    const selector = item.trim().slice(1, -1).trim();
+                    const context = localizeNode(
+                      selector,
+                      options.mode,
+                      localAliasMap
                     );
-                  }
 
-                  return `(${context.selector})`;
-                })
-                .join(" to ");
+                    context.options = options;
+                    context.localAliasMap = localAliasMap;
+
+                    if (pureMode && context.hasPureGlobals) {
+                      throw atRule.error(
+                        'Selector in at-rule"' +
+                          selector +
+                          '" is not pure ' +
+                          "(pure selectors must contain at least one local class or id)"
+                      );
+                    }
+
+                    return `(${context.selector})`;
+                  })
+                  .join(" to ");
+              }
 
               atRule.nodes.forEach((declaration) => {
                 if (declaration.type === "decl") {

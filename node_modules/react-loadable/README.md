@@ -1,10 +1,14 @@
-![React Loadable](http://thejameskyle.com/img/react-loadable-header.png)
 
 **IMPORTANT**: this is a minimalistic fork to solve the `componentWillMount` warning for the [facebook/docusaurus](https://github.com/facebook/docusaurus) project. 
 
-We don't plan to maintain this problem, just get rid of the warning.
+v6.0 also adds support for React 18.3 / React 19, and removes the useless prop-type dependency.
+
+We don't plan to support/maintain this project, just get rid of the deprecation warnings for our own needs. It is provided as-is, and we won't accept PRs.
 
 ----
+
+![React Loadable](http://thejameskyle.com/img/react-loadable-header.png)
+
 
 > A higher order component for loading components with dynamic imports.
 

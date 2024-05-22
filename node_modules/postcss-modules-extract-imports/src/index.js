@@ -84,54 +84,63 @@ module.exports = (options = {}) => {
           });
 
           root.walkDecls(/^composes$/, (declaration) => {
-            const matches = declaration.value.match(matchImports);
+            const multiple = declaration.value.split(",");
+            const values = [];
 
-            if (!matches) {
-              return;
-            }
+            multiple.forEach((value) => {
+              const matches = value.trim().match(matchImports);
 
-            let tmpSymbols;
-            let [
-              ,
-              /*match*/ symbols,
-              doubleQuotePath,
-              singleQuotePath,
-              global,
-            ] = matches;
+              if (!matches) {
+                values.push(value);
 
-            if (global) {
-              // Composing globals simply means changing these classes to wrap them in global(name)
-              tmpSymbols = symbols.split(/\s+/).map((s) => `global(${s})`);
-            } else {
-              const importPath = doubleQuotePath || singleQuotePath;
-
-              let parent = declaration.parent;
-              let parentIndexes = "";
-
-              while (parent.type !== "root") {
-                parentIndexes =
-                  parent.parent.index(parent) + "_" + parentIndexes;
-                parent = parent.parent;
+                return;
               }
 
-              const { selector } = declaration.parent;
-              const parentRule = `_${parentIndexes}${selector}`;
+              let tmpSymbols;
+              let [
+                ,
+                /*match*/ symbols,
+                doubleQuotePath,
+                singleQuotePath,
+                global,
+              ] = matches;
 
-              addImportToGraph(importPath, parentRule, graph, visited);
+              if (global) {
+                // Composing globals simply means changing these classes to wrap them in global(name)
+                tmpSymbols = symbols.split(/\s+/).map((s) => `global(${s})`);
+              } else {
+                const importPath = doubleQuotePath || singleQuotePath;
 
-              importDecls[importPath] = declaration;
-              imports[importPath] = imports[importPath] || {};
+                let parent = declaration.parent;
+                let parentIndexes = "";
 
-              tmpSymbols = symbols.split(/\s+/).map((s) => {
-                if (!imports[importPath][s]) {
-                  imports[importPath][s] = createImportedName(s, importPath);
+                while (parent.type !== "root") {
+                  parentIndexes =
+                    parent.parent.index(parent) + "_" + parentIndexes;
+                  parent = parent.parent;
                 }
 
-                return imports[importPath][s];
-              });
-            }
+                const { selector } = declaration.parent;
+                const parentRule = `_${parentIndexes}${selector}`;
 
-            declaration.value = tmpSymbols.join(" ");
+                addImportToGraph(importPath, parentRule, graph, visited);
+
+                importDecls[importPath] = declaration;
+                imports[importPath] = imports[importPath] || {};
+
+                tmpSymbols = symbols.split(/\s+/).map((s) => {
+                  if (!imports[importPath][s]) {
+                    imports[importPath][s] = createImportedName(s, importPath);
+                  }
+
+                  return imports[importPath][s];
+                });
+              }
+
+              values.push(tmpSymbols.join(" "));
+            });
+
+            declaration.value = values.join(", ");
           });
 
           const importsOrder = topologicalSort(graph, failOnWrongOrder);

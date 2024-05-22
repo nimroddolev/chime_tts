@@ -2,18 +2,22 @@
 // Private
 // ----------------------------------------
 
-const minMaxWidth = /(!?\(\s*min(-device-)?-width)(.|\n)+\(\s*max(-device)?-width/i;
-const minWidth = /\(\s*min(-device)?-width/i;
-const maxMinWidth = /(!?\(\s*max(-device)?-width)(.|\n)+\(\s*min(-device)?-width/i;
-const maxWidth = /\(\s*max(-device)?-width/i;
+const minMaxWidth =
+	/(!?\(\s*min(-device)?-width)(.|\n)+\(\s*max(-device)?-width|\(\s*width\s*>(=)?(.|\n)+\(\s*width\s*<(=)?|(!?\(.*<(=)?\s*width\s*<(=)?)/i;
+const minWidth = /\(\s*min(-device)?-width|\(\s*width\s*>(=)?/i;
+const maxMinWidth =
+	/(!?\(\s*max(-device)?-width)(.|\n)+\(\s*min(-device)?-width|\(\s*width\s*<(=)?(.|\n)+\(\s*width\s*>(=)?|(!?\(.*>(=)?\s*width\s*>(=)?)/i;
+const maxWidth = /\(\s*max(-device)?-width|\(\s*width\s*<(=)?/i;
 
 const isMinWidth = _testQuery(minMaxWidth, maxMinWidth, minWidth);
 const isMaxWidth = _testQuery(maxMinWidth, minMaxWidth, maxWidth);
 
-const minMaxHeight = /(!?\(\s*min(-device)?-height)(.|\n)+\(\s*max(-device)?-height/i;
-const minHeight = /\(\s*min(-device)?-height/i;
-const maxMinHeight = /(!?\(\s*max(-device)?-height)(.|\n)+\(\s*min(-device)?-height/i;
-const maxHeight = /\(\s*max(-device)?-height/i;
+const minMaxHeight =
+	/(!?\(\s*min(-device)?-height)(.|\n)+\(\s*max(-device)?-height|\(\s*height\s*>(=)?(.|\n)+\(\s*height\s*<(=)?|(!?\(.*<(=)?\s*height\s*<(=)?)/i;
+const minHeight = /\(\s*min(-device)?-height|\(\s*height\s*>(=)?/i;
+const maxMinHeight =
+	/(!?\(\s*max(-device)?-height)(.|\n)+\(\s*min(-device)?-height|\(\s*height\s*<(=)?(.|\n)+\(\s*height\s*>(=)?|(!?\(.*>(=)?\s*height\s*>(=)?)/i;
+const maxHeight = /\(\s*max(-device)?-height|\(\s*height\s*<(=)?/i;
 
 const isMinHeight = _testQuery(minMaxHeight, maxMinHeight, minHeight);
 const isMaxHeight = _testQuery(maxMinHeight, minMaxHeight, maxHeight);

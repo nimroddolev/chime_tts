@@ -44,7 +44,7 @@ the infamous `&apos;` (which people think is a [virus][]) won’t show up.
 ## Install
 
 This package is [ESM only][esm].
-In Node.js (version 12.20+, 14.14+, or 16.0+), install with [npm][]:
+In Node.js (version 14.14+, 16.0+), install with [npm][]:
 
 ```sh
 npm install stringify-entities
@@ -78,7 +78,7 @@ stringifyEntities('alpha © bravo ≠ charlie 𝌆 delta', {useNamedReferences: 
 
 ## API
 
-This package exports the following identifiers: `stringifyEntities`,
+This package exports the identifiers `stringifyEntities` and
 `stringifyEntitiesLight`.
 There is no default export.
 
@@ -136,7 +136,7 @@ Create character references which don’t fail in attributes (`boolean?`, defaul
 
 #### Returns
 
-`string` — encoded value.
+Encoded value (`string`).
 
 ## Algorithm
 
@@ -156,13 +156,12 @@ always outputs hexadecimal character references.
 ## Types
 
 This package is fully typed with [TypeScript][].
-Additional `Options` and `LightOptions` types, that model their respective
-values, are exported.
+It exports the additional types `Options` and `LightOptions` types.
 
 ## Compatibility
 
 This package is at least compatible with all maintained versions of Node.js.
-As of now, that is Node.js 12.20+, 14.14+, and 16.0+.
+As of now, that is Node.js 14.14+ and 16.0+.
 It also works in Deno and modern browsers.
 
 ## Security

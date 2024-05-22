@@ -1,3 +1,5 @@
+const decimalRegex = /\d/
+
 /**
  * Configurable ways to encode characters as decimal references.
  *
@@ -8,7 +10,7 @@
  */
 export function toDecimal(code, next, omit) {
   const value = '&#' + String(code)
-  return omit && next && !/\d/.test(String.fromCharCode(next))
+  return omit && next && !decimalRegex.test(String.fromCharCode(next))
     ? value
     : value + ';'
 }

@@ -29,7 +29,7 @@ into:
 - An extend-import has the following format:
 
 ```
-composes: className [... className] from "path/to/file.css";
+composes: className [... className] from "path/to/file.css",  className [... className], className [... className] from global;
 ```
 
 ## Options

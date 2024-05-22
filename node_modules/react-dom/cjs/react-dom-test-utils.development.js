@@ -1129,7 +1129,7 @@ var getNodeFromInstance = EventInternals[1];
 var getFiberCurrentPropsFromNode = EventInternals[2];
 var enqueueStateRestore = EventInternals[3];
 var restoreStateIfNeeded = EventInternals[4];
-var act = React.unstable_act;
+var reactAct = React.unstable_act;
 
 function Event(suffix) {}
 
@@ -1221,7 +1221,17 @@ function validateClassInstance(inst, methodName) {
  */
 
 
+var didWarnAboutReactTestUtilsDeprecation = false;
+
 function renderIntoDocument(element) {
+  {
+    if (!didWarnAboutReactTestUtilsDeprecation) {
+      didWarnAboutReactTestUtilsDeprecation = true;
+
+      error('ReactDOMTestUtils is deprecated and will be removed in a future ' + 'major release, because it exposes internal implementation details ' + 'that are highly likely to change between releases. Upgrade to a ' + 'modern testing library, such as @testing-library/react. See ' + 'https://react.dev/warnings/react-dom-test-utils for more info.');
+    }
+  }
+
   var div = document.createElement('div'); // None of our tests actually require attaching the container to the
   // DOM, and doing so creates a mess that we rely on test isolation to
   // clean up, so we're going to stop honoring the name of this method
@@ -1717,6 +1727,18 @@ function buildSimulators() {
 }
 
 buildSimulators();
+var didWarnAboutUsingAct = false;
+var act =  function actWithWarning(callback) {
+  {
+    if (!didWarnAboutUsingAct) {
+      didWarnAboutUsingAct = true;
+
+      error('`ReactDOMTestUtils.act` is deprecated in favor of `React.act`. ' + 'Import `act` from `react` instead of `react-dom/test-utils`. ' + 'See https://react.dev/warnings/react-dom-test-utils for more info.');
+    }
+  }
+
+  return reactAct(callback);
+} ;
 
 exports.Simulate = Simulate;
 exports.act = act;

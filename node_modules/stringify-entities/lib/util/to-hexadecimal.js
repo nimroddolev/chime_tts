@@ -1,3 +1,5 @@
+const hexadecimalRegex = /[\dA-Fa-f]/
+
 /**
  * Configurable ways to encode characters as hexadecimal references.
  *
@@ -8,7 +10,7 @@
  */
 export function toHexadecimal(code, next, omit) {
   const value = '&#x' + code.toString(16).toUpperCase()
-  return omit && next && !/[\dA-Fa-f]/.test(String.fromCharCode(next))
+  return omit && next && !hexadecimalRegex.test(String.fromCharCode(next))
     ? value
     : value + ';'
 }

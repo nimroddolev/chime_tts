@@ -23,7 +23,7 @@ if (
 ) {
   __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(new Error());
 }
-          var ReactVersion = '18.2.0';
+          var ReactVersion = '18.3.1';
 
 // ATTENTION
 // When adding new symbols to this file,
@@ -2699,6 +2699,7 @@ exports.PureComponent = PureComponent;
 exports.StrictMode = REACT_STRICT_MODE_TYPE;
 exports.Suspense = REACT_SUSPENSE_TYPE;
 exports.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = ReactSharedInternals;
+exports.act = act;
 exports.cloneElement = cloneElement$1;
 exports.createContext = createContext;
 exports.createElement = createElement$1;

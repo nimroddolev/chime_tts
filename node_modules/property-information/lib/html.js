@@ -223,6 +223,7 @@ export const html = create({
     scoped: boolean,
     seamless: boolean,
     selected: boolean,
+    shadowRootClonable: boolean,
     shadowRootDelegatesFocus: boolean,
     shadowRootMode: null,
     shape: null,
@@ -248,6 +249,7 @@ export const html = create({
     value: booleanish,
     width: number,
     wrap: null,
+    writingSuggestions: null,
 
     // Legacy.
     // See: https://html.spec.whatwg.org/#other-elements,-attributes-and-apis

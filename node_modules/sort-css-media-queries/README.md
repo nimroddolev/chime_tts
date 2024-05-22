@@ -19,9 +19,9 @@
 
 ##  Table of Contents
 
-English
+🇬🇧 English
 |
-[Русский язык](https://github.com/dutchenkoOleg/sort-css-media-queries/blob/master/README-RU.md)
+[🇺🇦 Українська](https://github.com/dutchenkoOleg/sort-css-media-queries/blob/master/README-UK.md)
 
 - [Alternative to `mqpacker`](#alternative-to-mqpacker)
 - [Available in CSS-in-JS](#available-in-css-in-js-)

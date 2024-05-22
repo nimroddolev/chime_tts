@@ -320,6 +320,7 @@ const getNormalizedWebpackOptions = config => {
 				chunkLoadTimeout: output.chunkLoadTimeout,
 				cssFilename: output.cssFilename,
 				cssChunkFilename: output.cssChunkFilename,
+				cssHeadDataCompression: output.cssHeadDataCompression,
 				clean: output.clean,
 				compareBeforeEmit: output.compareBeforeEmit,
 				crossOriginLoading: output.crossOriginLoading,
@@ -446,7 +447,8 @@ const getNormalizedWebpackOptions = config => {
 				hash: module.hash
 			})),
 			immutablePaths: optionalNestedArray(snapshot.immutablePaths, p => [...p]),
-			managedPaths: optionalNestedArray(snapshot.managedPaths, p => [...p])
+			managedPaths: optionalNestedArray(snapshot.managedPaths, p => [...p]),
+			unmanagedPaths: optionalNestedArray(snapshot.unmanagedPaths, p => [...p])
 		})),
 		stats: nestedConfig(config.stats, stats => {
 			if (stats === false) {

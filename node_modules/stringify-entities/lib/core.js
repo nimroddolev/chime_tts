@@ -1,6 +1,6 @@
 /**
  * @typedef CoreOptions
- * @property {Array<string>} [subset=[]]
+ * @property {ReadonlyArray<string>} [subset=[]]
  *   Whether to only escape the given subset of characters.
  * @property {boolean} [escapeOnly=false]
  *   Whether to only escape possibly dangerous characters.
@@ -13,6 +13,16 @@
  * @typedef {CoreOptions & FormatOptions & import('./util/format-smart.js').FormatSmartOptions} CoreWithFormatOptions
  */
 
+const defaultSubsetRegex = /["&'<>`]/g
+const surrogatePairsRegex = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g
+const controlCharactersRegex =
+  // eslint-disable-next-line no-control-regex, unicorn/no-hex-escape
+  /[\x01-\t\v\f\x0E-\x1F\x7F\x81\x8D\x8F\x90\x9D\xA0-\uFFFF]/g
+const regexEscapeRegex = /[|\\{}()[\]^$+*?.]/g
+
+/** @type {WeakMap<ReadonlyArray<string>, RegExp>} */
+const subsetToRegexCache = new WeakMap()
+
 /**
  * Encode certain characters in `value`.
  *
@@ -22,7 +32,9 @@
  */
 export function core(value, options) {
   value = value.replace(
-    options.subset ? charactersToExpression(options.subset) : /["&'<>`]/g,
+    options.subset
+      ? charactersToExpressionCached(options.subset)
+      : defaultSubsetRegex,
     basic
   )
 
@@ -33,14 +45,10 @@ export function core(value, options) {
   return (
     value
       // Surrogate pairs.
-      .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, surrogate)
+      .replace(surrogatePairsRegex, surrogate)
       // BMP control characters (C0 except for LF, CR, SP; DEL; and some more
       // non-ASCII ones).
-      .replace(
-        // eslint-disable-next-line no-control-regex, unicorn/no-hex-escape
-        /[\x01-\t\v\f\x0E-\x1F\x7F\x81\x8D\x8F\x90\x9D\xA0-\uFFFF]/g,
-        basic
-      )
+      .replace(controlCharactersRegex, basic)
   )
 
   /**
@@ -74,7 +82,26 @@ export function core(value, options) {
 }
 
 /**
- * @param {Array<string>} subset
+ * A wrapper function that caches the result of `charactersToExpression` with a WeakMap.
+ * This can improve performance when tooling calls `charactersToExpression` repeatedly
+ * with the same subset.
+ *
+ * @param {ReadonlyArray<string>} subset
+ * @returns {RegExp}
+ */
+function charactersToExpressionCached(subset) {
+  let cached = subsetToRegexCache.get(subset)
+
+  if (!cached) {
+    cached = charactersToExpression(subset)
+    subsetToRegexCache.set(subset, cached)
+  }
+
+  return cached
+}
+
+/**
+ * @param {ReadonlyArray<string>} subset
  * @returns {RegExp}
  */
 function charactersToExpression(subset) {
@@ -83,7 +110,7 @@ function charactersToExpression(subset) {
   let index = -1
 
   while (++index < subset.length) {
-    groups.push(subset[index].replace(/[|\\{}()[\]^$+*?.]/g, '\\$&'))
+    groups.push(subset[index].replace(regexEscapeRegex, '\\$&'))
   }
 
   return new RegExp('(?:' + groups.join('|') + ')', 'g')

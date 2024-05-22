@@ -32,6 +32,7 @@ const { parseResource } = require("./util/identifier");
 /** @typedef {import("./RuntimeTemplate")} RuntimeTemplate */
 /** @typedef {import("./javascript/JavascriptParser")} JavascriptParser */
 /** @typedef {import("./javascript/JavascriptParser").Range} Range */
+/** @typedef {import("./util/fs").InputFileSystem} InputFileSystem */
 
 const PLUGIN_NAME = "NodeStuffPlugin";
 
@@ -193,7 +194,11 @@ class NodeStuffPlugin {
 								break;
 							case true:
 								setModuleConstant("__filename", module =>
-									relative(compiler.inputFileSystem, context, module.resource)
+									relative(
+										/** @type {InputFileSystem} */ (compiler.inputFileSystem),
+										context,
+										module.resource
+									)
 								);
 								break;
 						}
@@ -227,7 +232,11 @@ class NodeStuffPlugin {
 								break;
 							case true:
 								setModuleConstant("__dirname", module =>
-									relative(compiler.inputFileSystem, context, module.context)
+									relative(
+										/** @type {InputFileSystem} */ (compiler.inputFileSystem),
+										context,
+										/** @type {string} */ (module.context)
+									)
 								);
 								break;
 						}
@@ -236,7 +245,9 @@ class NodeStuffPlugin {
 							.for("__dirname")
 							.tap(PLUGIN_NAME, expr => {
 								if (!parser.state.module) return;
-								return evaluateToString(parser.state.module.context)(expr);
+								return evaluateToString(
+									/** @type {string} */ (parser.state.module.context)
+								)(expr);
 							});
 					}
 					parser.hooks.expression

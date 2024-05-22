@@ -20,6 +20,8 @@ for (key in characterEntitiesHtml4) {
   }
 }
 
+const notAlphanumericRegex = /[^\dA-Za-z]/
+
 /**
  * Configurable ways to encode characters as named references.
  *
@@ -43,7 +45,7 @@ export function toNamed(code, next, omit, attribute) {
       (!attribute ||
         (next &&
           next !== 61 /* `=` */ &&
-          /[^\da-z]/i.test(String.fromCharCode(next))))
+          notAlphanumericRegex.test(String.fromCharCode(next))))
     ) {
       return value
     }
