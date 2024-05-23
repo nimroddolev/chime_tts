@@ -95,11 +95,11 @@ queue = ChimeTTSQueueManager()
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up an entry."""
+    config_entry.async_on_unload(config_entry.add_update_listener(async_reload_entry))
     await async_refresh_stored_data(hass)
     update_configuration(config_entry, hass)
     queue.set_timeout(_data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
 
-    config_entry.async_on_unload(config_entry.add_update_listener(async_reload_entry))
     return True
 
 async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
@@ -303,8 +303,9 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     """Reload the Chime TTS config entry."""
     _LOGGER.debug("Reloading integration")
     await async_unload_entry(hass, config_entry)
-    await async_setup_entry(hass, config_entry)
     await async_setup(hass, config_entry)
+    await async_refresh_stored_data(hass)
+    update_configuration(config_entry, hass)
 
 # Integration options #
 
