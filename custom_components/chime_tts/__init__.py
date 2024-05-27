@@ -268,8 +268,12 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
                 )
 
             # Remove temporary local generated mp3
-            if not params.get("cache", False) and local_path is not None:
-                filesystem_helper.delete_file(local_path)
+            if not params.get("cache", False):
+                if local_path is not None:
+                    filesystem_helper.delete_file(local_path)
+                if public_path is not None:
+                    filesystem_helper.delete_file(public_path)
+
 
     end_time = datetime.now()
     completion_time = round((end_time - start_time).total_seconds(), 2)
