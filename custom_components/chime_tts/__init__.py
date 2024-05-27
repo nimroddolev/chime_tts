@@ -109,9 +109,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     # Say Service #
 
     async def async_say(service, is_say_url = False):
-        if is_say_url is False:
-            _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
-
+        """chime_tts.say / chime_tts.say_url entry point."""
         # Add service calls to the queue with arguments
         timeout = _data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT)
         result = False
@@ -130,6 +128,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
     async def async_say_execute(service, is_say_url):
         """Play TTS audio with local chime MP3 audio."""
+        if is_say_url is False:
+            _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
         start_time = datetime.now()
         parse_result = True
 
