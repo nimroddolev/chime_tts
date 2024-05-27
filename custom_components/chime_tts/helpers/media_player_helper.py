@@ -161,7 +161,6 @@ class MediaPlayerHelper:
 
     def get_is_media_player_sonos(self, hass, entity_id):
         """Determine whether a media_player belongs to the Sonos platform."""
-        return True # ``` REMOVE
         return str(self.get_media_player_platform(hass, entity_id)).lower() == SONOS_PLATFORM
 
     def get_is_media_player_spotify(self, hass, entity_id):
@@ -181,7 +180,6 @@ class MediaPlayerHelper:
             return bool(supported_features & 1048576)
 
         if feature is ATTR_GROUP_MEMBERS:
-            return True # ``` REMOVE
             return bool(supported_features & 524288)
 
         return False
