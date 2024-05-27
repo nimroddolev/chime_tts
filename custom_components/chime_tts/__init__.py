@@ -113,13 +113,20 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
 
         # Add service calls to the queue with arguments
-        result = await queue.add_to_queue(async_say_execute, service, is_say_url)
+        timeout = _data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT)
+        result = False
+        try:
+            result = await queue.add_to_queue(async_say_execute, timeout, service, is_say_url)
+        except Exception as error:
+            error_string = f"Error calling chime_tts.say{'_url' if is_say_url else ''} service: {str(error)}"
+            _LOGGER.error("%s", str(error_string))
+            raise HomeAssistantError(error) from error
 
         if result is not False:
             return result
 
         # Service call failed
-        return {}
+        raise HomeAssistantError("An unknown error occurred")
 
     async def async_say_execute(service, is_say_url):
         """Play TTS audio with local chime MP3 audio."""
