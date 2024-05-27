@@ -27,8 +27,8 @@ class MediaPlayerHelper:
     """Media player helper functions for Chime TTS."""
 
     media_players: list = []
-    media_players_joined: list = []
-    media_players_not_joined: list = []
+    media_players_join_supported: list = []
+    media_players_join_unsupported: list = []
     join_players: bool = False
     unjoin_players: bool = False
     joined_entity_id: str
@@ -51,8 +51,8 @@ class MediaPlayerHelper:
             return []
 
         self.media_players = []
-        self.media_players_joined = []
-        self.media_players_not_joined = []
+        self.media_players_join_supported = []
+        self.media_players_join_unsupported = []
         self.join_players = join_players
         self.unjoin_players = unjoin_players
         self.joined_entity_id = None
@@ -126,6 +126,13 @@ class MediaPlayerHelper:
                 set_volume_media_players.append(media_player)
         return set_volume_media_players
 
+    def get_media_player_target_volume(self, entity_id):
+        """Get the target volume level for a given media_player entity."""
+        for media_player in self.media_players:
+            if media_player.entity_id == entity_id:
+                return media_player.target_volume_level
+        return None
+
     def get_media_player_platform(self, hass: HomeAssistant, entity_id):
         """Get the platform for a given media_player entity."""
         entity_registry = hass.data["entity_registry"]
@@ -154,6 +161,7 @@ class MediaPlayerHelper:
 
     def get_is_media_player_sonos(self, hass, entity_id):
         """Determine whether a media_player belongs to the Sonos platform."""
+        return True # ``` REMOVE
         return str(self.get_media_player_platform(hass, entity_id)).lower() == SONOS_PLATFORM
 
     def get_is_media_player_spotify(self, hass, entity_id):
@@ -173,6 +181,7 @@ class MediaPlayerHelper:
             return bool(supported_features & 1048576)
 
         if feature is ATTR_GROUP_MEMBERS:
+            return True # ``` REMOVE
             return bool(supported_features & 524288)
 
         return False
@@ -539,58 +548,61 @@ class MediaPlayerHelper:
                     except Exception as error:
                         _LOGGER.warning("Unable to set %s's volume to %s: %s", entity_id, str(target_volume), error)
 
-    async def async_join_media_players(self, hass: HomeAssistant, entity_ids):
+    async def async_join_media_players(self, hass: HomeAssistant):
         """Join media players."""
         if self.join_players is False:
             self.joined_entity_id = None
             return
 
-        # Store media players into joined and unjoined lists
+        # Separate media players into joined and unjoined lists
+        joined_count = 0
+        self.joined_entity_id = None
         for media_player in self.media_players:
             if media_player.join_supported:
-                self.media_players_joined.append(media_player)
+                # Assign first supported media_player as speaker leader
+                if not self.joined_entity_id:
+                    self.joined_entity_id = media_player.entity_id
+                else:
+                    # Add 2nd+ supported media_player to the joined_supported list
+                    self.media_players_join_supported.append(media_player)
+                joined_count += 1
             else:
-                self.media_players_not_joined.append(media_player)
+                self.media_players_join_unsupported.append(media_player)
 
         # Validation
-        if len(self.media_players_joined) == 0:
+        if joined_count == 0:
             _LOGGER.warning("No media_players were found that support joining speakers into a group. A minimum of 2 is requied.")
             return
-        if len(self.media_players_joined) == 1:
+        if joined_count == 1:
             _LOGGER.warning("Only 1 media_player was found that supports joining speakers into a group. A minimum of 2 is requied.")
             return
 
-        # Extract entity_ids & assign speaker group 'leader' join_entity_id
+        # Assign a speaker group 'leader' (joined_entity_id)
         _LOGGER.debug(
-            "Calling media_player.join service for %s media_player entities...",
-            str(len(entity_ids) + 1),
+            "Media player %s assigned as main speaker, with %s speaker group member%s:",
+            str(self.joined_entity_id),
+            str(len(self.media_players_join_supported)),
+            ("s" if len(self.media_players_join_supported) > 1 else ""),
         )
-        entity_ids = []
-        for media_player in self.media_players_joined:
-            entity_id = media_player.entity_id
-            _LOGGER.debug("  - %s", entity_id)
-            entity_ids.append(entity_id)
+        for media_player in self.media_players_join_supported:
+            _LOGGER.debug("  - %s", media_player.entity_id)
 
-        if len(entity_ids) > 0 and len(self.media_players_joined) > 0:
-            self.join_entity_id = f"{entity_ids[0]}"
-            del entity_ids[0]
-            del self.media_players_joined[0]
+        # Perform join
+        try:
+            await hass.services.async_call(
+                domain="media_player",
+                service=SERVICE_JOIN,
+                service_data={
+                    CONF_ENTITY_ID: self.joined_entity_id,
+                    ATTR_GROUP_MEMBERS: self.media_players_join_supported,
+                },
+                blocking=True,
+            )
+        except Exception as error:
+            _LOGGER.warning("Error joining media_player entities: %s", error)
+            self.joined_entity_id = None
 
-            # Perform join
-            try:
-                await hass.services.async_call(
-                    domain="media_player",
-                    service=SERVICE_JOIN,
-                    service_data={
-                        CONF_ENTITY_ID: entity_id,
-                        ATTR_GROUP_MEMBERS: entity_ids,
-                    },
-                    blocking=True,
-                )
-            except Exception as error:
-                _LOGGER.warning("Error joining media_player entities: %s", error)
-                self.joined_entity_id = None
-        return self.join_entity_id
+        return self.joined_entity_id
 
     async def async_unjoin_media_players(self, hass):
         """Unjoin media players."""
