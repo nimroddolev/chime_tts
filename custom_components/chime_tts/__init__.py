@@ -924,12 +924,14 @@ async def async_process_segments(hass, message, output_audio, params, options):
 
     return output_audio
 
-async def async_get_audio_from_path(hass: HomeAssistant,
-                                    filepath: str,
-                                    cache: bool = False,
-                                    offset: float = 0,
-                                    audio_conversion: str = "",
-                                    audio: AudioSegment = None):
+async def async_get_audio_from_path(
+        hass: HomeAssistant,
+        filepath: str,
+        cache: bool = False,
+        offset: float = 0,
+        audio_conversion: str = "",
+        audio: AudioSegment = None
+    ):
     """Add audio from a given file path to existing audio (optional) with offset (optional)."""
     if filepath is None or filepath == "None" or len(filepath) == 0:
         return audio
@@ -951,12 +953,14 @@ async def async_get_audio_from_path(hass: HomeAssistant,
             filepath = audio_dict.get(LOCAL_PATH_KEY, None)
             if cache:
                 _LOGGER.debug(" - Saving reference to downloaded chime")
-                await async_add_audio_file_to_cache(hass=hass,
-                                                    audio_path=filepath,
-                                                    duration=audio_dict.get(AUDIO_DURATION_KEY, None),
-                                                    params=None,
-                                                    options=None,
-                                                    file_hash=file_hash)
+                await async_add_audio_file_to_cache(
+                    hass=hass,
+                    audio_path=filepath,
+                    duration=audio_dict.get(AUDIO_DURATION_KEY, None),
+                    params=None,
+                    options=None,
+                    file_hash=file_hash
+                )
 
         _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
         try:
@@ -1005,10 +1009,12 @@ async def async_play_media(
     await media_player_helper.async_sonos_snapshot(hass)
 
     # Set media_players' target volume_level for Chime TTS announcement
-    await media_player_helper.async_set_volume_for_media_players(hass=hass,
-                                                                 media_players=media_player_helper.get_set_volume_media_players(),
-                                                                 volume_key="target_volume_level",
-                                                                 fade_duration=0)
+    await media_player_helper.async_set_volume_for_media_players(
+        hass=hass,
+        media_players=media_player_helper.get_set_volume_media_players(),
+        volume_key="target_volume_level",
+        fade_duration=0
+    )
 
     # Join media players
     _data["joined_entity_id"] = await media_player_helper.async_join_media_players(hass)
@@ -1018,9 +1024,11 @@ async def async_play_media(
     service_data[CONF_ENTITY_ID] = entity_ids
     service_data[ATTR_MEDIA_ANNOUNCE] = announce
     service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE_MUSIC
-    service_data[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None)
-                                                                                   or audio_dict.get(PUBLIC_PATH_KEY, None),
-                                                                                   _data.get(MEDIA_DIR_KEY))
+    service_data[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(
+        audio_dict.get(LOCAL_PATH_KEY, None)
+        or audio_dict.get(PUBLIC_PATH_KEY, None),
+        _data.get(MEDIA_DIR_KEY)
+    )
 
     # Play Chime TTS notification
     media_service_calls = prepare_media_service_calls(hass, entity_ids, service_data, audio_dict)
@@ -1056,9 +1064,10 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
         if service_data[ATTR_MEDIA_CONTENT_ID] is None:
             _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
         else:
-            _LOGGER.debug("   %s media player%s detected:",
-                          len(regular_media_media_ids),
-                          ("s" if len(regular_media_media_ids) != 1 else ""))
+            _LOGGER.debug(
+                "   %s media player%s detected:",
+                len(regular_media_media_ids),
+                ("s" if len(regular_media_media_ids) != 1 else ""))
             for entity_id in regular_media_media_ids:
                 _LOGGER.debug("     - %s", entity_id)
             service_data[CONF_ENTITY_ID] = standard_media_player_entity_ids

@@ -208,7 +208,6 @@ class MediaPlayerHelper:
         if len(fade_in_out_media_players) > 0:
 
             # Fade out media players manually if platform does not support `announce`
-            _LOGGER.debug(" - Fading out media_players currently playing")
             await self.async_set_volume_for_media_players(hass=hass,
                                                           media_players=fade_in_out_media_players,
                                                           volume_key=0,
