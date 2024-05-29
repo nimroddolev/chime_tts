@@ -30,7 +30,7 @@ class ChimeTTSMediaPlayer:
 
         # Initialise state and values
         self.turn_on()
-        self.initial_volume_level: float = float(self.get_entity().attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1.0))
+        self.initial_volume_level: float = self.get_current_volume_level()
         self.initially_playing = (self.hass.states.get(self.entity_id).state == "playing"
                                   # Check that media_player is actually playing (HomePods can incorrectly have the state "playing" when no media is playing)
                                   and self.hass.states.get(self.entity_id).attributes.get("media_duration", -1) != 0)
@@ -94,3 +94,7 @@ class ChimeTTSMediaPlayer:
         if isinstance(target_volume_level, dict):
             target_volume_level = target_volume_level.get(self.entity_id, -1.0)
         self.target_volume_level = target_volume_level if target_volume_level > 0 else -1.0
+
+    def get_current_volume_level(self):
+        """The current volume level of the media player."""
+        return float(self.get_entity().attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1.0))

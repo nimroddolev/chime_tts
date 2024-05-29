@@ -117,12 +117,10 @@ class MediaPlayerHelper:
         """List of media_player objects whose volume levels need to be changed (without fading) to the target volume level."""
         set_volume_media_players = []
         for media_player in self.media_players:
-            if (not (media_player.initially_playing
-                    and (self.fade_audio
-                        or (self.announce
-                            and not media_player.announce_supported)))
-                or (media_player.target_volume_level not in (-1, media_player.initial_volume_level)
-                    and media_player.platform != SPOTIFY_PLATFORM)):
+            if (media_player not in self.get_fade_in_out_media_players()
+                and media_player.target_volume_level not in (-1, media_player.initial_volume_level)
+                and media_player.platform != SPOTIFY_PLATFORM
+            ):
                 set_volume_media_players.append(media_player)
         return set_volume_media_players
 
@@ -523,7 +521,7 @@ class MediaPlayerHelper:
         else:
             for media_player in media_players:
                 entity_id = media_player.entity_id
-                current_volume = float(hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1))
+                current_volume = media_player.get_current_volume_level()
                 target_volume = media_player.target_volume_level
                 if target_volume >= 0 and target_volume != current_volume:
                     if target_volume - current_volume > 0:
