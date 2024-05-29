@@ -96,5 +96,5 @@ class ChimeTTSMediaPlayer:
         self.target_volume_level = target_volume_level if target_volume_level > 0 else -1.0
 
     def get_current_volume_level(self):
-        """The current volume level of the media player."""
+        """Meida player's current volume level."""
         return float(self.get_entity().attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1.0))
