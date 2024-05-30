@@ -7,6 +7,7 @@ from homeassistant import config_entries
 from .helpers.helpers import ChimeTTSHelper
 from .const import (
     DOMAIN,
+    VERSION,
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
     TTS_PLATFORM_KEY,
@@ -43,6 +44,8 @@ class ChimeTTSFlowHandler(config_entries.ConfigFlow):
 
     async def async_step_user(self, user_input=None):
         """Chime TTS async_step_user."""
+        LOGGER.debug("----- Adding Chime TTS Version %s -----", VERSION)
+
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
 
@@ -68,6 +71,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
+        LOGGER.debug("-----  Chime TTS Version %s Configuration -----", VERSION)
         self.config_entry = config_entry
 
     async def async_step_init(self, user_input={}):
@@ -75,9 +79,15 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
         stripped_tts_platforms = self.get_installed_tts()
         default_tts = stripped_tts_platforms[0] if len(stripped_tts_platforms) > 0 else ""
-        user_input = user_input if user_input is not None else {}
-        root_path = self.hass.config.path("").replace("/config/", "")
+        if self.hass is not None:
+            root_path = self.hass.config.path("").replace("/config/", "")
+        else:
+            LOGGER.warning("Unable to determine root path")
+            root_path = ""
 
+        # Fetch entered values
+        if user_input is None:
+            user_input = {}
         options_schema = vol.Schema(
             {
                 vol.Required(
@@ -152,10 +162,10 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 ): str,
             }
         )
-        _errors = {}
 
-        # Show the form with the current options
-        if user_input is None or user_input == {}:
+        # Display the configuration form with the current values
+        if user_input == {} or user_input is None:
+            user_input = None
             return self.async_show_form(
                 step_id="init",
                 data_schema=options_schema,
@@ -163,7 +173,10 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 last_step=True,
             )
 
+
         # Validation
+
+        _errors = {}
 
         # Timeout
         if user_input[QUEUE_TIMEOUT_KEY] < 0:

@@ -34,8 +34,6 @@ LOCAL_PATH_KEY = "local_path"
 PUBLIC_PATH_KEY = "public_path"
 AUDIO_DURATION_KEY = "audio_duration"
 
-PAUSE_RESUME_MEDIA_PLAYER_DICTS_KEY = "pause_media_player_dicts"
-SET_VOLUME_MEDIA_PLAYER_DICTS_KEY = "set_volume_media_player_dicts"
 FADE_TRANSITION_KEY = "fade_transition_key"
 DEFAULT_FADE_TRANSITION_MS = 500
 TRANSITION_STEP_MS = 150

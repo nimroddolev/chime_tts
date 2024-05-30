@@ -10,17 +10,17 @@ Chime TTS is a custom Home Assistant integration that eliminates the audio lag b
 #### If you find Chime TTS useful, consider showing your support: <a href="https://www.buymeacoffee.com/nimroddolev" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 30px !important; width: 120px !important;" ></a>
 
 
-- [What is Chime TTS?](https://github.com/nimroddolev/chime_tts/wiki/#what-is-chime-tts)
-- [Features](https://github.com/nimroddolev/chime_tts/wiki/#features)
-- [Quick Start](https://github.com/nimroddolev/chime_tts/wiki/#quick-start)
-- [How Do I Use It?](https://github.com/nimroddolev/chime_tts/wiki/#how-do-i-use-it)
-- [Discussion](https://github.com/nimroddolev/chime_tts/wiki/#support-and-discussion)
+- [What is Chime TTS?](https://nimroddolev.github.io/chime_tts/docs/getting-started#what-is-chime-tts)
+- [Features](https://nimroddolev.github.io/chime_tts/docs/getting-started#features)
+- [Quick Start](https://nimroddolev.github.io/chime_tts/docs/getting-started#quick-start)
+- [How Do I Use It?](https://nimroddolev.github.io/chime_tts/docs/getting-started#how-do-i-use-it)
+- [Support & Discussion](https://nimroddolev.github.io/chime_tts/docs/getting-started#support-and-discussion)
 
 ---
 
 ## What is Chime TTS?
 
-Chime TTS is a custom Home Assistant integration that locally combines TTS audio and sound effects into seamless audio for playback in a single service call, eliminating the lag. Chime TTS includes a [suite of options](#features) to further customize the audio.
+Chime TTS is a custom Home Assistant integration that locally combines TTS audio and sound effects into seamless audio for playback in a single service call, eliminating the lag. Chime TTS includes a [suite of options](https://nimroddolev.github.io/chime_tts/docs/getting-started#features) to further customize the audio.
 
 ### The Problem:
 
