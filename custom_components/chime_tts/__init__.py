@@ -1049,11 +1049,11 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
 
     # Remove any joined speaker group media_players from the media_player lists
     if joined_media_player_entity_id:
-        joined_media_players = media_player_helper.media_players_join_supported
+        joined_media_player_entity_ids = media_player_helper.joined_media_player_entity_ids
         for array in [standard_media_player_entity_ids, alexa_media_player_entity_ids, sonos_media_player_entity_ids]:
-            for joined_media_player in joined_media_players:
-                while joined_media_player in array:
-                    array.remove(joined_media_player)
+            for media_player_n in joined_media_player_entity_ids:
+                while media_player_n in array:
+                    array.remove(media_player_n)
 
     service_calls = []
 

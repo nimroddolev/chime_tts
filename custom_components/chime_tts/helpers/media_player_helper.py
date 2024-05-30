@@ -27,8 +27,8 @@ class MediaPlayerHelper:
     """Media player helper functions for Chime TTS."""
 
     media_players: list = []
-    media_players_join_supported: list = []
-    media_players_join_unsupported: list = []
+    joined_media_player_entity_ids: list = []
+    unjoined_media_player_entity_ids: list = []
     join_players: bool = False
     unjoin_players: bool = False
     joined_entity_id: str
@@ -51,8 +51,8 @@ class MediaPlayerHelper:
             return []
 
         self.media_players = []
-        self.media_players_join_supported = []
-        self.media_players_join_unsupported = []
+        self.joined_media_player_entity_ids = []
+        self.unjoined_media_player_entity_ids = []
         self.join_players = join_players
         self.unjoin_players = unjoin_players
         self.joined_entity_id = None
@@ -545,13 +545,12 @@ class MediaPlayerHelper:
 
     async def async_join_media_players(self, hass: HomeAssistant):
         """Join media players."""
+        self.joined_entity_id = None
         if self.join_players is False:
-            self.joined_entity_id = None
-            return
+            return None
 
         # Separate media players into joined and unjoined lists
         joined_count = 0
-        self.joined_entity_id = None
         for media_player in self.media_players:
             if media_player.join_supported:
                 # Assign first supported media_player as speaker leader
@@ -559,10 +558,10 @@ class MediaPlayerHelper:
                     self.joined_entity_id = media_player.entity_id
                 else:
                     # Add 2nd+ supported media_player to the joined_supported list
-                    self.media_players_join_supported.append(media_player)
+                    self.joined_media_player_entity_ids.append(media_player.entity_id)
                 joined_count += 1
             else:
-                self.media_players_join_unsupported.append(media_player)
+                self.unjoined_media_player_entity_ids.append(media_player.entity_id)
 
         # Validation
         if joined_count == 0:
@@ -572,15 +571,16 @@ class MediaPlayerHelper:
             _LOGGER.warning("Only 1 media_player was found that supports joining speakers into a group. A minimum of 2 is requied.")
             return
 
-        # Assign a speaker group 'leader' (joined_entity_id)
+        # Log the speaker group 'leader' (joined_entity_id)
         _LOGGER.debug(
-            "Media player %s assigned as main speaker, with %s speaker group member%s:",
+            "Joined speaker leader: %s, with %s group member%s:",
             str(self.joined_entity_id),
-            str(len(self.media_players_join_supported)),
-            ("s" if len(self.media_players_join_supported) > 1 else ""),
+            str(len(self.joined_media_player_entity_ids)),
+            ("s" if len(self.joined_media_player_entity_ids) > 1 else ""),
         )
-        for media_player in self.media_players_join_supported:
-            _LOGGER.debug("  - %s", media_player.entity_id)
+        # Log the speaker group members
+        for media_player_entity_id in self.joined_media_player_entity_ids:
+            _LOGGER.debug("  - %s", media_player_entity_id)
 
         # Perform join
         try:
@@ -589,7 +589,7 @@ class MediaPlayerHelper:
                 service=SERVICE_JOIN,
                 service_data={
                     CONF_ENTITY_ID: self.joined_entity_id,
-                    ATTR_GROUP_MEMBERS: self.media_players_join_supported,
+                    ATTR_GROUP_MEMBERS: self.joined_media_player_entity_ids,
                 },
                 blocking=True,
             )
