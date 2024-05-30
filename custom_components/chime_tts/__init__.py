@@ -114,6 +114,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
         if is_say_url is False:
             if service is None:
                 _LOGGER.debug("----- Chime TTS Replay Called. Version %s -----", VERSION)
+                if _data.get("service") is None:
+                    raise HomeAssistantError("You must first make a service call to chime_tts.say before you can replay it.")
             else:
                 _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
 
@@ -144,8 +146,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
             # Replay service called: use previous service object
             service = _data.get("service")
             if service is None:
-                _LOGGER.warning("No previous service call made to chime_tts.say")
-                return
+                raise HomeAssistantError("A service call to chime_tts.say must be made before you can replay it.")
         else:
             _data["service"] = service
 
