@@ -1047,13 +1047,16 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
     alexa_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_alexa(hass, entity_id)]
     sonos_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_sonos(hass, entity_id)]
 
-    # Remove any joined speaker group media_players from the media_player lists
+    # Remove speaker group media_players from the media_player lists
     if joined_media_player_entity_id:
         joined_media_player_entity_ids = media_player_helper.joined_media_player_entity_ids
         for array in [standard_media_player_entity_ids, alexa_media_player_entity_ids, sonos_media_player_entity_ids]:
             for media_player_n in joined_media_player_entity_ids:
                 while media_player_n in array:
                     array.remove(media_player_n)
+        # Make sure the speaker group leader is in the list of standard media players
+        if joined_media_player_entity_id not in standard_media_player_entity_ids:
+            standard_media_player_entity_ids.append(joined_media_player_entity_id)
 
     service_calls = []
 
@@ -1070,7 +1073,7 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
                 ("s" if len(regular_media_media_ids) != 1 else ""))
             for entity_id in regular_media_media_ids:
                 _LOGGER.debug("     - %s", entity_id)
-            service_data[CONF_ENTITY_ID] = standard_media_player_entity_ids
+            service_data[CONF_ENTITY_ID] = regular_media_media_ids
             service_calls.append({
                 "domain": "media_player",
                 "service": SERVICE_PLAY_MEDIA,
