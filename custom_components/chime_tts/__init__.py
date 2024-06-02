@@ -1055,7 +1055,7 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
                 while media_player_n in array:
                     array.remove(media_player_n)
         # Make sure the speaker group leader is in the list of standard media players
-        if joined_media_player_entity_id not in standard_media_player_entity_ids:
+        if joined_media_player_entity_id not in (standard_media_player_entity_ids + sonos_media_player_entity_ids):
             standard_media_player_entity_ids.append(joined_media_player_entity_id)
 
     service_calls = []
