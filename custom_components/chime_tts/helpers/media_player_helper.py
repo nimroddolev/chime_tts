@@ -26,9 +26,9 @@ _LOGGER = logging.getLogger(__name__)
 class MediaPlayerHelper:
     """Media player helper functions for Chime TTS."""
 
-    media_players: list = []
-    joined_media_player_entity_ids: list = []
-    unjoined_media_player_entity_ids: list = []
+    media_players: list[ChimeTTSMediaPlayer] = []
+    joined_media_player_entity_ids: list[str] = []
+    unjoined_media_player_entity_ids: list[str] = []
     join_players: bool = False
     unjoin_players: bool = False
     joined_entity_id: str
@@ -82,9 +82,9 @@ class MediaPlayerHelper:
                                   entity_id=entity_id,
                                   target_volume_level=target_volume_level)
 
-    def parse_entity_ids(self, data, hass):
+    def parse_entity_ids(self, data, hass) -> list[str]:
         """Parse media_player entity_ids into list object."""
-        entity_ids = data.get(CONF_ENTITY_ID, [])
+        entity_ids: list[str] = data.get(CONF_ENTITY_ID, [])
         if isinstance(entity_ids, str):
             entity_ids = entity_ids.split(",")
 
@@ -101,24 +101,24 @@ class MediaPlayerHelper:
                 and entity.entity_id.startswith("media_player.")
             ]
             entity_ids.extend(matching_entity_ids)
-        entity_ids = list(set(entity_ids))
+        entity_ids: list[str] = list(set(entity_ids))
         return entity_ids
 
-    def get_fade_in_out_media_players(self):
+    def get_fade_in_out_media_players(self) -> list[ChimeTTSMediaPlayer]:
         """List of media_player objects that should fade out before Chime TTS playback and fade back in when completed."""
-        announce_unsupported_media_players = []
+        announce_unsupported_media_players: list[ChimeTTSMediaPlayer] = []
         for media_player in self.media_players:
             if (media_player.initially_playing and
                 (self.fade_audio or (self.announce and not media_player.announce_supported))):
                 announce_unsupported_media_players.append(media_player)
         return announce_unsupported_media_players
 
-    def get_set_volume_media_players(self):
+    def get_set_volume_media_players(self) -> list[ChimeTTSMediaPlayer]:
         """List of media_player objects whose volume levels need to be changed (without fading) to the target volume level."""
-        set_volume_media_players = []
+        set_volume_media_players: list[ChimeTTSMediaPlayer] = []
         for media_player in self.media_players:
             if (media_player not in self.get_fade_in_out_media_players()
-                and media_player.target_volume_level not in (-1, media_player.initial_volume_level)
+                and media_player.target_volume_level not in [-1, media_player.initial_volume_level]
                 and media_player.platform != SPOTIFY_PLATFORM
             ):
                 set_volume_media_players.append(media_player)
@@ -204,7 +204,7 @@ class MediaPlayerHelper:
 
     async def async_fade_out_and_pause(self, hass: HomeAssistant, fade_duration: float):
         """Fade out and pause relevant media players."""
-        fade_in_out_media_players = self.get_fade_in_out_media_players()
+        fade_in_out_media_players: list[ChimeTTSMediaPlayer] = self.get_fade_in_out_media_players()
         if len(fade_in_out_media_players) > 0:
 
             # Fade out media players manually if platform does not support `announce`
@@ -304,12 +304,17 @@ class MediaPlayerHelper:
                                                           volume_key="initial_volume_level",
                                                           fade_duration=fade_duration)
     ######
-    async def async_wait_until_media_players_state_is(self, hass: HomeAssistant, media_players: list, target_state: str, timeout: float = 3.5):
+    async def async_wait_until_media_players_state_is(
+            self,
+            hass: HomeAssistant,
+            media_players: list[ChimeTTSMediaPlayer],
+            target_state: str,
+            timeout: float = 3.5) -> bool:
         """Wait until the state of a list of media_players equals a target state."""
-        def property(media_player):
+        def property(media_player: ChimeTTSMediaPlayer) -> str:
             entity_id = media_player.entity_id
             return hass.states.get(entity_id).state
-        def condition(media_player):
+        def condition(media_player: ChimeTTSMediaPlayer) -> bool:
             p_property = property(media_player)
             return p_property == target_state
 
@@ -320,12 +325,17 @@ class MediaPlayerHelper:
                       target_state)
         return await self._async_wait_until_media_players(hass, media_players, condition, timeout)
 
-    async def async_wait_until_media_players_state_not(self, hass: HomeAssistant, media_players: list, target_state: str, timeout: float = 3.5):
+    async def async_wait_until_media_players_state_not(
+            self,
+            hass: HomeAssistant,
+            media_players: list[ChimeTTSMediaPlayer],
+            target_state: str,
+            timeout: float = 3.5) -> bool:
         """Wait until the state of a list of media_players no longer equals a target state."""
-        def property(media_player):
+        def property(media_player: ChimeTTSMediaPlayer):
             entity_id = media_player.entity_id
             return hass.states.get(entity_id).state
-        def condition(media_player):
+        def condition(media_player: ChimeTTSMediaPlayer):
             p_property = property(media_player)
             return p_property != target_state
 
@@ -336,12 +346,16 @@ class MediaPlayerHelper:
                       target_state)
         return await self._async_wait_until_media_players(hass, media_players, condition, timeout)
 
-    async def async_wait_until_media_players_volume_level_is(self, hass: HomeAssistant, media_players: list, target_volume: str, timeout: float = 5):
+    async def async_wait_until_media_players_volume_level_is(self,
+                                                             hass: HomeAssistant,
+                                                             media_players: list[ChimeTTSMediaPlayer],
+                                                             target_volume: str,
+                                                             timeout: float = 5) -> bool:
         """Wait for a media_player to have a target volume_level."""
-        def property(media_player):
+        def property(media_player: ChimeTTSMediaPlayer) -> float:
             entity_id = media_player.entity_id
             return hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
-        def condition(media_player):
+        def condition(media_player: ChimeTTSMediaPlayer) -> bool:
             p_property = property(media_player)
             return p_property == target_volume
 
@@ -352,7 +366,11 @@ class MediaPlayerHelper:
                       target_volume)
         return await self._async_wait_until_media_players(hass, media_players, condition, timeout)
 
-    async def _async_wait_until_media_players(self, hass: HomeAssistant, media_players: list, condition, timeout: float = 3.5):
+    async def _async_wait_until_media_players(self,
+                                              hass: HomeAssistant,
+                                              media_players: list[ChimeTTSMediaPlayer],
+                                              condition,
+                                              timeout: float = 3.5):
         """Wait until the state of a list of media_players equals/no longer equals a target state."""
         # Validation
         if (hass is None or media_players is None or len(media_players) == 0 or condition is None):
@@ -364,7 +382,7 @@ class MediaPlayerHelper:
                 return False
 
         delay = 0.2
-        still_waiting = list(media_players)
+        still_waiting: list[ChimeTTSMediaPlayer] = list(media_players)
         while len(still_waiting) > 0 and timeout > 0:
             for media_player in still_waiting:
                 if condition(media_player):
@@ -382,7 +400,11 @@ class MediaPlayerHelper:
 
         return len(still_waiting) == 0
 
-    async def async_wait_until_media_player_volume_level(self, hass: HomeAssistant, media_players: list, target_volume: str, timeout=5):
+    async def async_wait_until_media_player_volume_level(self,
+                                                         hass: HomeAssistant,
+                                                         media_players: list[ChimeTTSMediaPlayer],
+                                                         target_volume: str,
+                                                         timeout=5) -> bool:
         """Wait for a media_player to have a target volume_level."""
         delay = 0.2
         volume_reached = False
@@ -418,7 +440,7 @@ class MediaPlayerHelper:
 
     async def async_sonos_snapshot(self, hass: HomeAssistant):
         """Take a Sonos snapshot of Sonos media players."""
-        sonos_media_player_entity_ids = [media_player.entity_id for media_player in self.media_players if media_player.platform == SONOS_PLATFORM]
+        sonos_media_player_entity_ids: list[str] = [media_player.entity_id for media_player in self.media_players if media_player.platform == SONOS_PLATFORM]
         if len(sonos_media_player_entity_ids) > 0:
             _LOGGER.debug("Taking a Sonos snapshot of %s media player%s", str(len(sonos_media_player_entity_ids)), "" if len(sonos_media_player_entity_ids) == 1 else "s")
             try:
@@ -438,9 +460,9 @@ class MediaPlayerHelper:
         """Restore Sonos media_players from snapshot."""
         if self.sonos_restored:
             return
-        sonos_media_player_entity_ids = [media_player.entity_id for media_player in self.media_players if media_player.platform == SONOS_PLATFORM]
+        sonos_media_player_entity_ids: list[str] = [media_player.entity_id for media_player in self.media_players if media_player.platform == SONOS_PLATFORM]
         if len(sonos_media_player_entity_ids) > 0:
-            _LOGGER.debug("Restoring %s Sonos media player%s", str(len(sonos_media_player_entity_ids)), "" if len(sonos_media_player_entity_ids) == 1 else "s")
+            _LOGGER.debug("Restoring %s Sonos media player%s from snapshot", str(len(sonos_media_player_entity_ids)), "" if len(sonos_media_player_entity_ids) == 1 else "s")
             try:
                 await hass.services.async_call(
                     domain="sonos",
@@ -455,8 +477,12 @@ class MediaPlayerHelper:
             except Exception as error:
                 _LOGGER.warning("Unable to restore Sonos snapshot: %s", str(error))
 
-    async def async_set_volume_for_media_players(self, hass: HomeAssistant, media_players, volume_key, fade_duration: int):
-        """Fade media players to a volume level."""
+    async def async_set_volume_for_media_players(self,
+                                                 hass: HomeAssistant,
+                                                 media_players: list[ChimeTTSMediaPlayer],
+                                                 volume_key,
+                                                 fade_duration: int):
+        """Set the volume level for media players either in steps or instantaneously."""
         if media_players is None or len(media_players) == 0:
             return
 
@@ -603,19 +629,19 @@ class MediaPlayerHelper:
         """Unjoin media players."""
         if self.unjoin_players is True and self.joined_entity_id:
             _LOGGER.debug("   - Calling media_player.unjoin service...")
-            for media_player in self.media_players:
-                if media_player.join_supported:
-                    entity_id = media_player.entity_id
-                    _LOGGER.debug("     - media_player.unjoin: %s", entity_id)
-                    try:
-                        await hass.services.async_call(
-                            domain="media_player",
-                            service=SERVICE_UNJOIN,
-                            service_data={CONF_ENTITY_ID: entity_id},
-                            blocking=True,
-                        )
-                        _LOGGER.debug("    ...done")
-                    except Exception as error:
-                        _LOGGER.warning(
-                            "   - Error calling unjoin service for %s: %s", entity_id, error
-                        )
+            media_player_entity_ids: list[str] = (self.joined_media_player_entity_ids + [self.joined_entity_id])
+            count = 0
+            for entity_id in media_player_entity_ids:
+                count += 1
+                _LOGGER.debug("     - media_player.unjoin %s/%s: %s", str(count), str(len(media_player_entity_ids)), entity_id)
+                try:
+                    await hass.services.async_call(
+                        domain="media_player",
+                        service=SERVICE_UNJOIN,
+                        service_data={CONF_ENTITY_ID: entity_id},
+                        blocking=True,
+                    )
+                except Exception as error:
+                    _LOGGER.warning(
+                        "Error calling unjoin service for %s: %s", entity_id, error
+                    )
