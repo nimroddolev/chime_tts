@@ -1048,7 +1048,7 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
     sonos_media_player_entity_ids: list[str] = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_sonos(hass, entity_id)]
 
     # Remove speaker group media_players from the media_player lists
-    if joined_media_player_entity_id:
+    if joined_media_player_entity_id and len(joined_media_player_entity_id) > 0:
         joined_media_player_entity_ids = media_player_helper.joined_media_player_entity_ids
         for array in [standard_media_player_entity_ids, alexa_media_player_entity_ids, sonos_media_player_entity_ids]:
             for media_player_n in joined_media_player_entity_ids:
