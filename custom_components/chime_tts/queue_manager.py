@@ -2,6 +2,7 @@
 
 import logging
 import asyncio
+from datetime import datetime
 
 from .const import QUEUE_TIMEOUT_DEFAULT
 
@@ -33,13 +34,19 @@ class ChimeTTSQueueManager:
                     break  # Signal to exit the queue processing
 
                 try:
+                    start_time = datetime.now()
                     result = await asyncio.wait_for(
                         service_call['function'](*service_call['args'], **service_call['kwargs']),
                         timeout=self.timeout_s
                     )
                     service_call['future'].set_result(result)
                 except asyncio.TimeoutError:
-                    service_call['future'].set_exception(Exception("Service call timed out"))
+                    end_time = datetime.now()
+                    completion_time = round((end_time - start_time).total_seconds(), 2)
+                    elapsed_time = (f"{completion_time}s"
+                                    if completion_time >= 1
+                                    else f"{completion_time * 1000}ms")
+                    service_call['future'].set_exception(Exception(f"Service call timed out after {elapsed_time} (configured timeout = {self.timeout_s}s)"))
                 except Exception as e:
                     service_call['future'].set_exception(e)
                 finally:
