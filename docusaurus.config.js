@@ -80,10 +80,14 @@ const config = {
           //   position: 'left',
           //   label: 'Wiki',
           // },
-          { to: '/docs/getting-started', label: 'Chime TTS', position: 'left' },
+          {
+            to: '/docs/getting-started',
+            label: 'Chime TTS',
+            position: 'left'
+          },
           // { to: '/docs/quick-start', label: 'Quick Start', position: 'left' },
           {
-            type: "dropdown",
+            to: "/docs/quick-start",
             label: "Quick Start",
             position: "left",
             items: [
@@ -97,38 +101,43 @@ const config = {
                 label: "Adding the Integration",
                 docId: "quick-start/adding-the-integration"
               },
-              {
-                type: "doc",
-                label: "Configuration",
-                docId: "quick-start/configuration"
-              },
             ]
           },
           {
-            type: "dropdown",
+            to: "docs/category/documentation",
             label: "Documentation",
             position: "left",
             items: [
               {
                 type: "doc",
+                label: "Configuration",
+                docId: "documentation/configuration"
+              },
+              {
+                type: "doc",
                 label: "Say Service",
-                docId: "documentation/say-service/index"
+                docId: "documentation/services/say-service/index"
               },
               {
                 type: "doc",
                 label: "Say URL Service",
-                docId: "documentation/say_url-service/index"
+                docId: "documentation/services/say_url-service/index"
+              },
+              {
+                type: "doc",
+                label: "Replay Service",
+                docId: "documentation/services/replay-service"
+              },
+              {
+                type: "doc",
+                label: "Clear Cache Service",
+                docId: "documentation/services/clear_cache-service"
               },
               {
                 type: "doc",
                 label: "Notify",
                 docId: "documentation/notify/index"
               },
-              {
-                type: "doc",
-                label: "Clear Cache Service",
-                docId: "documentation/clear-cache-service"
-              }
             ]
           },
           {
@@ -159,20 +168,8 @@ const config = {
                 to: '/docs/quick-start',
               },
               {
-                label: "Say Service",
-                to: "/docs/documentation/say-service"
-              },
-              {
-                label: 'Say URL Service',
-                to: '/docs/documentation/say_url-service',
-              },
-              {
-                label: 'Notify',
-                to: '/docs/documentation/notify',
-              },
-              {
-                label: 'Clear Cache Service',
-                to: '/docs/documentation/clear-cache-service',
+                label: "Documentation",
+                to: "docs/category/documentation"
               },
             ],
           },

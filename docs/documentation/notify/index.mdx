@@ -4,25 +4,68 @@ title: Notify
 ---
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
+import './notify.css'
 
-# Chime TTS Notify Platform
+# Chime TTS Notify Entries
 
-The Chime TTS notification platform allows you to define default settings for Chime TTS notifications within your `configuration.yaml` file instead of repeatedly having to use the [`chime_tts.say`](../say-service) service and define parameter values each time.
+You can add Chime TTS notify entries to your `configuration.yaml` file, each with specific parameter values.
 
-This allows you to create as many notification entries as you like, each fully customized to your needs based on the type of announcement, the time of day, or any other use case you might have.
+This allows you to create fully customized & reusable notify entries that can be tailored based on the time of day, who is home, or any other use case you can think of.
 
-## Example Notifications
+## Example Notify Entries
 
-- An "evening" notification entry to only target specific media_players, with a specific chime and volume level.
+- An "evening" notify entry limited to play on specific media_players with a softer chime and low volume.
 
-- An "announcement" notification entry to use for home-wide announcements at full volume with a loud chime.
+- An "announcement" notify entry for home-wide announcements at full volume with a loud chime.
 
-- A "calendar" notification entry used to remind you about upcoming events.
+- A "calendar" notify entry used for reminders for upcoming events, that repeats after 5 minutes.
 
-## Benefits
+## Why Notify Entries?
 
-**Convenience**: Set any [`chime_tts.say`](../say-service) [parameter](../say-service/parameters) value (chime paths, media players, TTS platform, language, voice, etc) for all your use-cases, all in one place.
+**Convenience**: Configure any/all [`chime_tts.say`](../services/say-service) [parameter](../services/say-service/parameters) values (chime paths, media players, TTS platform, language, voice, etc) once for all your use-cases, and reuse.
 
-**Efficiency**: Avoid repetitive service calls, simplifying configurations and easily add/change [parameters](../say-service/parameters) across your scripts & automations.
+**Flexibility**: Retain the ability to override the defined notify settings across your scripts & automations when needed.
 
-**Flexibility**: Override the default notification settings for specific notifications when needed.
+**Efficiency**: Replace long complicated [`chime_tts.say`](../services/say-service) service calls with simple, clean and predefined notify service calls.
+
+<table class="hide_table">
+  <tr class="hide_table">
+    <td class="hide_table td_title">Go from this...</td>
+    <td class="hide_table td_title">...to this</td>
+  </tr>
+  <tr class="hide_table">
+    <td class="hide_table">
+
+    ```yaml
+    service: chime_tts.say
+    data:
+      chime_path: soft
+      offset: -2250
+      message: Someone's at the door
+      tts_platform: google_translate
+      language: en
+      tld: com.au
+      volume_level: 0.65
+      cache: true
+      join_players: true
+      unjoin_players: true
+      announce: true
+    target:
+      entity_id:
+        - media_player.kitchen
+        - media_player.living_room
+        - media_player.garage
+    ```
+
+    </td>
+    <td class="hide_table">
+
+    ```yaml
+    service: notify.evening
+    data:
+      message: Someone's at the door
+    ```
+
+    </td>
+  </tr>
+</table>

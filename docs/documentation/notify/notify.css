@@ -1,0 +1,9 @@
+.hide_table {
+    border: none !important;
+    background: none !important;
+    vertical-align: top;
+}
+
+.td_title {
+    text-align: center;
+}

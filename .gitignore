@@ -28,3 +28,4 @@ node_modules
 README.md
 docusaurus.config.mjs
 package-lock.json
+custom_components

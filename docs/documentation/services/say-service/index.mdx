@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-title: Say Service
+title: 1. Say Service
 ---
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
@@ -35,7 +35,13 @@ The [examples](./examples) page demonstates the full scope of what's possible wi
 
 ## TTS Platforms
 
-Chime TTS utilizes [TTS Platforms](https://www.home-assistant.io/integrations/#text-to-speech) that have been added to your Home Assistant instance, and is not a TTS platform itself. Any TTS platform you wish to use will need to be configured separately.
+:::info[BYO TTS Platforms]
+
+Chime TTS is not a TTS platform. It utilizes **[TTS integrations](https://www.home-assistant.io/integrations/#text-to-speech)** installed to your Home Assistant instance.
+
+Any TTS platform you wish to use _**must be configured separately.**_
+
+:::
 
 ### TTS Platform-Specific Options
 Each TTS platform offers its own set of options, which can also be used with Chime TTS in the `options` parameter. Several key TTS platform parameters exist as separate parameters in Chime TTS (*see* `chime_tts.say`*'s [additional parameters](./parameters#additional-parameters) documentation for more*).
@@ -69,14 +75,14 @@ You can specify both local file paths or external URLs to your own audio files.
 
 
 * #### External audio file URLs
-  You can also specify URLs to audio files hosted online, which will be downloaded and optionally saved locally them to your [Downloaded Chimes Folder](../../quick-start/configuration) when the [`cache`](../say-service/parameters#cache) property is set to `true`.
+  You can also specify URLs to audio files hosted online, which will be downloaded and optionally saved locally them to your [Downloaded Chimes Folder](../../configuration) when the [`cache`](../say-service/parameters#cache) property is set to `true`.
 
   <img src={useBaseUrl('/img/say/external_chime_path.png')} />
 
 
 ### 3. Custom chime slots for the chime list UI
 You can set up to 5 custom chime slots which appear at the end of the drop-down list in the UI, allowing you to easily select your custom chimes when creating automations.
-To configure the custom chime slots, open the [Chime TTS configuration page](../../quick-start/configuration) and enter the full file path to your local custom audio file, or the URL to an audio file hosted online.
+To configure the custom chime slots, open the [Chime TTS configuration page](../../configuration) and enter the full file path to your local custom audio file, or the URL to an audio file hosted online.
 
 The configuration page is located at:
 

@@ -1,1 +1,900 @@
-{"allContent":{"docusaurus-plugin-content-docs":{"default":{"loadedVersions":[{"versionName":"current","label":"Next","banner":null,"badge":false,"noIndex":false,"className":"docs-version-current","path":"/chime_tts/docs","tagsPath":"/chime_tts/docs/tags","isLast":true,"routePriority":-1,"sidebarFilePath":"/Users/nimroddolev/Personal/Repos/chime_tts/sidebars.js","contentPath":"/Users/nimroddolev/Personal/Repos/chime_tts/docs","contentPathLocalized":"/Users/nimroddolev/Personal/Repos/chime_tts/i18n/en/docusaurus-plugin-content-docs/current","docs":[{"id":"documentation/clear-cache-service","title":"Clear Cache Service","description":"The chimetts.clearcache service can be used to remove cached audio files from the chimetts.say and chimetts.sayurl services as well as Home Assistant's TTS cache.","source":"@site/docs/documentation/clear-cache-service.mdx","sourceDirName":"documentation","slug":"/documentation/clear-cache-service","permalink":"/chime_tts/docs/documentation/clear-cache-service","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":5,"frontMatter":{"sidebar_position":5,"title":"Clear Cache Service"},"sidebar":"tutorialSidebar","previous":{"title":"Sending Notifications","permalink":"/chime_tts/docs/documentation/notify/sending"}},{"id":"documentation/notify/adding","title":"Adding Notifications","description":"1. Open your Home Assistant configuration.yaml file.","source":"@site/docs/documentation/notify/adding.mdx","sourceDirName":"documentation/notify","slug":"/documentation/notify/adding","permalink":"/chime_tts/docs/documentation/notify/adding","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":2,"frontMatter":{"sidebar_position":2,"title":"Adding Notifications"},"sidebar":"tutorialSidebar","previous":{"title":"Notify","permalink":"/chime_tts/docs/documentation/notify/"},"next":{"title":"Sending Notifications","permalink":"/chime_tts/docs/documentation/notify/sending"}},{"id":"documentation/notify/index","title":"Notify","description":"The Chime TTS notification platform allows you to define default settings for Chime TTS notifications within your configuration.yaml file instead of repeatedly having to use the chime_tts.say service and define parameter values each time.","source":"@site/docs/documentation/notify/index.mdx","sourceDirName":"documentation/notify","slug":"/documentation/notify/","permalink":"/chime_tts/docs/documentation/notify/","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":1,"frontMatter":{"sidebar_position":1,"title":"Notify"},"sidebar":"tutorialSidebar","previous":{"title":"Examples","permalink":"/chime_tts/docs/documentation/say_url-service/examples"},"next":{"title":"Adding Notifications","permalink":"/chime_tts/docs/documentation/notify/adding"}},{"id":"documentation/notify/sending","title":"Sending Notifications","description":"See the below example for how to send Chime TTS notifications:","source":"@site/docs/documentation/notify/sending.mdx","sourceDirName":"documentation/notify","slug":"/documentation/notify/sending","permalink":"/chime_tts/docs/documentation/notify/sending","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":3,"frontMatter":{"sidebar_position":3,"title":"Sending Notifications"},"sidebar":"tutorialSidebar","previous":{"title":"Adding Notifications","permalink":"/chime_tts/docs/documentation/notify/adding"},"next":{"title":"Clear Cache Service","permalink":"/chime_tts/docs/documentation/clear-cache-service"}},{"id":"documentation/say_url-service/examples","title":"Examples","description":"The chimetts.sayurl service passess all arguments to the chimetts.say service (with the exception of all audio playback parameters such (as mediaplayer targets and other playback-related parameters, as there is no audio playback).","source":"@site/docs/documentation/say_url-service/examples.mdx","sourceDirName":"documentation/say_url-service","slug":"/documentation/say_url-service/examples","permalink":"/chime_tts/docs/documentation/say_url-service/examples","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":3,"frontMatter":{"sidebar_position":3,"title":"Examples"},"sidebar":"tutorialSidebar","previous":{"title":"Parameters","permalink":"/chime_tts/docs/documentation/say_url-service/parameters"},"next":{"title":"Notify","permalink":"/chime_tts/docs/documentation/notify/"}},{"id":"documentation/say_url-service/index","title":"Say URL Service","description":"The chimetts.sayurl service generates an audio file with the chimetts.say service and returns either a publicly accessible URL or a media content id to the generated file.","source":"@site/docs/documentation/say_url-service/index.mdx","sourceDirName":"documentation/say_url-service","slug":"/documentation/say_url-service/","permalink":"/chime_tts/docs/documentation/say_url-service/","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":1,"frontMatter":{"sidebar_position":1,"title":"Say URL Service"},"sidebar":"tutorialSidebar","previous":{"title":"Examples","permalink":"/chime_tts/docs/documentation/say-service/examples"},"next":{"title":"Parameters","permalink":"/chime_tts/docs/documentation/say_url-service/parameters"}},{"id":"documentation/say_url-service/parameters","title":"Parameters","description":"The chimetts.sayurl service accepts the exact same parameters as the chimetts.say service (with the exception of all audio playback parameters such as mediaplayer targets and other playback-related parameters, as there is no audio playback).","source":"@site/docs/documentation/say_url-service/parameters.mdx","sourceDirName":"documentation/say_url-service","slug":"/documentation/say_url-service/parameters","permalink":"/chime_tts/docs/documentation/say_url-service/parameters","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":2,"frontMatter":{"sidebar_position":2,"title":"Parameters"},"sidebar":"tutorialSidebar","previous":{"title":"Say URL Service","permalink":"/chime_tts/docs/documentation/say_url-service/"},"next":{"title":"Examples","permalink":"/chime_tts/docs/documentation/say_url-service/examples"}},{"id":"documentation/say-service/examples","title":"Examples","description":"The following YAML examples cover additional features provided by the chime_tts.say service:","source":"@site/docs/documentation/say-service/examples.mdx","sourceDirName":"documentation/say-service","slug":"/documentation/say-service/examples","permalink":"/chime_tts/docs/documentation/say-service/examples","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":3,"frontMatter":{"sidebar_position":3,"title":"Examples"},"sidebar":"tutorialSidebar","previous":{"title":"Parameters","permalink":"/chime_tts/docs/documentation/say-service/parameters"},"next":{"title":"Say URL Service","permalink":"/chime_tts/docs/documentation/say_url-service/"}},{"id":"documentation/say-service/index","title":"Say Service","description":"The chimetts.say service joins together audio files (*\"chimes\"*) and TTS audio as a new MP3 file, locally, for playback on mediaplayer target/s.","source":"@site/docs/documentation/say-service/index.mdx","sourceDirName":"documentation/say-service","slug":"/documentation/say-service/","permalink":"/chime_tts/docs/documentation/say-service/","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":1,"frontMatter":{"sidebar_position":1,"title":"Say Service"},"sidebar":"tutorialSidebar","previous":{"title":"Documentation","permalink":"/chime_tts/docs/category/documentation"},"next":{"title":"Parameters","permalink":"/chime_tts/docs/documentation/say-service/parameters"}},{"id":"documentation/say-service/parameters","title":"Parameters","description":"The chime_tts.say service has standard parameters used by all TTS platforms, and additional parameters used by specific TTS platforms.","source":"@site/docs/documentation/say-service/parameters.mdx","sourceDirName":"documentation/say-service","slug":"/documentation/say-service/parameters","permalink":"/chime_tts/docs/documentation/say-service/parameters","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":2,"frontMatter":{"sidebar_position":2,"title":"Parameters"},"sidebar":"tutorialSidebar","previous":{"title":"Say Service","permalink":"/chime_tts/docs/documentation/say-service/"},"next":{"title":"Examples","permalink":"/chime_tts/docs/documentation/say-service/examples"}},{"id":"getting-started","title":"Chime TTS","description":"If you find Chime TTS useful, please consider showing your support:","source":"@site/docs/getting-started.mdx","sourceDirName":".","slug":"/getting-started","permalink":"/chime_tts/docs/getting-started","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":1,"frontMatter":{"sidebar_position":1,"title":"Chime TTS"},"sidebar":"tutorialSidebar","next":{"title":"Quick Start","permalink":"/chime_tts/docs/quick-start/"}},{"id":"quick-start/adding-the-integration","title":"2. Adding the Integration","description":"1. Click this button:","source":"@site/docs/quick-start/adding-the-integration.mdx","sourceDirName":"quick-start","slug":"/quick-start/adding-the-integration","permalink":"/chime_tts/docs/quick-start/adding-the-integration","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":2,"frontMatter":{"sidebar_position":2},"sidebar":"tutorialSidebar","previous":{"title":"1. Installation","permalink":"/chime_tts/docs/quick-start/installing-chime-tts"},"next":{"title":"3. Configuration","permalink":"/chime_tts/docs/quick-start/configuration"}},{"id":"quick-start/configuration","title":"3. Configuration","description":"You can customise the following elements for the chimetts.say and chimetts.sayurl services through the configuration page, located at:","source":"@site/docs/quick-start/configuration.mdx","sourceDirName":"quick-start","slug":"/quick-start/configuration","permalink":"/chime_tts/docs/quick-start/configuration","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":3,"frontMatter":{"sidebar_position":3},"sidebar":"tutorialSidebar","previous":{"title":"2. Adding the Integration","permalink":"/chime_tts/docs/quick-start/adding-the-integration"},"next":{"title":"Documentation","permalink":"/chime_tts/docs/category/documentation"}},{"id":"quick-start/installing-chime-tts","title":"1. Installation","description":"The easiest way to install Chime TTS is though HACS (the Home Assistant Community Store)","source":"@site/docs/quick-start/installing-chime-tts.mdx","sourceDirName":"quick-start","slug":"/quick-start/installing-chime-tts","permalink":"/chime_tts/docs/quick-start/installing-chime-tts","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":1,"frontMatter":{"sidebar_position":1},"sidebar":"tutorialSidebar","previous":{"title":"Quick Start","permalink":"/chime_tts/docs/quick-start/"},"next":{"title":"2. Adding the Integration","permalink":"/chime_tts/docs/quick-start/adding-the-integration"}},{"id":"quick-start/quick-start","title":"Quick Start","description":"Here's how to get started with Chime TTS audio notifications in three simple steps:","source":"@site/docs/quick-start/index.mdx","sourceDirName":"quick-start","slug":"/quick-start/","permalink":"/chime_tts/docs/quick-start/","draft":false,"unlisted":false,"tags":[],"version":"current","sidebarPosition":2,"frontMatter":{"id":"quick-start","title":"Quick Start","sidebar_position":2},"sidebar":"tutorialSidebar","previous":{"title":"Chime TTS","permalink":"/chime_tts/docs/getting-started"},"next":{"title":"1. Installation","permalink":"/chime_tts/docs/quick-start/installing-chime-tts"}}],"drafts":[],"sidebars":{"tutorialSidebar":[{"type":"doc","id":"getting-started"},{"type":"category","label":"Quick Start","collapsible":true,"collapsed":true,"items":[{"type":"doc","id":"quick-start/installing-chime-tts"},{"type":"doc","id":"quick-start/adding-the-integration"},{"type":"doc","id":"quick-start/configuration"}],"link":{"type":"doc","id":"quick-start/quick-start"}},{"type":"category","label":"Documentation","collapsible":true,"collapsed":true,"items":[{"type":"category","label":"Say Service","collapsible":true,"collapsed":true,"items":[{"type":"doc","id":"documentation/say-service/parameters"},{"type":"doc","id":"documentation/say-service/examples"}],"link":{"type":"doc","id":"documentation/say-service/index"}},{"type":"category","label":"Say URL Service","collapsible":true,"collapsed":true,"items":[{"type":"doc","id":"documentation/say_url-service/parameters"},{"type":"doc","id":"documentation/say_url-service/examples"}],"link":{"type":"doc","id":"documentation/say_url-service/index"}},{"type":"category","label":"Notify","collapsible":true,"collapsed":true,"items":[{"type":"doc","id":"documentation/notify/adding"},{"type":"doc","id":"documentation/notify/sending"}],"link":{"type":"doc","id":"documentation/notify/index"}},{"type":"doc","id":"documentation/clear-cache-service"}],"link":{"type":"generated-index","description":"Chime TTS documentation","slug":"/category/documentation","permalink":"/chime_tts/docs/category/documentation"}}]}}]}},"docusaurus-plugin-content-blog":{"default":{"blogSidebarTitle":"Recent posts","blogPosts":[{"id":"welcome","metadata":{"permalink":"/chime_tts/blog/welcome","source":"@site/blog/2021-08-26-welcome/index.md","title":"Welcome","description":"Docusaurus blogging features are powered by the blog plugin.","date":"2021-08-26T00:00:00.000Z","tags":[{"label":"facebook","permalink":"/chime_tts/blog/tags/facebook"},{"label":"hello","permalink":"/chime_tts/blog/tags/hello"},{"label":"docusaurus","permalink":"/chime_tts/blog/tags/docusaurus"}],"readingTime":0.405,"hasTruncateMarker":false,"authors":[{"name":"Sébastien Lorber","title":"Docusaurus maintainer","url":"https://sebastienlorber.com","imageURL":"https://github.com/slorber.png","key":"slorber"},{"name":"Yangshun Tay","title":"Front End Engineer @ Facebook","url":"https://github.com/yangshun","imageURL":"https://github.com/yangshun.png","key":"yangshun"}],"frontMatter":{"slug":"welcome","title":"Welcome","authors":["slorber","yangshun"],"tags":["facebook","hello","docusaurus"]},"unlisted":false,"nextItem":{"title":"MDX Blog Post","permalink":"/chime_tts/blog/mdx-blog-post"}},"content":"[Docusaurus blogging features](https://docusaurus.io/docs/blog) are powered by the [blog plugin](https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-blog).\n\nSimply add Markdown files (or folders) to the `blog` directory.\n\nRegular blog authors can be added to `authors.yml`.\n\nThe blog post date can be extracted from filenames, such as:\n\n- `2019-05-30-welcome.md`\n- `2019-05-30-welcome/index.md`\n\nA blog post folder can be convenient to co-locate blog post images:\n\n![Docusaurus Plushie](./docusaurus-plushie-banner.jpeg)\n\nThe blog supports tags as well!\n\n**And if you don't want a blog**: just delete this directory, and use `blog: false` in your Docusaurus config."},{"id":"mdx-blog-post","metadata":{"permalink":"/chime_tts/blog/mdx-blog-post","source":"@site/blog/2021-08-01-mdx-blog-post.mdx","title":"MDX Blog Post","description":"Blog posts support Docusaurus Markdown features, such as MDX.","date":"2021-08-01T00:00:00.000Z","tags":[{"label":"docusaurus","permalink":"/chime_tts/blog/tags/docusaurus"}],"readingTime":0.175,"hasTruncateMarker":false,"authors":[{"name":"Sébastien Lorber","title":"Docusaurus maintainer","url":"https://sebastienlorber.com","imageURL":"https://github.com/slorber.png","key":"slorber"}],"frontMatter":{"slug":"mdx-blog-post","title":"MDX Blog Post","authors":["slorber"],"tags":["docusaurus"]},"unlisted":false,"prevItem":{"title":"Welcome","permalink":"/chime_tts/blog/welcome"},"nextItem":{"title":"Long Blog Post","permalink":"/chime_tts/blog/long-blog-post"}},"content":"Blog posts support [Docusaurus Markdown features](https://docusaurus.io/docs/markdown-features), such as [MDX](https://mdxjs.com/).\n\n:::tip\n\nUse the power of React to create interactive blog posts.\n\n```js\n<button onClick={() => alert('button clicked!')}>Click me!</button>\n```\n\n<button onClick={() => alert('button clicked!')}>Click me!</button>\n\n:::"},{"id":"long-blog-post","metadata":{"permalink":"/chime_tts/blog/long-blog-post","source":"@site/blog/2019-05-29-long-blog-post.md","title":"Long Blog Post","description":"This is the summary of a very long blog post,","date":"2019-05-29T00:00:00.000Z","tags":[{"label":"hello","permalink":"/chime_tts/blog/tags/hello"},{"label":"docusaurus","permalink":"/chime_tts/blog/tags/docusaurus"}],"readingTime":2.05,"hasTruncateMarker":true,"authors":[{"name":"Endilie Yacop Sucipto","title":"Maintainer of Docusaurus","url":"https://github.com/endiliey","imageURL":"https://github.com/endiliey.png","key":"endi"}],"frontMatter":{"slug":"long-blog-post","title":"Long Blog Post","authors":"endi","tags":["hello","docusaurus"]},"unlisted":false,"prevItem":{"title":"MDX Blog Post","permalink":"/chime_tts/blog/mdx-blog-post"},"nextItem":{"title":"First Blog Post","permalink":"/chime_tts/blog/first-blog-post"}},"content":"This is the summary of a very long blog post,\n\nUse a `<!--` `truncate` `-->` comment to limit blog post size in the list view.\n\n<!--truncate-->\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet"},{"id":"first-blog-post","metadata":{"permalink":"/chime_tts/blog/first-blog-post","source":"@site/blog/2019-05-28-first-blog-post.md","title":"First Blog Post","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet","date":"2019-05-28T00:00:00.000Z","tags":[{"label":"hola","permalink":"/chime_tts/blog/tags/hola"},{"label":"docusaurus","permalink":"/chime_tts/blog/tags/docusaurus"}],"readingTime":0.12,"hasTruncateMarker":false,"authors":[{"name":"Gao Wei","title":"Docusaurus Core Team","url":"https://github.com/wgao19","image_url":"https://github.com/wgao19.png","imageURL":"https://github.com/wgao19.png"}],"frontMatter":{"slug":"first-blog-post","title":"First Blog Post","authors":{"name":"Gao Wei","title":"Docusaurus Core Team","url":"https://github.com/wgao19","image_url":"https://github.com/wgao19.png","imageURL":"https://github.com/wgao19.png"},"tags":["hola","docusaurus"]},"unlisted":false,"prevItem":{"title":"Long Blog Post","permalink":"/chime_tts/blog/long-blog-post"}},"content":"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet"}],"blogListPaginated":[{"items":["welcome","mdx-blog-post","long-blog-post","first-blog-post"],"metadata":{"permalink":"/chime_tts/blog","page":1,"postsPerPage":10,"totalPages":1,"totalCount":4,"blogDescription":"Blog","blogTitle":"Blog"}}],"blogTags":{"/chime_tts/blog/tags/facebook":{"label":"facebook","items":["welcome"],"permalink":"/chime_tts/blog/tags/facebook","pages":[{"items":["welcome"],"metadata":{"permalink":"/chime_tts/blog/tags/facebook","page":1,"postsPerPage":10,"totalPages":1,"totalCount":1,"blogDescription":"Blog","blogTitle":"Blog"}}],"unlisted":false},"/chime_tts/blog/tags/hello":{"label":"hello","items":["welcome","long-blog-post"],"permalink":"/chime_tts/blog/tags/hello","pages":[{"items":["welcome","long-blog-post"],"metadata":{"permalink":"/chime_tts/blog/tags/hello","page":1,"postsPerPage":10,"totalPages":1,"totalCount":2,"blogDescription":"Blog","blogTitle":"Blog"}}],"unlisted":false},"/chime_tts/blog/tags/docusaurus":{"label":"docusaurus","items":["welcome","mdx-blog-post","long-blog-post","first-blog-post"],"permalink":"/chime_tts/blog/tags/docusaurus","pages":[{"items":["welcome","mdx-blog-post","long-blog-post","first-blog-post"],"metadata":{"permalink":"/chime_tts/blog/tags/docusaurus","page":1,"postsPerPage":10,"totalPages":1,"totalCount":4,"blogDescription":"Blog","blogTitle":"Blog"}}],"unlisted":false},"/chime_tts/blog/tags/hola":{"label":"hola","items":["first-blog-post"],"permalink":"/chime_tts/blog/tags/hola","pages":[{"items":["first-blog-post"],"metadata":{"permalink":"/chime_tts/blog/tags/hola","page":1,"postsPerPage":10,"totalPages":1,"totalCount":1,"blogDescription":"Blog","blogTitle":"Blog"}}],"unlisted":false}},"blogTagsListPath":"/chime_tts/blog/tags"}},"docusaurus-plugin-content-pages":{"default":[{"type":"jsx","permalink":"/chime_tts/","source":"@site/src/pages/index.js"},{"type":"mdx","permalink":"/chime_tts/markdown-page","source":"@site/src/pages/markdown-page.md","title":"Markdown page example","description":"You don't need React to write simple standalone pages.","frontMatter":{"title":"Markdown page example"},"unlisted":false}]},"docusaurus-plugin-debug":{},"docusaurus-theme-classic":{},"docusaurus-bootstrap-plugin":{},"docusaurus-mdx-fallback-plugin":{}}}
+{
+    "allContent": {
+        "docusaurus-plugin-content-docs": {
+            "default": {
+                "loadedVersions": [
+                    {
+                        "versionName": "current",
+                        "label": "Next",
+                        "banner": null,
+                        "badge": false,
+                        "noIndex": false,
+                        "className": "docs-version-current",
+                        "path": "/chime_tts/docs",
+                        "tagsPath": "/chime_tts/docs/tags",
+                        "isLast": true,
+                        "routePriority": -1,
+                        "sidebarFilePath": "/Users/nimroddolev/Personal/Repos/chime_tts/sidebars.js",
+                        "contentPath": "/Users/nimroddolev/Personal/Repos/chime_tts/docs",
+                        "contentPathLocalized": "/Users/nimroddolev/Personal/Repos/chime_tts/i18n/en/docusaurus-plugin-content-docs/current",
+                        "docs": [
+                            {
+                                "id": "documentation/services/clear_cache-service",
+                                "title": "Clear Cache Service",
+                                "description": "The chimetts.clearcache service can be used to remove cached audio files from the chimetts.say and chimetts.sayurl services as well as Home Assistant's TTS cache.",
+                                "source": "@site/docs/documentation/services/clear_cache-service.mdx",
+                                "sourceDirName": "documentation",
+                                "slug": "/documentation/services/clear_cache-service",
+                                "permalink": "/chime_tts/docs/documentation/services/clear_cache-service",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 5,
+                                "frontMatter": {
+                                    "sidebar_position": 5,
+                                    "title": "Clear Cache Service"
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "Sending Notifications",
+                                    "permalink": "/chime_tts/docs/documentation/notify/sending"
+                                }
+                            },
+                            {
+                                "id": "documentation/notify/adding",
+                                "title": "Adding Notifications",
+                                "description": "1. Open your Home Assistant configuration.yaml file.",
+                                "source": "@site/docs/documentation/notify/adding.mdx",
+                                "sourceDirName": "documentation/notify",
+                                "slug": "/documentation/notify/adding",
+                                "permalink": "/chime_tts/docs/documentation/notify/adding",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 2,
+                                "frontMatter": {
+                                    "sidebar_position": 2,
+                                    "title": "Adding Notifications"
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "Notify",
+                                    "permalink": "/chime_tts/docs/documentation/notify/"
+                                },
+                                "next": {
+                                    "title": "Sending Notifications",
+                                    "permalink": "/chime_tts/docs/documentation/notify/sending"
+                                }
+                            },
+                            {
+                                "id": "documentation/notify/index",
+                                "title": "Notify",
+                                "description": "The Chime TTS notification platform allows you to define default settings for Chime TTS notifications within your configuration.yaml file instead of repeatedly having to use the chime_tts.say service and define parameter values each time.",
+                                "source": "@site/docs/documentation/notify/index.mdx",
+                                "sourceDirName": "documentation/notify",
+                                "slug": "/documentation/notify/",
+                                "permalink": "/chime_tts/docs/documentation/notify/",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 1,
+                                "frontMatter": {
+                                    "sidebar_position": 1,
+                                    "title": "Notify"
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "Examples",
+                                    "permalink": "/chime_tts/docs/documentation/services/say_url-service/examples"
+                                },
+                                "next": {
+                                    "title": "Adding Notifications",
+                                    "permalink": "/chime_tts/docs/documentation/notify/adding"
+                                }
+                            },
+                            {
+                                "id": "documentation/notify/sending",
+                                "title": "Sending Notifications",
+                                "description": "See the below example for how to send Chime TTS notifications:",
+                                "source": "@site/docs/documentation/notify/sending.mdx",
+                                "sourceDirName": "documentation/notify",
+                                "slug": "/documentation/notify/sending",
+                                "permalink": "/chime_tts/docs/documentation/notify/sending",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 3,
+                                "frontMatter": {
+                                    "sidebar_position": 3,
+                                    "title": "Sending Notifications"
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "Adding Notifications",
+                                    "permalink": "/chime_tts/docs/documentation/notify/adding"
+                                },
+                                "next": {
+                                    "title": "Clear Cache Service",
+                                    "permalink": "/chime_tts/docs/documentation/services/clear_cache-service"
+                                }
+                            },
+                            {
+                                "id": "documentation/services/say_url-service/examples",
+                                "title": "Examples",
+                                "description": "The chimetts.sayurl service passess all arguments to the chimetts.say service (with the exception of all audio playback parameters such (as mediaplayer targets and other playback-related parameters, as there is no audio playback).",
+                                "source": "@site/docs/documentation/services/say_url-service/examples.mdx",
+                                "sourceDirName": "documentation/services/say_url-service",
+                                "slug": "/documentation/services/say_url-service/examples",
+                                "permalink": "/chime_tts/docs/documentation/services/say_url-service/examples",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 3,
+                                "frontMatter": {
+                                    "sidebar_position": 3,
+                                    "title": "Examples"
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "Parameters",
+                                    "permalink": "/chime_tts/docs/documentation/services/say_url-service/parameters"
+                                },
+                                "next": {
+                                    "title": "Notify",
+                                    "permalink": "/chime_tts/docs/documentation/notify/"
+                                }
+                            },
+                            {
+                                "id": "documentation/services/say_url-service/index",
+                                "title": "Say URL Service",
+                                "description": "The chimetts.sayurl service generates an audio file with the chimetts.say service and returns either a publicly accessible URL or a media content id to the generated file.",
+                                "source": "@site/docs/documentation/services/say_url-service/index.mdx",
+                                "sourceDirName": "documentation/services/say_url-service",
+                                "slug": "/documentation/services/say_url-service/",
+                                "permalink": "/chime_tts/docs/documentation/services/say_url-service/",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 1,
+                                "frontMatter": {
+                                    "sidebar_position": 1,
+                                    "title": "Say URL Service"
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "Examples",
+                                    "permalink": "/chime_tts/docs/documentation/services/say-service/examples"
+                                },
+                                "next": {
+                                    "title": "Parameters",
+                                    "permalink": "/chime_tts/docs/documentation/services/say_url-service/parameters"
+                                }
+                            },
+                            {
+                                "id": "documentation/services/say_url-service/parameters",
+                                "title": "Parameters",
+                                "description": "The chimetts.sayurl service accepts the exact same parameters as the chimetts.say service (with the exception of all audio playback parameters such as mediaplayer targets and other playback-related parameters, as there is no audio playback).",
+                                "source": "@site/docs/documentation/services/say_url-service/parameters.mdx",
+                                "sourceDirName": "documentation/services/say_url-service",
+                                "slug": "/documentation/services/say_url-service/parameters",
+                                "permalink": "/chime_tts/docs/documentation/services/say_url-service/parameters",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 2,
+                                "frontMatter": {
+                                    "sidebar_position": 2,
+                                    "title": "Parameters"
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "Say URL Service",
+                                    "permalink": "/chime_tts/docs/documentation/services/say_url-service/"
+                                },
+                                "next": {
+                                    "title": "Examples",
+                                    "permalink": "/chime_tts/docs/documentation/services/say_url-service/examples"
+                                }
+                            },
+                            {
+                                "id": "documentation/services/say-service/examples",
+                                "title": "Examples",
+                                "description": "The following YAML examples cover additional features provided by the chime_tts.say service:",
+                                "source": "@site/docs/documentation/services/say-service/examples.mdx",
+                                "sourceDirName": "documentation/services/say-service",
+                                "slug": "/documentation/services/say-service/examples",
+                                "permalink": "/chime_tts/docs/documentation/services/say-service/examples",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 3,
+                                "frontMatter": {
+                                    "sidebar_position": 3,
+                                    "title": "Examples"
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "Parameters",
+                                    "permalink": "/chime_tts/docs/documentation/services/say-service/parameters"
+                                },
+                                "next": {
+                                    "title": "Say URL Service",
+                                    "permalink": "/chime_tts/docs/documentation/services/say_url-service/"
+                                }
+                            },
+                            {
+                                "id": "documentation/services/say-service/index",
+                                "title": "Say Service",
+                                "description": "The chimetts.say service joins together audio files (*\"chimes\"*) and TTS audio as a new MP3 file, locally, for playback on mediaplayer target/s.",
+                                "source": "@site/docs/documentation/services/say-service/index.mdx",
+                                "sourceDirName": "documentation/services/say-service",
+                                "slug": "/documentation/services/say-service/",
+                                "permalink": "/chime_tts/docs/documentation/services/say-service/",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 1,
+                                "frontMatter": {
+                                    "sidebar_position": 1,
+                                    "title": "Say Service"
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "Documentation",
+                                    "permalink": "/chime_tts/docs/category/documentation"
+                                },
+                                "next": {
+                                    "title": "Parameters",
+                                    "permalink": "/chime_tts/docs/documentation/services/say-service/parameters"
+                                }
+                            },
+                            {
+                                "id": "documentation/services/say-service/parameters",
+                                "title": "Parameters",
+                                "description": "The chime_tts.say service has standard parameters used by all TTS platforms, and additional parameters used by specific TTS platforms.",
+                                "source": "@site/docs/documentation/services/say-service/parameters.mdx",
+                                "sourceDirName": "documentation/services/say-service",
+                                "slug": "/documentation/services/say-service/parameters",
+                                "permalink": "/chime_tts/docs/documentation/services/say-service/parameters",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 2,
+                                "frontMatter": {
+                                    "sidebar_position": 2,
+                                    "title": "Parameters"
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "Say Service",
+                                    "permalink": "/chime_tts/docs/documentation/services/say-service/"
+                                },
+                                "next": {
+                                    "title": "Examples",
+                                    "permalink": "/chime_tts/docs/documentation/services/say-service/examples"
+                                }
+                            },
+                            {
+                                "id": "getting-started",
+                                "title": "Chime TTS",
+                                "description": "If you find Chime TTS useful, please consider showing your support:",
+                                "source": "@site/docs/getting-started.mdx",
+                                "sourceDirName": ".",
+                                "slug": "/getting-started",
+                                "permalink": "/chime_tts/docs/getting-started",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 1,
+                                "frontMatter": {
+                                    "sidebar_position": 1,
+                                    "title": "Chime TTS"
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "next": {
+                                    "title": "Quick Start",
+                                    "permalink": "/chime_tts/docs/quick-start/"
+                                }
+                            },
+                            {
+                                "id": "quick-start/adding-the-integration",
+                                "title": "2. Adding the Integration",
+                                "description": "1. Click this button:",
+                                "source": "@site/docs/quick-start/adding-the-integration.mdx",
+                                "sourceDirName": "quick-start",
+                                "slug": "/quick-start/adding-the-integration",
+                                "permalink": "/chime_tts/docs/quick-start/adding-the-integration",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 2,
+                                "frontMatter": {
+                                    "sidebar_position": 2
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "1. Installation",
+                                    "permalink": "/chime_tts/docs/quick-start/installing-chime-tts"
+                                },
+                                "next": {
+                                    "title": "3. Configuration",
+                                    "permalink": "/chime_tts/docs/documentation/configuration"
+                                }
+                            },
+                            {
+                                "id": "documentation/configuration",
+                                "title": "3. Configuration",
+                                "description": "You can customise the following elements for the chimetts.say and chimetts.sayurl services through the configuration page, located at:",
+                                "source": "@site/docs/documentation/configuration.mdx",
+                                "sourceDirName": "quick-start",
+                                "slug": "/documentation/configuration",
+                                "permalink": "/chime_tts/docs/documentation/configuration",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 3,
+                                "frontMatter": {
+                                    "sidebar_position": 3
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "2. Adding the Integration",
+                                    "permalink": "/chime_tts/docs/quick-start/adding-the-integration"
+                                },
+                                "next": {
+                                    "title": "Documentation",
+                                    "permalink": "/chime_tts/docs/category/documentation"
+                                }
+                            },
+                            {
+                                "id": "quick-start/installing-chime-tts",
+                                "title": "1. Installation",
+                                "description": "The easiest way to install Chime TTS is though HACS (the Home Assistant Community Store)",
+                                "source": "@site/docs/quick-start/installing-chime-tts.mdx",
+                                "sourceDirName": "quick-start",
+                                "slug": "/quick-start/installing-chime-tts",
+                                "permalink": "/chime_tts/docs/quick-start/installing-chime-tts",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 1,
+                                "frontMatter": {
+                                    "sidebar_position": 1
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "Quick Start",
+                                    "permalink": "/chime_tts/docs/quick-start/"
+                                },
+                                "next": {
+                                    "title": "2. Adding the Integration",
+                                    "permalink": "/chime_tts/docs/quick-start/adding-the-integration"
+                                }
+                            },
+                            {
+                                "id": "quick-start/quick-start",
+                                "title": "Quick Start",
+                                "description": "Here's how to get started with Chime TTS audio notifications in three simple steps:",
+                                "source": "@site/docs/quick-start/index.mdx",
+                                "sourceDirName": "quick-start",
+                                "slug": "/quick-start/",
+                                "permalink": "/chime_tts/docs/quick-start/",
+                                "draft": false,
+                                "unlisted": false,
+                                "tags": [],
+                                "version": "current",
+                                "sidebarPosition": 2,
+                                "frontMatter": {
+                                    "id": "quick-start",
+                                    "title": "Quick Start",
+                                    "sidebar_position": 2
+                                },
+                                "sidebar": "tutorialSidebar",
+                                "previous": {
+                                    "title": "Chime TTS",
+                                    "permalink": "/chime_tts/docs/getting-started"
+                                },
+                                "next": {
+                                    "title": "1. Installation",
+                                    "permalink": "/chime_tts/docs/quick-start/installing-chime-tts"
+                                }
+                            }
+                        ],
+                        "drafts": [],
+                        "sidebars": {
+                            "tutorialSidebar": [
+                                {
+                                    "type": "doc",
+                                    "id": "getting-started"
+                                },
+                                {
+                                    "type": "category",
+                                    "label": "Quick Start",
+                                    "collapsible": true,
+                                    "collapsed": true,
+                                    "items": [
+                                        {
+                                            "type": "doc",
+                                            "id": "quick-start/installing-chime-tts"
+                                        },
+                                        {
+                                            "type": "doc",
+                                            "id": "quick-start/adding-the-integration"
+                                        },
+                                        {
+                                            "type": "doc",
+                                            "id": "documentation/configuration"
+                                        }
+                                    ],
+                                    "link": {
+                                        "type": "doc",
+                                        "id": "quick-start/quick-start"
+                                    }
+                                },
+                                {
+                                    "type": "category",
+                                    "label": "Documentation",
+                                    "collapsible": true,
+                                    "collapsed": true,
+                                    "items": [
+                                        {
+                                            "type": "category",
+                                            "label": "Say Service",
+                                            "collapsible": true,
+                                            "collapsed": true,
+                                            "items": [
+                                                {
+                                                    "type": "doc",
+                                                    "id": "documentation/services/say-service/parameters"
+                                                },
+                                                {
+                                                    "type": "doc",
+                                                    "id": "documentation/services/say-service/examples"
+                                                }
+                                            ],
+                                            "link": {
+                                                "type": "doc",
+                                                "id": "documentation/services/say-service/index"
+                                            }
+                                        },
+                                        {
+                                            "type": "category",
+                                            "label": "Say URL Service",
+                                            "collapsible": true,
+                                            "collapsed": true,
+                                            "items": [
+                                                {
+                                                    "type": "doc",
+                                                    "id": "documentation/services/say_url-service/parameters"
+                                                },
+                                                {
+                                                    "type": "doc",
+                                                    "id": "documentation/services/say_url-service/examples"
+                                                }
+                                            ],
+                                            "link": {
+                                                "type": "doc",
+                                                "id": "documentation/services/say_url-service/index"
+                                            }
+                                        },
+                                        {
+                                            "type": "category",
+                                            "label": "Notify",
+                                            "collapsible": true,
+                                            "collapsed": true,
+                                            "items": [
+                                                {
+                                                    "type": "doc",
+                                                    "id": "documentation/notify/adding"
+                                                },
+                                                {
+                                                    "type": "doc",
+                                                    "id": "documentation/notify/sending"
+                                                }
+                                            ],
+                                            "link": {
+                                                "type": "doc",
+                                                "id": "documentation/notify/index"
+                                            }
+                                        },
+                                        {
+                                            "type": "doc",
+                                            "id": "documentation/services/clear_cache-service"
+                                        }
+                                    ],
+                                    "link": {
+                                        "type": "generated-index",
+                                        "description": "Chime TTS documentation",
+                                        "slug": "/category/documentation",
+                                        "permalink": "/chime_tts/docs/category/documentation"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "docusaurus-plugin-content-blog": {
+            "default": {
+                "blogSidebarTitle": "Recent posts",
+                "blogPosts": [
+                    {
+                        "id": "welcome",
+                        "metadata": {
+                            "permalink": "/chime_tts/blog/welcome",
+                            "source": "@site/blog/2021-08-26-welcome/index.md",
+                            "title": "Welcome",
+                            "description": "Docusaurus blogging features are powered by the blog plugin.",
+                            "date": "2021-08-26T00:00:00.000Z",
+                            "tags": [
+                                {
+                                    "label": "facebook",
+                                    "permalink": "/chime_tts/blog/tags/facebook"
+                                },
+                                {
+                                    "label": "hello",
+                                    "permalink": "/chime_tts/blog/tags/hello"
+                                },
+                                {
+                                    "label": "docusaurus",
+                                    "permalink": "/chime_tts/blog/tags/docusaurus"
+                                }
+                            ],
+                            "readingTime": 0.405,
+                            "hasTruncateMarker": false,
+                            "authors": [
+                                {
+                                    "name": "Sébastien Lorber",
+                                    "title": "Docusaurus maintainer",
+                                    "url": "https://sebastienlorber.com",
+                                    "imageURL": "https://github.com/slorber.png",
+                                    "key": "slorber"
+                                },
+                                {
+                                    "name": "Yangshun Tay",
+                                    "title": "Front End Engineer @ Facebook",
+                                    "url": "https://github.com/yangshun",
+                                    "imageURL": "https://github.com/yangshun.png",
+                                    "key": "yangshun"
+                                }
+                            ],
+                            "frontMatter": {
+                                "slug": "welcome",
+                                "title": "Welcome",
+                                "authors": [
+                                    "slorber",
+                                    "yangshun"
+                                ],
+                                "tags": [
+                                    "facebook",
+                                    "hello",
+                                    "docusaurus"
+                                ]
+                            },
+                            "unlisted": false,
+                            "nextItem": {
+                                "title": "MDX Blog Post",
+                                "permalink": "/chime_tts/blog/mdx-blog-post"
+                            }
+                        },
+                        "content": "[Docusaurus blogging features](https://docusaurus.io/docs/blog) are powered by the [blog plugin](https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-blog).\n\nSimply add Markdown files (or folders) to the `blog` directory.\n\nRegular blog authors can be added to `authors.yml`.\n\nThe blog post date can be extracted from filenames, such as:\n\n- `2019-05-30-welcome.md`\n- `2019-05-30-welcome/index.md`\n\nA blog post folder can be convenient to co-locate blog post images:\n\n![Docusaurus Plushie](./docusaurus-plushie-banner.jpeg)\n\nThe blog supports tags as well!\n\n**And if you don't want a blog**: just delete this directory, and use `blog: false` in your Docusaurus config."
+                    },
+                    {
+                        "id": "mdx-blog-post",
+                        "metadata": {
+                            "permalink": "/chime_tts/blog/mdx-blog-post",
+                            "source": "@site/blog/2021-08-01-mdx-blog-post.mdx",
+                            "title": "MDX Blog Post",
+                            "description": "Blog posts support Docusaurus Markdown features, such as MDX.",
+                            "date": "2021-08-01T00:00:00.000Z",
+                            "tags": [
+                                {
+                                    "label": "docusaurus",
+                                    "permalink": "/chime_tts/blog/tags/docusaurus"
+                                }
+                            ],
+                            "readingTime": 0.175,
+                            "hasTruncateMarker": false,
+                            "authors": [
+                                {
+                                    "name": "Sébastien Lorber",
+                                    "title": "Docusaurus maintainer",
+                                    "url": "https://sebastienlorber.com",
+                                    "imageURL": "https://github.com/slorber.png",
+                                    "key": "slorber"
+                                }
+                            ],
+                            "frontMatter": {
+                                "slug": "mdx-blog-post",
+                                "title": "MDX Blog Post",
+                                "authors": [
+                                    "slorber"
+                                ],
+                                "tags": [
+                                    "docusaurus"
+                                ]
+                            },
+                            "unlisted": false,
+                            "prevItem": {
+                                "title": "Welcome",
+                                "permalink": "/chime_tts/blog/welcome"
+                            },
+                            "nextItem": {
+                                "title": "Long Blog Post",
+                                "permalink": "/chime_tts/blog/long-blog-post"
+                            }
+                        },
+                        "content": "Blog posts support [Docusaurus Markdown features](https://docusaurus.io/docs/markdown-features), such as [MDX](https://mdxjs.com/).\n\n:::tip\n\nUse the power of React to create interactive blog posts.\n\n```js\n<button onClick={() => alert('button clicked!')}>Click me!</button>\n```\n\n<button onClick={() => alert('button clicked!')}>Click me!</button>\n\n:::"
+                    },
+                    {
+                        "id": "long-blog-post",
+                        "metadata": {
+                            "permalink": "/chime_tts/blog/long-blog-post",
+                            "source": "@site/blog/2019-05-29-long-blog-post.md",
+                            "title": "Long Blog Post",
+                            "description": "This is the summary of a very long blog post,",
+                            "date": "2019-05-29T00:00:00.000Z",
+                            "tags": [
+                                {
+                                    "label": "hello",
+                                    "permalink": "/chime_tts/blog/tags/hello"
+                                },
+                                {
+                                    "label": "docusaurus",
+                                    "permalink": "/chime_tts/blog/tags/docusaurus"
+                                }
+                            ],
+                            "readingTime": 2.05,
+                            "hasTruncateMarker": true,
+                            "authors": [
+                                {
+                                    "name": "Endilie Yacop Sucipto",
+                                    "title": "Maintainer of Docusaurus",
+                                    "url": "https://github.com/endiliey",
+                                    "imageURL": "https://github.com/endiliey.png",
+                                    "key": "endi"
+                                }
+                            ],
+                            "frontMatter": {
+                                "slug": "long-blog-post",
+                                "title": "Long Blog Post",
+                                "authors": "endi",
+                                "tags": [
+                                    "hello",
+                                    "docusaurus"
+                                ]
+                            },
+                            "unlisted": false,
+                            "prevItem": {
+                                "title": "MDX Blog Post",
+                                "permalink": "/chime_tts/blog/mdx-blog-post"
+                            },
+                            "nextItem": {
+                                "title": "First Blog Post",
+                                "permalink": "/chime_tts/blog/first-blog-post"
+                            }
+                        },
+                        "content": "This is the summary of a very long blog post,\n\nUse a `<!--` `truncate` `-->` comment to limit blog post size in the list view.\n\n<!--truncate-->\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet"
+                    },
+                    {
+                        "id": "first-blog-post",
+                        "metadata": {
+                            "permalink": "/chime_tts/blog/first-blog-post",
+                            "source": "@site/blog/2019-05-28-first-blog-post.md",
+                            "title": "First Blog Post",
+                            "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet",
+                            "date": "2019-05-28T00:00:00.000Z",
+                            "tags": [
+                                {
+                                    "label": "hola",
+                                    "permalink": "/chime_tts/blog/tags/hola"
+                                },
+                                {
+                                    "label": "docusaurus",
+                                    "permalink": "/chime_tts/blog/tags/docusaurus"
+                                }
+                            ],
+                            "readingTime": 0.12,
+                            "hasTruncateMarker": false,
+                            "authors": [
+                                {
+                                    "name": "Gao Wei",
+                                    "title": "Docusaurus Core Team",
+                                    "url": "https://github.com/wgao19",
+                                    "image_url": "https://github.com/wgao19.png",
+                                    "imageURL": "https://github.com/wgao19.png"
+                                }
+                            ],
+                            "frontMatter": {
+                                "slug": "first-blog-post",
+                                "title": "First Blog Post",
+                                "authors": {
+                                    "name": "Gao Wei",
+                                    "title": "Docusaurus Core Team",
+                                    "url": "https://github.com/wgao19",
+                                    "image_url": "https://github.com/wgao19.png",
+                                    "imageURL": "https://github.com/wgao19.png"
+                                },
+                                "tags": [
+                                    "hola",
+                                    "docusaurus"
+                                ]
+                            },
+                            "unlisted": false,
+                            "prevItem": {
+                                "title": "Long Blog Post",
+                                "permalink": "/chime_tts/blog/long-blog-post"
+                            }
+                        },
+                        "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet"
+                    }
+                ],
+                "blogListPaginated": [
+                    {
+                        "items": [
+                            "welcome",
+                            "mdx-blog-post",
+                            "long-blog-post",
+                            "first-blog-post"
+                        ],
+                        "metadata": {
+                            "permalink": "/chime_tts/blog",
+                            "page": 1,
+                            "postsPerPage": 10,
+                            "totalPages": 1,
+                            "totalCount": 4,
+                            "blogDescription": "Blog",
+                            "blogTitle": "Blog"
+                        }
+                    }
+                ],
+                "blogTags": {
+                    "/chime_tts/blog/tags/facebook": {
+                        "label": "facebook",
+                        "items": [
+                            "welcome"
+                        ],
+                        "permalink": "/chime_tts/blog/tags/facebook",
+                        "pages": [
+                            {
+                                "items": [
+                                    "welcome"
+                                ],
+                                "metadata": {
+                                    "permalink": "/chime_tts/blog/tags/facebook",
+                                    "page": 1,
+                                    "postsPerPage": 10,
+                                    "totalPages": 1,
+                                    "totalCount": 1,
+                                    "blogDescription": "Blog",
+                                    "blogTitle": "Blog"
+                                }
+                            }
+                        ],
+                        "unlisted": false
+                    },
+                    "/chime_tts/blog/tags/hello": {
+                        "label": "hello",
+                        "items": [
+                            "welcome",
+                            "long-blog-post"
+                        ],
+                        "permalink": "/chime_tts/blog/tags/hello",
+                        "pages": [
+                            {
+                                "items": [
+                                    "welcome",
+                                    "long-blog-post"
+                                ],
+                                "metadata": {
+                                    "permalink": "/chime_tts/blog/tags/hello",
+                                    "page": 1,
+                                    "postsPerPage": 10,
+                                    "totalPages": 1,
+                                    "totalCount": 2,
+                                    "blogDescription": "Blog",
+                                    "blogTitle": "Blog"
+                                }
+                            }
+                        ],
+                        "unlisted": false
+                    },
+                    "/chime_tts/blog/tags/docusaurus": {
+                        "label": "docusaurus",
+                        "items": [
+                            "welcome",
+                            "mdx-blog-post",
+                            "long-blog-post",
+                            "first-blog-post"
+                        ],
+                        "permalink": "/chime_tts/blog/tags/docusaurus",
+                        "pages": [
+                            {
+                                "items": [
+                                    "welcome",
+                                    "mdx-blog-post",
+                                    "long-blog-post",
+                                    "first-blog-post"
+                                ],
+                                "metadata": {
+                                    "permalink": "/chime_tts/blog/tags/docusaurus",
+                                    "page": 1,
+                                    "postsPerPage": 10,
+                                    "totalPages": 1,
+                                    "totalCount": 4,
+                                    "blogDescription": "Blog",
+                                    "blogTitle": "Blog"
+                                }
+                            }
+                        ],
+                        "unlisted": false
+                    },
+                    "/chime_tts/blog/tags/hola": {
+                        "label": "hola",
+                        "items": [
+                            "first-blog-post"
+                        ],
+                        "permalink": "/chime_tts/blog/tags/hola",
+                        "pages": [
+                            {
+                                "items": [
+                                    "first-blog-post"
+                                ],
+                                "metadata": {
+                                    "permalink": "/chime_tts/blog/tags/hola",
+                                    "page": 1,
+                                    "postsPerPage": 10,
+                                    "totalPages": 1,
+                                    "totalCount": 1,
+                                    "blogDescription": "Blog",
+                                    "blogTitle": "Blog"
+                                }
+                            }
+                        ],
+                        "unlisted": false
+                    }
+                },
+                "blogTagsListPath": "/chime_tts/blog/tags"
+            }
+        },
+        "docusaurus-plugin-content-pages": {
+            "default": [
+                {
+                    "type": "jsx",
+                    "permalink": "/chime_tts/",
+                    "source": "@site/src/pages/index.js"
+                },
+                {
+                    "type": "mdx",
+                    "permalink": "/chime_tts/markdown-page",
+                    "source": "@site/src/pages/markdown-page.md",
+                    "title": "Markdown page example",
+                    "description": "You don't need React to write simple standalone pages.",
+                    "frontMatter": {
+                        "title": "Markdown page example"
+                    },
+                    "unlisted": false
+                }
+            ]
+        },
+        "docusaurus-plugin-debug": {},
+        "docusaurus-theme-classic": {},
+        "docusaurus-bootstrap-plugin": {},
+        "docusaurus-mdx-fallback-plugin": {}
+    }
+}
