@@ -26,6 +26,11 @@
       "type": "package",
       "name": "@docusaurus/theme-classic",
       "version": "3.4.0"
+    },
+    "docusaurus-plugin-client-redirects": {
+      "type": "package",
+      "name": "@docusaurus/plugin-client-redirects",
+      "version": "3.4.0"
     }
   }
 }

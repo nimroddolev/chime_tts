@@ -211,6 +211,40 @@ const config = {
         darkTheme: prismThemes.dracula,
       },
     }),
+  plugins: [
+    [
+      '@docusaurus/plugin-client-redirects',
+      {
+        fromExtensions: ['html', 'htm'], // /myPage.html -> /myPage
+        toExtensions: ['exe', 'zip'], // /myAsset -> /myAsset.zip (if latter exists)
+        redirects: [
+        ],
+        createRedirects(existingPath) {
+          var replacements = [
+            {
+              from: "docs/documentation/say",
+              to: "docs/documentation/services/say"
+            },
+            {
+              from: "docs/documentation/clear",
+              to: "docs/documentation/services/clear"
+            },
+            {
+              from: "docs/quick-start/configuration",
+              to: "docs/documentation/configuration"
+            },
+          ];
+          for (var i = 0; i < replacements.length; i++) {
+            var replacement = replacements[i];
+            if (existingPath.includes(replacement["from"])) {
+              return [existingPath.replace(replacement["from"], replacement["to"])];
+            }
+          }
+          return undefined; // Return a falsy value: no redirect created
+        },
+      },
+    ],
+  ],
 };
 
 export default config;
