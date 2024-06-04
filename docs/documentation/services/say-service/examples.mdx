@@ -24,7 +24,7 @@ data:
   tts_platform: google_translate
   message: Hello world!
 ```
-<audio controls src={useBaseUrl('/audio/examples/basic.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/basic.mp3?v=1')} />
 
 ### `chime_path`
 Use [`chime_path`](./parameters#chime_path) to play a chime before the TTS audio (using a 'Chime TTS' chime):
@@ -39,7 +39,7 @@ data:
   message: Hello world!
   chime_path: tada
 ```
-<audio controls src={useBaseUrl('/audio/examples/chime_path.mp3')} class="audio" />
+<audio controls src={useBaseUrl('/audio/examples/chime_path.mp3?v=1')} class="audio" />
 
 ### `end_chime_path`
 Use [`end_chime_path`](./parameters#end_chime_path) to play a chime after the TTS audio (from your media folder)
@@ -53,7 +53,7 @@ data:
   message: Hello world!
   end_chime_path: /media/sounds/doorbell.mp3
 ```
-<audio controls src={useBaseUrl('/audio/examples/end_chime_path.mp3')} class="audio" />
+<audio controls src={useBaseUrl('/audio/examples/end_chime_path.mp3?v=1')} class="audio" />
 
 ### `chime_path` and `end_chime_path`
 Include both [`chime_path`](./parameters#chime_path) and [`end_chime_path`](./parameters#end_chime_path) to play a chime before and after TTS audio
@@ -68,7 +68,7 @@ data:
   chime_path: drumroll
   end_chime_path: /media/sounds/doorbell.mp3
 ```
-<audio controls src={useBaseUrl('/audio/examples/chime_path_end_chime_path.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/chime_path_end_chime_path.mp3?v=1')} />
 
 ## More complex examples
 
@@ -88,7 +88,7 @@ data:
   tts_platform: amazon_polly
   tts_speed: 150
 ```
-<audio controls src={useBaseUrl('/audio/examples/speed_increase.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/speed_increase.mp3?v=1')} />
 
 #### Decrease speed
 ```
@@ -103,7 +103,7 @@ data:
   tts_platform: amazon_polly
   tts_speed: 75
 ```
-<audio controls src={useBaseUrl('/audio/examples/speed_decrease.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/speed_decrease.mp3?v=1')} />
 
 ### `tts_pitch`
 Use the [`tts_pitch`](./parameters#tts_pitch) parameter to raise/lower the pitch of the TTS audio
@@ -121,7 +121,7 @@ data:
   tts_platform: amazon_polly
   tts_pitch: 5
 ```
-<audio controls src={useBaseUrl('/audio/examples/pitch_raise.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/pitch_raise.mp3?v=1')} />
 
 #### Lower pitch
 ```
@@ -136,7 +136,7 @@ data:
   tts_platform: amazon_polly
   tts_pitch: -7
 ```
-<audio controls src={useBaseUrl('/audio/examples/pitch_lower.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/pitch_lower.mp3?v=1')} />
 
 #### Musical Fun
 ```
@@ -248,7 +248,7 @@ data:
       speed: 90
       offset: -1000
 ```
-<audio controls src={useBaseUrl('/audio/examples/musical_fun.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/musical_fun.mp3?v=1')} />
 
 
 ### `offset`
@@ -269,7 +269,7 @@ data:
   tts_platform: google_translate
   offset: 2000
 ```
-<audio controls src={useBaseUrl('/audio/examples/offset_delay.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/offset_delay.mp3?v=1')} />
 
 #### Negative Offset (overlay audio)
 Using a negative [`offset`](./parameters#offset) value overlays chimes and TTS audio on top of each other.
@@ -285,7 +285,7 @@ data:
   tts_platform: google_translate
   offset: -2100
 ```
-<audio controls src={useBaseUrl('/audio/examples/offset_overlay.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/offset_overlay.mp3?v=1')} />
 
 ### `language` and `tld`
 You can use [`language`](./parameters#language) and [`tld`](./parameters#tld) to play TTS audio with a different language and/or accent on the [Google Translate](https://www.home-assistant.io/integrations/google_translate/) TTS platform
@@ -302,7 +302,7 @@ data:
   language: fr
   tld: fr
 ```
-<audio controls src={useBaseUrl('/audio/examples/language.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/language.mp3?v=1')} />
 
 ### `join_players`
 Use the [`join_players`](./parameters#join_players) parameter to hear the announcement across multiple speakers at the same time (only on supported speakers)
@@ -320,7 +320,7 @@ data:
   join_players: true
   unjoin_players: true
 ```
-<audio controls src={useBaseUrl('/audio/examples/join_players.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/join_players.mp3?v=1')} />
 
 ## Message Segments
 The `message` parameter can be used to specify multiple [`message segments`](./parameters#advanced-usage-segment-sequences) which can be used to construct complicated notifications of muliple chimes & TTS audio segments.
@@ -353,7 +353,7 @@ data:
       message: Let's go!
       tts_platform: amazon_polly
 ```
-<audio controls src={useBaseUrl('/audio/examples/segments_tts.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/segments_tts.mp3?v=1')} />
 
 In the above example:
 - The 1st segment overrides the cache parameter, setting it to true for the segment.
@@ -382,7 +382,7 @@ data:
     - chime: dun_dun_dun
     - tts: Sorry. You're the only one with arms.
 ```
-<audio controls src={useBaseUrl('/audio/examples/segments_chime.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/segments_chime.mp3?v=1')} />
 
 ### `delay` Segment Type
 Review the [delay segment type](./parameters#delay-segment-type) documentation to learn more.
@@ -397,7 +397,7 @@ data:
     - delay: 1000
     - tts: Yep, sounds like clothes waiting to be moved to the dryer
 ```
-<audio controls src={useBaseUrl('/audio/examples/segments_delay.mp3')} />
+<audio controls src={useBaseUrl('/audio/examples/segments_delay.mp3?v=1')} />
 
 ### `repeat`
 
@@ -415,4 +415,4 @@ data:
       offset: -800
     - tts: It's 3 o'clock
 ```
-<audio controls src={useBaseUrl('/audio/parameters/repeat.mp3')} />
+<audio controls src={useBaseUrl('/audio/parameters/repeat.mp3?v=1')} />
