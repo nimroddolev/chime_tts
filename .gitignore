@@ -4,7 +4,7 @@ __pycache__
 *.egg-info
 */build/*
 */dist/*
-
+node_modules/*
 
 # misc
 .coverage
@@ -29,3 +29,4 @@ README.md
 docusaurus.config.mjs
 package-lock.json
 custom_components
+.docusaurus/docusaurus-plugin-debug
