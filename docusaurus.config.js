@@ -218,6 +218,16 @@ const config = {
         fromExtensions: ['html', 'htm'], // /myPage.html -> /myPage
         toExtensions: ['exe', 'zip'], // /myAsset -> /myAsset.zip (if latter exists)
         redirects: [
+          // // /docs/oldDoc -> /docs/newDoc
+          // {
+          //   to: '/docs/newDoc',
+          //   from: '/docs/oldDoc',
+          // },
+          // // Redirect from multiple old paths to the new path
+          // {
+          //   to: '/docs/newDoc2',
+          //   from: ['/docs/oldDocFrom2019', '/docs/legacyDocFrom2016'],
+          // },
         ],
         createRedirects(existingPath) {
           var replacements = [
