@@ -104,7 +104,7 @@ const config = {
             ]
           },
           {
-            to: "docs/category/documentation",
+            to: "docs/documentation",
             label: "Documentation",
             position: "left",
             items: [
@@ -169,7 +169,7 @@ const config = {
               },
               {
                 label: "Documentation",
-                to: "docs/category/documentation"
+                to: "docs/documentation"
               },
             ],
           },
