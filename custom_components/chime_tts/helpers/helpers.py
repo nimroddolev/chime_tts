@@ -302,7 +302,6 @@ class ChimeTTSHelper:
 
         return tts_provider
 
-
     def get_installed_tts_platforms(self, hass: HomeAssistant):
         """List of installed tts platforms."""
         # Installed TTS Providers
@@ -344,7 +343,6 @@ class ChimeTTSHelper:
         # No TTS platforms available
         _LOGGER.warning("Chime TTS could not find any TTS platforms installed. Please add at least 1 TTS integration: https://www.home-assistant.io/integrations/#text-to-speech")
         return default_tts_platform
-
 
     def ffmpeg_convert_from_audio_segment(self,
                                           audio_segment: AudioSegment = None,
@@ -489,7 +487,6 @@ class ChimeTTSHelper:
                 ffmpeg_args_string += f",atempo={tempo_n}"
 
         return ffmpeg_args_string
-
 
     def change_speed_of_audiosegment(self, audio_segment: AudioSegment, speed: float = 100.0, temp_folder: str = None):
         """Change the playback speed of an audio segment."""

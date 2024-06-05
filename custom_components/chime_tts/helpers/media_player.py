@@ -31,9 +31,9 @@ class ChimeTTSMediaPlayer:
         # Initialise state and values
         self.turn_on()
         self.initial_volume_level: float = self.get_current_volume_level()
-        self.initially_playing = (self.hass.states.get(self.entity_id).state == "playing"
+        self.initially_playing = (self.get_state() == "playing"
                                   # Check that media_player is actually playing (HomePods can incorrectly have the state "playing" when no media is playing)
-                                  and self.hass.states.get(self.entity_id).attributes.get("media_duration", -1) != 0)
+                                  and self.get_entity().attributes.get("media_duration", -1) != 0)
         self.announce_supported = self.get_supported_feature(ATTR_MEDIA_ANNOUNCE)
         self.join_supported = self.get_supported_feature(ATTR_GROUP_MEMBERS)
         self.set_target_volume_level(target_volume_level)
@@ -43,7 +43,7 @@ class ChimeTTSMediaPlayer:
 
     def turn_on(self):
         """Turn on the media player if it is currently off."""
-        if self.get_entity().state == "off":
+        if self.get_state() == "off":
             _LOGGER.info('Turning on "%s"...', self.entity_id)
             try:
                 self.hass.async_create_task(
@@ -63,6 +63,10 @@ class ChimeTTSMediaPlayer:
     def get_entity(self):
         """media_player entity object."""
         return self.hass.states.get(self.entity_id)
+
+    def get_state(self):
+        """media_player entity state."""
+        return self.get_entity().state
 
     def get_platform(self):
         """media_player entity integration platform."""

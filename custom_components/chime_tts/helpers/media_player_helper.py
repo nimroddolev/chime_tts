@@ -311,12 +311,8 @@ class MediaPlayerHelper:
             target_state: str,
             timeout: float = 3.5) -> bool:
         """Wait until the state of a list of media_players equals a target state."""
-        def property(media_player: ChimeTTSMediaPlayer) -> str:
-            entity_id = media_player.entity_id
-            return hass.states.get(entity_id).state
         def condition(media_player: ChimeTTSMediaPlayer) -> bool:
-            p_property = property(media_player)
-            return p_property == target_state
+            return media_player.get_state() == target_state
 
         _LOGGER.debug(" - Waiting until %s media_player%s %s %s...",
                       len(media_players),
@@ -332,12 +328,8 @@ class MediaPlayerHelper:
             target_state: str,
             timeout: float = 3.5) -> bool:
         """Wait until the state of a list of media_players no longer equals a target state."""
-        def property(media_player: ChimeTTSMediaPlayer):
-            entity_id = media_player.entity_id
-            return hass.states.get(entity_id).state
         def condition(media_player: ChimeTTSMediaPlayer):
-            p_property = property(media_player)
-            return p_property != target_state
+            return media_player.get_state() != target_state
 
         _LOGGER.debug(" - Waiting until %s media_player%s %s %s...",
                       len(media_players),
@@ -352,12 +344,8 @@ class MediaPlayerHelper:
                                                              target_volume: str,
                                                              timeout: float = 5) -> bool:
         """Wait for a media_player to have a target volume_level."""
-        def property(media_player: ChimeTTSMediaPlayer) -> float:
-            entity_id = media_player.entity_id
-            return hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
         def condition(media_player: ChimeTTSMediaPlayer) -> bool:
-            p_property = property(media_player)
-            return p_property == target_volume
+            return media_player.get_current_volume_level() == target_volume
 
         _LOGGER.debug(" - Waiting until %s media_player%s volume_level %s %s...",
                       len(media_players),
@@ -384,7 +372,7 @@ class MediaPlayerHelper:
         delay = 0.2
         still_waiting: list[ChimeTTSMediaPlayer] = list(media_players)
         while len(still_waiting) > 0 and timeout > 0:
-            for media_player in still_waiting:
+            for media_player in media_players:
                 if condition(media_player):
                     _LOGGER.debug("   ✔ %s", media_player.entity_id)
                     index = still_waiting.index(media_player)
@@ -394,9 +382,10 @@ class MediaPlayerHelper:
             if len(still_waiting) > 0:
                 await hass.async_add_executor_job(time.sleep, delay)
 
+        # Timeout
         if len(still_waiting) > 0:
             for media_player in still_waiting:
-                _LOGGER.debug("   𝘅 %s - Timed out", media_player.entity_id)
+                _LOGGER.debug("   𝘅 %s - Timed out. Current state: %s", media_player.entity_id, str(media_player.get_state()))
 
         return len(still_waiting) == 0
 
@@ -427,13 +416,12 @@ class MediaPlayerHelper:
         if volume_reached is False:
             for media_player in media_players:
                 entity_id = media_player.entity_id
-                if hass.states.get(entity_id):
-                    volume = round(hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1), 3)
-                    if volume != round(target_volume, 3):
-                        _LOGGER.warning("Timed out. %s's current volume is %s, did not reach target volume: %s",
-                                        entity_id,
-                                        str(volume),
-                                        str(target_volume))
+                volume = round(media_player.get_current_volume_level(), 3)
+                if volume != round(target_volume, 3):
+                    _LOGGER.warning("Timed out. %s's current volume is %s, did not reach target volume: %s",
+                                    entity_id,
+                                    str(volume),
+                                    str(target_volume))
             return False
 
         return True
