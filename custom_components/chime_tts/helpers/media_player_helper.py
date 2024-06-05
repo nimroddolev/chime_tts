@@ -48,7 +48,6 @@ class MediaPlayerHelper:
                                              announce,
                                              fade_audio):
         """Initialize media player entities."""
-
         # Service call was from chime_tts.say_url, so media_players are irrelevant
         if len(entity_ids) == 0:
             return []
@@ -152,7 +151,7 @@ class MediaPlayerHelper:
         return media_players
 
     def get_uniform_target_volume_level(self, entity_ids):
-        """The target volume level (if identical between media_players)."""
+        """Target volume level (if identical between media_players)."""
         uniform_volume_level = -1
         for media_player in self.get_media_players_from_entity_ids(entity_ids):
             media_player_volume = media_player.target_volume_level
@@ -565,7 +564,15 @@ class MediaPlayerHelper:
                 entity_id = media_player.entity_id
                 current_volume = media_player.get_current_volume_level()
                 target_volume = media_player.target_volume_level
-                if target_volume >= 0 and target_volume != current_volume:
+
+                # No action to take
+                if target_volume == -1:
+                    _LOGGER.debug("Cannot set to the volume level for %s to -1", entity_id)
+                elif target_volume == current_volume:
+                    _LOGGER.debug("The volume level for %s is already set to %s", entity_id, str(target_volume))
+
+                # Set volume
+                else:
                     if target_volume - current_volume > 0:
                         _LOGGER.debug("Increasing %s's volume from %s to %s", entity_id, str(current_volume), str(target_volume))
                     else:
