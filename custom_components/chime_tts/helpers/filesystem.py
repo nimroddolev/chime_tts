@@ -307,10 +307,10 @@ class FilesystemHelper:
         hash_value = str(hash_object.hexdigest())
         return hash_value
 
-    def make_folder_path_safe(path):
+    def make_folder_path_safe(self, path):
         """Validate folder path."""
         if not f"{path}".startswith("/"):
-            _path = f"/{path}"
+            path = f"/{path}"
         if not f"{path}".endswith("/"):
             path = f"{path}/"
         path = path.replace("//", "/")
