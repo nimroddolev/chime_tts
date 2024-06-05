@@ -139,6 +139,28 @@ class MediaPlayerHelper:
                 return entity.platform
         return None
 
+    def get_media_players_from_entity_ids(self, entity_ids) -> list[ChimeTTSMediaPlayer]:
+        """List of media_player objects from a list of entity_ids."""
+        media_players: list[ChimeTTSMediaPlayer] = []
+        for entity_id in entity_ids:
+            for media_player in self.media_players:
+                if media_player.entity_id == entity_id:
+                    media_players.append(media_player)
+        return media_players
+
+    def get_uniform_target_volume_level(self, entity_ids):
+        """The target volume level (if identical between media_players)."""
+        uniform_volume_level = -1
+        for media_player in self.get_media_players_from_entity_ids(entity_ids):
+            media_player_volume = media_player.target_volume_level
+            if media_player_volume == -1:
+                continue
+            if uniform_volume_level == -1:
+                uniform_volume_level = media_player_volume
+            elif uniform_volume_level != media_player_volume:
+                return -1
+        return uniform_volume_level
+
     def get_alexa_media_player_count(self, hass: HomeAssistant, entity_ids):
         """Determine whether any included media_players belong to the Alexa Media Player platform."""
         ret_val = 0

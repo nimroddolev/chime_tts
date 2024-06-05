@@ -36,7 +36,7 @@ class ChimeTTSMediaPlayer:
                                   and self.get_entity().attributes.get("media_duration", -1) != 0)
         self.announce_supported = self.get_supported_feature(ATTR_MEDIA_ANNOUNCE)
         self.join_supported = self.get_supported_feature(ATTR_GROUP_MEMBERS)
-        self.set_target_volume_level(target_volume_level)
+        self.target_volume_level = target_volume_level
 
 
     # Service Calls
@@ -93,11 +93,19 @@ class ChimeTTSMediaPlayer:
         """Boolean for whether the media player's volume level should be changed."""
         return self.target_volume_level >= 0 and self.target_volume_level != self.initial_volume_level
 
-    def set_target_volume_level(self, target_volume_level):
+    @property
+    def target_volume_level(self):
+        """Media player's current volume level."""
+        return self._target_volume_level
+
+    @target_volume_level.setter
+    def target_volume_level(self, value):
         """Store the media player's target volume level."""
-        if isinstance(target_volume_level, dict):
-            target_volume_level = target_volume_level.get(self.entity_id, -1.0)
-        self.target_volume_level = target_volume_level if target_volume_level > 0 else -1.0
+        if isinstance(value, dict):
+            value = value.get(self.entity_id, -1.0)
+        self._target_volume_level = value if value > 0 else -1.0
+
+
 
     def get_current_volume_level(self):
         """Meida player's current volume level."""
