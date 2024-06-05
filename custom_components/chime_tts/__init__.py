@@ -1005,7 +1005,7 @@ async def async_play_media(
     announce
 ):
     """Call the media_player.play_media service."""
-    _LOGGER.debug(" *** Pre-Playback Actions *** ")
+    debug_title("Pre-Playback Actions")
 
     # Fade out and pause media players
     await media_player_helper.async_fade_out_and_pause(hass, _data[FADE_TRANSITION_KEY])
@@ -1045,7 +1045,7 @@ async def async_play_media(
 
 def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
     """Prepare the media_player service calls for audio playback."""
-    _LOGGER.debug(" *** Chime TTS playback ***")
+    debug_title("Chime TTS playback")
 
     joined_media_player_entity_id: str = media_player_helper.joined_entity_id
     standard_media_player_entity_ids: list[str] = [entity_id for entity_id in entity_ids if media_player_helper.get_is_standard_media_player(hass, entity_id)]
@@ -1228,7 +1228,7 @@ async def async_post_playback_actions(hass: HomeAssistant,
     if (len(fade_in_media_players) > 0
         or len(set_volume_media_players) > 0
         or (media_player_helper.unjoin_players is True and media_player_helper.joined_entity_id)):
-        _LOGGER.debug(" *** Post-Playback Actions ***")
+        debug_title("Post-Playback Actions")
 
     # Resume previous playback
     await media_player_helper.async_resume_playback(hass, _data[FADE_TRANSITION_KEY])
@@ -1434,3 +1434,12 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
 
     hash_value = filesystem_helper.get_hash_for_string(unique_string)
     return hash_value
+
+def debug_title(title: str = "") -> str:
+    """Write a formatted debug log title string."""
+    if len(title) == 0:
+        return ""
+    stars = "*"*(int(len(title) + 8))
+    _LOGGER.debug(stars)
+    _LOGGER.debug("*** %s ***", title)
+    _LOGGER.debug(stars)
