@@ -21,6 +21,9 @@ from ..const import (
     MEDIA_DIR_DEFAULT,
     TRANSITION_STEP_MS
 )
+from ..config import (
+        SONOS_SNAPSHOT_ENABLED,
+)
 _LOGGER = logging.getLogger(__name__)
 
 class MediaPlayerHelper:
@@ -450,6 +453,8 @@ class MediaPlayerHelper:
 
     async def async_sonos_snapshot(self, hass: HomeAssistant):
         """Take a Sonos snapshot of Sonos media players."""
+        if not SONOS_SNAPSHOT_ENABLED:
+            return
         sonos_media_player_entity_ids: list[str] = [media_player.entity_id for media_player in self.media_players if media_player.platform == SONOS_PLATFORM]
         if len(sonos_media_player_entity_ids) > 0:
             _LOGGER.debug("Taking a Sonos snapshot of %s media player%s", str(len(sonos_media_player_entity_ids)), "" if len(sonos_media_player_entity_ids) == 1 else "s")
@@ -468,6 +473,8 @@ class MediaPlayerHelper:
 
     async def async_sonos_restore(self, hass: HomeAssistant):
         """Restore Sonos media_players from snapshot."""
+        if not SONOS_SNAPSHOT_ENABLED:
+            return
         if self.sonos_restored:
             return
         sonos_media_player_entity_ids: list[str] = [media_player.entity_id for media_player in self.media_players if media_player.platform == SONOS_PLATFORM]
