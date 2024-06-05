@@ -334,7 +334,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
 
     # Prepare default paths
     if hass is not None:
-        _data[ROOT_PATH_KEY] = hass.config.path("").replace("/config/", "")
+        _data[ROOT_PATH_KEY] = filesystem_helper.make_folder_path_safe(hass.config.path("").replace("/config/", ""))
 
     if DEFAULT_TEMP_PATH_KEY not in _data:
         _data[DEFAULT_TEMP_PATH_KEY] = f"{_data[ROOT_PATH_KEY]}{TEMP_PATH_DEFAULT}"
@@ -343,7 +343,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
         _data[DEFAULT_TEMP_CHIMES_PATH_KEY] = f"{_data[ROOT_PATH_KEY]}{TEMP_CHIMES_PATH_DEFAULT}"
 
     if DEFAULT_WWW_PATH_KEY not in _data:
-        _data[DEFAULT_WWW_PATH_KEY] = f"{_data[ROOT_PATH_KEY]}{WWW_PATH_DEFAULT}"
+        _data[DEFAULT_WWW_PATH_KEY] = filesystem_helper.make_folder_path_safe(f"{_data[ROOT_PATH_KEY]}/{WWW_PATH_DEFAULT}")
 
     # Set configurable values
     options = config_entry.options
@@ -360,26 +360,29 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
     # Default audio fade transition duration
     _data[FADE_TRANSITION_KEY] = options.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)
 
-    # Media folder (default local)
+    # Media folder (default: 'local')
     _data[MEDIA_DIR_KEY] = options.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)
 
     # www / local folder path
-    _data[WWW_PATH_KEY] = hass.config.path(
-        options.get(WWW_PATH_KEY, _data.get(DEFAULT_WWW_PATH_KEY, WWW_PATH_DEFAULT))
+    _data[WWW_PATH_KEY] = filesystem_helper.make_folder_path_safe(
+        hass.config.path(
+            options.get(WWW_PATH_KEY, _data.get(DEFAULT_WWW_PATH_KEY, WWW_PATH_DEFAULT))
+        )
     )
-    _data[WWW_PATH_KEY] = (_data.get(WWW_PATH_KEY, "") + "/").replace("//", "/")
 
     # Temp chimes folder path
-    _data[TEMP_CHIMES_PATH_KEY] = hass.config.path(
-        options.get(TEMP_CHIMES_PATH_KEY, _data.get(DEFAULT_TEMP_CHIMES_PATH_KEY, None))
+    _data[TEMP_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(
+        hass.config.path(
+            options.get(TEMP_CHIMES_PATH_KEY, _data.get(DEFAULT_TEMP_CHIMES_PATH_KEY, None))
+        )
     )
-    _data[TEMP_CHIMES_PATH_KEY] = (_data.get(TEMP_CHIMES_PATH_KEY, "") + "/").replace("//", "/")
 
     # Temp folder path
-    _data[TEMP_PATH_KEY] = hass.config.path(
-        options.get(TEMP_PATH_KEY, _data.get(DEFAULT_TEMP_PATH_KEY, None))
+    _data[TEMP_PATH_KEY] = filesystem_helper.make_folder_path_safe(
+        hass.config.path(
+            options.get(TEMP_PATH_KEY, _data.get(DEFAULT_TEMP_PATH_KEY, None))
+        )
     )
-    _data[TEMP_PATH_KEY] = (_data.get(TEMP_PATH_KEY, "") + "/").replace("//", "/")
 
     # Custom chime paths
     _data[MP3_PRESET_CUSTOM_KEY] = {}
