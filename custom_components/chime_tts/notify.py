@@ -1,30 +1,27 @@
 """Chime TTS Notify."""
 
 import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.notify import BaseNotificationService
 
 _LOGGER = logging.getLogger(__name__)
 
-@staticmethod
 async def async_get_service(hass, config, discovery_info=None):
     """Retrieve instance of ChimeTTSNotificationService class."""
     _config = config
     return ChimeTTSNotificationService(hass, config)
 
-@staticmethod
-async def get_service(hass):
-    """Retrieve instance of ChimeTTSNotificationService class."""
-    return ChimeTTSNotificationService(hass.data['chime_tts'])
+def get_service(hass):
+    """Retrieve instance of ChimeTTSNotificationService class synchronously."""
+    return None
 
 class ChimeTTSNotificationService(BaseNotificationService):
     """Chime TTS Notify Service class."""
 
-    _config: ConfigEntry
-
-    def __init__(self, chime_tts_instance, config: ConfigEntry = {}):
+    def __init__(self, hass, config: ConfigEntry):
         """Initialize the Chime TTS Notify Service."""
-        self.chime_tts_instance = chime_tts_instance
+        self.hass = hass
         self._config = config
 
     async def async_send_message(self, message="", **kwargs):
