@@ -445,12 +445,10 @@ async def async_request_tts_audio(
         _LOGGER.warning("No message text provided for TTS audio")
         return None
 
-    # Determine TTS Platform
-    if tts_platform is None or tts_platform == "None" or tts_platform is False or len(tts_platform) <= 1:
-        tts_platform = helpers.get_default_tts_platform(hass, _data[TTS_PLATFORM_KEY])
-
-    if tts_platform == NABU_CASA_CLOUD_TTS_OLD:
-        tts_platform = NABU_CASA_CLOUD_TTS
+    # Verify TTS Platform
+    tts_platform = helpers.get_tts_platform(hass, tts_platform)
+    if tts_platform is False:
+        return None
 
     # Add & validate additional parameters
 
