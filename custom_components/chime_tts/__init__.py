@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 
 from pydub import AudioSegment # type: ignore
+from pydub.exceptions import CouldntDecodeError
 
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_CONTENT_ID,
@@ -535,7 +536,7 @@ async def async_request_tts_audio(
             if file is None:
                 _LOGGER.error("...could not convert TTS bytes to audio")
                 return None
-            audio = AudioSegment.from_file(file)
+            audio = await filesystem_helper.async_load_audio(file)
             if audio is not None:
 
                 # Done
@@ -712,7 +713,9 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     if output_audio is not None:
         initial_save_folder_key = TEMP_PATH_KEY if is_local else WWW_PATH_KEY
         _LOGGER.debug(" - Saving mp3 file to folder: %s...", _data.get(initial_save_folder_key, ""))
-        new_audio_file = filesystem_helper.save_audio_to_folder(output_audio, _data.get(initial_save_folder_key, None))
+        new_audio_file = await filesystem_helper.async_save_audio_to_folder(
+            output_audio,
+            _data.get(initial_save_folder_key, None))
         if new_audio_file is None:
             _LOGGER.debug("   ...error saving file")
             return None
@@ -728,7 +731,14 @@ async def async_get_playback_audio_path(params: dict, options: dict):
             else:
                 _LOGGER.warning("...FFmpeg audio conversion failed. Continuing using the original audio file")
 
-        duration = len(AudioSegment.from_file(new_audio_file)) / 1000.0
+        try:
+            new_audio_segment = await filesystem_helper.async_load_audio(new_audio_file)
+        except CouldntDecodeError:
+            raise ValueError("The file format is not supported or the file is corrupted.")
+        except Exception as e:
+            raise RuntimeError(f"An unexpected error occurred: {e}")
+
+        duration = len(new_audio_segment) / 1000.0
         audio_dict[AUDIO_DURATION_KEY] = duration
         audio_dict[LOCAL_PATH_KEY if is_local else PUBLIC_PATH_KEY] = new_audio_file
         audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None)
@@ -739,7 +749,9 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         for folder_key in [(LOCAL_PATH_KEY if is_local else None), (PUBLIC_PATH_KEY if is_public else None)]:
             if folder_key is not None and audio_dict.get(folder_key, None) is None:
                 _LOGGER.debug(" - Saving generated audio to folder %s ...", _data.get(folder_key, ""))
-                audio_dict[folder_key] = filesystem_helper.save_audio_to_folder(output_audio, _data.get(folder_key, None))
+                audio_dict[folder_key] = await filesystem_helper.async_save_audio_to_folder(
+                    output_audio,
+                    _data.get(folder_key, None))
                 if audio_dict[folder_key] is None:
                     _LOGGER.error("Error saving audio to folder %s...", _data.get(LOCAL_PATH_KEY, ""))
             # Save path to cache
@@ -863,7 +875,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
                 }
                 segment_filepath_hash = get_filename_hash_from_service_data({**segment_params}, {**segment_options})
 
-                tts_audio = None
+                tts_audio: AudioSegment = None
 
                 # Use cached TTS audio
                 if segment_cache is True:
@@ -896,8 +908,9 @@ async def async_process_segments(hass, message, output_audio, params, options):
                         tts_audio_duration = float(len(tts_audio) / 1000.0)
                         if segment_cache is True and audio_dict is None:
                             _LOGGER.debug(" - Saving generated TTS audio to cache...")
-                            tts_audio_full_path = filesystem_helper.save_audio_to_folder(
-                                tts_audio, _data.get(TEMP_PATH_KEY, None))
+                            tts_audio_full_path = await filesystem_helper.async_save_audio_to_folder(
+                                tts_audio,
+                                _data.get(TEMP_PATH_KEY, None))
                             if tts_audio_full_path is not None:
                                 audio_dict = {
                                     LOCAL_PATH_KEY: tts_audio_full_path,
@@ -910,10 +923,10 @@ async def async_process_segments(hass, message, output_audio, params, options):
 
                 # TTS Audio manipulations
                 if tts_audio is not None:
-                    temp_folder =  _data.get(TEMP_PATH_KEY, None)
-                    tts_audio = helpers.change_speed_of_audiosegment(tts_audio, segment_tts_speed, temp_folder)
-                    tts_audio = helpers.change_pitch_of_audiosegment(tts_audio, segment_tts_pitch, temp_folder)
-                    tts_audio = helpers.ffmpeg_convert_from_audio_segment(tts_audio, segment_audio_conversion, temp_folder)
+                    temp_folder: str = _data.get(TEMP_PATH_KEY, None)
+                    tts_audio = await helpers.async_change_speed_of_audiosegment(tts_audio, segment_tts_speed, temp_folder)
+                    tts_audio = await helpers.async_change_pitch_of_audiosegment(tts_audio, segment_tts_pitch, temp_folder)
+                    tts_audio = await helpers.async_ffmpeg_convert_from_audio_segment(tts_audio, segment_audio_conversion, temp_folder)
 
                 # Combine audio
                 if tts_audio is not None:
@@ -967,10 +980,10 @@ async def async_get_audio_from_path(
 
         _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
         try:
-            audio_from_path: AudioSegment = AudioSegment.from_file(filepath)
+            audio_from_path: AudioSegment = await filesystem_helper.async_load_audio(filepath)
             if audio_conversion is not None and len(audio_conversion) > 0:
                 _LOGGER.debug("  - Performing FFmpeg audio conversion of audio file...")
-                audio_from_path = helpers.ffmpeg_convert_from_audio_segment(audio_from_path)
+                audio_from_path = await helpers.async_ffmpeg_convert_from_audio_segment(audio_from_path)
 
             # Remove downloaded file when cache=false
             if cache is False and file_hash is not None:

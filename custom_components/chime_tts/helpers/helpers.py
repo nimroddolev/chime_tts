@@ -383,7 +383,7 @@ class ChimeTTSHelper:
         _LOGGER.error("Chime TTS could not find any TTS platforms installed. Please add at least 1 TTS integration: https://www.home-assistant.io/integrations/#text-to-speech")
         return False
 
-    def ffmpeg_convert_from_audio_segment(self,
+    async def async_ffmpeg_convert_from_audio_segment(self,
                                           audio_segment: AudioSegment = None,
                                           ffmpeg_args: str = "",
                                           folder: str = ""):
@@ -394,9 +394,10 @@ class ChimeTTSHelper:
 
         # Save to temp file
         temp_filename = "temp_segment.mp3"
-        temp_audio_file = filesystem_helper.save_audio_to_folder(audio=audio_segment,
-                                                                 folder=folder,
-                                                                 file_name=temp_filename)
+        temp_audio_file = await filesystem_helper.async_save_audio_to_folder(
+            audio=audio_segment,
+            folder=folder,
+            file_name=temp_filename)
         if not temp_audio_file:
             full_path = f"{folder}/{temp_filename}"
             _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to store audio segment to: %s", full_path)
@@ -410,7 +411,7 @@ class ChimeTTSHelper:
         # Load new AudioSegment from converted file
         else:
             try:
-                ret_val = AudioSegment.from_file(str(converted_audio_file))
+                ret_val = await filesystem_helper.async_load_audio(str(converted_audio_file))
             except Exception as error:
                 _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to load converted audio segment from file: %s. Error: %s",
                                 str(converted_audio_file), error)
@@ -527,7 +528,7 @@ class ChimeTTSHelper:
 
         return ffmpeg_args_string
 
-    def change_speed_of_audiosegment(self, audio_segment: AudioSegment, speed: float = 100.0, temp_folder: str = None):
+    async def async_change_speed_of_audiosegment(self, audio_segment: AudioSegment, speed: float = 100.0, temp_folder: str = None):
         """Change the playback speed of an audio segment."""
         if not audio_segment or speed == 100 or speed < 1 or speed > 500:
             if not audio_segment:
@@ -542,11 +543,12 @@ class ChimeTTSHelper:
 
         ffmpeg_args_string = self.add_atempo_values_to_ffmpeg_args_string(tempo)
 
-        return self.ffmpeg_convert_from_audio_segment(audio_segment=audio_segment,
-                                                      ffmpeg_args=ffmpeg_args_string,
-                                                      folder=temp_folder)
+        return await self.async_ffmpeg_convert_from_audio_segment(
+            audio_segment=audio_segment,
+            ffmpeg_args=ffmpeg_args_string,
+            folder=temp_folder)
 
-    def change_pitch_of_audiosegment(self, audio_segment: AudioSegment, pitch: int = 0, temp_folder: str = None):
+    async def async_change_pitch_of_audiosegment(self, audio_segment: AudioSegment, pitch: int = 0, temp_folder: str = None):
         """Change the pitch of an audio segment."""
         if not audio_segment:
             _LOGGER.warning("Cannot change TTS audio pitch. No audio available")
@@ -566,9 +568,10 @@ class ChimeTTSHelper:
         frame_rate = audio_segment.frame_rate
         ffmpeg_args_string = f"-af asetrate={frame_rate}*{pitch_shift}"
         ffmpeg_args_string = self.add_atempo_values_to_ffmpeg_args_string(tempo_adjustment, ffmpeg_args_string)
-        return self.ffmpeg_convert_from_audio_segment(audio_segment=audio_segment,
-                                                      ffmpeg_args=ffmpeg_args_string,
-                                                      folder=temp_folder)
+        return await self.async_ffmpeg_convert_from_audio_segment(
+            audio_segment=audio_segment,
+            ffmpeg_args=ffmpeg_args_string,
+            folder=temp_folder)
 
     def combine_audio(self,
                       audio_1: AudioSegment,

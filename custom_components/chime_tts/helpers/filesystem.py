@@ -8,6 +8,7 @@ import shutil
 from io import BytesIO
 import re
 import requests
+import asyncio
 from pydub import AudioSegment
 from homeassistant.helpers.network import get_url
 from homeassistant.core import HomeAssistant
@@ -126,7 +127,7 @@ class FilesystemHelper:
         """Local file path string for chime URL in local folder."""
         return folder + ("" if folder.endswith("/") else "/") + re.sub(r'[\/:*?"<>|]', '_', url.replace("https://", "").replace("http://", ""))
 
-    def save_audio_to_folder(self, audio, folder, file_name: str = None):
+    async def async_save_audio_to_folder(self, audio: AudioSegment, folder, file_name: str = None):
         """Save audio to local folder."""
 
         folder_exists = self.create_folder(folder)
@@ -141,7 +142,7 @@ class FilesystemHelper:
                     prefix=folder, suffix=".mp3"
                 ) as temp_obj:
                     audio_full_path = temp_obj.name
-                audio.export(audio_full_path, format="mp3")
+                await self.export_audio(audio, audio_full_path)
             except Exception as error:
                 _LOGGER.warning(
                     "An error occurred when creating the temp mp3 file: %s", error
@@ -154,7 +155,7 @@ class FilesystemHelper:
                 if audio_full_path and isinstance(audio_full_path, str):
                     if os.path.exists(audio_full_path):
                         os.remove(audio_full_path)
-                    audio.export(audio_full_path, format="mp3")
+                    await self.export_audio(audio, audio_full_path)
             except Exception as error:
                 _LOGGER.warning(
                     "An error occurred when creating the mp3 file: %s", error
@@ -199,13 +200,14 @@ class FilesystemHelper:
             _LOGGER.debug("Audio downloaded successfully")
             _, file_extension = os.path.splitext(url)
             try:
-                audio_content = AudioSegment.from_file(BytesIO(response.content),
-                                                       format=file_extension.replace(".", ""))
+                audio_content = await self.async_load_audio(
+                    BytesIO(response.content),
+                    format=file_extension.replace(".", ""))
             except Exception as error:
                 _LOGGER.warning("Error when loading audio from downloaded file: %s", str(error))
                 return None
             if audio_content is not None:
-                audio_file_path = self.save_audio_to_folder(audio=audio_content,
+                audio_file_path = self.async_save_audio_to_folder(audio=audio_content,
                                                             folder=folder,
                                                             file_name=url)
                 audio_duration = float(len(audio_content) / 1000)
@@ -315,3 +317,13 @@ class FilesystemHelper:
             path = f"{path}/"
         path = path.replace("//", "/")
         return path
+
+    ### Offloading to asyncio.to_thread ####
+
+    async def export_audio(self, audio: AudioSegment, audio_full_path: str):
+        """Save AudioSegment to a filepath."""
+        await asyncio.to_thread(audio.export, audio_full_path, format="mp3")
+
+    async def async_load_audio(self, file_path: str):
+        """Load AudioSegment from a filepath."""
+        return await asyncio.to_thread(AudioSegment.from_file, file_path)
