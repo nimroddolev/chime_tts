@@ -25,6 +25,7 @@ from ..const import (
     MICROSOFT_EDGE_TTS,
     MICROSOFT_TTS,
     NABU_CASA_CLOUD_TTS,
+    NABU_CASA_CLOUD_TTS_OLD,
     OPENAI_TTS,
     PICOTTS,
     PIPER,
@@ -263,6 +264,39 @@ class ChimeTTSHelper:
                 return None
         return ffmpeg_args_str
 
+    def get_tts_platform(self, hass, tts_platform_string: str = ""):
+        """TTS platform/entity_id to use for TTS audio."""
+
+        installed_tts_platforms = self.get_installed_tts_platforms(hass)
+
+        # Match for deprecated Nabu Casa platform string
+        if tts_platform_string.lower() == NABU_CASA_CLOUD_TTS_OLD:
+            return NABU_CASA_CLOUD_TTS
+
+        # Match for installed tts platform
+        for tts_provider_n in installed_tts_platforms:
+            if tts_platform_string == tts_provider_n:
+                return tts_provider_n
+
+        # Contains "google" - return alternate Google platform, if available
+        if tts_platform_string.find("google") != -1:
+            # Return alternate Google Translate entity, eg: "tts.google_en_com"
+            if tts_platform_string.startswith("tts."):
+                for tts_provider_n in installed_tts_platforms:
+                    if (tts_provider_n.lower().find("google") != -1
+                        and tts_provider_n.startswith("tts.")):
+                        _LOGGER.warning("The TTS entity '%s' was not found. Using '%s' instead.", tts_platform_string, tts_provider_n)
+                        return tts_provider_n
+            # Return Google Translate, if installed
+            for tts_provider_n in installed_tts_platforms:
+                if tts_provider_n.lower() == GOOGLE_TRANSLATE:
+                    _LOGGER.warning("The TTS platform '%s' was not found. Using '%s' instead.", tts_platform_string, GOOGLE_TRANSLATE)
+                    return GOOGLE_TRANSLATE
+
+        # Return default
+        return self.get_default_tts_platform(hass, tts_platform_string)
+
+
     def get_stripped_tts_platform(self, hass, tts_provider):
         """Validate the TTS platform name."""
         stripped_tts_provider = tts_provider.replace(" ", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "").lower()
@@ -302,8 +336,7 @@ class ChimeTTSHelper:
 
         return tts_provider
 
-
-    def get_installed_tts_platforms(self, hass: HomeAssistant):
+    def get_installed_tts_platforms(self, hass: HomeAssistant) -> list[str]:
         """List of installed tts platforms."""
         # Installed TTS Providers
         tts_providers = list((hass.data["tts_manager"].providers).keys())
@@ -316,9 +349,10 @@ class ChimeTTSHelper:
                 tts_entities.append(str(entity.entity_id))
 
         # TTS Platforms
-        installed_tts_platforms = tts_providers + tts_entities
+        installed_tts_platforms: list[str] = tts_providers + tts_entities
 
         return installed_tts_platforms
+
 
     def get_default_tts_platform(self, hass: HomeAssistant, default_tts_platform: str = ""):
         """User's default TTS platform name."""
@@ -338,13 +372,16 @@ class ChimeTTSHelper:
             if default_tts_platform is None or len(default_tts_platform) == 0:
                 _LOGGER.debug(" - No `tts_platform` parameter provided. Using '%s'", tts_platform)
             else:
-                _LOGGER.warning("The `tts_platform` '%s' does not appear to be installed. Using '%s' instead", default_tts_platform, tts_platform)
+                _LOGGER.warning(
+                    "The TTS %s '%s' was not found. Using '%s' instead",
+                    "entity" if default_tts_platform.startswith("tts.") else "platform",
+                    default_tts_platform,
+                    tts_platform)
             return tts_platform
 
         # No TTS platforms available
-        _LOGGER.warning("Chime TTS could not find any TTS platforms installed. Please add at least 1 TTS integration: https://www.home-assistant.io/integrations/#text-to-speech")
-        return default_tts_platform
-
+        _LOGGER.error("Chime TTS could not find any TTS platforms installed. Please add at least 1 TTS integration: https://www.home-assistant.io/integrations/#text-to-speech")
+        return False
 
     def ffmpeg_convert_from_audio_segment(self,
                                           audio_segment: AudioSegment = None,
@@ -489,7 +526,6 @@ class ChimeTTSHelper:
                 ffmpeg_args_string += f",atempo={tempo_n}"
 
         return ffmpeg_args_string
-
 
     def change_speed_of_audiosegment(self, audio_segment: AudioSegment, speed: float = 100.0, temp_folder: str = None):
         """Change the playback speed of an audio segment."""

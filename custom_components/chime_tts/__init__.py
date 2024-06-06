@@ -18,7 +18,7 @@ from homeassistant.components.media_player.const import (
 
 from hass_nabucasa import voice
 from .helpers.helpers import ChimeTTSHelper
-from .helpers.media_player_helper import MediaPlayerHelper
+from .helpers.media_player_helper import (MediaPlayerHelper, ChimeTTSMediaPlayer)
 from .helpers.filesystem import FilesystemHelper
 from .queue_manager import ChimeTTSQueueManager
 from .config_flow import ChimeTTSOptionsFlowHandler
@@ -60,6 +60,8 @@ from .const import (
     WWW_PATH_DEFAULT,
     MEDIA_DIR_KEY,
     MEDIA_DIR_DEFAULT,
+    ALEXA_MEDIA_PLAYER_PLATFORM,
+    SONOS_PLATFORM,
     MP3_PRESET_CUSTOM_PREFIX,
     MP3_PRESET_CUSTOM_KEY,
     QUEUE_TIMEOUT_KEY,
@@ -360,7 +362,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
 
     # Prepare default paths
     if hass is not None:
-        _data[ROOT_PATH_KEY] = hass.config.path("").replace("/config/", "")
+        _data[ROOT_PATH_KEY] = filesystem_helper.make_folder_path_safe(hass.config.path("").replace("/config/", ""))
 
     if DEFAULT_TEMP_PATH_KEY not in _data:
         _data[DEFAULT_TEMP_PATH_KEY] = f"{_data[ROOT_PATH_KEY]}{TEMP_PATH_DEFAULT}"
@@ -369,7 +371,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
         _data[DEFAULT_TEMP_CHIMES_PATH_KEY] = f"{_data[ROOT_PATH_KEY]}{TEMP_CHIMES_PATH_DEFAULT}"
 
     if DEFAULT_WWW_PATH_KEY not in _data:
-        _data[DEFAULT_WWW_PATH_KEY] = f"{_data[ROOT_PATH_KEY]}{WWW_PATH_DEFAULT}"
+        _data[DEFAULT_WWW_PATH_KEY] = filesystem_helper.make_folder_path_safe(f"{_data[ROOT_PATH_KEY]}/{WWW_PATH_DEFAULT}")
 
     # Set configurable values
     options = config_entry.options
@@ -386,26 +388,29 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
     # Default audio fade transition duration
     _data[FADE_TRANSITION_KEY] = options.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)
 
-    # Media folder (default local)
+    # Media folder (default: 'local')
     _data[MEDIA_DIR_KEY] = options.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)
 
     # www / local folder path
-    _data[WWW_PATH_KEY] = hass.config.path(
-        options.get(WWW_PATH_KEY, _data.get(DEFAULT_WWW_PATH_KEY, WWW_PATH_DEFAULT))
+    _data[WWW_PATH_KEY] = filesystem_helper.make_folder_path_safe(
+        hass.config.path(
+            options.get(WWW_PATH_KEY, _data.get(DEFAULT_WWW_PATH_KEY, WWW_PATH_DEFAULT))
+        )
     )
-    _data[WWW_PATH_KEY] = (_data.get(WWW_PATH_KEY, "") + "/").replace("//", "/")
 
     # Temp chimes folder path
-    _data[TEMP_CHIMES_PATH_KEY] = hass.config.path(
-        options.get(TEMP_CHIMES_PATH_KEY, _data.get(DEFAULT_TEMP_CHIMES_PATH_KEY, None))
+    _data[TEMP_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(
+        hass.config.path(
+            options.get(TEMP_CHIMES_PATH_KEY, _data.get(DEFAULT_TEMP_CHIMES_PATH_KEY, None))
+        )
     )
-    _data[TEMP_CHIMES_PATH_KEY] = (_data.get(TEMP_CHIMES_PATH_KEY, "") + "/").replace("//", "/")
 
     # Temp folder path
-    _data[TEMP_PATH_KEY] = hass.config.path(
-        options.get(TEMP_PATH_KEY, _data.get(DEFAULT_TEMP_PATH_KEY, None))
+    _data[TEMP_PATH_KEY] = filesystem_helper.make_folder_path_safe(
+        hass.config.path(
+            options.get(TEMP_PATH_KEY, _data.get(DEFAULT_TEMP_PATH_KEY, None))
+        )
     )
-    _data[TEMP_PATH_KEY] = (_data.get(TEMP_PATH_KEY, "") + "/").replace("//", "/")
 
     # Custom chime paths
     _data[MP3_PRESET_CUSTOM_KEY] = {}
@@ -466,12 +471,10 @@ async def async_request_tts_audio(
         _LOGGER.warning("No message text provided for TTS audio")
         return None
 
-    # Determine TTS Platform
-    if tts_platform is None or tts_platform == "None" or tts_platform is False or len(tts_platform) <= 1:
-        tts_platform = helpers.get_default_tts_platform(hass, _data[TTS_PLATFORM_KEY])
-
-    if tts_platform == NABU_CASA_CLOUD_TTS_OLD:
-        tts_platform = NABU_CASA_CLOUD_TTS
+    # Verify TTS Platform
+    tts_platform = helpers.get_tts_platform(hass, tts_platform)
+    if tts_platform is False:
+        return None
 
     # Add & validate additional parameters
 
@@ -1026,7 +1029,7 @@ async def async_play_media(
     announce
 ):
     """Call the media_player.play_media service."""
-    _LOGGER.debug(" *** Pre-Playback Actions *** ")
+    debug_title("Pre-Playback Actions")
 
     # Fade out and pause media players
     await media_player_helper.async_fade_out_and_pause(hass, _data[FADE_TRANSITION_KEY])
@@ -1034,7 +1037,7 @@ async def async_play_media(
     # Snapshot Sonos media players
     await media_player_helper.async_sonos_snapshot(hass)
 
-    # Set media_players' target volume_level for Chime TTS announcement
+    # Set (immediately) media_players' target volume_level for Chime TTS announcement
     await media_player_helper.async_set_volume_for_media_players(
         hass=hass,
         media_players=media_player_helper.get_set_volume_media_players(),
@@ -1043,7 +1046,7 @@ async def async_play_media(
     )
 
     # Join media players
-    _data["joined_entity_id"] = await media_player_helper.async_join_media_players(hass)
+    await media_player_helper.async_join_media_players(hass)
 
     # Prepare service call data
     service_data = {}
@@ -1066,35 +1069,42 @@ async def async_play_media(
 
 def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
     """Prepare the media_player service calls for audio playback."""
-    _LOGGER.debug(" *** Chime TTS playback ***")
+    debug_title("Chime TTS playback")
 
-    joined_media_player_entity_id = _data["joined_entity_id"]
-    standard_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_standard_media_player(hass, entity_id)]
-    alexa_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_alexa(hass, entity_id)]
-    sonos_media_player_entity_ids = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_sonos(hass, entity_id)]
+    joined_media_player_entity_id: str = media_player_helper.joined_entity_id
+    standard_media_player_entity_ids: list[str] = [entity_id for entity_id in entity_ids if media_player_helper.get_is_standard_media_player(hass, entity_id)]
+    alexa_media_player_entity_ids: list[str] = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_alexa(hass, entity_id)]
+    sonos_media_player_entity_ids: list[str] = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_sonos(hass, entity_id)]
 
-    # Remove any joined speaker group media_players from the media_player lists
-    if joined_media_player_entity_id:
+    # Remove speaker group media_players from the media_player lists
+    if joined_media_player_entity_id and len(joined_media_player_entity_id) > 0:
         joined_media_player_entity_ids = media_player_helper.joined_media_player_entity_ids
         for array in [standard_media_player_entity_ids, alexa_media_player_entity_ids, sonos_media_player_entity_ids]:
             for media_player_n in joined_media_player_entity_ids:
                 while media_player_n in array:
                     array.remove(media_player_n)
+        # Make sure the speaker group leader is in the appropriate media player list
+        if joined_media_player_entity_id not in (standard_media_player_entity_ids + sonos_media_player_entity_ids + alexa_media_player_entity_ids):
+            if media_player_helper.get_media_player_platform() == SONOS_PLATFORM:
+                sonos_media_player_entity_ids.append(joined_media_player_entity_id)
+            elif media_player_helper.get_media_player_platform() == ALEXA_MEDIA_PLAYER_PLATFORM:
+                alexa_media_player_entity_ids.append(joined_media_player_entity_id)
+            else:
+                standard_media_player_entity_ids.append(joined_media_player_entity_id)
 
+    # Prepare service call/s for media_players
     service_calls = []
 
-    # Prepare service call for standard & Sonos media_players
-    regular_media_media_ids = standard_media_player_entity_ids + sonos_media_player_entity_ids
-    if len(regular_media_media_ids) > 0:
-    # if len(standard_media_player_entity_ids) > 0:
+    # Standard media_players
+    if len(standard_media_player_entity_ids) > 0:
         if service_data[ATTR_MEDIA_CONTENT_ID] is None:
             _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
         else:
             _LOGGER.debug(
-                "   %s media player%s detected:",
-                len(regular_media_media_ids),
-                ("s" if len(regular_media_media_ids) != 1 else ""))
-            for entity_id in regular_media_media_ids:
+                "   %s Regular media player%s detected:",
+                len(standard_media_player_entity_ids),
+                ("s" if len(standard_media_player_entity_ids) != 1 else ""))
+            for entity_id in standard_media_player_entity_ids:
                 _LOGGER.debug("     - %s", entity_id)
             service_data[CONF_ENTITY_ID] = standard_media_player_entity_ids
             service_calls.append({
@@ -1105,7 +1115,45 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
                 "result": True
             })
 
-    # Prepare service call for Alexa media_players
+    # Sonos media_players
+    if len(sonos_media_player_entity_ids) > 0:
+        if service_data[ATTR_MEDIA_CONTENT_ID] is None:
+            _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
+        else:
+            _LOGGER.debug(
+                "   %s Sonos media player%s detected:",
+                len(sonos_media_player_entity_ids),
+                ("s" if len(sonos_media_player_entity_ids) != 1 else ""))
+            for entity_id in sonos_media_player_entity_ids:
+                _LOGGER.debug("     - %s", entity_id)
+
+            # If all media_players have same target volume level
+            uniform_target_volume = media_player_helper.get_uniform_target_volume_level(sonos_media_player_entity_ids)
+            if uniform_target_volume != -1:
+                service_data[CONF_ENTITY_ID] = sonos_media_player_entity_ids
+                service_data["extra"] = {"volume": uniform_target_volume}
+                service_calls.append({
+                    "domain": "media_player",
+                    "service": SERVICE_PLAY_MEDIA,
+                    "service_data": service_data,
+                    "blocking": True,
+                    "result": True
+                })
+            else:
+                # Else 1 media_player.play_media service call per Sonos media_player, with the media_player's target volume level
+                for media_player in media_player_helper.get_media_players_from_entity_ids(sonos_media_player_entity_ids):
+                    individual_service_data = service_data.copy()
+                    individual_service_data[CONF_ENTITY_ID] = media_player.entity_id
+                    individual_service_data["extra"] = {"volume": media_player.target_volume_level}
+                    service_calls.append({
+                        "domain": "media_player",
+                        "service": SERVICE_PLAY_MEDIA,
+                        "service_data": individual_service_data,
+                        "blocking": True,
+                        "result": True
+                    })
+
+    # Alexa media_players
     if len(alexa_media_player_entity_ids) > 0:
         _LOGGER.debug("   %s Alexa media player%s detected:",
                       len(alexa_media_player_entity_ids),
@@ -1126,57 +1174,6 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
             })
         else:
             _LOGGER.warning("Unable to play audio on Alexa device. No public URL found.")
-
-    # # Prepare service call for Sonos media_players
-    # if len(sonos_media_player_entity_ids) > 0:
-    #     if service_data[ATTR_MEDIA_CONTENT_ID] is None:
-    #         _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
-    #     else:
-    #         _LOGGER.debug("   %s Sonos media player%s detected:",
-    #                       len(sonos_media_player_entity_ids),
-    #                       ("s" if len(sonos_media_player_entity_ids) != 1 else ""))
-    #         # Determine whether each Sonos' volume level should be the same or media_player-specific
-    #         is_uniform_level = True
-    #         last_volume = -1
-    #         volume_map = {}
-    #         for entity_id in sonos_media_player_entity_ids:
-    #             _LOGGER.debug("     - %s", entity_id)
-    #             if is_uniform_level:
-    #                 p_volume = media_player_helper.get_media_player_target_volume(entity_id)
-    #                 volume_map[entity_id] = p_volume
-    #                 if last_volume != p_volume and p_volume != -1:
-    #                     is_uniform_level = False
-    #                     break
-
-    #         # Uniform target volume: Add a single service call for all Sonos media_players
-    #         if is_uniform_level:
-    #             service_data[CONF_ENTITY_ID] = sonos_media_player_entity_ids
-    #             if last_volume != -1:
-    #                 service_data["extra"] = {
-    #                     "volume": last_volume
-    #                 }
-    #             service_calls.append({
-    #                 "domain": "media_player",
-    #                 "service": SERVICE_PLAY_MEDIA,
-    #                 "service_data": service_data,
-    #                 "blocking": True,
-    #                 "result": True
-    #             })
-
-    #         # Different target volumes: Add 1 service call for each Sonos media_player
-    #         for key, value in volume_map.items():
-    #             service_data[CONF_ENTITY_ID] = [key]
-    #             if value != -1:
-    #                 service_data["extra"] = {
-    #                     "volume": value
-    #             }
-    #             service_calls.append({
-    #                 "domain": "media_player",
-    #                 "service": SERVICE_PLAY_MEDIA,
-    #                 "service_data": service_data,
-    #                 "blocking": True,
-    #                 "result": True
-    #             })
 
     return service_calls
 
@@ -1248,14 +1245,14 @@ async def async_post_playback_actions(hass: HomeAssistant,
     if not await media_player_helper.async_wait_until_media_players_state_not(hass, playing_media_player_dicts, "playing"):
         _LOGGER.debug(" - Timed out waiting for playback to complete")
 
-    fade_in_media_players = media_player_helper.get_fade_in_out_media_players()
-    set_volume_media_players = media_player_helper.get_set_volume_media_players()
+    fade_in_media_players: list[ChimeTTSMediaPlayer] = media_player_helper.get_fade_in_out_media_players()
+    set_volume_media_players: list[ChimeTTSMediaPlayer] = media_player_helper.get_set_volume_media_players()
 
     # Write to log if post-playback actions are to be performed
     if (len(fade_in_media_players) > 0
         or len(set_volume_media_players) > 0
         or (media_player_helper.unjoin_players is True and media_player_helper.joined_entity_id)):
-        _LOGGER.debug(" *** Post-Playback Actions ***")
+        debug_title("Post-Playback Actions")
 
     # Resume previous playback
     await media_player_helper.async_resume_playback(hass, _data[FADE_TRANSITION_KEY])
@@ -1461,3 +1458,12 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
 
     hash_value = filesystem_helper.get_hash_for_string(unique_string)
     return hash_value
+
+def debug_title(title: str = "") -> str:
+    """Write a formatted debug log title string."""
+    if len(title) == 0:
+        return ""
+    stars = "*"*(int(len(title) + 8))
+    _LOGGER.debug(stars)
+    _LOGGER.debug("*** %s ***", title)
+    _LOGGER.debug(stars)

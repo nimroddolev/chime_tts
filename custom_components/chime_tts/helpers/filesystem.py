@@ -306,3 +306,12 @@ class FilesystemHelper:
         hash_object.update(string.encode("utf-8"))
         hash_value = str(hash_object.hexdigest())
         return hash_value
+
+    def make_folder_path_safe(self, path):
+        """Validate folder path."""
+        if not f"{path}".startswith("/"):
+            path = f"/{path}"
+        if not f"{path}".endswith("/"):
+            path = f"{path}/"
+        path = path.replace("//", "/")
+        return path
