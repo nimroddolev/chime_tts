@@ -265,7 +265,7 @@ class ChimeTTSHelper:
         return ffmpeg_args_str
 
     def get_tts_platform(self, hass, tts_platform_string: str = ""):
-        """The TTS platform/entity_id to use for TTS audio."""
+        """TTS platform/entity_id to use for TTS audio."""
 
         installed_tts_platforms = self.get_installed_tts_platforms(hass)
 
