@@ -106,6 +106,7 @@
 }
 
 .mergeContainer {
+  position: relative;
   min-width: 440px;
 }
 
