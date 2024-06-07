@@ -313,10 +313,11 @@ class MediaPlayerHelper:
                     is_media_player_resumed = True
                 except Exception as error:
                     _LOGGER.warning("Unable to resume playback: %s", error)
+                    is_media_player_resumed = False
 
                 for entity_id in resume_entity_ids:
                     is_media_player_resumed = is_media_player_resumed and hass.states.get(entity_id).state == "playing"
-                if not is_media_player_resumed:
+                if is_media_player_resumed is False:
                     await hass.async_add_executor_job(time.sleep, delay_s)
                 retry_duration = retry_duration - delay_s
 
