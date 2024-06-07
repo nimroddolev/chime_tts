@@ -122,6 +122,7 @@ class MediaPlayerHelper:
             if (media_player not in self.get_fade_in_out_media_players()
                 and media_player.target_volume_level not in [-1, media_player.initial_volume_level]
                 and media_player.platform != SPOTIFY_PLATFORM
+                and not (media_player.platform == SONOS_PLATFORM and self.announce)
             ):
                 set_volume_media_players.append(media_player)
         return set_volume_media_players
@@ -387,17 +388,12 @@ class MediaPlayerHelper:
         # Validation
         if (hass is None or media_players is None or len(media_players) == 0 or condition is None):
             return False
-        for media_player in media_players:
-            entity_id = media_player.entity_id
-            if not hass.states.get(str(entity_id)):
-                _LOGGER.warning("Invalid entity_id: %s", str(entity_id))
-                return False
 
         delay = 0.2
         still_waiting: list[ChimeTTSMediaPlayer] = list(media_players)
         while len(still_waiting) > 0 and timeout > 0:
             for media_player in media_players:
-                if condition(media_player):
+                if condition(media_player) and media_player in still_waiting:
                     _LOGGER.debug("   ✔ %s", media_player.entity_id)
                     index = still_waiting.index(media_player)
                     del still_waiting[index]

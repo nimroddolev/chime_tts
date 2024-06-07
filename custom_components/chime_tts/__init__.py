@@ -1225,11 +1225,11 @@ async def async_post_playback_actions(hass: HomeAssistant,
     await hass.async_add_executor_job(time.sleep, total_delay_s)
 
     # Wait for playback to end on all media_players
-    playing_media_player_dicts = []
+    playing_media_players: list[ChimeTTSMediaPlayer] = []
     for media_player in media_players_array:
-        if media_player.platform != SPOTIFY_PLATFORM:
-            playing_media_player_dicts.append(media_player)
-    if not await media_player_helper.async_wait_until_media_players_state_not(hass, playing_media_player_dicts, "playing"):
+        if not(media_player_helper.announce and media_player.platform == SPOTIFY_PLATFORM):
+            playing_media_players.append(media_player)
+    if not await media_player_helper.async_wait_until_media_players_state_not(hass, playing_media_players, "playing"):
         _LOGGER.debug(" - Timed out waiting for playback to complete")
 
     fade_in_media_players: list[ChimeTTSMediaPlayer] = media_player_helper.get_fade_in_out_media_players()
