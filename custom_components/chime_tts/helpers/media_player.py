@@ -105,8 +105,6 @@ class ChimeTTSMediaPlayer:
             value = value.get(self.entity_id, -1.0)
         self._target_volume_level = value if value > 0 else -1.0
 
-
-
     def get_current_volume_level(self):
-        """Meida player's current volume level."""
+        """Media player's current volume level."""
         return float(self.get_entity().attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1.0))

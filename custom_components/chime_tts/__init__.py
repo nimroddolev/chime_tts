@@ -246,7 +246,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
 
     return True
 
-async def async_prepare_media(hass: HomeAssistant, params, options, media_players_array, is_say_url, start_time):
+async def async_prepare_media(hass: HomeAssistant, params, options, media_players_array: list[ChimeTTSMediaPlayer], is_say_url, start_time):
     """Prepare and play media."""
     # Create audio file to play on media player
     local_path = None
@@ -1214,7 +1214,7 @@ async def async_fire_media_service_calls(hass: HomeAssistant, media_service_call
 async def async_post_playback_actions(hass: HomeAssistant,
                                       audio_duration: float,
                                       final_delay: float,
-                                      media_players_array: list):
+                                      media_players_array: list[ChimeTTSMediaPlayer]):
     """Run post playback actions."""
 
     sonos_restored = False
