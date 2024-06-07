@@ -1242,13 +1242,16 @@ async def async_post_playback_actions(hass: HomeAssistant,
         debug_title("Post-Playback Actions")
 
     # Resume previous playback
-    await media_player_helper.async_resume_playback(hass, _data[FADE_TRANSITION_KEY])
+    await media_player_helper.async_resume_playback(
+        hass,
+        _data[FADE_TRANSITION_KEY])
 
     # Reset volume
-    await media_player_helper.async_set_volume_for_media_players(hass=hass,
-                                                                 media_players=set_volume_media_players,
-                                                                 volume_key="initial_volume_level",
-                                                                 fade_duration=0)
+    await media_player_helper.async_set_volume_for_media_players(
+        hass=hass,
+        media_players=set_volume_media_players,
+        volume_key="initial_volume_level",
+        fade_duration=0)
 
     # Unjoin entity_ids
     await media_player_helper.async_unjoin_media_players(hass)

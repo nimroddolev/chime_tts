@@ -503,6 +503,7 @@ class MediaPlayerHelper:
         delay_s = float(fade_duration / fade_steps)
         volume_steps = {}
 
+        # Fade to new volume
         if fade_steps > 1:
             for step in range(0, fade_steps):
                 for media_player in media_players:
@@ -555,11 +556,15 @@ class MediaPlayerHelper:
                         _LOGGER.warning("Unable to fade %s's volume to %s: %s", entity_id, str(new_volume), error)
                 if step != fade_steps-1:
                     await hass.async_add_executor_job(time.sleep, delay_s)
+        # Apply new volume
         else:
             for media_player in media_players:
                 entity_id = media_player.entity_id
                 current_volume = media_player.get_current_volume_level()
-                target_volume = media_player.target_volume_level
+                if volume_key == "target_volume_level":
+                    target_volume = media_player.target_volume_level
+                elif volume_key == "initial_volume_level":
+                    target_volume = media_player.initial_volume_level
 
                 # No action to take
                 if target_volume == -1:
