@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 import subprocess
 import shutil
 import yaml
@@ -153,9 +154,16 @@ class ChimeTTSHelper:
 
         return options
 
-    def parse_message(self, message_string):
+    def remove_niqqud(self, message_text: str):
+        """Replace Hebrew niqqud characters with non-voweled characters."""
+        # Unicode range for Hebrew niqqud is \u0591 to \u05C7
+        niqqud_pattern = re.compile(r'[\u0591-\u05C7]')
+        cleaned_text = niqqud_pattern.sub('', message_text)
+        return cleaned_text
+
+    def parse_message(self, message_string: str):
         """Parse the message string/YAML object into segments dictionary."""
-        message_string = str(message_string)
+        message_string = self.remove_niqqud(message_string)
         segments = []
         if len(message_string) == 0 or message_string == "None":
             return []
