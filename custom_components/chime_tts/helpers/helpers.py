@@ -105,12 +105,14 @@ class ChimeTTSHelper:
         for key, value in params.items():
             if value is not None and value != "" and key not in ["hass"]:
                 p_key = "audio_conversion" if key == "ffmpeg_args" else key
-                if isinstance(value, list) and ((p_key != "audio_conversion" and len(value) > 1) or (p_key == "media_players_array" and len(value) > 0)):
+                if isinstance(value, list) and ((p_key != "audio_conversion"
+                                                 and len(value) > 1)
+                                                 or (p_key == "media_players_array" and len(value) > 0)):
                     _LOGGER.debug(" * %s:", p_key)
                     for i in range(0, len(value)):
                         if isinstance(value[i], ChimeTTSMediaPlayer):
                             media_player_i = value[i]
-                            _LOGGER.debug("   - entity_id: %s", str(media_player_i.entity_id))
+                            _LOGGER.debug("   - %s: entity_id: %s", str(i), str(media_player_i.entity_id))
                             _LOGGER.debug("     platform: %s", str(media_player_i.platform))
                             _LOGGER.debug("     initial volume: %s", str(media_player_i.initial_volume_level))
                             _LOGGER.debug("     target volume: %s", str(media_player_i.target_volume_level))

@@ -72,7 +72,9 @@ class MediaPlayerHelper:
 
         return self.media_players
 
-    async def async_get_media_player_object(self, hass: HomeAssistant, entity_id, target_volume_level):
+    async def async_get_media_player_object(self,
+                                            hass: HomeAssistant,
+                                            entity_id, target_volume_level):
         """Create a Chime TTS media player object from a given entity_id."""
 
         if (hass is None
@@ -80,9 +82,10 @@ class MediaPlayerHelper:
             or hass.states.get(entity_id) is None):
             return None
 
-        return ChimeTTSMediaPlayer(hass=hass,
-                                  entity_id=entity_id,
-                                  target_volume_level=target_volume_level)
+        return ChimeTTSMediaPlayer(
+            hass=hass,
+            entity_id=entity_id,
+            target_volume_level=target_volume_level)
 
     def parse_entity_ids(self, data, hass) -> list[str]:
         """Parse media_player entity_ids into list object."""
@@ -254,10 +257,12 @@ class MediaPlayerHelper:
                 _LOGGER.warning("Unable to pause media player%s: %s", ("" if len(pause_entity_ids) == 1 else "s"), str(error))
 
             # Wait until media_players are actually paused
-            await self.async_wait_until_media_players_state_is(hass=hass,
-                                                               media_players=fade_in_out_media_players,
-                                                               target_state="paused",
-                                                               timeout=1.5)
+            await self.async_wait_until_media_players_state_is(
+                hass=hass,
+                media_players=fade_in_out_media_players,
+                target_state="paused",
+                timeout=1.5
+            )
 
     async def async_resume_playback(self, hass, fade_duration: float):
         """Resume paused media players after Chime TTS playback is completed."""
