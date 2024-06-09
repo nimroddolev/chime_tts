@@ -317,36 +317,41 @@ class MediaPlayerHelper:
                         str(len(resume_entity_ids)),
                         ("" if len(resume_entity_ids) == 1 else "s"))
             retry_duration = 3
-            delay_s = 0.2
-            is_media_player_resumed = False
-            while not is_media_player_resumed and retry_duration > 0:
+            delay_s = 0.25
+            paused_media_players = resume_entity_ids.copy()
+            while len(paused_media_players) > 0 and retry_duration > 0:
                 try:
                     await hass.services.async_call(
                         domain="media_player",
                         service="media_play",
-                        service_data={CONF_ENTITY_ID: resume_entity_ids},
+                        service_data={CONF_ENTITY_ID: paused_media_players},
                         blocking=True,
                     )
-                    is_media_player_resumed = True
                 except Exception as error:
-                    _LOGGER.warning("Unable to resume playback: %s", error)
-                    is_media_player_resumed = False
+                    _LOGGER.warning("media_player.play_media failed: %s", error)
 
-                for entity_id in resume_entity_ids:
-                    is_media_player_resumed = is_media_player_resumed and hass.states.get(entity_id).state == "playing"
-                if is_media_player_resumed is False:
+                still_paused_media_players = []
+                for entity_id in paused_media_players:
+                    if hass.states.get(entity_id).state != "playing":
+                        still_paused_media_players.append(entity_id)
+                    else:
+                        _LOGGER.debug("     - ✔️ %s", entity_id)
+                paused_media_players = still_paused_media_players
+
+                if len(paused_media_players) > 0:
                     await hass.async_add_executor_job(time.sleep, delay_s)
                 retry_duration = retry_duration - delay_s
 
-            if is_media_player_resumed is False:
+            for entity_id in paused_media_players:
                 _LOGGER.warning("Failed to resume playback on %s", entity_id)
+                _LOGGER.debug("     - 𝘅 %s - timed out", entity_id)
 
             # 4. Fade in all media players at the same time
             await self.async_set_volume_for_media_players(hass=hass,
                                                           media_players=self.get_fade_in_out_media_players(),
                                                           volume_key="initial_volume_level",
                                                           fade_duration=fade_duration)
-    ######
+
     async def async_wait_until_media_players_state_is(
             self,
             hass: HomeAssistant,
