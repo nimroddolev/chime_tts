@@ -256,7 +256,7 @@ class MediaPlayerHelper:
             except Exception as error:
                 _LOGGER.warning("Unable to pause media player%s: %s", ("" if len(pause_entity_ids) == 1 else "s"), str(error))
 
-            # Wait until media_players are actually paused
+            # Wait until media_players' state = paused
             await self.async_wait_until_media_players_state_is(
                 hass=hass,
                 media_players=fade_in_out_media_players,
@@ -264,12 +264,16 @@ class MediaPlayerHelper:
                 timeout=1.5
             )
             
-            # Set media players to target volume level
+            # Set media players to target volume level for Chime TTS Playback
+            playback_media_players = []
+            for media_player in fade_in_out_media_players:
+                if media_player.platform != SPOTIFY_PLATFORM:
+                    playback_media_players.append(media_player)
             await self.async_set_volume_for_media_players(
                 hass=hass,
-                media_players=fade_in_out_media_players,
+                media_players=playback_media_players,
                 volume_key="target_volume_level",
-                fade_duration=fade_duration
+                fade_duration=0
             )
 
     async def async_resume_playback(self, hass, fade_duration: float):
