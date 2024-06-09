@@ -263,6 +263,14 @@ class MediaPlayerHelper:
                 target_state="paused",
                 timeout=1.5
             )
+            
+            # Set media players to target volume level
+            await self.async_set_volume_for_media_players(
+                hass=hass,
+                media_players=fade_in_out_media_players,
+                volume_key="target_volume_level",
+                fade_duration=fade_duration
+            )
 
     async def async_resume_playback(self, hass, fade_duration: float):
         """Resume paused media players after Chime TTS playback is completed."""
