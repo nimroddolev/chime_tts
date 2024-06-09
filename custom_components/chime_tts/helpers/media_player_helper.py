@@ -391,13 +391,16 @@ class MediaPlayerHelper:
             return False
 
         delay = 0.2
-        still_waiting: list[ChimeTTSMediaPlayer] = list(media_players)
+        still_waiting: list[ChimeTTSMediaPlayer] = media_players.copy()
         while len(still_waiting) > 0 and timeout > 0:
             for media_player in media_players:
                 if condition(media_player) and media_player in still_waiting:
                     _LOGGER.debug("   ✔ %s", media_player.entity_id)
                     index = still_waiting.index(media_player)
-                    del still_waiting[index]
+                    try:
+                        del still_waiting[index]
+                    except Exception as error:
+                        _LOGGER.error("Error updating media player %s's state: %s", media_player.entity_id, error)
             timeout = timeout - delay
 
             if len(still_waiting) > 0:
