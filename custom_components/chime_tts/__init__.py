@@ -1217,7 +1217,6 @@ async def async_post_playback_actions(hass: HomeAssistant,
                                       media_players_array: list[ChimeTTSMediaPlayer]):
     """Run post playback actions."""
 
-    sonos_restored = False
 
     # Wait the audio playback duration
     total_delay_s = round(audio_duration + ((final_delay/1000) if final_delay > 0 else 0),3)
@@ -1257,8 +1256,7 @@ async def async_post_playback_actions(hass: HomeAssistant,
     await media_player_helper.async_unjoin_media_players(hass)
 
     # Restore from Sonos snapshot
-    if sonos_restored is False:
-        await media_player_helper.async_sonos_restore(hass)
+    await media_player_helper.async_sonos_restore(hass)
 
 ################################
 ### Storage Helper Functions ###

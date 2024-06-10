@@ -494,10 +494,9 @@ class MediaPlayerHelper:
 
     async def async_sonos_restore(self, hass: HomeAssistant):
         """Restore Sonos media_players from snapshot."""
-        if not SONOS_SNAPSHOT_ENABLED:
+        if not SONOS_SNAPSHOT_ENABLED or self.sonos_restored:
             return
-        if self.sonos_restored:
-            return
+
         sonos_media_player_entity_ids: list[str] = [media_player.entity_id for media_player in self.media_players if media_player.platform == SONOS_PLATFORM]
         if len(sonos_media_player_entity_ids) > 0:
             _LOGGER.debug("Restoring %s Sonos media player%s from snapshot", str(len(sonos_media_player_entity_ids)), "" if len(sonos_media_player_entity_ids) == 1 else "s")
