@@ -1072,9 +1072,9 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
                     array.remove(media_player_n)
         # Make sure the speaker group leader is in the appropriate media player list
         if joined_media_player_entity_id not in (standard_media_player_entity_ids + sonos_media_player_entity_ids + alexa_media_player_entity_ids):
-            if media_player_helper.get_media_player_platform() == SONOS_PLATFORM:
+            if media_player_helper.get_media_player_platform(hass, joined_media_player_entity_id) == SONOS_PLATFORM:
                 sonos_media_player_entity_ids.append(joined_media_player_entity_id)
-            elif media_player_helper.get_media_player_platform() == ALEXA_MEDIA_PLAYER_PLATFORM:
+            elif media_player_helper.get_media_player_platform(hass, joined_media_player_entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM:
                 alexa_media_player_entity_ids.append(joined_media_player_entity_id)
             else:
                 standard_media_player_entity_ids.append(joined_media_player_entity_id)
