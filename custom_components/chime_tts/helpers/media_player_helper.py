@@ -562,7 +562,7 @@ class MediaPlayerHelper:
                                     str(target_volume),
                                     str(fade_duration))
                         volume_steps[media_player.entity_id] = []
-                        for i in range(1, fade_steps):
+                        for i in range(1, fade_steps+1):
                             volume_step_i = current_volume + (volume_step * i)
                             volume_steps[media_player.entity_id].append(volume_step_i)
 
