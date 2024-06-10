@@ -263,7 +263,7 @@ class MediaPlayerHelper:
                 target_state="paused",
                 timeout=1.5
             )
-            
+
             # Set media players to target volume level for Chime TTS Playback
             playback_media_players = []
             for media_player in fade_in_out_media_players:
@@ -435,43 +435,6 @@ class MediaPlayerHelper:
 
         return len(still_waiting) == 0
 
-    async def async_wait_until_media_player_volume_level(self,
-                                                         hass: HomeAssistant,
-                                                         media_players: list[ChimeTTSMediaPlayer],
-                                                         target_volume: str,
-                                                         timeout=5) -> bool:
-        """Wait for a media_player to have a target volume_level."""
-        delay = 0.2
-        volume_reached = False
-        while not volume_reached and timeout > 0:
-            volume_reached = True
-            for media_player in media_players:
-                entity_id = media_player.entity_id
-                if hass.states.get(entity_id):
-                    volume = round(hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, -1), 3)
-                    if volume != round(target_volume, 3):
-                        _LOGGER.debug("%s's current volume: %s. Waiting for volume: %s...", entity_id, str(volume), str(round(target_volume, 3)))
-                        volume_reached = False
-                    else:
-                        _LOGGER.debug(" - %s's volume_level reached target volume: %s", entity_id, str(target_volume))
-            if volume_reached is False:
-                await hass.async_add_executor_job(time.sleep, delay)
-                timeout = timeout - delay
-            else:
-                return True
-        if volume_reached is False:
-            for media_player in media_players:
-                entity_id = media_player.entity_id
-                volume = round(media_player.get_current_volume_level(), 3)
-                if volume != round(target_volume, 3):
-                    _LOGGER.warning("Timed out. %s's current volume is %s, did not reach target volume: %s",
-                                    entity_id,
-                                    str(volume),
-                                    str(target_volume))
-            return False
-
-        return True
-
     async def async_sonos_snapshot(self, hass: HomeAssistant):
         """Take a Sonos snapshot of Sonos media players."""
         if not SONOS_SNAPSHOT_ENABLED:
@@ -520,104 +483,103 @@ class MediaPlayerHelper:
                                                  volume_key,
                                                  fade_duration: int):
         """Set the volume level for media players either in steps or instantaneously."""
-        if media_players is None or len(media_players) == 0:
+        if not media_players:
             return
 
-        fade_duration = fade_duration / 1000 # Convert from miliseconds to seconds
-        fade_steps = math.ceil((fade_duration*1000)/TRANSITION_STEP_MS) if fade_duration > 0 else 1
-        delay_s = float(fade_duration / fade_steps)
-        volume_steps = {}
+        fade_duration /= 1000  # Convert from milliseconds to seconds
+        fade_steps = max(math.ceil(fade_duration * 1000 / TRANSITION_STEP_MS), 1)
+        delay_s = fade_duration / fade_steps if fade_steps > 1 else 0
+        volume_changed_dicts = []
 
-        # Fade to new volume
-        if fade_steps > 1:
-            for step in range(0, fade_steps):
-                for media_player in media_players:
-                    entity_id = media_player.entity_id
-                    if volume_key == "target_volume_level":
-                        target_volume = media_player.target_volume_level
-                    elif volume_key == "initial_volume_level":
-                        target_volume = media_player.initial_volume_level
-                    else:
-                        target_volume = 0
-                    current_volume = float(hass.states.get(entity_id).attributes.get(ATTR_MEDIA_VOLUME_LEVEL, 0))
+        for media_player in media_players:
+            entity_id: str = media_player.entity_id
+            current_volume: float = media_player.get_current_volume_level()
+            target_volume: float = getattr(media_player, volume_key, 0) if isinstance(volume_key, str) else volume_key
 
-                    # Skip media_player if already at target volume
-                    if target_volume == current_volume and step == 0:
-                        continue
+            if target_volume == -1:
+                if volume_key == "initial_volume_level":
+                    _LOGGER.debug("Initial volume for %s is unknown. Unable to restore volume.", entity_id)
+                continue
 
-                    # Skip media_player if target volume is -1
-                    if target_volume == -1:
-                        if volume_key == "initial_volume_level":
-                            _LOGGER.debug("Initial volume for %s is unknown. Unable to restore volume.", entity_id)
-                        continue
+            if target_volume == current_volume:
+                _LOGGER.debug("The volume level for %s is already set to %s", entity_id, str(target_volume))
+                continue
 
-                    # Determine volume steps on first loop
-                    if step == 0:
-                        volume_step = (target_volume - current_volume) / fade_steps
-                        _LOGGER.debug(" - Fading %s %s's volume from %s to %s over %ss",
-                                    ("in" if volume_step > 0 else "out"),
-                                    entity_id,
-                                    str(current_volume),
-                                    str(target_volume),
-                                    str(fade_duration))
-                        volume_steps[media_player.entity_id] = []
-                        for i in range(1, fade_steps+1):
-                            volume_step_i = current_volume + (volume_step * i)
-                            volume_steps[media_player.entity_id].append(volume_step_i)
+            volume_changed_dicts.append({"media_player": media_player, "target_volume": target_volume})
 
-                    # Step volume or target volume
-                    new_volume = round(max(float(volume_steps[media_player.entity_id][step] if len(volume_steps[media_player.entity_id]) > step else target_volume), 0), 4)
-                    try:
-                        await hass.services.async_call(
-                            domain="media_player",
-                            service=SERVICE_VOLUME_SET,
-                            service_data={
-                                ATTR_MEDIA_VOLUME_LEVEL: new_volume,
-                                CONF_ENTITY_ID: entity_id
-                            },
-                            blocking=True
-                        )
-                    except Exception as error:
-                        _LOGGER.warning("Unable to fade %s's volume to %s: %s", entity_id, str(new_volume), error)
-                if step != fade_steps-1:
+            if fade_steps > 1:
+                volume_step: float = (target_volume - current_volume) / fade_steps
+                volume_steps: list[float] = [current_volume + volume_step * i for i in range(1, fade_steps + 1)]
+                _LOGGER.debug(" - Fading %s %s's volume from %s to %s over %ss",
+                            "in" if volume_step > 0 else "out",
+                            entity_id,
+                            str(current_volume),
+                            str(target_volume),
+                            str(fade_duration))
+                for step in range(fade_steps):
+                    new_volume = round(max(volume_steps[step], 0), 4)
+                    await self.async_set_volume_action(hass, entity_id, new_volume)
                     await hass.async_add_executor_job(time.sleep, delay_s)
-        # Apply new volume
-        else:
-            for media_player in media_players:
-                entity_id = media_player.entity_id
-                current_volume = media_player.get_current_volume_level()
-                if volume_key == "target_volume_level":
-                    target_volume = media_player.target_volume_level
-                elif volume_key == "initial_volume_level":
-                    target_volume = media_player.initial_volume_level
-
-                # No action to take
-                if target_volume == -1:
-                    _LOGGER.debug("Cannot set to the volume level for %s to -1", entity_id)
-                elif target_volume == current_volume:
-                    _LOGGER.debug("The volume level for %s is already set to %s", entity_id, str(target_volume))
-
-                # Set volume
+            else:
+                if target_volume > current_volume:
+                    _LOGGER.debug("Increasing %s's volume from %s to %s", entity_id, str(current_volume), str(target_volume))
                 else:
-                    if target_volume - current_volume > 0:
-                        _LOGGER.debug("Increasing %s's volume from %s to %s", entity_id, str(current_volume), str(target_volume))
-                    else:
-                        _LOGGER.debug("Decresing %s's volume from %s to %s", entity_id, str(current_volume), str(target_volume))
-                    _LOGGER.debug("Calling media_player.%s with data:", SERVICE_VOLUME_SET)
-                    _LOGGER.debug(" - %s: %s", ATTR_MEDIA_VOLUME_LEVEL, str(target_volume))
-                    _LOGGER.debug(" - %s: %s", CONF_ENTITY_ID, entity_id)
-                    try:
-                        await hass.services.async_call(
-                            domain="media_player",
-                            service=SERVICE_VOLUME_SET,
-                            service_data={
-                                ATTR_MEDIA_VOLUME_LEVEL: target_volume,
-                                CONF_ENTITY_ID: entity_id
-                            },
-                            blocking=True,
-                        )
-                    except Exception as error:
-                        _LOGGER.warning("Unable to set %s's volume to %s: %s", entity_id, str(target_volume), error)
+                    _LOGGER.debug("Decreasing %s's volume from %s to %s", entity_id, str(current_volume), str(target_volume))
+                await self.async_set_volume_action(hass, entity_id, target_volume)
+
+        await self.async_wait_until_target_volume_reached(hass, volume_changed_dicts)
+
+    async def async_set_volume_action(self, hass: HomeAssistant, entity_id: str, target_volume: float):
+        """Call the media_player.set_volume service with a specific media player & volume level."""
+        _LOGGER.debug(" - Setting %s's volume to %s", entity_id, str(target_volume))
+        try:
+            await hass.services.async_call(
+                domain="media_player",
+                service=SERVICE_VOLUME_SET,
+                service_data={
+                    ATTR_MEDIA_VOLUME_LEVEL: target_volume,
+                    CONF_ENTITY_ID: entity_id
+                },
+                blocking=True,
+            )
+        except Exception as error:
+            _LOGGER.warning("Unable to set %s's volume to %s: %s", entity_id, str(target_volume), error)
+
+    async def async_wait_until_target_volume_reached(self, hass, volume_changed_dicts):
+        """Wait until all media players register their new volumes."""
+        if not volume_changed_dicts or len(volume_changed_dicts) == 0:
+            return
+        _LOGGER.debug("...waiting until media players' new volume levels reached...")
+        timeout = 5
+        delay_s = 0.150
+        while timeout > 0:
+            all_volumes_set = True
+            for media_player_dict in volume_changed_dicts:
+                media_player: ChimeTTSMediaPlayer = media_player_dict.get("media_player")
+                target_volume = media_player_dict.get("target_volume")
+                current_volume = media_player.get_current_volume_level()
+                if media_player and current_volume not in (target_volume, -1):
+                    all_volumes_set = False
+                    await self.async_set_volume_action(hass, media_player.entity_id, target_volume)
+                else:
+                    _LOGGER.debug(" - ✔️ %s", media_player.entity_id)
+                    media_player_dict.clear()
+            if all_volumes_set:
+                break
+            timeout -= delay_s
+
+            if all_volumes_set is False:
+                await hass.async_add_executor_job(time.sleep, delay_s)
+                _LOGGER.debug("...")
+                timeout = timeout - delay_s
+
+        # Log the media players which did timed out waiting for their new volumes to register
+        for media_player_dict in volume_changed_dicts:
+            media_player: ChimeTTSMediaPlayer = media_player_dict.get("media_player")
+            target_volume = media_player_dict.get("target_volume")
+            if media_player and media_player.get_current_volume_level() != target_volume:
+                _LOGGER.debug(" - 𝘅 %s (timed out before volume set to %s. Current volume = %s)", media_player.entity_id, str(target_volume), str(media_player.get_current_volume_level()))
+
 
     async def async_join_media_players(self, hass: HomeAssistant):
         """Join media players."""

@@ -1216,8 +1216,6 @@ async def async_post_playback_actions(hass: HomeAssistant,
                                       final_delay: float,
                                       media_players_array: list[ChimeTTSMediaPlayer]):
     """Run post playback actions."""
-
-
     # Wait the audio playback duration
     total_delay_s = round(audio_duration + ((final_delay/1000) if final_delay > 0 else 0),3)
     _LOGGER.debug(" - Waiting %ss for audio playback to complete...", str(total_delay_s))
