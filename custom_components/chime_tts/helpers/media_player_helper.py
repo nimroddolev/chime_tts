@@ -149,10 +149,17 @@ class MediaPlayerHelper:
         """List of media_player objects from a list of entity_ids."""
         media_players: list[ChimeTTSMediaPlayer] = []
         for entity_id in entity_ids:
-            for media_player in self.media_players:
-                if media_player.entity_id == entity_id:
-                    media_players.append(media_player)
+            media_player = self.get_media_players_from_entity_id(entity_id)
+            if media_player:
+                media_players.append(media_player)
         return media_players
+
+    def get_media_players_from_entity_id(self, entity_id) -> ChimeTTSMediaPlayer:
+        """media_player objects matching a given entity_id."""
+        for media_player in self.media_players:
+            if media_player.entity_id == entity_id:
+                return media_player
+        return None
 
     def get_uniform_target_volume_level(self, entity_ids):
         """Target volume level (if identical between media_players)."""
@@ -183,15 +190,15 @@ class MediaPlayerHelper:
 
     def get_is_media_player_alexa(self, hass, entity_id):
         """Determine whether a media_player belongs to the Alexa Media Player platform."""
-        return str(self.get_media_player_platform(hass, entity_id)).lower() == ALEXA_MEDIA_PLAYER_PLATFORM
+        return self.get_media_players_from_entity_id(entity_id).platform == ALEXA_MEDIA_PLAYER_PLATFORM
 
     def get_is_media_player_sonos(self, hass, entity_id):
         """Determine whether a media_player belongs to the Sonos platform."""
-        return str(self.get_media_player_platform(hass, entity_id)).lower() == SONOS_PLATFORM
+        return self.get_media_players_from_entity_id(entity_id).platform == SONOS_PLATFORM
 
     def get_is_media_player_spotify(self, hass, entity_id):
         """Determine whether a media_player belongs to the Spotify platform."""
-        return str(self.get_media_player_platform(hass, entity_id)).lower() == SPOTIFY_PLATFORM
+        return self.get_media_players_from_entity_id(entity_id).platform == SPOTIFY_PLATFORM
 
     def get_supported_feature(self, entity: State, feature: str):
         """Whether a feature is supported by the media_player device."""
@@ -335,7 +342,7 @@ class MediaPlayerHelper:
                     if hass.states.get(entity_id).state != "playing":
                         still_paused_media_players.append(entity_id)
                     else:
-                        _LOGGER.debug("     - ✔️ %s", entity_id)
+                        _LOGGER.debug("     - ✔️ %s resumed", entity_id)
                 paused_media_players = still_paused_media_players
 
                 if len(paused_media_players) > 0:
@@ -529,9 +536,12 @@ class MediaPlayerHelper:
 
         await self.async_wait_until_target_volume_reached(hass, volume_changed_dicts)
 
-    async def async_set_volume_action(self, hass: HomeAssistant, entity_id: str, target_volume: float):
+    async def async_set_volume_action(self, hass: HomeAssistant, entity_id: str, target_volume: float, is_retry: bool = False):
         """Call the media_player.set_volume service with a specific media player & volume level."""
-        _LOGGER.debug(" - Setting %s's volume to %s", entity_id, str(target_volume))
+        if is_retry:
+            _LOGGER.debug(" - Retry setting %s's volume to %s", entity_id, str(target_volume))
+        else:
+            _LOGGER.debug(" - Setting %s's volume to %s", entity_id, str(target_volume))
         try:
             await hass.services.async_call(
                 domain="media_player",
@@ -547,38 +557,46 @@ class MediaPlayerHelper:
 
     async def async_wait_until_target_volume_reached(self, hass, volume_changed_dicts):
         """Wait until all media players register their new volumes."""
-        if not volume_changed_dicts or len(volume_changed_dicts) == 0:
+        if not volume_changed_dicts:
             return
-        _LOGGER.debug("...waiting until media players' new volume levels reached...")
+
         timeout = 5
         delay_s = 0.150
-        while timeout > 0:
+        end_time = time.time() + timeout
+        has_debug_log_written = False
+
+        while time.time() < end_time:
             all_volumes_set = True
-            for media_player_dict in volume_changed_dicts:
+
+            for media_player_dict in volume_changed_dicts[:]:  # Iterate over a copy to allow safe removal
                 media_player: ChimeTTSMediaPlayer = media_player_dict.get("media_player")
                 target_volume = media_player_dict.get("target_volume")
-                current_volume = media_player.get_current_volume_level()
-                if media_player and current_volume not in (target_volume, -1):
+
+                if media_player and media_player.get_current_volume_level() not in (target_volume, -1):
                     all_volumes_set = False
-                    await self.async_set_volume_action(hass, media_player.entity_id, target_volume)
+                    if not has_debug_log_written:
+                        _LOGGER.debug("...waiting until new volume levels reached...")
+                        has_debug_log_written = True
+                    await self.async_set_volume_action(hass, media_player.entity_id, target_volume, True)
                 else:
-                    _LOGGER.debug(" - ✔️ %s", media_player.entity_id)
-                    media_player_dict.clear()
+                    _LOGGER.debug(" - ✔️ %s's volume now %s", media_player.entity_id, str(media_player.get_current_volume_level()))
+                    volume_changed_dicts.remove(media_player_dict)  # Remove the entry once the volume is set
+
             if all_volumes_set:
                 break
-            timeout -= delay_s
 
-            if all_volumes_set is False:
-                await hass.async_add_executor_job(time.sleep, delay_s)
-                _LOGGER.debug("...")
-                timeout = timeout - delay_s
+            await hass.async_add_executor_job(time.sleep, delay_s)
+            _LOGGER.debug("...")
 
-        # Log the media players which did timed out waiting for their new volumes to register
+        # Log the media players which timed out waiting for their new volumes to register
         for media_player_dict in volume_changed_dicts:
             media_player: ChimeTTSMediaPlayer = media_player_dict.get("media_player")
-            target_volume = media_player_dict.get("target_volume")
-            if media_player and media_player.get_current_volume_level() != target_volume:
-                _LOGGER.debug(" - 𝘅 %s (timed out before volume set to %s. Current volume = %s)", media_player.entity_id, str(target_volume), str(media_player.get_current_volume_level()))
+            if media_player:
+                target_volume = media_player_dict.get("target_volume")
+                current_volume = media_player.get_current_volume_level()
+                if current_volume != target_volume:
+                    _LOGGER.debug(" - 𝘅 %s (timed out before volume set to %s. Current volume = %s)",
+                                media_player.entity_id, str(target_volume), str(current_volume))
 
 
     async def async_join_media_players(self, hass: HomeAssistant):
