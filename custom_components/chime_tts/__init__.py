@@ -1115,23 +1115,25 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
                 _LOGGER.debug("     - %s", entity_id)
 
             # If all media_players have same target volume level
-            uniform_target_volume = media_player_helper.get_uniform_target_volume_level(sonos_media_player_entity_ids)
+            uniform_target_volume = int(media_player_helper.get_uniform_target_volume_level(sonos_media_player_entity_ids) * 100)
             if uniform_target_volume != -1:
-                service_data[CONF_ENTITY_ID] = sonos_media_player_entity_ids
-                service_data["extra"] = {"volume": uniform_target_volume}
+                sonos_service_data = service_data.copy()
+                sonos_service_data[CONF_ENTITY_ID] = sonos_media_player_entity_ids
+                sonos_service_data["extra"] = {"volume": uniform_target_volume}
                 service_calls.append({
                     "domain": "media_player",
                     "service": SERVICE_PLAY_MEDIA,
-                    "service_data": service_data,
+                    "service_data": sonos_service_data,
                     "blocking": True,
                     "result": True
                 })
             else:
                 # Else 1 media_player.play_media service call per Sonos media_player, with the media_player's target volume level
                 for media_player in media_player_helper.get_media_players_from_entity_ids(sonos_media_player_entity_ids):
+                    volume = int(media_player.target_volume_level * 100)
                     individual_service_data = service_data.copy()
                     individual_service_data[CONF_ENTITY_ID] = media_player.entity_id
-                    individual_service_data["extra"] = {"volume": media_player.target_volume_level}
+                    individual_service_data["extra"] = {"volume": volume}
                     service_calls.append({
                         "domain": "media_player",
                         "service": SERVICE_PLAY_MEDIA,
