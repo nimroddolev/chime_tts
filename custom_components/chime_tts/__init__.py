@@ -106,7 +106,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     """Set up an entry."""
     config_entry.async_on_unload(config_entry.add_update_listener(async_reload_entry))
     await async_refresh_stored_data(hass)
-    update_configuration(config_entry, hass)
+    await async_update_configuration(config_entry, hass)
     queue.__init__(_data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
 
     return True
@@ -324,7 +324,7 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     await async_unload_entry(hass, config_entry)
     await async_setup(hass, config_entry)
     await async_refresh_stored_data(hass)
-    update_configuration(config_entry, hass)
+    await async_update_configuration(config_entry, hass)
 
 # Integration options #
 
@@ -336,9 +336,9 @@ async def async_options(self, entry: ConfigEntry):
 async def async_options_updated(self, entry: ConfigEntry):
     """Handle updated configuration options and update the entry."""
     # Update the queue timeout value
-    update_configuration(entry, None)
+    await async_update_configuration(entry, None)
 
-def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
+async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
     """Update configurable values."""
 
     # Prepare default paths
@@ -404,7 +404,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
         _data[MP3_PRESET_CUSTOM_KEY][key] = value
 
     # Update the services.yaml file with refreshed chimes options
-    helpers.update_services_yaml(_data[CUSTOM_CHIMES_PATH_KEY])
+    await helpers.async_update_services_yaml(_data[CUSTOM_CHIMES_PATH_KEY])
 
     # Debug summary
     _LOGGER.debug("Chime TTS Configuration Values:")

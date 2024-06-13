@@ -1,6 +1,5 @@
 """Adds config flow for Chime TTS."""
 import logging
-import os
 import requests
 import voluptuous as vol
 from homeassistant import config_entries

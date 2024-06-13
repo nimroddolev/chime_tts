@@ -6,6 +6,8 @@ import re
 import subprocess
 import shutil
 import yaml
+import aiofiles
+import aiofiles.os
 from pydub import AudioSegment
 from homeassistant.core import HomeAssistant
 from homeassistant.components.media_player.const import (
@@ -41,34 +43,50 @@ from .filesystem import FilesystemHelper
 filesystem_helper = FilesystemHelper()
 
 _LOGGER = logging.getLogger(__name__)
-
 class ChimeTTSHelper:
     """Helper functions for Chime TTS."""
 
-    def update_services_yaml(self, chimes_dir: str):
+    async def async_update_services_yaml(self, chimes_dir: str):
         """Modify the chime path drop down options."""
         services_file_path = os.path.join(os.path.dirname(__file__), '../services.yaml')
 
-        with open(services_file_path) as file:
-            services_yaml = yaml.safe_load(file)
+        try:
+            async with aiofiles.open(services_file_path, mode='r') as file:
+                services_yaml = yaml.safe_load(await file.read())
+        except FileNotFoundError:
+            _LOGGER.error("services.yaml file not found at %s", services_file_path)
+            return
+        except yaml.YAMLError as e:
+            _LOGGER.error("Error parsing services.yaml: %s", str(e))
+            return
+        except Exception as e:
+            _LOGGER.error("Unexpected error reading services.yaml: %s", str(e))
+            return
 
-        # List of chime options from chimes folder
-        custom_chime_options: list[dict] = filesystem_helper.get_chime_options_from_path(chimes_dir)
+        try:
+            # List of chime options from chimes folder
+            custom_chime_options = filesystem_helper.get_chime_options_from_path(chimes_dir)
 
-        # Chime Paths
-        final_options: list = DEFAULT_CHIME_OPTIONS + custom_chime_options
-        final_options = sorted(final_options, key=lambda x: x['label'].lower())
-        if not custom_chime_options:
-            final_options.append({"label": "*** Add a local folder path in the configuration for your own custom chimes ***", "value": None})
+            # Chime Paths
+            final_options = DEFAULT_CHIME_OPTIONS + custom_chime_options
+            final_options = sorted(final_options, key=lambda x: x['label'].lower())
+            if not custom_chime_options:
+                final_options.append({"label": "*** Add a local folder path in the configuration for your own custom chimes ***", "value": None})
 
-        # Update the chime path fields
-        services_yaml['say']['fields']['chime_path']['selector']['select']['options'] = final_options
-        services_yaml['say']['fields']['end_chime_path']['selector']['select']['options'] = final_options
-        services_yaml['say_url']['fields']['chime_path']['selector']['select']['options'] = final_options
-        services_yaml['say_url']['fields']['end_chime_path']['selector']['select']['options'] = final_options
+            # Update the chime path fields
+            services_yaml['say']['fields']['chime_path']['selector']['select']['options'] = final_options
+            services_yaml['say']['fields']['end_chime_path']['selector']['select']['options'] = final_options
+            services_yaml['say_url']['fields']['chime_path']['selector']['select']['options'] = final_options
+            services_yaml['say_url']['fields']['end_chime_path']['selector']['select']['options'] = final_options
 
-        with open(services_file_path, 'w') as file:
-            yaml.safe_dump(services_yaml, file)
+
+
+            async with aiofiles.open(services_file_path, mode='w') as file:
+                await file.write(yaml.safe_dump(services_yaml, default_flow_style=False, sort_keys=False))
+
+            _LOGGER.info("Successfully updated services.yaml with new chime options.")
+        except Exception as e:
+            _LOGGER.error("Unexpected error updating services.yaml: %s", str(e))
 
     async def async_parse_params(self, hass: HomeAssistant, data, is_say_url, media_player_helper: MediaPlayerHelper):
         """Parse TTS service parameters."""
