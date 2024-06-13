@@ -138,7 +138,12 @@ const config = {
                 label: "Notify",
                 docId: "documentation/notify/index"
               },
-            ]
+            ],
+          },
+          {
+            to: '/docs/support',
+            label: 'Support',
+            position: 'left'
           },
           {
             href: "https://www.buymeacoffee.com/nimroddolev",
@@ -170,6 +175,10 @@ const config = {
               {
                 label: "Documentation",
                 to: "docs/documentation"
+              },
+              {
+                label: 'Support',
+                to: '/docs/support',
               },
             ],
           },
