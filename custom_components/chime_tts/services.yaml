@@ -35,7 +35,20 @@ clear_cache:
       name: Publicly Accessible Chime TTS Cache
       required: false
       selector:
-        boolean: null
+        boolean:
+    clear_ha_tts_cache:
+      name: Home Assistant TTS Cache
+      description: "Remove the TTS audio files stored in the Home Assistant TTS cache"
+      default: True
+      example: "True"
+      required: false
+      selector:
+        boolean:
+
+replay:
+  name: "Replay"
+  description: "Replay the last service call to chime_tts.say with the same parameters"
+
 say:
   name: Say
   description: Play an audio file before TTS audio
@@ -288,6 +301,7 @@ say:
       selector:
         text:
           multiline: true
+
 say_url:
   name: Say URL
   description: Generates an audio file with the `chime_tts.say` service and returns

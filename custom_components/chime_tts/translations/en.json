@@ -30,6 +30,10 @@
                 }
             }
         },
+        "replay": {
+            "name": "Replay",
+            "description": "Repeat the last service call to chime_tts.say with the same parameters"
+        },
         "say": {
             "name": "Say",
             "description": "Play an audio file before TTS audio",
