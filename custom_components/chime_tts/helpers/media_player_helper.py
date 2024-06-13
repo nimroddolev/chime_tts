@@ -124,8 +124,7 @@ class MediaPlayerHelper:
         for media_player in self.media_players:
             if (media_player not in self.get_fade_in_out_media_players()
                 and media_player.target_volume_level not in [-1, media_player.initial_volume_level]
-                and media_player.platform != SPOTIFY_PLATFORM
-                and not (media_player.platform == SONOS_PLATFORM and self.announce)
+                and media_player.platform not in (SPOTIFY_PLATFORM, SONOS_PLATFORM)
             ):
                 set_volume_media_players.append(media_player)
         return set_volume_media_players
