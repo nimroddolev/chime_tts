@@ -14,7 +14,7 @@ from homeassistant.helpers.network import get_url
 from homeassistant.core import HomeAssistant
 from ..const import (
     MP3_PRESET_PATH,
-    MP3_PRESETS,
+    DEFAULT_CHIME_OPTIONS,
     MP3_PRESET_PATH_PLACEHOLDER,  # DEPRECATED
     MP3_PRESET_CUSTOM_PREFIX,
     MP3_PRESET_CUSTOM_KEY,
@@ -73,24 +73,25 @@ class FilesystemHelper:
         chime_path = chime_path.replace(MP3_PRESET_PATH_PLACEHOLDER, "")
 
         # Preset chime mp3 path?
-        if chime_path in MP3_PRESETS:
-            # Validate MP3 preset path before use
-            mp3_path = MP3_PRESET_PATH
-            absolute_custom_comopnents_dir = self.path_to_parent_folder('custom_components')
-            if absolute_custom_comopnents_dir:
-                mp3_path = MP3_PRESET_PATH.replace("custom_components", absolute_custom_comopnents_dir)
-            final_chime_path = mp3_path + chime_path + ".mp3"
-            _LOGGER.debug("Local path to chime: %s", final_chime_path)
-            return final_chime_path
+        for option in DEFAULT_CHIME_OPTIONS:
+            if option.get("value") == chime_path:
+                # Validate MP3 preset path before use
+                mp3_path = MP3_PRESET_PATH
+                absolute_custom_comopnents_dir = self.path_to_parent_folder('custom_components')
+                if absolute_custom_comopnents_dir:
+                    mp3_path = MP3_PRESET_PATH.replace("custom_components", absolute_custom_comopnents_dir)
+                final_chime_path = mp3_path + chime_path + ".mp3"
+                if os.path.exists(final_chime_path):
+                    _LOGGER.debug("Local path to chime: %s", final_chime_path)
+                    return final_chime_path
 
         # Custom chime mp3 path?
         if chime_path.startswith(MP3_PRESET_CUSTOM_PREFIX):
+            index = chime_path.replace(MP3_PRESET_CUSTOM_PREFIX, "")
             chime_path = custom_chime_paths_dict[chime_path]
             if chime_path == "":
-                _LOGGER.warning(
-                    "MP3 file path missing for custom chime path `Custom #%s`",
-                    chime_path.replace(MP3_PRESET_CUSTOM_PREFIX, ""),
-                )
+                _LOGGER.warning("MP3 file path missing for custom chime path `Custom #%s`", str(index))
+                return None
             elif os.path.exists(chime_path):
                     return chime_path
             else:
@@ -201,13 +202,13 @@ class FilesystemHelper:
             _, file_extension = os.path.splitext(url)
             try:
                 audio_content = await self.async_load_audio(
-                    BytesIO(response.content),
-                    format=file_extension.replace(".", ""))
+                    BytesIO(response.content))#,
+                    #format=file_extension.replace(".", ""))
             except Exception as error:
                 _LOGGER.warning("Error when loading audio from downloaded file: %s", str(error))
                 return None
             if audio_content is not None:
-                audio_file_path = self.async_save_audio_to_folder(audio=audio_content,
+                audio_file_path = await self.async_save_audio_to_folder(audio=audio_content,
                                                             folder=folder,
                                                             file_name=url)
                 audio_duration = float(len(audio_content) / 1000)
@@ -311,6 +312,8 @@ class FilesystemHelper:
 
     def make_folder_path_safe(self, path):
         """Validate folder path."""
+        if not path:
+            return None
         if not f"{path}".startswith("/"):
             path = f"/{path}"
         if not f"{path}".endswith("/"):
@@ -327,3 +330,23 @@ class FilesystemHelper:
     async def async_load_audio(self, file_path: str):
         """Load AudioSegment from a filepath."""
         return await asyncio.to_thread(AudioSegment.from_file, file_path)
+
+    def get_chime_options_from_path(self, directory):
+        """Walk through a directory of chime audio files and return a formatted dictionary."""
+        chime_options = []
+        audio_extensions = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.aiff', '.aif', '.ape']
+
+        if directory and os.path.exists(directory):
+            for dirpath, _, filenames in os.walk(directory):
+                for filename in filenames:
+                    # Construct the absolute file path
+                    file_path = os.path.join(dirpath, filename)
+                    absolute_file_path = os.path.abspath(file_path)
+
+                    # Separte the file extension from the label
+                    label = os.path.splitext(filename)[0]
+                    ext = os.path.splitext(filename)[1]
+                    if ext in audio_extensions:
+                        # Append the dictionary to the list
+                        chime_options.append({"label": label, "value": absolute_file_path})
+        return chime_options

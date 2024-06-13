@@ -17,13 +17,13 @@ from .const import (
     DEFAULT_FADE_TRANSITION_MS,
     MEDIA_DIR_KEY,
     MEDIA_DIR_DEFAULT,
+    CUSTOM_CHIMES_PATH_KEY,
     TEMP_CHIMES_PATH_KEY,
     TEMP_CHIMES_PATH_DEFAULT,
     TEMP_PATH_KEY,
     TEMP_PATH_DEFAULT,
     WWW_PATH_KEY,
     WWW_PATH_DEFAULT,
-    MP3_PRESET_CUSTOM_PREFIX,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -115,6 +115,10 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                     default=self.get_data_key_value(MEDIA_DIR_KEY,
                                                     user_input.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)),  # type: ignore
                 ): str,
+                vol.Optional(
+                    CUSTOM_CHIMES_PATH_KEY,
+                    default=self.get_data_key_value(CUSTOM_CHIMES_PATH_KEY),  # type: ignore
+                ): str,
                 vol.Required(
                     TEMP_CHIMES_PATH_KEY,
                     default=self.get_data_key_value(TEMP_CHIMES_PATH_KEY,
@@ -129,37 +133,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                     WWW_PATH_KEY,
                     default=self.get_data_key_value(WWW_PATH_KEY,
                                                     user_input.get(WWW_PATH_KEY, f"{root_path}{WWW_PATH_DEFAULT}")),  # type: ignore
-                ): str,
-                vol.Optional(
-                    MP3_PRESET_CUSTOM_PREFIX + str(1),
-                    default=self.get_data_key_value(
-                        MP3_PRESET_CUSTOM_PREFIX + str(1), ""
-                    ),  # type: ignore
-                ): str,
-                vol.Optional(
-                    MP3_PRESET_CUSTOM_PREFIX + str(2),
-                    default=self.get_data_key_value(
-                        MP3_PRESET_CUSTOM_PREFIX + str(2), ""
-                    ),  # type: ignore
-                ): str,
-                vol.Optional(
-                    MP3_PRESET_CUSTOM_PREFIX + str(3),
-                    default=self.get_data_key_value(
-                        MP3_PRESET_CUSTOM_PREFIX + str(3), ""
-                    ),  # type: ignore
-                ): str,
-                vol.Optional(
-                    MP3_PRESET_CUSTOM_PREFIX + str(4),
-                    default=self.get_data_key_value(
-                        MP3_PRESET_CUSTOM_PREFIX + str(4), ""
-                    ),  # type: ignore
-                ): str,
-                vol.Optional(
-                    MP3_PRESET_CUSTOM_PREFIX + str(5),
-                    default=self.get_data_key_value(
-                        MP3_PRESET_CUSTOM_PREFIX + str(5), ""
-                    ),  # type: ignore
-                ): str,
+                ): str
             }
         )
 
@@ -208,32 +182,9 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 www_path.startswith(f"{root_path}/config/www/") != -1):
             _errors["www_path"] = "www_path"
 
-        # Custom chime mp3 paths
-        for i in range(5):
-            key = MP3_PRESET_CUSTOM_PREFIX + str(i + 1)
-            value = user_input.get(key, " ")
-            LOGGER.debug("%s = %s", key, str(value))
-            if value is not None and value != "" and len(value) > 2:
+        # Custom chime folder path
+        user_input[CUSTOM_CHIMES_PATH_KEY] = user_input.get(CUSTOM_CHIMES_PATH_KEY, " ")
 
-                # URL valid?
-                is_valid_url = True
-                is_url = value.startswith("http://") or value.startswith("https://")
-                if is_url:
-                    is_valid_url = await self.ping_url(value)
-                    if is_valid_url is False:
-                        LOGGER.warning("Cannot load chime URL: %s", value)
-
-                # File not found?
-                local_file_valid = os.path.exists(value)
-
-                if (local_file_valid or is_valid_url) is False:
-                    # Set main error message
-                    if not _errors:
-                        _errors["base"] = "invalid_chime_paths"
-                    else:
-                        _errors["base"] = "multiple"
-                    # Add specific custom chime error
-                    _errors[key] = key
         if _errors:
             return self.async_show_form(
                 step_id="init", data_schema=options_schema, errors=_errors

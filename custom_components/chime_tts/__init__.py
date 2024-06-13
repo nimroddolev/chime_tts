@@ -49,15 +49,21 @@ from .const import (
     FADE_TRANSITION_KEY,
     DEFAULT_FADE_TRANSITION_MS,
     ROOT_PATH_KEY,
+
+    CUSTOM_CHIMES_PATH_KEY,
+
     DEFAULT_TEMP_CHIMES_PATH_KEY,
     TEMP_CHIMES_PATH_KEY,
     TEMP_CHIMES_PATH_DEFAULT,
+
     DEFAULT_TEMP_PATH_KEY,
     TEMP_PATH_KEY,
     TEMP_PATH_DEFAULT,
+
     DEFAULT_WWW_PATH_KEY,
     WWW_PATH_KEY,
     WWW_PATH_DEFAULT,
+
     MEDIA_DIR_KEY,
     MEDIA_DIR_DEFAULT,
     ALEXA_MEDIA_PLAYER_PLATFORM,
@@ -373,6 +379,9 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
         )
     )
 
+    # Custom chimes folder path
+    _data[CUSTOM_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(options.get(CUSTOM_CHIMES_PATH_KEY))
+
     # Temp chimes folder path
     _data[TEMP_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(
         hass.config.path(
@@ -394,6 +403,9 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
         value = options.get(key, "")
         _data[MP3_PRESET_CUSTOM_KEY][key] = value
 
+    # Update the services.yaml file with refreshed chimes options
+    helpers.update_services_yaml(_data[CUSTOM_CHIMES_PATH_KEY])
+
     # Debug summary
     _LOGGER.debug("Chime TTS Configuration Values:")
     for key_string in [
@@ -405,6 +417,7 @@ def update_configuration(config_entry: ConfigEntry, hass: HomeAssistant = None):
         TEMP_PATH_KEY,
         WWW_PATH_KEY,
         MEDIA_DIR_KEY,
+        CUSTOM_CHIMES_PATH_KEY,
         MP3_PRESET_CUSTOM_KEY,
     ]:
         value = _data.get(key_string, None)
