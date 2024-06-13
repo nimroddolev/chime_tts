@@ -50,7 +50,7 @@ Each TTS platform offers its own set of options, which can also be used with Chi
 
 Chimes are audio files that can be incorporated into notifications. You can find the preset chimes that ship with Chime TTS [here](https://github.com/nimroddolev/chime_tts/tree/main/custom_components/chime_tts/mp3s).
 
-You can add chimes to your notifications in different places:
+You can add chimes to your notifications:
 - **Before** TTS audio *(using the* [`chime_path`](./parameters#chime_path) *parameter).*
 - **After** TTS audio *(using the* [`end_chime_path`](./parameters#end_chime_path) *parameter)*, and
 - **Between** TTS audio segments *(using* [`message`](./parameters#advanced-usage-segment-sequences) *segments).*
@@ -80,19 +80,11 @@ You can specify both local file paths or external URLs to your own audio files.
   <img src={useBaseUrl('/img/say/external_chime_path.png')} />
 
 
-### 3. Custom chime slots for the chime list UI
-You can set up to 5 custom chime slots which appear at the end of the drop-down list in the UI, allowing you to easily select your custom chimes when creating automations.
-To configure the custom chime slots, open the [Chime TTS configuration page](../../configuration) and enter the full file path to your local custom audio file, or the URL to an audio file hosted online.
+### 3. Custom chimes folder
+You can specify a [local folder path in the configuration](../../configuration#custom_chimes_folder) containing your own chime audio files.
 
-The configuration page is located at:
+Any change to the folder path or the file contents will require a restart of Home Assistant.
 
-`Settings` --> `Devices & services` --> `Chime TTS` --> `CONFIGURE`
-
-<img src={useBaseUrl('/img/say/configuration.png')} />
-
-Once added, you can use your custom chimes by selecting them from the chime list UI:
-
-  <img src={useBaseUrl('/img/say/custom.gif')} />
 
 ## Alexa Smart speakers
 Chime TTS suppors Alexa smart speakers through the [Alexa Media Player](https://github.com/alandtse/alexa_media_player) integration. Playback on Alexa media_players will require this integration.
