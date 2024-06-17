@@ -35,7 +35,8 @@ from ..const import (
     PICOTTS,
     PIPER,
     VOICE_RSS,
-    YANDEX_TTS
+    YANDEX_TTS,
+    QUOTE_CHAR_SUBSTITUTE
 )
 from .media_player_helper import MediaPlayerHelper
 from .media_player import ChimeTTSMediaPlayer
@@ -296,12 +297,12 @@ class ChimeTTSHelper:
                             # Chime
                             if "chime" in elem:
                                 elem["type"] = "chime"
-                                elem["path"] = elem["chime"].replace("🁢", "'")
+                                elem["path"] = elem["chime"].replace(QUOTE_CHAR_SUBSTITUTE, "'")
                                 del elem["chime"]
                             # TTS
                             elif "tts" in elem:
                                 elem["type"] = "tts"
-                                elem["message"] = elem["tts"].replace("🁢", "'")
+                                elem["message"] = elem["tts"].replace(QUOTE_CHAR_SUBSTITUTE, "'")
                                 del elem["tts"]
                             # Delay
                             elif "delay" in elem:

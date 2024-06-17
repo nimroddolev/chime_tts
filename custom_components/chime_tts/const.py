@@ -121,3 +121,5 @@ PICOTTS = "picotts"
 PIPER = "tts.piper"
 VOICE_RSS = "voicerss"
 YANDEX_TTS = "yandextts"
+
+QUOTE_CHAR_SUBSTITUTE = "🁢"
