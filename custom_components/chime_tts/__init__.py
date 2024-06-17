@@ -188,6 +188,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:  
                                  SERVICE_SAY,
                                  async_say)
 
+    _data["async_say"] = async_say
+
     # Say URL Service #
 
     async def async_say_url(service) -> ServiceResponse:
@@ -199,6 +201,8 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:  
                                  SERVICE_SAY_URL,
                                  async_say_url,
                                  supports_response=SupportsResponse.ONLY)
+
+    _data["async_say_url"] = async_say_url
 
     # Replay Service #
     async def async_replay(service):
@@ -431,6 +435,10 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
 
     # Update the services.yaml file with refreshed chimes options
     await helpers.async_update_services_yaml(_data[CUSTOM_CHIMES_PATH_KEY])
+    hass.services.async_remove(DOMAIN, SERVICE_SAY)
+    hass.services.async_register(DOMAIN, SERVICE_SAY, _data["async_say"])
+    hass.services.async_remove(DOMAIN, SERVICE_SAY_URL)
+    hass.services.async_register(DOMAIN, SERVICE_SAY_URL, _data["async_say_url"])
 
     # Debug summary
     _LOGGER.debug("Chime TTS Configuration Values:")

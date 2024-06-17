@@ -8,11 +8,12 @@ import shutil
 import yaml
 import aiofiles
 import aiofiles.os
-from pydub import AudioSegment
 from homeassistant.core import HomeAssistant
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_VOLUME_LEVEL,
 )
+import voluptuous as vol
+from pydub import AudioSegment
 from ..const import (
     DEFAULT_CHIME_OPTIONS,
     OFFSET_KEY,
@@ -46,13 +47,16 @@ _LOGGER = logging.getLogger(__name__)
 class ChimeTTSHelper:
     """Helper functions for Chime TTS."""
 
-    async def async_update_services_yaml(self, chimes_dir: str):
-        """Modify the chime path drop down options."""
+    # Services
+
+    async def async_parse_services_yaml(self):
+        """Load the services.yaml file into a dictionary."""
         services_file_path = os.path.join(os.path.dirname(__file__), '../services.yaml')
 
         try:
             async with aiofiles.open(services_file_path, mode='r') as file:
                 services_yaml = yaml.safe_load(await file.read())
+                return services_yaml
         except FileNotFoundError:
             _LOGGER.error("services.yaml file not found at %s", services_file_path)
             return
@@ -63,30 +67,90 @@ class ChimeTTSHelper:
             _LOGGER.error("Unexpected error reading services.yaml: %s", str(e))
             return
 
+    async def async_save_services_yaml(self, services_yaml):
+        """Save a dictionary to the services.yaml file."""
+
+        services_file_path = os.path.join(os.path.dirname(__file__), '../services.yaml')
+
+        try:
+            async with aiofiles.open(services_file_path, mode='w') as file:
+                await file.write(yaml.safe_dump(services_yaml, default_flow_style=False, sort_keys=False))
+
+            _LOGGER.info("Updated services.yaml with new chime options.")
+        except Exception as e:
+            _LOGGER.error("Unexpected error updating services.yaml: %s", str(e))
+
+    async def async_update_services_yaml(self, chimes_dir: str):
+        """Modify the chime path drop down options."""
+
+        services_yaml = await self.async_parse_services_yaml()
+        if not services_yaml:
+            return
+
         try:
             # List of chime options from chimes folder
             custom_chime_options = filesystem_helper.get_chime_options_from_path(chimes_dir)
 
             # Chime Paths
-            final_options = DEFAULT_CHIME_OPTIONS + custom_chime_options
+            final_options: list = DEFAULT_CHIME_OPTIONS + custom_chime_options
             final_options = sorted(final_options, key=lambda x: x['label'].lower())
             if not custom_chime_options:
                 final_options.append({"label": "*** Add a local folder path in the configuration for your own custom chimes ***", "value": None})
 
-            # Update the chime path fields
-            services_yaml['say']['fields']['chime_path']['selector']['select']['options'] = final_options
-            services_yaml['say']['fields']['end_chime_path']['selector']['select']['options'] = final_options
-            services_yaml['say_url']['fields']['chime_path']['selector']['select']['options'] = final_options
-            services_yaml['say_url']['fields']['end_chime_path']['selector']['select']['options'] = final_options
+            # New chimes detected?
+            if final_options != services_yaml['say']['fields']['chime_path']['selector']['select']['options']:
+                _LOGGER.debug("Adding new chimes")
+                # Update `say` and `say_url` chime path fields
+                services_yaml['say']['fields']['chime_path']['selector']['select']['options'] = list(final_options)
+                services_yaml['say']['fields']['end_chime_path']['selector']['select']['options'] = list(final_options)
+                services_yaml['say_url']['fields']['chime_path']['selector']['select']['options'] = list(final_options)
+                services_yaml['say_url']['fields']['end_chime_path']['selector']['select']['options'] = list(final_options)
 
-
-
-            async with aiofiles.open(services_file_path, mode='w') as file:
-                await file.write(yaml.safe_dump(services_yaml, default_flow_style=False, sort_keys=False))
-
-            _LOGGER.info("Successfully updated services.yaml with new chime options.")
+                await self.async_save_services_yaml(services_yaml)
         except Exception as e:
             _LOGGER.error("Unexpected error updating services.yaml: %s", str(e))
+
+    async def async_get_schema_for_service(self, service_name: str):
+        """Modify the chime path drop down options."""
+
+        service_yaml = await self.async_parse_services_yaml()
+        if not service_yaml or service_name not in service_yaml:
+            return
+        service_info = service_yaml[service_name]
+        fields = service_info.get('fields', {})
+        schema = {}
+
+        # Process each field in the service
+        for field_name, field_info in fields.items():
+            selector = field_info.get('selector', {})
+
+            if selector and selector.get('text'):
+                multiline = selector['text'].get('multiline', False)
+                if multiline:
+                    schema[vol.Required(field_name)] = vol.All(vol.Coerce(str), vol.Length(max=1024))
+                else:
+                    schema[vol.Required(field_name)] = vol.Coerce(str)
+            elif selector and selector.get('select'):
+                options = [option['value'] for option in selector['select']['options']]
+                schema[vol.Required(field_name)] = vol.In(options)
+            elif selector and selector.get('boolean'):
+                schema[vol.Required(field_name)] = vol.Coerce(bool)
+            elif selector and selector.get('number'):
+                number_selector = selector['number']
+                schema[vol.Required(field_name)] = vol.All(
+                    vol.Coerce(float),
+                    vol.Range(
+                        min=number_selector.get('min', None),
+                        max=number_selector.get('max', None),
+                    ),
+                )
+            else:
+                schema[vol.Required(field_name)] = vol.Coerce(str)  # Default to string if selector type is missing
+
+
+        return schema
+
+    # Parameters / Options
 
     async def async_parse_params(self, hass: HomeAssistant, data, is_say_url, media_player_helper: MediaPlayerHelper):
         """Parse TTS service parameters."""
