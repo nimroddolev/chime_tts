@@ -236,12 +236,12 @@ class ChimeTTSHelper:
             _LOGGER.debug(" --- Audio will be converted to Alexa-friendly format as Alexa speaker/s detected ---")
         return params
 
-    def parse_options_yaml(self, data):
+    def parse_options_yaml(self, data: dict = {}):
         """Parse TTS service options YAML into dict object."""
         options = {}
         try:
             options_string = data.get("options", "")
-            options = yaml.safe_load(options_string)
+            options = self.convert_yaml_str(options_string)
             if options is None:
                 options = {}
         except yaml.YAMLError as error:
@@ -283,21 +283,7 @@ class ChimeTTSHelper:
             contains_keys = contains_keys or message_string.find(f"'{key}':") > -1 or message_string.find(f'"{key}":') > -1
         if contains_keys:
             # Convert message string to YAML object
-            message_yaml = None
-            try:
-                message_string = message_string.replace("'", "\\'").replace("\\\\'", "🁢").replace("\\'", "'")
-                message_yaml = yaml.safe_load(message_string)
-            except yaml.YAMLError as exc:
-                if hasattr(exc, 'problem_mark'):
-                    _LOGGER.error("Message YAML parsing error at line %s, column %s: %s",
-                                  str(exc.problem_mark.line + 1),
-                                  str(exc.problem_mark.column + 1),
-                                  str(exc))
-                else:
-                    _LOGGER.error("Message YAML error: %s", str(exc))
-            except Exception as error:
-                _LOGGER.error("An unexpected error occurred while parsing message YAML: %s",
-                              str(error))
+            message_yaml = self.convert_yaml_str(message_string)
 
             # Verify objects in YAML are valid chime/tts/delay segements
             if isinstance(message_yaml, list):
@@ -365,6 +351,30 @@ class ChimeTTSHelper:
                 final_segments.append(segment)
 
         return final_segments
+
+    def convert_yaml_str(self, yaml_string):
+        """Convert a yaml string into an object."""
+        if not yaml_string:
+            return {}
+        if isinstance(yaml_string, dict):
+            return yaml_string
+
+        try:
+            yaml_string = yaml_string.replace("'", "\\'").replace("\\\\'", QUOTE_CHAR_SUBSTITUTE).replace("\\'", "'")
+            yaml_object = yaml.safe_load(yaml_string)
+            return yaml_object
+        except yaml.YAMLError as exc:
+            if hasattr(exc, 'problem_mark'):
+                _LOGGER.error("Message YAML parsing error at line %s, column %s: %s",
+                                str(exc.problem_mark.line + 1),
+                                str(exc.problem_mark.column + 1),
+                                str(exc))
+            else:
+                _LOGGER.error("Message YAML error: %s", str(exc))
+        except Exception as error:
+            _LOGGER.error("An unexpected error occurred while parsing message YAML: %s",
+                            str(error))
+
 
     def parse_ffmpeg_args(self, ffmpeg_args_str: str):
         """Parse the FFmpeg argument string."""

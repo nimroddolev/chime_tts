@@ -6,7 +6,7 @@ import io
 import time
 from datetime import datetime
 
-from pydub import AudioSegment # type: ignore
+from pydub import AudioSegment
 from pydub.exceptions import CouldntDecodeError
 
 from homeassistant.components.media_player.const import (
@@ -17,7 +17,6 @@ from homeassistant.components.media_player.const import (
     MEDIA_TYPE_MUSIC,
 )
 
-from hass_nabucasa import voice
 from .helpers.helpers import ChimeTTSHelper
 from .helpers.media_player_helper import (MediaPlayerHelper, ChimeTTSMediaPlayer)
 from .helpers.filesystem import FilesystemHelper
@@ -486,8 +485,10 @@ async def async_request_tts_audio(
     start_time = datetime.now()
 
     # Data validation
+    if not options:
+        options = {}
+    tts_options = options.copy()
 
-    tts_options = options.copy() if isinstance(options, dict) else (str(options) if isinstance(options, str) else options)
 
     if message is False or message == "":
         _LOGGER.warning("No message text provided for TTS audio")
@@ -501,29 +502,34 @@ async def async_request_tts_audio(
         return None
 
     # Add & validate additional parameters
+    voice = tts_options.get("voice", None)
 
     # Language
-    if language is not None and tts_platform in [
+    if (language or tts_options.get("language")) and tts_platform in [
         GOOGLE_TRANSLATE,
         NABU_CASA_CLOUD_TTS,
         IBM_WATSON_TTS,
         MICROSOFT_EDGE_TTS,
+        MICROSOFT_TTS,
     ]:
-        if tts_platform is IBM_WATSON_TTS and tts_options.get("voice") is None:
+        if tts_platform == IBM_WATSON_TTS and voice is None:
             tts_options["voice"] = language
             language = None
+        if tts_platform == MICROSOFT_TTS:
+            if tts_options.get("language"):
+                language = tts_options.get("language")
+                del tts_options["language"]
     else:
         language = None
 
     # Assign `language` for Nabu Casa if missing, when `voice` provided
-    p_voice = tts_options.get("voice", None)
     if (tts_platform == NABU_CASA_CLOUD_TTS
-        and p_voice
+        and voice
         and (language is None or len(language) == 0)):
         for key, value in voice.TTS_VOICES.items():
-            if p_voice in value:
+            if voice in value:
                 language = key
-                _LOGGER.debug(" - languge set to '%s' for voice: '%s'.", language, p_voice)
+                _LOGGER.debug(" - languge set to '%s' for voice: '%s'.", language, voice)
 
     # Cache
     use_cache = bool(cache) and tts_platform not in [GOOGLE_TRANSLATE, NABU_CASA_CLOUD_TTS]
@@ -539,8 +545,7 @@ async def async_request_tts_audio(
         "message":  f"'{message}'",
         "cache":  str(use_cache),
         "language":  '\"'+str(language)+'\"' if language is not None else 'None',
-        "options":  str(tts_options)
-
+        "options": str(tts_options),
     }.items():
         _LOGGER.debug("    * %s = %s", key, value)
 
@@ -903,7 +908,7 @@ async def async_process_segments(hass, message, output_audio, params, options):
                 segment_tts_pitch = float(segment.get("tts_pitch", params.get("tts_pitch", 0)))
 
                 # Use exposed parameters if not present in the options dictionary
-                segment_options = segment.get("options", {})
+                segment_options = helpers.convert_yaml_str(segment.get("options"))
                 exposed_option_keys = ["tld", "voice"]
                 for exposed_option_key in exposed_option_keys:
                     value = (segment_options.get(exposed_option_key, None) or
