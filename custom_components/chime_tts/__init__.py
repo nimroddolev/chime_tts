@@ -544,7 +544,7 @@ async def async_request_tts_audio(
         "tts_platform":  f"'{tts_platform}'",
         "message":  f"'{message}'",
         "cache":  str(use_cache),
-        "language":  '\"'+str(language)+'\"' if language is not None else 'None',
+        "language":  "'"+str(language)+"'" if language is not None else 'None',
         "options": str(tts_options),
     }.items():
         _LOGGER.debug("    * %s = %s", key, value)
