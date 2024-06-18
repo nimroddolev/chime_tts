@@ -516,9 +516,13 @@ async def async_request_tts_audio(
             tts_options["voice"] = language
             language = None
         if tts_platform == MICROSOFT_TTS:
-            if tts_options.get("language"):
+            if not language:
                 language = tts_options.get("language")
+            if "language" in tts_options:
                 del tts_options["language"]
+            if voice:
+                tts_options["type"] = voice
+                del tts_options["voice"]
     else:
         language = None
 
@@ -901,12 +905,6 @@ async def async_process_segments(hass, message, output_audio, params, options):
         # Request TTS audio file
         if segment_type == "tts":
             if len(segment.get("message", "")) > 0:
-                segment_message = segment["message"]
-                segment_tts_platform = segment.get("tts_platform", params.get("tts_platform", None))
-                segment_language = segment.get("language", params.get("language", None))
-                segment_tts_speed = float(segment.get("tts_speed", params.get("tts_speed", 100)))
-                segment_tts_pitch = float(segment.get("tts_pitch", params.get("tts_pitch", 0)))
-
                 # Use exposed parameters if not present in the options dictionary
                 segment_options = helpers.convert_yaml_str(segment.get("options"))
                 exposed_option_keys = ["tld", "voice"]
@@ -916,6 +914,14 @@ async def async_process_segments(hass, message, output_audio, params, options):
                     if value is not None:
                         segment_options[exposed_option_key] = value
 
+                # Extract parameters
+                segment_message = segment["message"]
+                segment_tts_platform = segment.get("tts_platform", params.get("tts_platform", None))
+                segment_language = segment.get("language", segment_options.get("language", params.get("language", None)))
+                segment_tts_speed = float(segment.get("tts_speed", params.get("tts_speed", 100)))
+                segment_tts_pitch = float(segment.get("tts_pitch", params.get("tts_pitch", 0)))
+
+                # Generate hash
                 for key, value in options.items():
                     if key not in segment_options:
                         segment_options[key] = value
