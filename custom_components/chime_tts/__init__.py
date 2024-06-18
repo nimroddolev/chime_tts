@@ -408,9 +408,6 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         )
     )
 
-    # Custom chimes folder path
-    _data[CUSTOM_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(options.get(CUSTOM_CHIMES_PATH_KEY))
-
     # Temp chimes folder path
     _data[TEMP_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(
         hass.config.path(
@@ -425,22 +422,24 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         )
     )
 
-    # Custom chime paths
+    # Update the services.yaml file with refreshed chimes options
+    _data[CUSTOM_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(options.get(CUSTOM_CHIMES_PATH_KEY))
+    await helpers.async_update_chime_lists(hass,
+                                           _data[CUSTOM_CHIMES_PATH_KEY],
+                                           _data["async_say"],
+                                           _data["async_say_url"])
+
+    # Custom chime path slots (DEPRECATED SINCE v1.1.0)
     _data[MP3_PRESET_CUSTOM_KEY] = {}
     for i in range(5):
         key = MP3_PRESET_CUSTOM_PREFIX + str(i + 1)
-        value = options.get(key, "")
-        _data[MP3_PRESET_CUSTOM_KEY][key] = value
-
-    # Update the services.yaml file with refreshed chimes options
-    await helpers.async_update_services_yaml(_data[CUSTOM_CHIMES_PATH_KEY])
-    hass.services.async_remove(DOMAIN, SERVICE_SAY)
-    hass.services.async_register(DOMAIN, SERVICE_SAY, _data["async_say"])
-    hass.services.async_remove(DOMAIN, SERVICE_SAY_URL)
-    hass.services.async_register(DOMAIN, SERVICE_SAY_URL, _data["async_say_url"])
+        value = options.get(key)
+        if value and len(value) > 0:
+            _data[MP3_PRESET_CUSTOM_KEY][key] = value
 
     # Debug summary
     _LOGGER.debug("Chime TTS Configuration Values:")
+
     for key_string in [
         QUEUE_TIMEOUT_KEY,
         TTS_PLATFORM_KEY,
@@ -453,6 +452,8 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         CUSTOM_CHIMES_PATH_KEY,
         MP3_PRESET_CUSTOM_KEY,
     ]:
+        if key_string == MP3_PRESET_CUSTOM_KEY and not _data[MP3_PRESET_CUSTOM_KEY]:
+            continue
         value = _data.get(key_string, None)
         if value and isinstance(value, dict):
             _LOGGER.debug(" - %s:", key_string.replace("_key", ""))

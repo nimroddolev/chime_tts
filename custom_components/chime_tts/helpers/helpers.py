@@ -15,6 +15,9 @@ from homeassistant.components.media_player.const import (
 import voluptuous as vol
 from pydub import AudioSegment
 from ..const import (
+    DOMAIN,
+    SERVICE_SAY,
+    SERVICE_SAY_URL,
     DEFAULT_CHIME_OPTIONS,
     OFFSET_KEY,
     DEFAULT_OFFSET_MS,
@@ -48,7 +51,7 @@ _LOGGER = logging.getLogger(__name__)
 class ChimeTTSHelper:
     """Helper functions for Chime TTS."""
 
-    # Services
+    # Services.yaml
 
     async def async_parse_services_yaml(self):
         """Load the services.yaml file into a dictionary."""
@@ -148,8 +151,19 @@ class ChimeTTSHelper:
             else:
                 schema[vol.Required(field_name)] = vol.Coerce(str)  # Default to string if selector type is missing
 
-
         return schema
+
+    async def async_update_chime_lists(self,
+                                       hass,
+                                       custom_chimes_folder_path,
+                                       say_service_func,
+                                       say_url_service_func):
+        """Update the list of chimes for the say and say-url services."""
+        await self.async_update_services_yaml(custom_chimes_folder_path)
+        hass.services.async_remove(DOMAIN, SERVICE_SAY)
+        hass.services.async_register(DOMAIN, SERVICE_SAY, say_service_func)
+        hass.services.async_remove(DOMAIN, SERVICE_SAY_URL)
+        hass.services.async_register(DOMAIN, SERVICE_SAY_URL, say_url_service_func)
 
     # Parameters / Options
 
