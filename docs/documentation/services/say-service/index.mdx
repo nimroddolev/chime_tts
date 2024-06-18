@@ -75,12 +75,6 @@ You can find the preset chimes that ship with Chime TTS [here](https://github.co
 To add your own chimes, you can specify a local folder [in the Chime TTS configuration page](../../configuration#custom-chimes-folder), containing chime audio files.
 **After restarting Home Assistant**, the chimes will be added to the [`chime_path`](./parameters#chime_path) and [`end_chime_path`](./parameters#end_chime_path) drop down lists.
 
-:::warning[Restart Required]
-
-Changing the Custom Chimes Folder path, or the folder's file contents will require a restart of Home Assistant before the custom chimes will be available to use.
-
-:::
-
 <img src={useBaseUrl('/img/say/custom_chimes_dropdown.png')} />
 
 You can also refer to your custom chimes in your YAML code by their file name (without the full path or file extension), eg:
@@ -124,16 +118,19 @@ You can also refer to your custom chimes in your YAML code by their file name (w
   </tr>
 </table>
 
-### R.I.P Custom Chime Slots (\<v1.1.0)
-:::warning[DEPRECATED: Custom chime slots for the chime list UI]
+:::warning[Restart Required]
 
-**Until v1.1.0** users had 5 chime slots to assign their custom chimes for scripts and automations.
-
-**Since v1.1.0** the slots have been deprecated in favour of the [Custom Chimes Folder](#custom-chimes-folder).
-
-Automations and scripts with references to custom slots (eg: `chime_path: custom_chime_path_3`) will continue to work as normal.
+Changes to the Custom Chimes Folder path in the configuration or the folder's file contents requires a restart of Home Assistant.
 
 :::
+
+### R.I.P Custom Chime Slots
+
+In v1 of Chime TTS, users could use up to 5 custom chime slots to use custom chimes in scripts and automations.
+
+Starting from version **v1.1.0**, custom chime slots have been deprecated in favour of the [Custom Chimes Folder](#custom-chimes-folder).
+Automations and scripts with references to custom slots (eg: `chime_path: custom_chime_path_3`) will continue to work as normal but can no longer be modified. It is recommended to migrate to using the [Custom Chimes Folder](#custom-chimes-folder) instead, as it is no longer to assign paths to the custom slots (which would break automations if you need to reinstall Home Assistant/Chime TTS).
+
 
 ### Custom local audio files and external URLs
 
