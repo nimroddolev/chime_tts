@@ -68,6 +68,8 @@ class ChimeTTSFlowHandler(config_entries.ConfigFlow):
 class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow Chime TTS integration."""
 
+    data: dict
+
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
         LOGGER.debug("-----  Chime TTS Version %s Configuration -----", VERSION)
@@ -87,55 +89,50 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         # Fetch entered values
         if user_input is None:
             user_input = {}
+
+        self.data = {
+            QUEUE_TIMEOUT_KEY: self.get_data_key_value(
+                QUEUE_TIMEOUT_KEY,
+                user_input.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT)),
+            TTS_PLATFORM_KEY: self.get_data_key_value(
+                TTS_PLATFORM_KEY,
+                user_input.get(TTS_PLATFORM_KEY, default_tts)),
+            OFFSET_KEY: self.get_data_key_value(
+                OFFSET_KEY,
+                user_input.get(OFFSET_KEY, DEFAULT_OFFSET_MS)),
+            FADE_TRANSITION_KEY: self.get_data_key_value(
+                FADE_TRANSITION_KEY,
+                user_input.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)),
+            MEDIA_DIR_KEY: self.get_data_key_value(
+                MEDIA_DIR_KEY,
+                user_input.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)),
+            CUSTOM_CHIMES_PATH_KEY: user_input.get(
+                CUSTOM_CHIMES_PATH_KEY,
+                self.get_data_key_value(CUSTOM_CHIMES_PATH_KEY, "")),
+            TEMP_CHIMES_PATH_KEY: self.get_data_key_value(
+                TEMP_CHIMES_PATH_KEY,
+                user_input.get(TEMP_CHIMES_PATH_KEY, f"{root_path}{TEMP_CHIMES_PATH_DEFAULT}")),
+            TEMP_PATH_KEY: self.get_data_key_value(
+                TEMP_PATH_KEY,
+                user_input.get(TEMP_PATH_KEY, f"{root_path}{TEMP_PATH_DEFAULT}")),
+            WWW_PATH_KEY: self.get_data_key_value(
+                WWW_PATH_KEY,
+                user_input.get(WWW_PATH_KEY, f"{root_path}{WWW_PATH_DEFAULT}"))
+        }
+
         options_schema = vol.Schema(
             {
-                vol.Required(
-                    QUEUE_TIMEOUT_KEY,
-                    default=self.get_data_key_value(QUEUE_TIMEOUT_KEY,
-                                                    user_input.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))  # type: ignore
-                ): int,
-                vol.Optional(
-                    TTS_PLATFORM_KEY,
-                    default=self.get_data_key_value(TTS_PLATFORM_KEY,
-                                                    user_input.get(TTS_PLATFORM_KEY, default_tts)),  # type: ignore
-                ): str,
-                vol.Optional(
-                    OFFSET_KEY,
-                    default=self.get_data_key_value(OFFSET_KEY,
-                                                    user_input.get(OFFSET_KEY, DEFAULT_OFFSET_MS)),  # type: ignore
-                ): int,
-                vol.Optional(
-                    FADE_TRANSITION_KEY,
-                    default=self.get_data_key_value(FADE_TRANSITION_KEY,
-                                                    user_input.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)),  # type: ignore
-                ): int,
-                vol.Required(
-                    MEDIA_DIR_KEY,
-                    default=self.get_data_key_value(MEDIA_DIR_KEY,
-                                                    user_input.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)),  # type: ignore
-                ): str,
-                vol.Optional(
-                    CUSTOM_CHIMES_PATH_KEY,
-                    default=self.get_data_key_value(CUSTOM_CHIMES_PATH_KEY),  # type: ignore
-                ): str,
-                vol.Required(
-                    TEMP_CHIMES_PATH_KEY,
-                    default=self.get_data_key_value(TEMP_CHIMES_PATH_KEY,
-                                                    user_input.get(TEMP_CHIMES_PATH_KEY, f"{root_path}{TEMP_CHIMES_PATH_DEFAULT}")),  # type: ignore
-                ): str,
-                vol.Required(
-                    TEMP_PATH_KEY,
-                    default=self.get_data_key_value(TEMP_PATH_KEY,
-                                                    user_input.get(TEMP_PATH_KEY, f"{root_path}{TEMP_PATH_DEFAULT}")),  # type: ignore
-                ): str,
-                vol.Required(
-                    WWW_PATH_KEY,
-                    default=self.get_data_key_value(WWW_PATH_KEY,
-                                                    user_input.get(WWW_PATH_KEY, f"{root_path}{WWW_PATH_DEFAULT}")),  # type: ignore
-                ): str
+                vol.Required(QUEUE_TIMEOUT_KEY, default=self.data[QUEUE_TIMEOUT_KEY]): int,
+                vol.Optional(TTS_PLATFORM_KEY, default=self.data[TTS_PLATFORM_KEY]): str,
+                vol.Optional(OFFSET_KEY, default=self.data[OFFSET_KEY]): int,
+                vol.Optional(FADE_TRANSITION_KEY, default=self.data[FADE_TRANSITION_KEY]): int,
+                vol.Required(MEDIA_DIR_KEY,default=self.data[MEDIA_DIR_KEY]): str,
+                vol.Optional(CUSTOM_CHIMES_PATH_KEY,default=self.data[CUSTOM_CHIMES_PATH_KEY]): str,
+                vol.Required(TEMP_CHIMES_PATH_KEY,default=self.data[TEMP_CHIMES_PATH_KEY]): str,
+                vol.Required(TEMP_PATH_KEY,default=self.data[TEMP_PATH_KEY]): str,
+                vol.Required(WWW_PATH_KEY,default=self.data[WWW_PATH_KEY]): str
             }
         )
-
         # Display the configuration form with the current values
         if user_input == {} or user_input is None:
             user_input = None
@@ -145,7 +142,6 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 description_placeholders=user_input,
                 last_step=True,
             )
-
 
         # Validation
 
@@ -181,29 +177,44 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 www_path.startswith(f"{root_path}/config/www/") != -1):
             _errors["www_path"] = "www_path"
 
-        # Custom chime folder path
-        user_input[CUSTOM_CHIMES_PATH_KEY] = user_input.get(CUSTOM_CHIMES_PATH_KEY, " ")
-
         if _errors:
             return self.async_show_form(
                 step_id="init", data_schema=options_schema, errors=_errors
             )
 
+        if not user_input.get(CUSTOM_CHIMES_PATH_KEY) or len(user_input.get(CUSTOM_CHIMES_PATH_KEY)) == 0:
+            self.data[CUSTOM_CHIMES_PATH_KEY] = ""
+
+        # 1st time Custom Chimes Folder path modified
+        if (user_input.get(CUSTOM_CHIMES_PATH_KEY)
+            and not self.config_entry.options.get(CUSTOM_CHIMES_PATH_KEY)):
+            # Show restart reminder step before saving config
+            return self.async_show_form(
+                step_id="restart_required",
+                    data_schema=None,
+                    description_placeholders=user_input,
+                    last_step=True
+                )
+
         # User input is valid, update the options
         LOGGER.debug("Updating configuration...")
-        # user_input = None
         return self.async_create_entry(
-            data=user_input,  # type: ignore
-            title="",
+            data=user_input
         )
 
-    def get_data_key_value(self, key, placeholder=None):
+    async def async_step_restart_required(self, user_input):
+        """Warn the user that Home Assistant needs to be restarted."""
+        return self.async_create_entry(
+            data=self.data
+        )
+
+    def get_data_key_value(self, key, default=None):
         """Get the value for a given key. Options flow 1st, Config flow 2nd."""
         dicts = [dict(self.config_entry.options), dict(self.config_entry.data)]
         for p_dict in dicts:
             if key in p_dict:
                 return p_dict[key]
-        return placeholder
+        return default
 
 
     async def ping_url(self, url: str):
