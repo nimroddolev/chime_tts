@@ -68,7 +68,7 @@ say:
           custom_value: true
           mode: dropdown
           multiple: false
-          options:
+          options: []
           translation_key: chime_paths
     end_chime_path:
       description: A preset or custom audio file to be played after TTS audio
@@ -80,7 +80,7 @@ say:
           custom_value: true
           mode: dropdown
           multiple: false
-          options:
+          options: []
           translation_key: chime_paths
     offset:
       description: Adds a delay between audio segments when value > 0, or overlays
@@ -318,7 +318,7 @@ say_url:
           custom_value: true
           mode: dropdown
           multiple: false
-          options:
+          options: []
           translation_key: chime_paths
     end_chime_path:
       description: A preset or custom audio file to be played after TTS audio
@@ -330,7 +330,7 @@ say_url:
           custom_value: true
           mode: dropdown
           multiple: false
-          options:
+          options: []
           translation_key: chime_paths
     offset:
       description: Adds a delay between audio segments when value > 0, or overlays
