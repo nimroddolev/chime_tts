@@ -1,3 +1,7 @@
+#hide_overflow {
+  overflow: hidden !important;
+}
+
 .features {
   display: flex;
   align-items: center;
@@ -105,10 +109,6 @@
   }
 }
 
-.mergeContainer {
-  position: relative;
-  min-width: 440px;
-}
 
 .soundContainer {
   margin-bottom: 30px;
@@ -162,6 +162,10 @@
 }
 
 .mergeContainer {
+  overflow: auto;
+  position: relative;
+  min-width: 440px;
+
   display: flex;
   align-items: center;
   flex-direction: column;

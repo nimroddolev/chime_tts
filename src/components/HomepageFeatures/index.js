@@ -7,7 +7,7 @@ export default function HomepageFeatures() {
   return (
     <section className={styles.features}>
       <div className="container">
-        <div className="row">
+        <div className={clsx('row', 'row1')} id={styles.hide_overflow}>
 
           <div className={styles.mergeContainer}>
             <div className={styles.cell}>
