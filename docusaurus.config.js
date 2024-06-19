@@ -87,7 +87,7 @@ const config = {
           },
           // { to: '/docs/quick-start', label: 'Quick Start', position: 'left' },
           {
-            to: "/docs/quick-start",
+            to: "/docs/quick-start/",
             label: "Quick Start",
             position: "left",
             items: [
@@ -104,7 +104,7 @@ const config = {
             ]
           },
           {
-            to: "docs/documentation",
+            to: "docs/documentation/",
             label: "Documentation",
             position: "left",
             items: [
@@ -170,15 +170,15 @@ const config = {
               },
               {
                 label: 'Quick Start',
-                to: '/docs/quick-start',
+                to: '/docs/quick-start/',
               },
               {
                 label: "Documentation",
-                to: "docs/documentation"
+                to: "docs/documentation/"
               },
               {
                 label: 'Support',
-                to: '/docs/support',
+                to: '/docs/support/',
               },
             ],
           },
