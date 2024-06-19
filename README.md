@@ -45,7 +45,7 @@ Chime TTS offers various features that enhance TTS audio playback experience:
 - **No lag or timing issues:** Precise timing between audio files without cloud TTS delays.
 - **Customizable audio cues:** Play preset or custom audio before and after TTS messages.
 - **Flexible TTS platform selection:** Supports various [TTS platform integrations](https://www.home-assistant.io/integrations/#text-to-speech).
--  **Easy service invocation:** Use the [`chime_tts.say`](https://nimroddolev.github.io/chime_tts/docs/documentation/say-service) and [`chime_tts.say_url`](https://nimroddolev.github.io/chime_tts/docs/documentation/say_url-service) services in automations and scripts.
+-  **Easy service invocation:** Use the [`chime_tts.say`](https://nimroddolev.github.io/chime_tts/docs/documentation/services/say-service) and [`chime_tts.say_url`](https://nimroddolev.github.io/chime_tts/docs/documentation/services/say_url-service) services in automations and scripts.
 -  **Set media player  volume:** Notifications can be played at a defined volume and restored after playback.
 - **Restore previous audio:** Chime TTS supports pausing and resuming currently playing audio beyond the media player platforms supported by Home Assistant *(eg: HomePods)*.
 -  **Mix and match TTS platforms:** Combine TTS audio using multiple TTS platforms within the same audio announcement.
