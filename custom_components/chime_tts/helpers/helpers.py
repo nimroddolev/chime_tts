@@ -8,7 +8,7 @@ import shutil
 import yaml
 import aiofiles
 import aiofiles.os
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, SupportsResponse
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_VOLUME_LEVEL,
 )
@@ -164,6 +164,10 @@ class ChimeTTSHelper:
         hass.services.async_register(DOMAIN, SERVICE_SAY, say_service_func)
         hass.services.async_remove(DOMAIN, SERVICE_SAY_URL)
         hass.services.async_register(DOMAIN, SERVICE_SAY_URL, say_url_service_func)
+        hass.services.async_register(DOMAIN,
+                                    SERVICE_SAY_URL,
+                                    say_url_service_func,
+                                    supports_response=SupportsResponse.ONLY)
 
     # Parameters / Options
 
