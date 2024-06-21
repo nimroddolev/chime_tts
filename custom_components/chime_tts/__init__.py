@@ -862,7 +862,7 @@ def get_segment_offset(output_audio, segment, params):
     return segment_offset
 
 
-async def async_process_segments(hass, message, output_audio, params, options):
+async def async_process_segments(hass, message, output_audio=None, params={}, options={}):
     """Process all message segments and add the audio."""
     segments = helpers.parse_message(message)
     if segments is None or len(segments) == 0:

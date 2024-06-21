@@ -80,7 +80,7 @@ class ChimeTTSHelper:
             async with aiofiles.open(services_file_path, mode='w') as file:
                 await file.write(yaml.safe_dump(services_yaml, default_flow_style=False, sort_keys=False))
 
-            _LOGGER.info("Updated services.yaml with new chime options.")
+            _LOGGER.info("Updated services.yaml chime options.")
         except Exception as e:
             _LOGGER.error("Unexpected error updating services.yaml: %s", str(e))
 
@@ -103,7 +103,6 @@ class ChimeTTSHelper:
 
             # New chimes detected?
             if final_options != services_yaml['say']['fields']['chime_path']['selector']['select']['options']:
-                _LOGGER.debug("Adding new chimes")
                 # Update `say` and `say_url` chime path fields
                 services_yaml['say']['fields']['chime_path']['selector']['select']['options'] = list(final_options)
                 services_yaml['say']['fields']['end_chime_path']['selector']['select']['options'] = list(final_options)
@@ -417,7 +416,7 @@ class ChimeTTSHelper:
                          default_tts_platform: str = ""):
         """TTS platform/entity_id to use for TTS audio."""
 
-        installed_tts_platforms = self.get_installed_tts_platforms(hass)
+        installed_tts_platforms: list[str] = self.get_installed_tts_platforms(hass)
 
         # Match for deprecated Nabu Casa platform string
         if tts_platform.lower() == NABU_CASA_CLOUD_TTS_OLD:
@@ -447,7 +446,7 @@ class ChimeTTSHelper:
         return self.get_default_tts_platform(hass, default_tts_platform)
 
 
-    def get_stripped_tts_platform(self, hass, tts_provider):
+    def get_stripped_tts_platform(self, tts_provider = ""):
         """Validate the TTS platform name."""
         stripped_tts_provider = tts_provider.replace(" ", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "").lower()
         if stripped_tts_provider == "amazonpolly":
@@ -504,7 +503,7 @@ class ChimeTTSHelper:
         return installed_tts_platforms
 
 
-    def get_default_tts_platform(self, hass: HomeAssistant, default_tts_platform: str = ""):
+    def get_default_tts_platform(self, hass, default_tts_platform: str = ""):
         """User's default TTS platform name."""
         installed_tts = list((hass.data["tts_manager"].providers).keys())
 

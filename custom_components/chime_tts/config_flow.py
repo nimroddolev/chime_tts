@@ -156,8 +156,12 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input.get(TTS_PLATFORM_KEY, None) and len(user_input[TTS_PLATFORM_KEY]) > 0:
 
             # Replace friendly name with entity/platform name
-            default_tts_provider = helpers.get_stripped_tts_platform(self.hass, user_input[TTS_PLATFORM_KEY])
-            stripped_tts_platforms = [platform.lower().replace("tts", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "") for platform in helpers.get_installed_tts_platforms(self.hass)]
+            stripped_tts_platforms = []
+            for tts_platform in helpers.get_installed_tts_platforms(self.hass):
+                if tts_platform and 'platform' in tts_platform:
+                    stripped_tts_platforms.append(tts_platform.platform.replace("tts", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", ""))
+
+            default_tts_provider = helpers.get_stripped_tts_platform(user_input[TTS_PLATFORM_KEY])
             default_tts_provider = default_tts_provider.lower().replace("tts", "").replace(" ", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "")
 
             if len(stripped_tts_platforms) == 0:
