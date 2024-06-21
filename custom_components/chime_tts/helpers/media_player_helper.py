@@ -140,7 +140,8 @@ class MediaPlayerHelper:
         """Get the platform for a given media_player entity."""
         entity_registry = hass.data["entity_registry"]
         for entity in entity_registry.entities.values():
-            if entity.entity_id == entity_id:
+            if entity and entity.entity_id == entity_id:
+                _LOGGER.debug("%s", entity.platform)
                 return entity.platform
         return None
 
@@ -189,15 +190,21 @@ class MediaPlayerHelper:
 
     def get_is_media_player_alexa(self, hass, entity_id):
         """Determine whether a media_player belongs to the Alexa Media Player platform."""
-        return self.get_media_players_from_entity_id(entity_id).platform == ALEXA_MEDIA_PLAYER_PLATFORM
+        media_player: ChimeTTSMediaPlayer = self.get_media_players_from_entity_id(entity_id)
+        if media_player:
+            return media_player.platform == ALEXA_MEDIA_PLAYER_PLATFORM
 
     def get_is_media_player_sonos(self, hass, entity_id):
         """Determine whether a media_player belongs to the Sonos platform."""
-        return self.get_media_players_from_entity_id(entity_id).platform == SONOS_PLATFORM
+        media_player: ChimeTTSMediaPlayer = self.get_media_players_from_entity_id(entity_id)
+        if media_player:
+            return media_player.platform == SONOS_PLATFORM
 
     def get_is_media_player_spotify(self, hass, entity_id):
         """Determine whether a media_player belongs to the Spotify platform."""
-        return self.get_media_players_from_entity_id(entity_id).platform == SPOTIFY_PLATFORM
+        media_player: ChimeTTSMediaPlayer = self.get_media_players_from_entity_id(entity_id)
+        if media_player:
+            return media_player.platform == SPOTIFY_PLATFORM
 
     def get_supported_feature(self, entity: State, feature: str):
         """Whether a feature is supported by the media_player device."""

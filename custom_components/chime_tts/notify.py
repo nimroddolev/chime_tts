@@ -8,7 +8,6 @@ from .const import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.notify import BaseNotificationService
 from homeassistant.core import HomeAssistant
-from homeassistant import exceptions
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,10 +68,6 @@ class ChimeTTSNotificationService(BaseNotificationService):
                 service=SERVICE_SAY,
                 service_data=kwargs,
                 blocking=True)
-        except exceptions.ServiceNotFound as error:
-            _LOGGER.error("Service `chime_tts.say` not found: %s", error)
-        except exceptions.CallNotAvailable as error:
-            _LOGGER.error("Service `chime_tts.say` not available: %s", error)
         except Exception as error:
             _LOGGER.error("Service `chime_tts.say` error: %s", error)
 

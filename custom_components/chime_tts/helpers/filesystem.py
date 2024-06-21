@@ -66,10 +66,8 @@ class FilesystemHelper:
 
     async def async_get_chime_path(self, chime_path, cache, data: dict, hass: HomeAssistant):
         """Retrieve preset chime path if selected."""
-        _LOGGER.debug("```data type = %s. data = %s", str(type(data)), str(data))
         custom_chime_paths_dict = data.get(MP3_PRESET_CUSTOM_KEY, {})
         temp_chimes_path = data.get(TEMP_CHIMES_PATH_KEY, "")
-        _LOGGER.debug("```Looking for audio file %s", chime_path)
         # Remove prefix (prefix deprecated in v0.9.1)
         chime_path = chime_path.replace(MP3_PRESET_PATH_PLACEHOLDER, "")
 
@@ -85,7 +83,6 @@ class FilesystemHelper:
                 if os.path.exists(final_chime_path):
                     _LOGGER.debug("Local path to chime: %s", final_chime_path)
                     return final_chime_path
-        _LOGGER.debug("```...not a default chime")
 
         # Custom chime mp3 path?
         if chime_path.startswith(MP3_PRESET_CUSTOM_PREFIX):
@@ -99,7 +96,6 @@ class FilesystemHelper:
             else:
                 _LOGGER.debug("Custom chime not found at path: %s", chime_path)
                 return None
-        _LOGGER.debug("```...not a custom chime path")
 
         # External URL?
         if chime_path.startswith("http://") or chime_path.startswith("https://"):
@@ -123,7 +119,6 @@ class FilesystemHelper:
 
             _LOGGER.warning("Unable to downloaded chime from URL: %s", chime_path)
             return None
-        _LOGGER.debug("```...not an external URL")
 
         chime_path = self.validate_path(hass, chime_path)
         return chime_path
