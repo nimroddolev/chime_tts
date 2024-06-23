@@ -312,7 +312,7 @@ class FilesystemHelper:
     def make_folder_path_safe(self, path):
         """Validate folder path."""
         if not path:
-            return None
+            return ""
         if not f"{path}".startswith("/"):
             path = f"/{path}"
         if not f"{path}".endswith("/"):
