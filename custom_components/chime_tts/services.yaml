@@ -248,8 +248,7 @@ say:
             value: Custom
           translation_key: audio_conversion
     language:
-      description: The TTS language (supported by Google Translate, Microsoft Edge
-        TTS and Nabu Casa Cloud TTS)
+      description: The TTS language (supported by Google Translate, Microsoft Edge TTS, Amazon Polly and Nabu Casa Cloud TTS)
       example: en
       name: Language
       required: false
