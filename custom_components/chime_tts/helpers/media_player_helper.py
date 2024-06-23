@@ -233,10 +233,8 @@ class MediaPlayerHelper:
         media_folder_path_index = media_source_path.find("/media/")
         if media_folder_path_index != -1:
             media_path = media_source_path[media_folder_path_index + len("/media/") :].replace("//", "/")
-            media_source_path = "media-source://media_source<media_dir><media_path>".replace(
-                "<media_dir>", f"/{MEDIA_DIR_DEFAULT}/"
-            ).replace(
-                "<media_path>", media_path)
+            media_source_path = f"media-source://media_source{media_dir}{media_path}"
+            _LOGGER.debug("```media_source_path = %s", media_source_path)
             return media_source_path
 
         return None

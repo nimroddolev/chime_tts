@@ -3,6 +3,8 @@ import logging
 import requests
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.helpers import selector
+
 from .helpers.helpers import ChimeTTSHelper
 from .const import (
     DOMAIN,
@@ -90,6 +92,19 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is None:
             user_input = {}
 
+        # Media Folders
+        media_dirs = self.hass.config.media_dirs or {}
+        default_media_dir = MEDIA_DIR_DEFAULT if (MEDIA_DIR_DEFAULT in media_dirs) else (next(iter(media_dirs)) if media_dirs else "local")
+        selected_media_dir = self.get_data_key_value(
+                MEDIA_DIR_KEY,
+                user_input.get(MEDIA_DIR_KEY, default_media_dir)
+        )
+        media_dirs_labels = ["local" if default_media_dir else "No media directories available"]
+        for key, _value in media_dirs.items():
+            if key not in media_dirs_labels:
+                media_dirs_labels.append(key)
+                
+
         self.data = {
             QUEUE_TIMEOUT_KEY: self.get_data_key_value(
                 QUEUE_TIMEOUT_KEY,
@@ -103,9 +118,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             FADE_TRANSITION_KEY: self.get_data_key_value(
                 FADE_TRANSITION_KEY,
                 user_input.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)),
-            MEDIA_DIR_KEY: self.get_data_key_value(
-                MEDIA_DIR_KEY,
-                user_input.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)),
+            MEDIA_DIR_KEY: selected_media_dir,
             CUSTOM_CHIMES_PATH_KEY: user_input.get(
                 CUSTOM_CHIMES_PATH_KEY,
                 self.get_data_key_value(CUSTOM_CHIMES_PATH_KEY, "")),
@@ -126,8 +139,11 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(TTS_PLATFORM_KEY, default=self.data[TTS_PLATFORM_KEY]): str,
                 vol.Optional(OFFSET_KEY, default=self.data[OFFSET_KEY]): int,
                 vol.Optional(FADE_TRANSITION_KEY, default=self.data[FADE_TRANSITION_KEY]): int,
-                vol.Required(MEDIA_DIR_KEY,default=self.data[MEDIA_DIR_KEY]): str,
-                vol.Optional(CUSTOM_CHIMES_PATH_KEY,default=self.data[CUSTOM_CHIMES_PATH_KEY]): str,
+                vol.Required(MEDIA_DIR_KEY, default=selected_media_dir):selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=media_dirs_labels,
+                                                  mode=selector.SelectSelectorMode.DROPDOWN,
+                                                  custom_value=True),
+                    ),
                 vol.Required(TEMP_CHIMES_PATH_KEY,default=self.data[TEMP_CHIMES_PATH_KEY]): str,
                 vol.Required(TEMP_PATH_KEY,default=self.data[TEMP_PATH_KEY]): str,
                 vol.Required(WWW_PATH_KEY,default=self.data[WWW_PATH_KEY]): str
