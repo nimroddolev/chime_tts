@@ -507,6 +507,7 @@ async def async_request_tts_audio(
 
     # Language
     if (language or tts_options.get("language")) and tts_platform in [
+        AMAZON_POLLY,
         GOOGLE_TRANSLATE,
         NABU_CASA_CLOUD_TTS,
         IBM_WATSON_TTS,
