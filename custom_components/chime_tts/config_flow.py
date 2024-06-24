@@ -146,6 +146,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                     ),
                 vol.Optional(OFFSET_KEY, default=self.data[OFFSET_KEY]): int,
                 vol.Optional(FADE_TRANSITION_KEY, default=self.data[FADE_TRANSITION_KEY]): int,
+                vol.Optional(CUSTOM_CHIMES_PATH_KEY,default=self.data[CUSTOM_CHIMES_PATH_KEY]): str,
                 vol.Required(MEDIA_DIR_KEY, default=selected_media_dir):selector.SelectSelector(
                     selector.SelectSelectorConfig(options=media_dirs_labels,
                                                   mode=selector.SelectSelectorMode.DROPDOWN,
