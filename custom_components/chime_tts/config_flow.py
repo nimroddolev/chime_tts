@@ -92,6 +92,9 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is None:
             user_input = {}
 
+        # Installed TTS platforms
+        tts_platforms = sorted(helpers.get_installed_tts_platforms(self.hass))
+
         # Media Folders
         media_dirs = self.hass.config.media_dirs or {}
         default_media_dir = MEDIA_DIR_DEFAULT if (MEDIA_DIR_DEFAULT in media_dirs) else (next(iter(media_dirs)) if media_dirs else "local")
@@ -103,7 +106,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         for key, _value in media_dirs.items():
             if key not in media_dirs_labels:
                 media_dirs_labels.append(key)
-                
+
 
         self.data = {
             QUEUE_TIMEOUT_KEY: self.get_data_key_value(
@@ -136,7 +139,11 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         options_schema = vol.Schema(
             {
                 vol.Required(QUEUE_TIMEOUT_KEY, default=self.data[QUEUE_TIMEOUT_KEY]): int,
-                vol.Optional(TTS_PLATFORM_KEY, default=self.data[TTS_PLATFORM_KEY]): str,
+                vol.Required(TTS_PLATFORM_KEY, default=self.data[TTS_PLATFORM_KEY]):selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=tts_platforms,
+                                                  mode=selector.SelectSelectorMode.DROPDOWN,
+                                                  custom_value=True),
+                    ),
                 vol.Optional(OFFSET_KEY, default=self.data[OFFSET_KEY]): int,
                 vol.Optional(FADE_TRANSITION_KEY, default=self.data[FADE_TRANSITION_KEY]): int,
                 vol.Required(MEDIA_DIR_KEY, default=selected_media_dir):selector.SelectSelector(
