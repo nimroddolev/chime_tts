@@ -507,6 +507,7 @@ async def async_request_tts_audio(
 
     # Language
     if (language or tts_options.get("language")) and tts_platform in [
+        AMAZON_POLLY,
         GOOGLE_TRANSLATE,
         NABU_CASA_CLOUD_TTS,
         IBM_WATSON_TTS,
@@ -534,7 +535,7 @@ async def async_request_tts_audio(
         for key, value in voice.TTS_VOICES.items():
             if voice in value:
                 language = key
-                _LOGGER.debug(" - languge set to '%s' for voice: '%s'.", language, voice)
+                _LOGGER.debug(" - language set to '%s' for voice: '%s'.", language, voice)
 
     # Cache
     use_cache = bool(cache) and tts_platform not in [GOOGLE_TRANSLATE, NABU_CASA_CLOUD_TTS]
