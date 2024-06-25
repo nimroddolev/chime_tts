@@ -110,9 +110,9 @@ When including the `options` parameter in a TTS segment, the included parameters
 
 #### `chime` Segment Type
 
-The chime segment allows you to insert chimes anywhere in your messages, *(not just at the start via* [`chime_path`](#chime_path)) *or end via* [`end_chime_path`](#end_chime_path)*)*, and supports the [`offset`](#offset) and [`audio_conversion`](#audio_conversion) parameters.
+The chime segment allows you to insert chimes anywhere in your messages, *(not just at the start (via *[`chime_path`](#chime_path)*) or end (via *[`end_chime_path`](#end_chime_path)*), and supports the [`offset`](#offset) and [`audio_conversion`](#audio_conversion) parameters.
 
-The chime path value can be set to a preset chime, a local path to your own custom files or a URL to a remote audio file (see [selecting chimes](./#selecting-chimes)).
+The chime value can be any value supported by the [`chime_path`](#chime_path)/[`end_chime_path`](#end_chime_path) parameters (see [selecting chimes](./#selecting-chimes)).
 
 ```
 service: chime_tts.say
@@ -194,9 +194,10 @@ Chime TTS works with [TTS Platform integrations](https://www.home-assistant.io/i
 | **Description:**     | The file path for the audio to insert **before** the TTS audio |
 | -------------------- | -------------------------------------------------------------- |
 | **Required:**        | No                                                             |
-| **Example 1:**       | *One of the Chime TTS presets:*<br/>`ba_dum_tss`<br/>`bells`<br/>`bells_2`<br/>`bright`<br/>`chirp`<br/>`choir`<br/>`chord`<br/>`classical`<br/>`crickets`<br/>`ding_dong`<br/>`drumroll`<br/>`dun_dun_dun`<br/>`error`<br/>`fanfare`<br/>`glockenspiel`<br/>`hail`<br/>`knock`<br/>`marimba`<br/>`mario_coin`<br/>`microphone_tap`<br/>`tada`<br/>`toast`<br/>`twenty_four`<br/>`sad_trombone`<br/>`soft`<br/>`whistle` |
-| **Example 2:**       | Your own audio file from your local media library:<br/>`/media/sounds/notification.mp3` |
-| **Example 3:**       | Your own audio file from a URL:<br/>`https://www.some-website/sounds/notification.ogg` |
+| **Example 1:**       | One of the Chime TTS presets:<br/>`ba_dum_tss`<br/>`bells`<br/>`bells_2`<br/>`bright`<br/>`chirp`<br/>`choir`<br/>`chord`<br/>`classical`<br/>`crickets`<br/>`ding_dong`<br/>`drumroll`<br/>`dun_dun_dun`<br/>`error`<br/>`fanfare`<br/>`glockenspiel`<br/>`hail`<br/>`knock`<br/>`marimba`<br/>`mario_coin`<br/>`microphone_tap`<br/>`tada`<br/>`toast`<br/>`twenty_four`<br/>`sad_trombone`<br/>`soft`<br/>`whistle` |
+| **Example 2:**       | One of your own custom chimes : `My Custom Chime`<br/>(_see [Custom Chimes Folder](./#custom-chimes-folder)_) |
+| **Example 2:**       | A local file:<br/>`/media/sounds/notification.mp3` |
+| **Example 3:**       | A file from a remote URL:<br/>`https://www.website.com/sounds/notification.ogg` |
 | **Default:**         | None                                                           |
 
 ---
@@ -206,9 +207,10 @@ Chime TTS works with [TTS Platform integrations](https://www.home-assistant.io/i
 | **Description:**     | The file path for the audio to insert **after** the TTS audio |
 | -------------------- | -------------------------------------------------------------- |
 | **Required:**        | No                                                             |
-| **Example 1:**       | *One of the Chime TTS presets:*<br/>`ba_dum_tss`<br/>`bells`<br/>`bells_2`<br/>`bright`<br/>`chirp`<br/>`choir`<br/>`chord`<br/>`classical`<br/>`crickets`<br/>`ding_dong`<br/>`drumroll`<br/>`dun_dun_dun`<br/>`error`<br/>`fanfare`<br/>`glockenspiel`<br/>`hail`<br/>`knock`<br/>`marimba`<br/>`mario_coin`<br/>`microphone_tap`<br/>`tada`<br/>`toast`<br/>`twenty_four`<br/>`sad_trombone`<br/>`soft`<br/>`whistle` |
-| **Example 2:**       | Your own audio file from your local media library:<br/>`/media/sounds/notification.mp3` |
-| **Example 3:**       | Your own audio file from a URL:<br/>`https://www.some-website/sounds/notification.ogg` |
+| **Example 1:**       | One of the Chime TTS presets:<br/>`ba_dum_tss`<br/>`bells`<br/>`bells_2`<br/>`bright`<br/>`chirp`<br/>`choir`<br/>`chord`<br/>`classical`<br/>`crickets`<br/>`ding_dong`<br/>`drumroll`<br/>`dun_dun_dun`<br/>`error`<br/>`fanfare`<br/>`glockenspiel`<br/>`hail`<br/>`knock`<br/>`marimba`<br/>`mario_coin`<br/>`microphone_tap`<br/>`tada`<br/>`toast`<br/>`twenty_four`<br/>`sad_trombone`<br/>`soft`<br/>`whistle` |
+| **Example 2:**       | One of your own custom chimes : `My Custom Chime`<br/>(_see [Custom Chimes Folder](./#custom-chimes-folder)_) |
+| **Example 2:**       | A local file:<br/>`/media/sounds/notification.mp3` |
+| **Example 3:**       | A file from a remote URL:<br/>`https://www.website.com/sounds/notification.ogg` |
 | **Default:**         | None                                                           |
 
 ---
