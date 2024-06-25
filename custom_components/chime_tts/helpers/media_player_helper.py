@@ -575,7 +575,7 @@ class MediaPlayerHelper:
                 media_player: ChimeTTSMediaPlayer = media_player_dict.get("media_player")
                 target_volume = media_player_dict.get("target_volume")
 
-                if media_player and media_player.get_current_volume_level() not in (target_volume, -1):
+                if media_player and round(media_player.get_current_volume_level(), 3) not in (round(target_volume,3), round(-1,3)):
                     all_volumes_set = False
                     if not has_debug_log_written:
                         _LOGGER.debug("...waiting until new volume levels reached...")

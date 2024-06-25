@@ -87,14 +87,12 @@ class FilesystemHelper:
 
         # Custom chime from chimes folder?
         custom_chimes_folder_options = self.get_chime_options_from_path(data.get(CUSTOM_CHIMES_PATH_KEY, ""))
-        _LOGGER.debug("```custom_chimes_folder_options = %s", str(custom_chimes_folder_options))
         for option_dict in custom_chimes_folder_options:
             p_chime_name = str(option_dict.get("label", "")).lower()
             p_chime_path = option_dict.get("value")
             chime_path_clean = chime_path.lower()
             for ext in _AUDIO_EXTENSIONS:
                 chime_path_clean = chime_path_clean.replace(ext, "")
-            _LOGGER.debug("```chime_path_clean = %s", chime_path_clean)
             if (p_chime_name and p_chime_path and chime_path_clean == p_chime_name):
                 return option_dict.get("value")
 
