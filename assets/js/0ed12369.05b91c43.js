@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkchime_tts=self.webpackChunkchime_tts||[]).push([[1877],{4047:t=>{t.exports=JSON.parse('{"metadata":{"permalink":"/chime_tts/blog","page":1,"postsPerPage":10,"totalPages":1,"totalCount":4,"blogDescription":"Blog","blogTitle":"Blog"}}')}}]);
