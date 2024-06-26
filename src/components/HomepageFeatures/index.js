@@ -51,7 +51,7 @@ export default function HomepageFeatures() {
               </div>
               <div className="text--center padding-horiz--md">
                 <Heading as="h3">Customizable</Heading>
-                <p>Mix TTS platforms & chimes together to create fully personalized notifications.</p>
+                <p>Create fully personalized notifications with a mix of TTS platforms, voices and languages.</p>
               </div>
             </div>
           </div>
@@ -69,8 +69,8 @@ export default function HomepageFeatures() {
                     <img src={useBaseUrl('/img/animations/knife/offset.png')} className={styles.knifeOffset} />
                   </div>
                 </div>
-                <Heading as="h3">Full Customization</Heading>
-                <p>Make fine-tuned adjustments to TTS audio with a suite of tools and a simple user-interface.</p>
+                <Heading as="h3">Fine Tuning</Heading>
+                <p>Easily adjustment your TTS audio with a suite of tools and a simple user-interface.</p>
               </div>
             </div>
           </div>
