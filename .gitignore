@@ -30,3 +30,4 @@ docusaurus.config.mjs
 package-lock.json
 custom_components
 .docusaurus/docusaurus-plugin-debug
+generated.js
