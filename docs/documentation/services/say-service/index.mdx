@@ -146,5 +146,13 @@ You can specify both local file paths or external URLs to your own audio files.
 
   <img src={useBaseUrl('/img/say/external_chime_path.png')} />
 
-## Alexa Smart speakers
-Chime TTS suppors Alexa smart speakers through the [Alexa Media Player](https://github.com/alandtse/alexa_media_player) integration. Playback on Alexa media_players will require this integration.
+## Alexa Smart Speakers
+Chime TTS playback on Alexa smart speakers requires the [Alexa Media Player](https://github.com/alandtse/alexa_media_player) integration.
+
+Alexa speakers can only play publicly available audio files, therefore you need to include your public-facing Home Assistant address in your `configuration.yaml` file:
+
+```
+homeassistant:
+  external_url: "https://[REPLACE WITH YOUR PUBLIC ADDRESS]:8123/"
+  internal_url: "http://[REPLACE WITH YOUR LOCAL IP ADDRESS]:8123/"
+```
