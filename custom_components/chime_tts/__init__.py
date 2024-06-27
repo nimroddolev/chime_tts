@@ -145,8 +145,6 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:  
 
     async def async_say_execute(service, is_say_url):
         """Play TTS audio with local chime MP3 audio."""
-        if is_say_url is False:
-            _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
         start_time = datetime.now()
         parse_result = True
 
