@@ -256,6 +256,10 @@ class FilesystemHelper:
 
     def copy_file(self, source_file, destination_folder):
         """Copy a file to a folder."""
+        if not destination_folder:
+            _LOGGER.warning("Unable to copy file: No destination folder path provided")
+            return None
+
         if self.create_folder(destination_folder):
             try:
                 copied_file_path = shutil.copy(source_file, destination_folder)
@@ -267,7 +271,7 @@ class FilesystemHelper:
             except Exception as e:
                 if str(e).find("are the same file") != -1:
                     return source_file
-                _LOGGER.warning(f"Unable to copy file: An error occurred: {e}")
+                _LOGGER.warning("Unable to copy file: An error occurred: %s", str(e))
         return None
 
     def file_exists_in_directory(self, file_path, directory):
@@ -331,7 +335,7 @@ class FilesystemHelper:
             path = f"/{path}"
         if not f"{path}".endswith("/"):
             path = f"{path}/"
-        path = path.replace("//", "/")
+        path = path.replace("//", "/").strip()
         return path
 
     ### Offloading to asyncio.to_thread ####

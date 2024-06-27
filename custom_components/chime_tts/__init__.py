@@ -375,10 +375,10 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         _data[ROOT_PATH_KEY] = filesystem_helper.make_folder_path_safe(hass.config.path("").replace("/config/", ""))
 
     if DEFAULT_TEMP_PATH_KEY not in _data:
-        _data[DEFAULT_TEMP_PATH_KEY] = f"{_data[ROOT_PATH_KEY]}{TEMP_PATH_DEFAULT}"
+        _data[DEFAULT_TEMP_PATH_KEY] = filesystem_helper.make_folder_path_safe(f"{_data[ROOT_PATH_KEY]}{TEMP_PATH_DEFAULT}")
 
     if DEFAULT_TEMP_CHIMES_PATH_KEY not in _data:
-        _data[DEFAULT_TEMP_CHIMES_PATH_KEY] = f"{_data[ROOT_PATH_KEY]}{TEMP_CHIMES_PATH_DEFAULT}"
+        _data[DEFAULT_TEMP_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(f"{_data[ROOT_PATH_KEY]}{TEMP_CHIMES_PATH_DEFAULT}")
 
     if DEFAULT_WWW_PATH_KEY not in _data:
         _data[DEFAULT_WWW_PATH_KEY] = filesystem_helper.make_folder_path_safe(f"{_data[ROOT_PATH_KEY]}/{WWW_PATH_DEFAULT}")
