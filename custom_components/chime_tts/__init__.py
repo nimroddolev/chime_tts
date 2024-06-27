@@ -700,45 +700,8 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     # Load previously generated audio from cache
     if cache is True:
         _LOGGER.debug(" *** Checking Chime TTS audio cache ***")
-        audio_dict = await async_get_cached_audio_data(hass, filepath_hash)
-        if audio_dict is not None and AUDIO_DURATION_KEY in audio_dict:
-            duration = audio_dict.get(AUDIO_DURATION_KEY, None)
+        audio_dict = await async_verify_cached_audio(hass, filepath_hash, params, options, is_local, is_public, ffmpeg_args)
 
-            # Make a local copy of the public file
-            if is_local and audio_dict.get(LOCAL_PATH_KEY, None) is None and audio_dict.get(PUBLIC_PATH_KEY, None):
-                _LOGGER.debug("   - Copying public file to local directory")
-                audio_dict[LOCAL_PATH_KEY] = filesystem_helper.copy_file(audio_dict.get(PUBLIC_PATH_KEY, None), _data.get(TEMP_PATH_KEY, None))
-                await async_add_audio_file_to_cache(hass, audio_dict.get(LOCAL_PATH_KEY, None), duration, params, options)
-
-            # Make a public copy of the local file
-            if is_public and audio_dict.get(PUBLIC_PATH_KEY, None) is None and audio_dict.get(LOCAL_PATH_KEY, None):
-                _LOGGER.debug("    - Copying local file to public directory")
-                audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.copy_file(audio_dict.get(LOCAL_PATH_KEY, None), _data.get(WWW_PATH_KEY, None))
-                await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, None), duration, params, options)
-
-            audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.get_external_url(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
-            audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or
-                                                                                         audio_dict.get(PUBLIC_PATH_KEY, None),
-                                                                                         _data.get(MEDIA_DIR_KEY, None))
-
-            if (is_local is False or audio_dict.get(LOCAL_PATH_KEY, None)) and (is_public is False or audio_dict.get(PUBLIC_PATH_KEY, None)):
-                _LOGGER.debug("   Cached audio found:")
-                for key, value in audio_dict.items():
-                    quote = '"' if value and isinstance(value, str) else ''
-                    value = f"{quote}{value}{quote}"
-                    _LOGGER.debug("     - %s = %s", key, value)
-
-                # Apply audio conversion
-                if ffmpeg_args is not None and len(ffmpeg_args) > 0:
-                    _LOGGER.debug("   Apply audio conversion")
-                    if audio_dict.get(LOCAL_PATH_KEY, None):
-                        helpers.ffmpeg_convert_from_file(audio_dict.get(LOCAL_PATH_KEY, None), ffmpeg_args)
-                    if audio_dict.get(PUBLIC_PATH_KEY, None):
-                        # Convert public path to local path
-                        local_public_file_path = filesystem_helper.get_local_path(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
-                        helpers.ffmpeg_convert_from_file(local_public_file_path, ffmpeg_args)
-
-                return audio_dict
         _LOGGER.debug("   ...no cached audio found")
 
     ######################
@@ -771,13 +734,19 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         PUBLIC_PATH_KEY: None
     }
     if output_audio is not None:
-        initial_save_folder_key = TEMP_PATH_KEY if is_local else WWW_PATH_KEY
-        _LOGGER.debug(" - Saving mp3 file to folder: %s...", _data.get(initial_save_folder_key, ""))
+        folder_path_key = TEMP_PATH_KEY if is_local else WWW_PATH_KEY
+        folder_path_default = TEMP_PATH_DEFAULT if is_local else WWW_PATH_DEFAULT
+        save_folder = _data.get(folder_path_key, folder_path_default)
+        initial_save_folder_name = "local" if is_local else "public"
+        if not save_folder:
+            _LOGGER.warning("Error saving generated file to %s folder. Check the integration's configuration", initial_save_folder_name)
+            return None
+        _LOGGER.debug(" - Saving mp3 file to %s folder: %s...", initial_save_folder_name, save_folder)
         new_audio_file = await filesystem_helper.async_save_audio_to_folder(
             output_audio,
-            _data.get(initial_save_folder_key, None))
+            save_folder)
         if new_audio_file is None:
-            _LOGGER.debug("   ...error saving file")
+            _LOGGER.warning("Error saving file")
             return None
 
         # Perform FFmpeg conversion
@@ -807,11 +776,15 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
         # Save audio to local and/or public folders
         for folder_key in [(LOCAL_PATH_KEY if is_local else None), (PUBLIC_PATH_KEY if is_public else None)]:
+            # If file is not stored in local/public folder
             if folder_key is not None and audio_dict.get(folder_key, None) is None:
-                _LOGGER.debug(" - Saving generated audio to folder %s ...", _data.get(folder_key, ""))
+                default_folder = WWW_PATH_DEFAULT if folder_key == PUBLIC_PATH_KEY else TEMP_PATH_DEFAULT
+                folder_path = _data.get(folder_key, default_folder)
+                folder_name = "public" if folder_key == PUBLIC_PATH_KEY else "local"
+                _LOGGER.debug(" - Saving generated audio to %s folder: %s...", folder_name, folder_path)
                 audio_dict[folder_key] = await filesystem_helper.async_save_audio_to_folder(
                     output_audio,
-                    _data.get(folder_key, None))
+                    folder_path)
                 if audio_dict[folder_key] is None:
                     _LOGGER.error("Error saving audio to folder %s...", _data.get(LOCAL_PATH_KEY, ""))
             # Save path to cache
@@ -842,6 +815,48 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         _LOGGER.debug("   * %s = %s", key, value)
     return audio_dict
 
+async def async_verify_cached_audio(hass, filepath_hash, params, options, is_local, is_public, ffmpeg_args):
+    """Return verified audio_dict object from cache."""
+    audio_dict = await async_get_cached_audio_data(hass, filepath_hash)
+    if audio_dict is not None and AUDIO_DURATION_KEY in audio_dict:
+        duration = audio_dict.get(AUDIO_DURATION_KEY, None)
+
+        # Make a local copy of the public file
+        if is_local and audio_dict.get(LOCAL_PATH_KEY, None) is None and os.path.exists(audio_dict.get(PUBLIC_PATH_KEY, None)):
+            _LOGGER.debug("   - Copying public file to local directory")
+            audio_dict[LOCAL_PATH_KEY] = filesystem_helper.copy_file(audio_dict.get(PUBLIC_PATH_KEY, None), _data.get(TEMP_PATH_KEY, None))
+            await async_add_audio_file_to_cache(hass, audio_dict.get(LOCAL_PATH_KEY, None), duration, params, options)
+
+        # Make a public copy of the local file
+        if is_public and audio_dict.get(PUBLIC_PATH_KEY, None) is None and os.path.exists(audio_dict.get(LOCAL_PATH_KEY, None)):
+            _LOGGER.debug("    - Copying local file to public directory")
+            audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.copy_file(audio_dict.get(LOCAL_PATH_KEY, None), _data.get(WWW_PATH_KEY, None))
+            await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, None), duration, params, options)
+
+        audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.get_external_url(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
+        audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or
+                                                                                        audio_dict.get(PUBLIC_PATH_KEY, None),
+                                                                                        _data.get(MEDIA_DIR_KEY, None))
+
+        if (is_local is False or audio_dict.get(LOCAL_PATH_KEY, None)) and (is_public is False or audio_dict.get(PUBLIC_PATH_KEY, None)):
+            _LOGGER.debug("   Cached audio found:")
+            for key, value in audio_dict.items():
+                quote = '"' if value and isinstance(value, str) else ''
+                value = f"{quote}{value}{quote}"
+                _LOGGER.debug("     - %s = %s", key, value)
+
+            # Apply audio conversion
+            if ffmpeg_args is not None and len(ffmpeg_args) > 0:
+                _LOGGER.debug("   Apply audio conversion")
+                if audio_dict.get(LOCAL_PATH_KEY, None):
+                    helpers.ffmpeg_convert_from_file(audio_dict.get(LOCAL_PATH_KEY, None), ffmpeg_args)
+                if audio_dict.get(PUBLIC_PATH_KEY, None):
+                    # Convert public path to local path
+                    local_public_file_path = filesystem_helper.get_local_path(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
+                    helpers.ffmpeg_convert_from_file(local_public_file_path, ffmpeg_args)
+
+            return audio_dict
+    return None
 
 def get_segment_offset(output_audio, segment, params):
     """Offset value for segment."""
@@ -1248,7 +1263,6 @@ async def async_fire_media_service_calls(hass: HomeAssistant, media_service_call
                 service=service_call["service"],
                 service_data=service_call["service_data"]
             )
-            continue
         except ServiceNotFound:
             _LOGGER.error("Could not find service `%s.%s`.%s",
                     service_call["domain"],
