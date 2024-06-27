@@ -11,10 +11,10 @@ clear_cache:
       selector:
         boolean: null
     clear_ha_tts_cache:
-      default: true
-      description: Remove the TTS audio files stored in the Home Assistant TTS cache
-      example: 'True'
       name: Home Assistant TTS Cache
+      description: Remove the TTS audio files stored in the Home Assistant TTS cache
+      default: true
+      example: 'True'
       required: false
       selector:
         boolean: null
@@ -35,20 +35,10 @@ clear_cache:
       name: Publicly Accessible Chime TTS Cache
       required: false
       selector:
-        boolean:
-    clear_ha_tts_cache:
-      name: Home Assistant TTS Cache
-      description: "Remove the TTS audio files stored in the Home Assistant TTS cache"
-      default: True
-      example: "True"
-      required: false
-      selector:
-        boolean:
-
+        boolean: null
 replay:
-  name: "Replay"
-  description: "Replay the last service call to chime_tts.say with the same parameters"
-
+  name: Replay
+  description: Replay the last service call to chime_tts.say with the same parameters
 say:
   name: Say
   description: Play an audio file before TTS audio
@@ -248,7 +238,8 @@ say:
             value: Custom
           translation_key: audio_conversion
     language:
-      description: The TTS language (supported by Google Translate, Microsoft Edge TTS, Amazon Polly and Nabu Casa Cloud TTS)
+      description: The TTS language (supported by Google Translate, Microsoft Edge
+        TTS, Amazon Polly and Nabu Casa Cloud TTS)
       example: en
       name: Language
       required: false
@@ -300,7 +291,6 @@ say:
       selector:
         text:
           multiline: true
-
 say_url:
   name: Say URL
   description: Generates an audio file with the `chime_tts.say` service and returns
