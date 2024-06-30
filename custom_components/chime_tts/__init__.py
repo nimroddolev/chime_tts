@@ -688,7 +688,6 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
     # Produce local and/or public mp3s?
     alexa_media_player_count = media_player_helper.get_alexa_media_player_count(hass, entity_ids)
-
     is_public = alexa_media_player_count > 0 or (entity_ids is None or len(entity_ids) == 0)
     is_local = entity_ids is not None and len(entity_ids) > 0 and alexa_media_player_count != len(entity_ids)
 
@@ -698,9 +697,12 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     # Load previously generated audio from cache
     if cache is True:
         _LOGGER.debug(" *** Checking Chime TTS audio cache ***")
-        audio_dict = await async_verify_cached_audio(hass, filepath_hash, params, options, is_local, is_public, ffmpeg_args)
-
-        _LOGGER.debug("   ...no cached audio found")
+        audio_dict: dict = await async_verify_cached_audio(hass, filepath_hash, params, options, is_local, is_public, ffmpeg_args)
+        if audio_dict:
+            _LOGGER.debug("   ...cached audio found")
+            return audio_dict
+        else:
+            _LOGGER.debug("   ...no cached audio found")
 
     ######################
     # Generate new audio #
@@ -785,12 +787,13 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                     folder_path)
                 if audio_dict[folder_key] is None:
                     _LOGGER.error("Error saving audio to folder %s...", _data.get(LOCAL_PATH_KEY, ""))
-            # Save path to cache
-            if (cache or folder_key == PUBLIC_PATH_KEY) and audio_dict.get(folder_key, None):
-                await async_add_audio_file_to_cache(hass, audio_dict.get(folder_key, None), duration, params, options)
 
         # Convert external URL (for public paths)
         audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.get_external_url(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
+
+        # Save path to cache
+        if cache:
+            await async_add_audio_file_to_cache(hass, audio_dict.get(folder_key, None), duration, params, options)
 
     # Valdiation
     is_valid = True
@@ -1132,7 +1135,9 @@ async def async_play_media(
 def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
     """Prepare the media_player service calls for audio playback."""
     debug_title("Chime TTS playback")
+    service_calls = []
 
+    # List/s of media players by platform/joined group
     joined_media_player_entity_id: str = media_player_helper.joined_entity_id
     standard_media_player_entity_ids: list[str] = [entity_id for entity_id in entity_ids if media_player_helper.get_is_standard_media_player(hass, entity_id)]
     alexa_media_player_entity_ids: list[str] = [entity_id for entity_id in entity_ids if media_player_helper.get_is_media_player_alexa(hass, entity_id)]
@@ -1154,12 +1159,10 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
             else:
                 standard_media_player_entity_ids.append(joined_media_player_entity_id)
 
-    # Prepare service call/s for media_players
-    service_calls = []
-
     # Standard media_players
     if len(standard_media_player_entity_ids) > 0:
-        if service_data[ATTR_MEDIA_CONTENT_ID] is None:
+        standard_service_data = service_data.copy()
+        if standard_service_data[ATTR_MEDIA_CONTENT_ID] is None:
             _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
         else:
             _LOGGER.debug(
@@ -1168,18 +1171,19 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
                 ("s" if len(standard_media_player_entity_ids) != 1 else ""))
             for entity_id in standard_media_player_entity_ids:
                 _LOGGER.debug("     - %s", entity_id)
-            service_data[CONF_ENTITY_ID] = standard_media_player_entity_ids
+            standard_service_data[CONF_ENTITY_ID] = standard_media_player_entity_ids
             service_calls.append({
                 "domain": "media_player",
                 "service": SERVICE_PLAY_MEDIA,
-                "service_data": service_data,
+                "service_data": standard_service_data,
                 "blocking": True,
                 "result": True
             })
 
     # Sonos media_players
     if len(sonos_media_player_entity_ids) > 0:
-        if service_data[ATTR_MEDIA_CONTENT_ID] is None:
+        sonos_service_data = service_data.copy()
+        if sonos_service_data[ATTR_MEDIA_CONTENT_ID] is None:
             _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
         else:
             _LOGGER.debug(
@@ -1192,7 +1196,6 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
             # If all media_players have same target volume level
             uniform_target_volume = int(media_player_helper.get_uniform_target_volume_level(sonos_media_player_entity_ids) * 100)
             if uniform_target_volume != -1:
-                sonos_service_data = service_data.copy()
                 sonos_service_data[CONF_ENTITY_ID] = sonos_media_player_entity_ids
                 if uniform_target_volume >= 0:
                     sonos_service_data["extra"] = {"volume": uniform_target_volume}
@@ -1207,7 +1210,7 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
                 # Else 1 media_player.play_media service call per Sonos media_player, with the media_player's target volume level
                 for media_player in media_player_helper.get_media_players_from_entity_ids(sonos_media_player_entity_ids):
                     volume = int(media_player.target_volume_level * 100)
-                    individual_service_data = service_data.copy()
+                    individual_service_data = sonos_service_data.copy()
                     individual_service_data[CONF_ENTITY_ID] = media_player.entity_id
                     if volume >= 0:
                         individual_service_data["extra"] = {"volume": volume}
@@ -1286,6 +1289,7 @@ async def async_fire_media_service_calls(hass: HomeAssistant, media_service_call
                             service_call["service"],
                             str(err)
                             )
+            return False
 
     return True
 
