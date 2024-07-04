@@ -37,6 +37,7 @@ AUDIO_DURATION_KEY = "audio_duration"
 FADE_TRANSITION_KEY = "fade_transition_key"
 DEFAULT_FADE_TRANSITION_MS = 500
 TRANSITION_STEP_MS = 150
+ADD_COVER_ART_KEY = "add_cover_art"
 
 ALEXA_MEDIA_PLAYER_PLATFORM = "alexa_media"
 SPOTIFY_PLATFORM = "spotify"

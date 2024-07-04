@@ -16,6 +16,7 @@ from .const import (
     DEFAULT_OFFSET_MS,
     FADE_TRANSITION_KEY,
     DEFAULT_FADE_TRANSITION_MS,
+    ADD_COVER_ART_KEY,
     MEDIA_DIR_KEY,
     MEDIA_DIR_DEFAULT,
     CUSTOM_CHIMES_PATH_KEY,
@@ -133,7 +134,10 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 user_input.get(TEMP_PATH_KEY, f"{root_path}{TEMP_PATH_DEFAULT}")),
             WWW_PATH_KEY: self.get_data_key_value(
                 WWW_PATH_KEY,
-                user_input.get(WWW_PATH_KEY, f"{root_path}{WWW_PATH_DEFAULT}"))
+                user_input.get(WWW_PATH_KEY, f"{root_path}{WWW_PATH_DEFAULT}")),
+            ADD_COVER_ART_KEY: self.get_data_key_value(
+                ADD_COVER_ART_KEY,
+                user_input.get(ADD_COVER_ART_KEY, False))
         }
 
         options_schema = vol.Schema(
@@ -142,19 +146,18 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(TTS_PLATFORM_KEY, default=self.data[TTS_PLATFORM_KEY]):selector.SelectSelector(
                     selector.SelectSelectorConfig(options=tts_platforms,
                                                   mode=selector.SelectSelectorMode.DROPDOWN,
-                                                  custom_value=True),
-                    ),
+                                                  custom_value=True)),
                 vol.Optional(OFFSET_KEY, default=self.data[OFFSET_KEY]): int,
                 vol.Optional(FADE_TRANSITION_KEY, default=self.data[FADE_TRANSITION_KEY]): int,
                 vol.Optional(CUSTOM_CHIMES_PATH_KEY,default=self.data[CUSTOM_CHIMES_PATH_KEY]): str,
                 vol.Required(MEDIA_DIR_KEY, default=selected_media_dir):selector.SelectSelector(
                     selector.SelectSelectorConfig(options=media_dirs_labels,
                                                   mode=selector.SelectSelectorMode.DROPDOWN,
-                                                  custom_value=True),
-                    ),
+                                                  custom_value=True)),
                 vol.Required(TEMP_CHIMES_PATH_KEY,default=self.data[TEMP_CHIMES_PATH_KEY]): str,
                 vol.Required(TEMP_PATH_KEY,default=self.data[TEMP_PATH_KEY]): str,
-                vol.Required(WWW_PATH_KEY,default=self.data[WWW_PATH_KEY]): str
+                vol.Required(WWW_PATH_KEY,default=self.data[WWW_PATH_KEY]): str,
+                vol.Required(ADD_COVER_ART_KEY,default=self.data[ADD_COVER_ART_KEY]): bool
             }
         )
         # Display the configuration form with the current values

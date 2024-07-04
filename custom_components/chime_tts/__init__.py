@@ -48,10 +48,10 @@ from .const import (
     AUDIO_DURATION_KEY,
     FADE_TRANSITION_KEY,
     DEFAULT_FADE_TRANSITION_MS,
+    ADD_COVER_ART_KEY,
+
     ROOT_PATH_KEY,
-
     CUSTOM_CHIMES_PATH_KEY,
-
     DEFAULT_TEMP_CHIMES_PATH_KEY,
     TEMP_CHIMES_PATH_KEY,
     TEMP_CHIMES_PATH_DEFAULT,
@@ -396,6 +396,9 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Default audio fade transition duration
     _data[FADE_TRANSITION_KEY] = options.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)
 
+    # Add cover art to generated MP3 files
+    _data[ADD_COVER_ART_KEY] = options.get(ADD_COVER_ART_KEY, False)
+
     # Media folder (default: 'local')
     _data[MEDIA_DIR_KEY] = options.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)
 
@@ -443,6 +446,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         TTS_PLATFORM_KEY,
         OFFSET_KEY,
         FADE_TRANSITION_KEY,
+        ADD_COVER_ART_KEY,
         TEMP_CHIMES_PATH_KEY,
         TEMP_PATH_KEY,
         WWW_PATH_KEY,
@@ -465,7 +469,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
                 _LOGGER.debug("   - %s: %s%s%s", dict_key.replace("_key", ""), quote, str(value.get(dict_key, "None")), quote)
         else:
             quote = "'" if isinstance(value, str) and value is not None and value != 'None' else ""
-            _LOGGER.debug(" - %s: %s%s%s", key_string.replace("_key", ""), quote, str(value), quote)
+            _LOGGER.debug(" - %s: %s%s%s", str(key_string).replace("_key", ""), quote, str(value), quote)
 
 ####################################
 ### Retrieve TTS Audio Functions ###
@@ -748,6 +752,15 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         if new_audio_file is None:
             _LOGGER.warning("Error saving file")
             return None
+
+        # Add cover art
+        if _data.get(ADD_COVER_ART_KEY):
+            cover_art_filepath = f"{filesystem_helper.path_to_parent_folder('custom_components')}/chime_tts/cover_art.jpg"
+            if os.path.exists(cover_art_filepath):
+                _LOGGER.debug("Adding cover art to %s", new_audio_file)
+                new_audio_file = helpers.ffmpeg_convert_from_file(
+                    new_audio_file,
+                    f"-i {cover_art_filepath} -c copy -map 0 -map 1")
 
         # Perform FFmpeg conversion
         if ffmpeg_args:
