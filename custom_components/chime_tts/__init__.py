@@ -802,7 +802,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                     _LOGGER.error("Error saving audio to folder %s...", _data.get(LOCAL_PATH_KEY, ""))
 
         # Convert external URL (for public paths)
-        audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.get_external_url(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
+        audio_dict[PUBLIC_PATH_KEY] = await filesystem_helper.async_get_external_url(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
 
         # Save path to cache
         if cache:
@@ -847,7 +847,7 @@ async def async_verify_cached_audio(hass, filepath_hash, params, options, is_loc
             audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.copy_file(audio_dict.get(LOCAL_PATH_KEY, None), _data.get(WWW_PATH_KEY, None))
             await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, None), duration, params, options)
 
-        audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.get_external_url(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
+        audio_dict[PUBLIC_PATH_KEY] = await filesystem_helper.async_get_external_url(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
         audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or
                                                                                         audio_dict.get(PUBLIC_PATH_KEY, None),
                                                                                         _data.get(MEDIA_DIR_KEY, None))
@@ -1419,7 +1419,7 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
             path = audio_dict.get(AUDIO_PATH_KEY, path)
             duration = audio_dict.get(AUDIO_DURATION_KEY, duration)
         if path is not None:
-            is_public = filesystem_helper.file_exists_in_directory(path, '/www')
+            is_public = await filesystem_helper.async_file_exists_in_directory(path, '/www')
             audio_dict = {
                 LOCAL_PATH_KEY: None if is_public else path,
                 PUBLIC_PATH_KEY: path if is_public else None,
@@ -1465,11 +1465,11 @@ async def async_remove_cached_audio_data(hass: HomeAssistant,
 
     for key, value in audio_dict.items():
         if key == LOCAL_PATH_KEY and audio_dict.get(LOCAL_PATH_KEY, None) is not None:
-            if clear_chimes_cache and filesystem_helper.file_exists_in_directory(value, temp_chimes_path):
+            if clear_chimes_cache and await filesystem_helper.async_file_exists_in_directory(value, temp_chimes_path):
                 _LOGGER.debug("...removing chime file %s", value)
                 filesystem_helper.delete_file(audio_dict.get(LOCAL_PATH_KEY, None))
                 audio_dict[LOCAL_PATH_KEY] = None
-            elif clear_temp_tts_cache and filesystem_helper.file_exists_in_directory(value, temp_path):
+            elif clear_temp_tts_cache and await filesystem_helper.async_file_exists_in_directory(value, temp_path):
                 _LOGGER.debug("...removing TTS file %s", value)
                 filesystem_helper.delete_file(audio_dict.get(LOCAL_PATH_KEY, None))
                 audio_dict[LOCAL_PATH_KEY] = None
@@ -1499,7 +1499,7 @@ async def async_add_audio_file_to_cache(hass: HomeAssistant,
         audio_cache_dict = await async_get_cached_audio_data(hass, filepath_hash)
         if audio_cache_dict is None:
             audio_cache_dict = {}
-        if filesystem_helper.file_exists_in_directory(audio_path, _data.get(WWW_PATH_KEY, None)):
+        if await filesystem_helper.async_file_exists_in_directory(audio_path, _data.get(WWW_PATH_KEY, None)):
             audio_cache_dict[PUBLIC_PATH_KEY] = audio_path
         else:
             audio_cache_dict[LOCAL_PATH_KEY] = audio_path
