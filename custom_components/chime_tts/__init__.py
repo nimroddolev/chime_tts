@@ -93,6 +93,7 @@ from .const import (
     VOICE_RSS,
     YANDEX_TTS,
 )
+from .config import SONOS_SNAPSHOT_ENABLED
 
 _LOGGER = logging.getLogger(__name__)
 _data = {}
@@ -1110,7 +1111,13 @@ async def async_play_media(
     announce
 ):
     """Call the media_player.play_media service."""
-    debug_title("Pre-Playback Actions")
+
+    has_fade_in_out_media_players = len(media_player_helper.get_fade_in_out_media_players()) > 0
+    has_sonos_media_players = len(media_player_helper.get_media_players_of_platform(entity_ids, SONOS_PLATFORM)) and SONOS_SNAPSHOT_ENABLED
+    has_set_volume_media_players = len(media_player_helper.get_set_volume_media_players()) > 0
+    is_should_join = bool(media_player_helper.join_players)
+    if has_fade_in_out_media_players or has_sonos_media_players or has_set_volume_media_players or is_should_join:
+        helpers.debug_subtitle("Pre-Playback Actions")
 
     # Fade out and pause media players
     await media_player_helper.async_fade_out_and_pause(hass, _data[FADE_TRANSITION_KEY])
