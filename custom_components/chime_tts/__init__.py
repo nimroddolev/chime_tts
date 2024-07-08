@@ -115,7 +115,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
 async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool:  # noqa: C901
     """Set up the Chime TTS integration."""
-    _LOGGER.info("----- Chime TTS Version %s is set up -----", VERSION)
+    helpers.debug_title(f"Chime TTS Version {VERSION} is set up")
 
     # Say Service #
 
@@ -123,11 +123,11 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
         """chime_tts.say, chime_tts.say_url & chime_tts.replay entry point."""
         if is_say_url is False:
             if service is None:
-                _LOGGER.debug("----- Chime TTS Replay Called. Version %s -----", VERSION)
+                helpers.debug_title(f"Chime TTS Replay Called. Version {VERSION}")
                 if _data.get("service") is None:
                     raise HomeAssistantError("You must first make a service call to chime_tts.say before you can replay it.")
             else:
-                _LOGGER.debug("----- Chime TTS Say Called. Version %s -----", VERSION)
+                helpers.debug_title(f"Chime TTS Say Called. Version {VERSION}")
 
         # Add service calls to the queue with arguments
         timeout = _data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT)
@@ -193,7 +193,7 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
 
     async def async_say_url(service) -> ServiceResponse:
         """Create a public URL to an audio file generated with the `chime_tts.say` service."""
-        _LOGGER.debug("----- Chime TTS Say URL Called. Version %s -----", VERSION)
+        helpers.debug_title(f"Chime TTS Say URL Called. Version {VERSION}")
         return await async_say(service, True)
 
     hass.services.async_register(DOMAIN,
@@ -216,7 +216,7 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
 
     async def async_clear_cache(service):
         """Clear TTS cache files."""
-        _LOGGER.debug("----- Chime TTS Clear Cache Called -----")
+        helpers.debug_title("Chime TTS Clear Cache Called")
         clear_chimes_cache = bool(service.data.get("clear_chimes_cache", False))
         clear_temp_tts_cache = bool(service.data.get("clear_temp_tts_cache", False))
         clear_www_tts_cache = bool(service.data.get("clear_www_tts_cache", False))
@@ -269,9 +269,7 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
 
         # Summary
         elapsed_time = (datetime.now() - start_time).total_seconds() * 1000
-        _LOGGER.debug(
-            "----- Chime TTS Clear Cache Completed in %s ms -----", str(elapsed_time)
-        )
+        helpers.debug_finish(f"Chime TTS Clear Cache Completed in %s ms {elapsed_time}")
 
         return True
 
@@ -283,6 +281,8 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
 
 async def async_prepare_media(hass: HomeAssistant, params, options, media_players_array: list[ChimeTTSMediaPlayer], is_say_url, start_time):
     """Prepare and play media."""
+
+    helpers.debug_subtitle("Preparing Audio")
     # Create audio file to play on media player
     local_path = None
     public_path = None
@@ -329,7 +329,7 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
     # Convert public file path to external URL for chime_tts.say_url
     if is_say_url:
         _LOGGER.debug("Final URL = %s", public_path)
-        _LOGGER.debug("----- Chime TTS Say URL Completed in %s -----", str(elapsed_time))
+        helpers.debug_finish(f"Chime TTS Say URL Completed in %s {elapsed_time}")
         ret_value = {
             "url": public_path,
             ATTR_MEDIA_CONTENT_ID: media_content_id,
@@ -341,7 +341,7 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
 
         return ret_value
 
-    _LOGGER.debug("----- Chime TTS Say Completed in %s -----", str(elapsed_time))
+    helpers.debug_finish(f"Chime TTS Say Completed in {elapsed_time}")
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
@@ -441,7 +441,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
             _data[MP3_PRESET_CUSTOM_KEY][key] = value
 
     # Debug summary
-    _LOGGER.debug("Chime TTS Configuration Values:")
+    helpers.debug_subtitle("Chime TTS Configuration Values")
 
     for key_string in [
         QUEUE_TIMEOUT_KEY,
@@ -1157,7 +1157,7 @@ async def async_play_media(
 
 def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
     """Prepare the media_player service calls for audio playback."""
-    debug_title("Chime TTS playback")
+    helpers.debug_subtitle("Chime TTS playback")
     service_calls = []
 
     # List/s of media players by platform/joined group
@@ -1367,7 +1367,7 @@ async def async_post_playback_actions(hass: HomeAssistant,
     if (len(fade_in_media_players) > 0
         or len(set_volume_media_players) > 0
         or (media_player_helper.unjoin_players is True and media_player_helper.joined_entity_id)):
-        debug_title("Post-Playback Actions")
+        helpers.debug_subtitle("Post-Playback Actions")
 
     # Resume previous playback
     await media_player_helper.async_resume_playback(
@@ -1575,12 +1575,3 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
 
     hash_value = filesystem_helper.get_hash_for_string(unique_string)
     return hash_value
-
-def debug_title(title: str = "") -> str:
-    """Write a formatted debug log title string."""
-    if len(title) == 0:
-        return ""
-    stars = "*"*(int(len(title) + 8))
-    _LOGGER.debug(stars)
-    _LOGGER.debug("*** %s ***", title)
-    _LOGGER.debug(stars)
