@@ -111,7 +111,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
     return True
 
-async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:  # noqa: C901
+async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool:  # noqa: C901
     """Set up the Chime TTS integration."""
     _LOGGER.info("----- Chime TTS Version %s is set up -----", VERSION)
 
@@ -202,7 +202,7 @@ async def async_setup(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:  
     _data["async_say_url"] = async_say_url
 
     # Replay Service #
-    async def async_replay(service):
+    async def async_replay(_service):
         """Repeat the last service call to chime_tts.say with the same parameters."""
         return await async_say(None, False)
 
@@ -937,7 +937,7 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
         if segment_type == "tts":
             if len(segment.get("message", "")) > 0:
                 # Use exposed parameters if not present in the options dictionary
-                segment_options = helpers.convert_yaml_str(segment.get("options"))
+                segment_options = helpers.convert_yaml_str(segment.get("options")) or {}
                 exposed_option_keys = ["tld", "voice"]
                 for exposed_option_key in exposed_option_keys:
                     value = (segment_options.get(exposed_option_key, None) or

@@ -304,7 +304,7 @@ class ChimeTTSHelper:
             message_yaml = self.convert_yaml_str(message_string)
 
             # Verify objects in YAML are valid chime/tts/delay segements
-            if isinstance(message_yaml, list):
+            if message_yaml and isinstance(message_yaml, list):
                 is_valid = True
                 for elem in message_yaml:
                     if isinstance(elem, dict):
@@ -383,15 +383,16 @@ class ChimeTTSHelper:
             return yaml_object
         except yaml.YAMLError as exc:
             if hasattr(exc, 'problem_mark'):
-                _LOGGER.error("Message YAML parsing error at line %s, column %s: %s",
+                _LOGGER.debug("YAML string parsing error at line %s, column %s: %s",
                                 str(exc.problem_mark.line + 1),
                                 str(exc.problem_mark.column + 1),
                                 str(exc))
             else:
-                _LOGGER.error("Message YAML error: %s", str(exc))
+                _LOGGER.debug("YAML string parsing error: %s", str(exc))
         except Exception as error:
-            _LOGGER.error("An unexpected error occurred while parsing message YAML: %s",
+            _LOGGER.debug("An unexpected error occurred while parsing YAML string: %s",
                             str(error))
+        return None
 
 
     def parse_ffmpeg_args(self, ffmpeg_args_str: str):
@@ -616,7 +617,7 @@ class ChimeTTSHelper:
 
             # Convert the audio file
             ffmpeg_cmd_string = " ".join(ffmpeg_cmd)
-            _LOGGER.debug("Converting audio: \"%s\"", ffmpeg_cmd_string)
+            _LOGGER.debug("Running FFMpeg operation: \"%s\"", ffmpeg_cmd_string)
             ffmpeg_process = subprocess.Popen(ffmpeg_cmd,
                                               stdin=subprocess.PIPE,
                                               stdout=subprocess.PIPE,
@@ -626,7 +627,7 @@ class ChimeTTSHelper:
 
             if ffmpeg_process.returncode != 0:
                 error_message = error_output.decode('utf-8')
-                _LOGGER.error(("FFmpeg conversion failed.\n\nArguments string: \"%s\"\n\nError code: %s\n\nError output:\n%s"),
+                _LOGGER.error(("FFmpeg operation failed.\n\nArguments string: \"%s\"\n\nError code: %s\n\nError output:\n%s"),
                                str(ffmpeg_process.returncode),
                                str(error_message),
                                ffmpeg_cmd_string)
