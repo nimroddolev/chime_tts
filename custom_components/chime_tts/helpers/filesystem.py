@@ -7,9 +7,11 @@ import hashlib
 import shutil
 from io import BytesIO
 import re
-import requests
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from pydub import AudioSegment
+import requests
+
 from homeassistant.helpers.network import get_url
 from homeassistant.core import HomeAssistant
 from ..const import (
@@ -86,7 +88,7 @@ class FilesystemHelper:
                     return final_chime_path
 
         # Custom chime from chimes folder?
-        custom_chimes_folder_options = self.get_chime_options_from_path(data.get(CUSTOM_CHIMES_PATH_KEY, ""))
+        custom_chimes_folder_options = await self.async_get_chime_options_from_path(data.get(CUSTOM_CHIMES_PATH_KEY, ""))
         for option_dict in custom_chimes_folder_options:
             p_chime_name = str(option_dict.get("label", "")).lower()
             p_chime_path = option_dict.get("value")
@@ -274,7 +276,17 @@ class FilesystemHelper:
                 _LOGGER.warning("Unable to copy file: An error occurred: %s", str(e))
         return None
 
-    def file_exists_in_directory(self, file_path, directory):
+    async def async_file_exists_in_directory(self, file_path, directory):
+        """Determine whether a file path exists within a given directory asynchronously."""
+        loop = asyncio.get_running_loop()
+        with ThreadPoolExecutor() as pool:
+            return await loop.run_in_executor(
+                pool,
+                self._file_exists_in_directory,
+                file_path,
+                directory)
+
+    def _file_exists_in_directory(self, file_path, directory):
         """Determine whether a file path exists within a given directory."""
         for root, _, files in os.walk(directory):
             for filename in files:
@@ -282,7 +294,7 @@ class FilesystemHelper:
                     return True
         return False
 
-    def get_external_url(self, hass: HomeAssistant, file_path):
+    async def async_get_external_url(self, hass: HomeAssistant, file_path):
         """Convert local public path to external URL or local path to media-source."""
         if file_path is None:
             return None
@@ -293,7 +305,7 @@ class FilesystemHelper:
             _LOGGER.warning("Unable to locate public 'www' folder. Please check that the folder: /config/www exists.")
             return None
 
-        if self.file_exists_in_directory(file_path, public_dir) is False:
+        if await self.async_file_exists_in_directory(file_path, public_dir) is False:
             return None
 
         instance_url = hass.config.external_url
@@ -348,7 +360,16 @@ class FilesystemHelper:
         """Load AudioSegment from a filepath."""
         return await asyncio.to_thread(AudioSegment.from_file, file_path)
 
-    def get_chime_options_from_path(self, directory):
+    async def async_get_chime_options_from_path(self, directory):
+        """Walk through a directory of chime audio files and return a formatted dictionary."""
+        loop = asyncio.get_running_loop()
+        with ThreadPoolExecutor() as pool:
+            return await loop.run_in_executor(
+                pool,
+                self._get_chime_options_from_path,
+                directory)
+
+    def _get_chime_options_from_path(self, directory):
         """Walk through a directory of chime audio files and return a formatted dictionary."""
         chime_options = []
 

@@ -93,7 +93,7 @@ class ChimeTTSHelper:
 
         try:
             # List of chime options from chimes folder
-            custom_chime_options = filesystem_helper.get_chime_options_from_path(chimes_dir)
+            custom_chime_options = await filesystem_helper.async_get_chime_options_from_path(chimes_dir)
 
             # Chime Paths
             final_options: list = DEFAULT_CHIME_OPTIONS + custom_chime_options
