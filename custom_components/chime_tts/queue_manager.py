@@ -16,23 +16,20 @@ class ChimeTTSQueueManager:
         self.running_tasks = []
         self.timeout_s = p_timeout_s
         self._shutdown = False
-        self.semaphore = None
-        self.queue = None
+        self.semaphore = asyncio.Semaphore(1)
+        self.queue = asyncio.Queue()
 
     async def async_process_queue(self):
         """Process the Chime TTS service call queue."""
-        # Use a semaphore to allow only one task at a time
-        if not self.semaphore:
-            self.semaphore = asyncio.Semaphore(1)
         while not self._shutdown:
+            service_call = await self.queue.get()
+            if service_call is None:
+                _LOGGER.debug("Queue empty")
+                self.queue.task_done()
+                break  # Exit the queue processing
+
             async with self.semaphore:
-                service_call = await self.queue.get()
-
-                if service_call is None:
-                    _LOGGER.debug("Queue empty")
-                    self.queue.task_done()
-                    break  # Signal to exit the queue processing
-
+                start_time = None
                 try:
                     start_time = datetime.now()
                     result = await asyncio.wait_for(
@@ -40,6 +37,7 @@ class ChimeTTSQueueManager:
                         timeout=self.timeout_s
                     )
                     service_call['future'].set_result(result)
+                    _LOGGER.debug("Service call completed successfully")
                 except asyncio.TimeoutError:
                     end_time = datetime.now()
                     completion_time = round((end_time - start_time).total_seconds(), 2)
@@ -47,27 +45,36 @@ class ChimeTTSQueueManager:
                                     if completion_time >= 1
                                     else f"{completion_time * 1000}ms")
                     service_call['future'].set_exception(Exception(f"Service call timed out after {elapsed_time} (configured timeout = {self.timeout_s}s)"))
+                    _LOGGER.error("Service call timed out after %s", elapsed_time)
                 except Exception as e:
                     service_call['future'].set_exception(e)
+                    _LOGGER.error("Service call failed: %s", str(e))
                 finally:
                     self.queue.task_done()
+                    _LOGGER.debug("Task marked as done")
+
+        _LOGGER.info("All queued tasks completed")
 
     async def queue_processor(self):
         """Continuously process the Chime TTS service call queue."""
         while not self._shutdown:
-            await asyncio.sleep(0.1)  # Adjust the sleep duration as needed
+            await asyncio.sleep(0.2)  # Adjust the sleep duration as needed
             if not self.queue.empty():
-                tasks = [self.async_process_queue() for _ in range(self.queue.qsize())]
-                await asyncio.gather(*tasks)
+                await self.async_process_queue()
 
     def add_to_queue(self, function, p_timeout, *args, **kwargs):
         """Add a new service call to the Chime TTS service call queue."""
         self.set_timeout(p_timeout)
-        if not self.queue:
-            self.start_queue_processor()
+        if self._shutdown:
+            self.reset_queue()  # Ensure the queue is initialized and reset properly
 
         future = asyncio.Future()
-        _LOGGER.debug("Adding service call to queue")
+        queue_size = self.queue.qsize()
+        if queue_size == 0:
+            _LOGGER.debug("Adding service call to queue")
+        else:
+            _LOGGER.debug("Adding service call to queue (behind %s other%s)", str(queue_size), "s" if queue_size > 1 else "")
+
         try:
             self.queue.put_nowait({
                 'function': function,
@@ -77,6 +84,11 @@ class ChimeTTSQueueManager:
             })
         except Exception as error:
             _LOGGER.error("Unable to add Chime TTS task to queue: %s", str(error))
+
+        # Ensure the queue processor is running
+        if not self.running_tasks:
+            self.start_queue_processor()
+
         return future
 
     def reset_queue(self):
@@ -103,13 +115,14 @@ class ChimeTTSQueueManager:
 
     def start_queue_processor(self):
         """Start the queue processor task."""
-        self.queue = asyncio.Queue()
         task = asyncio.create_task(self.queue_processor())
         self.running_tasks.append(task)
 
     def stop_queue_processor(self):
         """Stop the queue processor task."""
         self._shutdown = True
+        if self.queue:
+            self.queue.put_nowait(None)  # Add a sentinel to exit the queue processor
         for task in self.running_tasks:
             task.cancel()
         self.running_tasks.clear()
