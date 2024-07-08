@@ -5,11 +5,13 @@ from .const import (
     DOMAIN,
     SERVICE_SAY
 )
+from .helpers.helpers import ChimeTTSHelper
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.notify import BaseNotificationService
 from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
+helpers = ChimeTTSHelper()
 
 async def async_get_service(hass: HomeAssistant, config, discovery_info=None):
     """Retrieve instance of ChimeTTSNotificationService class."""
@@ -56,7 +58,7 @@ class ChimeTTSNotificationService(BaseNotificationService):
             if data and key in data:
                 kwargs[key] = data[key]
 
-        _LOGGER.debug("----- Chime TTS Notify -----")
+        helpers.debug_title("Chime TTS Notify")
         for key in kwargs:
             value = kwargs[key]
             quote = "'" if isinstance(value, str) else ""

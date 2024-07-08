@@ -228,7 +228,7 @@ class ChimeTTSHelper:
             "media_players_array": media_players_array,
         }
 
-        _LOGGER.debug("----- General Parameters -----")
+        self.debug_subtitle("General Parameters")
         for key, value in params.items():
             if value is not None and value != "" and key not in ["hass"]:
                 p_key = "audio_conversion" if key == "ffmpeg_args" else key
@@ -277,7 +277,7 @@ class ChimeTTSHelper:
                     options[key] = value
 
         if len(options) > 0:
-            _LOGGER.debug("----- TTS-Specific Params -----")
+            self.debug_subtitle("TTS-Specific Params")
             for key, value in options.items():
                 _LOGGER.debug(" * %s = %s", key, str(value))
 
@@ -756,3 +756,27 @@ class ChimeTTSHelper:
         if len(audio_2) > overlay:
             crossover_audio += audio_2[overlay:]
         return crossover_audio
+
+    def debug_title(self, title: str = ""):
+        """Debug log a title string."""
+        if len(title) == 0:
+            return
+        _LOGGER.debug(f"╔{"═"*(int(len(title) + 2))}╗")
+        _LOGGER.debug(f"║ {title} ║")
+        _LOGGER.debug(f"╚{"═"*(int(len(title) + 2))}╝")
+
+    def debug_subtitle(self, title: str = ""):
+        """Debug log a subtitle string."""
+        if len(title) == 0:
+            return
+        _LOGGER.debug(f"╭{"─"*(int(len(title) + 2))}╮")
+        _LOGGER.debug(f"│ {title} │")
+        _LOGGER.debug(f"╰{"─"*(int(len(title) + 2))}╯")
+
+    def debug_finish(self, title: str = ""):
+        """Debug log a subtitle string."""
+        if len(title) == 0:
+            return
+        _LOGGER.debug(f"╭{"─"*(int(len(title) + 5))}─────╮")
+        _LOGGER.debug(f"│──── {title} ────│")
+        _LOGGER.debug(f"╰{"─"*(int(len(title) + 5))}─────╯")
