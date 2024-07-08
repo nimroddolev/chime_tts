@@ -40,8 +40,9 @@ TRANSITION_STEP_MS = 150
 ADD_COVER_ART_KEY = "add_cover_art"
 
 ALEXA_MEDIA_PLAYER_PLATFORM = "alexa_media"
-SPOTIFY_PLATFORM = "spotify"
+CAST_PLATFORM = "cast"
 SONOS_PLATFORM = "sonos"
+SPOTIFY_PLATFORM = "spotify"
 
 ROOT_PATH_KEY = "root_path_key"
 MEDIA_FOLDER_PATH = "/local/"
