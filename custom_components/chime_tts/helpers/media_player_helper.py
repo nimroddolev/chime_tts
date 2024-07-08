@@ -16,8 +16,9 @@ from homeassistant.components.media_player.const import (
 )
 from ..const import (
     ALEXA_MEDIA_PLAYER_PLATFORM,
-    SPOTIFY_PLATFORM,
+    CAST_PLATFORM,
     SONOS_PLATFORM,
+    SPOTIFY_PLATFORM,
     MEDIA_DIR_DEFAULT,
     TRANSITION_STEP_MS
 )
@@ -174,37 +175,36 @@ class MediaPlayerHelper:
                 return -1
         return uniform_volume_level
 
-    def get_alexa_media_player_count(self, hass: HomeAssistant, entity_ids):
-        """Determine whether any included media_players belong to the Alexa Media Player platform."""
-        ret_val = 0
-        for entity_id in entity_ids:
-            if self.get_is_media_player_alexa(hass, entity_id):
-                ret_val = ret_val + 1
-        return ret_val
-
-    def get_is_standard_media_player(self, hass, entity_id):
+    def get_is_standard_media_player(self, entity_id):
         """Determine whether a media_player can be used with the media_player.play_media service."""
-        return not (self.get_is_media_player_alexa(hass, entity_id) or
-                    self.get_is_media_player_sonos(hass, entity_id) or
-                    self.get_is_media_player_spotify(hass, entity_id))
+        platform = self.get_platform_from_entity_id(entity_id)
+        return platform and platform not in (ALEXA_MEDIA_PLAYER_PLATFORM, CAST_PLATFORM, SONOS_PLATFORM, SPOTIFY_PLATFORM)
 
-    def get_is_media_player_alexa(self, hass, entity_id):
-        """Determine whether a media_player belongs to the Alexa Media Player platform."""
+    def get_platform_from_entity_id(self, entity_id):
+        """Platform for the media_player with entity_id."""
         media_player: ChimeTTSMediaPlayer = self.get_media_players_from_entity_id(entity_id)
         if media_player:
-            return media_player.platform == ALEXA_MEDIA_PLAYER_PLATFORM
+            return media_player.platform
 
-    def get_is_media_player_sonos(self, hass, entity_id):
+    def get_is_media_player_alexa(self, entity_id):
+        """Determine whether a media_player belongs to the Google Cast platform."""
+        return self.get_platform_from_entity_id(entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM
+
+    def get_is_media_player_cast(self, entity_id):
+        """Determine whether a media_player belongs to the Google Cast platform."""
+        return self.get_platform_from_entity_id(entity_id) == CAST_PLATFORM
+
+    def get_is_media_player_sonos(self, entity_id):
         """Determine whether a media_player belongs to the Sonos platform."""
-        media_player: ChimeTTSMediaPlayer = self.get_media_players_from_entity_id(entity_id)
-        if media_player:
-            return media_player.platform == SONOS_PLATFORM
+        return self.get_platform_from_entity_id(entity_id) == SONOS_PLATFORM
 
-    def get_is_media_player_spotify(self, hass, entity_id):
+    def get_is_media_player_spotify(self, entity_id):
         """Determine whether a media_player belongs to the Spotify platform."""
-        media_player: ChimeTTSMediaPlayer = self.get_media_players_from_entity_id(entity_id)
-        if media_player:
-            return media_player.platform == SPOTIFY_PLATFORM
+        return self.get_platform_from_entity_id(entity_id) == SPOTIFY_PLATFORM
+
+    def get_media_players_of_platform(self, entity_ids, platform):
+        """List of media_players belonging to a specific platform."""
+        return [entity_id for entity_id in entity_ids if self.get_media_players_from_entity_id(entity_id) and self.get_media_players_from_entity_id(entity_id).platform == platform]
 
     def get_supported_feature(self, entity: State, feature: str):
         """Whether a feature is supported by the media_player device."""

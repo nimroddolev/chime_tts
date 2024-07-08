@@ -23,6 +23,7 @@ from ..const import (
     DEFAULT_OFFSET_MS,
     FFMPEG_ARGS_ALEXA,
     FFMPEG_ARGS_VOLUME,
+    ALEXA_MEDIA_PLAYER_PLATFORM,
     AMAZON_POLLY,
     BAIDU,
     ELEVENLABS_TTS,
@@ -201,7 +202,7 @@ class ChimeTTSHelper:
 
         # Force "Alexa" conversion if any Alexa media_player entities included
         alexa_conversion_forced = False
-        if ffmpeg_args is None and media_player_helper.get_alexa_media_player_count(hass, entity_ids) > 0:
+        if ffmpeg_args is None and len(media_player_helper.get_media_players_of_platform(entity_ids, ALEXA_MEDIA_PLAYER_PLATFORM)) > 0:
             ffmpeg_args = FFMPEG_ARGS_ALEXA
             alexa_conversion_forced = True
 
