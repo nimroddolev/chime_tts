@@ -294,10 +294,18 @@ class FilesystemHelper:
                     return True
         return False
 
-    async def async_get_external_url(self, hass: HomeAssistant, file_path):
+    async def async_get_external_url(self, hass: HomeAssistant, file_path: str):
         """Convert file system path of public file to external URL."""
         if file_path is None:
             return None
+
+        instance_url = hass.config.external_url
+        if instance_url is None:
+            instance_url = str(get_url(hass))
+
+        # Return if already external URL
+        if file_path.startswith(instance_url):
+            return file_path
 
         # Return local path if file not in www folder
         public_dir = hass.config.path('www')
@@ -307,10 +315,6 @@ class FilesystemHelper:
 
         if await self.async_file_exists_in_directory(file_path, public_dir) is False:
             return None
-
-        instance_url = hass.config.external_url
-        if instance_url is None:
-            instance_url = str(get_url(hass))
 
         return (
             (instance_url + "/" + file_path)
@@ -334,11 +338,7 @@ class FilesystemHelper:
             .replace("local/", "/config/www/")
             .replace("//", "/")
         )
-        _LOGGER.debug("```External URL maps to %s", local_filepath)
         self.delete_file(local_filepath)
-
-
-
 
     def get_local_path(self, hass: HomeAssistant, file_path):
         """Convert external URL to local public path."""
