@@ -29,13 +29,12 @@ class ChimeTTSQueueManager:
                 break  # Exit the queue processing
 
             async with self.semaphore:
-                start_time = None
+                start_time = datetime.now()
+                task = asyncio.create_task(
+                    service_call['function'](*service_call['args'], **service_call['kwargs'])
+                )
                 try:
-                    start_time = datetime.now()
-                    result = await asyncio.wait_for(
-                        service_call['function'](*service_call['args'], **service_call['kwargs']),
-                        timeout=self.timeout_s
-                    )
+                    result = await asyncio.wait_for(task, timeout=self.timeout_s)
                     service_call['future'].set_result(result)
                     _LOGGER.debug("Service call completed successfully")
                 except asyncio.TimeoutError:
@@ -44,14 +43,28 @@ class ChimeTTSQueueManager:
                     elapsed_time = (f"{completion_time}s"
                                     if completion_time >= 1
                                     else f"{completion_time * 1000}ms")
-                    service_call['future'].set_exception(Exception(f"Service call timed out after {elapsed_time} (configured timeout = {self.timeout_s}s)"))
-                    _LOGGER.error("Service call timed out after %s", elapsed_time)
+                    error_msg = f"Service timed out after {elapsed_time}"
+                    service_call['future'].set_exception(Exception(error_msg))
+                    _LOGGER.error(error_msg)
+
+                    # Cancel the task
+                    task.cancel()
+                    try:
+                        await task  # Wait for task cancellation to complete
+                    except asyncio.CancelledError:
+                        _LOGGER.debug("Task cancelled successfully")
                 except Exception as e:
                     service_call['future'].set_exception(e)
                     _LOGGER.error("Service call failed: %s", str(e))
                 finally:
                     self.queue.task_done()
-                    _LOGGER.debug("Task marked as done")
+                    if self.queue.qsize() > 0:
+                        _LOGGER.debug("%s Task%s remain%s",
+                                      str(self.queue.qsize()),
+                                      "s" if self.queue.qsize() > 1 else "",
+                                      "s" if self.queue.qsize() == 1 else "")
+                    else:
+                        _LOGGER.debug("Queue now empty")
 
         _LOGGER.info("All queued tasks completed")
 
@@ -73,7 +86,9 @@ class ChimeTTSQueueManager:
         if queue_size == 0:
             _LOGGER.debug("Adding service call to queue")
         else:
-            _LOGGER.debug("Adding service call to queue (behind %s other%s)", str(queue_size), "s" if queue_size > 1 else "")
+            _LOGGER.debug("Adding service call to queue (behind %s other%s)",
+                          str(queue_size),
+                          "s" if queue_size > 1 else "")
 
         try:
             self.queue.put_nowait({
