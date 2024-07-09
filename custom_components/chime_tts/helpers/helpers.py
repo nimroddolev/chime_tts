@@ -163,7 +163,6 @@ class ChimeTTSHelper:
         hass.services.async_remove(DOMAIN, SERVICE_SAY)
         hass.services.async_register(DOMAIN, SERVICE_SAY, say_service_func)
         hass.services.async_remove(DOMAIN, SERVICE_SAY_URL)
-        hass.services.async_register(DOMAIN, SERVICE_SAY_URL, say_url_service_func)
         hass.services.async_register(DOMAIN,
                                     SERVICE_SAY_URL,
                                     say_url_service_func,
