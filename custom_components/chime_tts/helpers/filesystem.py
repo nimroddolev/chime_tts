@@ -295,7 +295,7 @@ class FilesystemHelper:
         return False
 
     async def async_get_external_url(self, hass: HomeAssistant, file_path):
-        """Convert local public path to external URL or local path to media-source."""
+        """Convert file system path of public file to external URL."""
         if file_path is None:
             return None
 
@@ -319,6 +319,27 @@ class FilesystemHelper:
             .replace("www/", "local/")
         )
 
+    async def async_get_local_url(self, hass: HomeAssistant, external_url):
+        """Convert external URL back to file system public file path."""
+        if not external_url:
+            return None
+
+        instance_url = hass.config.external_url
+        if instance_url is None:
+            instance_url = str(get_url(hass))
+
+        local_filepath = (
+            external_url
+            .replace(f"{instance_url}", "")
+            .replace("local/", "/config/www/")
+            .replace("//", "/")
+        )
+        _LOGGER.debug("```External URL maps to %s", local_filepath)
+        self.delete_file(local_filepath)
+
+
+
+
     def get_local_path(self, hass: HomeAssistant, file_path):
         """Convert external URL to local public path."""
         instance_url = hass.config.external_url
@@ -329,8 +350,13 @@ class FilesystemHelper:
 
     def delete_file(self, file_path):
         """Safely delete a file."""
+        if not file_path:
+            return
         if os.path.exists(file_path):
+            _LOGGER.debug("Deleting file %s", file_path)
             os.remove(file_path)
+        else:
+            _LOGGER.debug("No file at path %s - unable to delete", file_path)
 
     def get_hash_for_string(self, string):
         """Generate a has for a given string."""
