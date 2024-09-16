@@ -58,7 +58,11 @@ class ChimeTTSQueueManager:
                     service_call['function'](*service_call['args'], **service_call['kwargs']),
                     timeout=self.timeout_s
                 )
-                service_call['future'].set_result(result)
+                try:
+                    service_call['future'].set_result(result)
+                except Exception as e:
+                    _LOGGER.error("Error running Chime TTS call %s: %s", service_call, str(e))
+
         except asyncio.TimeoutError:
             self._handle_timeout_error(service_call, start_time)
         except asyncio.CancelledError:
