@@ -811,10 +811,6 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         # Convert external URL (for public paths)
         audio_dict[PUBLIC_PATH_KEY] = await filesystem_helper.async_get_external_url(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
 
-        # Save path to cache
-        if cache:
-            await async_add_audio_file_to_cache(hass, audio_dict.get(folder_key, None), duration, params, options)
-
     # Valdiation
     is_valid = True
     if audio_dict[AUDIO_DURATION_KEY] == 0:
@@ -834,6 +830,12 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         quote = '"' if isinstance(value, str) else ''
         value = f"{quote}{value}{quote}"
         _LOGGER.debug("   * %s = %s", key, value)
+
+    # Save path to cache
+    if cache:
+        await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, None), duration, params, options)
+        await async_add_audio_file_to_cache(hass, audio_dict.get(LOCAL_PATH_KEY, None), duration, params, options)
+
     return audio_dict
 
 async def async_verify_cached_audio(hass, filepath_hash, params, options, is_local, is_public, ffmpeg_args):
@@ -1466,12 +1468,10 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
             }
 
         # Validate paths and add duration if missing
-        valid_key = None
         for key in [LOCAL_PATH_KEY, PUBLIC_PATH_KEY]:
             audio_dict[key] = audio_dict.get(key, None)
             if audio_dict.get(key, None):
                 if os.path.exists(str(audio_dict.get(key, ""))):
-                    valid_key = key
                     # Add duration data if audio_dict is old format
                     if audio_dict.get(AUDIO_DURATION_KEY, None) is None:
                         audio = await async_get_audio_from_path(hass=hass,
@@ -1482,9 +1482,7 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
                         else:
                             _LOGGER.warning("Could not load audio from file: %s", audio_dict.get(key, ""))
                             audio.dict[key] = None
-                            valid_key = None
-        if valid_key is not None:
-            return audio_dict
+        return audio_dict
 
     await async_remove_cached_audio_data(hass, filepath_hash, True, True)
     return None
@@ -1538,7 +1536,7 @@ async def async_add_audio_file_to_cache(hass: HomeAssistant,
         audio_cache_dict = await async_get_cached_audio_data(hass, filepath_hash)
         if audio_cache_dict is None:
             audio_cache_dict = {}
-        if await filesystem_helper.async_file_exists_in_directory(audio_path, _data.get(WWW_PATH_KEY, None)):
+        if str(audio_path).startswith(filesystem_helper.get_external_address(hass)):
             audio_cache_dict[PUBLIC_PATH_KEY] = audio_path
         else:
             audio_cache_dict[LOCAL_PATH_KEY] = audio_path

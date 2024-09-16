@@ -294,10 +294,23 @@ class FilesystemHelper:
                     return True
         return False
 
-    async def async_get_external_url(self, hass: HomeAssistant, file_path):
+    def get_external_address(self, hass: HomeAssistant):
+        """External address of the Home Assistant instance."""
+        instance_url = hass.config.external_url
+        if instance_url is None:
+            instance_url = str(get_url(hass))
+        if instance_url and instance_url.endswith("/"):
+            instance_url = instance_url[:-1]
+        return instance_url
+
+    async def async_get_external_url(self, hass: HomeAssistant, file_path: str):
         """Convert file system path of public file to external URL."""
         if file_path is None:
             return None
+        
+        # File is already external URL
+        if file_path.startswith(self.get_external_address(hass)):
+            return file_path
 
         # Return local path if file not in www folder
         public_dir = hass.config.path('www')
@@ -308,15 +321,13 @@ class FilesystemHelper:
         if await self.async_file_exists_in_directory(file_path, public_dir) is False:
             return None
 
-        instance_url = hass.config.external_url
-        if instance_url is None:
-            instance_url = str(get_url(hass))
+        instance_url = self.get_external_address(hass)
 
         return (
             (instance_url + "/" + file_path)
-            .replace(instance_url + "//", instance_url + "/")
             .replace("/config", "")
             .replace("www/", "local/")
+            .replace(instance_url + "//", instance_url + "/")
         )
 
     async def async_get_local_url(self, hass: HomeAssistant, external_url):
@@ -330,15 +341,12 @@ class FilesystemHelper:
 
         local_filepath = (
             external_url
+            .replace(f"{instance_url}/", "")
             .replace(f"{instance_url}", "")
-            .replace("local/", "/config/www/")
+            .replace("/local/", "/config/www/")
             .replace("//", "/")
         )
-        _LOGGER.debug("```External URL maps to %s", local_filepath)
         self.delete_file(local_filepath)
-
-
-
 
     def get_local_path(self, hass: HomeAssistant, file_path):
         """Convert external URL to local public path."""
