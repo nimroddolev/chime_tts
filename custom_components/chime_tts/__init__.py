@@ -110,6 +110,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     await async_refresh_stored_data(hass)
     await async_update_configuration(config_entry, hass)
     queue.set_timeout(_data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
+    queue.start_queue_processor()
 
     return True
 

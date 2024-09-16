@@ -32,7 +32,6 @@ class ChimeTTSQueueManager:
         self._shutdown_event: asyncio.Event = asyncio.Event()
         self.semaphore: asyncio.Semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
         self.queue: asyncio.Queue[ServiceCall | None] = asyncio.Queue()
-        self.start_queue_processor()
 
     async def async_process_queue(self) -> None:
         """Process the Chime TTS service call queue."""
