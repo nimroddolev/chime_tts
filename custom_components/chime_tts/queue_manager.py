@@ -38,32 +38,36 @@ class ChimeTTSQueueManager:
     async def async_process_queue(self) -> None:
         """Process the Chime TTS service call queue."""
         while not self._shutdown_event.is_set():
-            async with self.semaphore:
-                try:
-                    service_call = await asyncio.wait_for(self.queue.get(), timeout=1.0)
-                except asyncio.TimeoutError:
-                    continue
+            try:
+                service_call = await asyncio.wait_for(self.queue.get(), timeout=1.0)
+            except asyncio.TimeoutError:
+                continue
 
-                if service_call is None:
-                    _LOGGER.debug("Queue empty")
-                    self.queue.task_done()
-                    break
+            if service_call is None:
+                _LOGGER.debug("Queue empty")
+                self.queue.task_done()
+                continue  # Keep processing instead of breaking
 
-                await self._process_service_call(service_call)
+            # Process the service call
+            await self._process_service_call(service_call)
 
     async def _process_service_call(self, service_call: ServiceCall) -> None:
         """Process a single service call."""
         start_time = datetime.now()
         try:
-            result = await asyncio.wait_for(
-                service_call['function'](*service_call['args'], **service_call['kwargs']),
-                timeout=self.timeout_s
-            )
-            service_call['future'].set_result(result)
+            async with self.semaphore:
+                result = await asyncio.wait_for(
+                    service_call['function'](*service_call['args'], **service_call['kwargs']),
+                    timeout=self.timeout_s
+                )
+                service_call['future'].set_result(result)
         except asyncio.TimeoutError:
             self._handle_timeout_error(service_call, start_time)
+        except asyncio.CancelledError:
+            _LOGGER.info("Service call %s was cancelled", service_call)
+            service_call['future'].set_exception(asyncio.CancelledError())
         except Exception as e:
-            _LOGGER.error("Error processing service call: %s", str(e))
+            _LOGGER.error("Error processing service call %s: %s", service_call, str(e))
             service_call['future'].set_exception(e)
         finally:
             self.queue.task_done()
@@ -131,12 +135,17 @@ class ChimeTTSQueueManager:
     def start_queue_processor(self) -> None:
         """Start the queue processor task."""
         task = asyncio.create_task(self.queue_processor())
+        task.add_done_callback(self.running_tasks.remove)  # Ensure task removal when done
         self.running_tasks.append(task)
 
-    def stop_queue_processor(self) -> None:
+    async def stop_queue_processor(self) -> None:
         """Stop the queue processor task."""
         _LOGGER.info("Stopping queue processor")
         self._shutdown_event.set()
         for task in self.running_tasks:
-            task.cancel()
+            task.cancel()  # Gracefully cancel tasks
+            try:
+                await task  # Await task to handle asyncio.CancelledError cleanly
+            except asyncio.CancelledError:
+                _LOGGER.debug("Task was cancelled cleanly")
         self.running_tasks.clear()
