@@ -14,7 +14,7 @@ helpers = ChimeTTSHelper()
 
 async def async_get_service(hass: HomeAssistant, config, _discovery_info):
     """Retrieve instance of ChimeTTSNotificationService class."""
-    _config = config
+    _config = config or {}
     return ChimeTTSNotificationService(hass, config)
 
 class ChimeTTSNotificationService(BaseNotificationService):
@@ -23,7 +23,7 @@ class ChimeTTSNotificationService(BaseNotificationService):
     def __init__(self, hass: HomeAssistant, config: any):
         """Initialize the Chime TTS Notify Service."""
         self.hass = hass
-        self._config = config or {}
+        self._config = config
 
     async def async_send_message(self, message="", **kwargs):
         """Send a notification with the Chime TTS Notify Service."""
@@ -53,7 +53,7 @@ class ChimeTTSNotificationService(BaseNotificationService):
         ]:
             kwargs[key] = data.get(key, self._config.get(key))
 
-        self.helpers.debug_title("Chime TTS Notify")
+        helpers.debug_title("Chime TTS Notify")
         for key, value in kwargs.items():
             _LOGGER.debug(f" - {key} = '{value}'" if isinstance(value, str) else f" - {key} = {value}")
 

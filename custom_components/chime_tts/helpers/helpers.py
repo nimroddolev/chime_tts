@@ -9,9 +9,7 @@ import yaml
 import aiofiles
 import aiofiles.os
 from homeassistant.core import HomeAssistant, SupportsResponse
-from homeassistant.components.media_player.const import (
-    ATTR_MEDIA_VOLUME_LEVEL,
-)
+from homeassistant.components.media_player.const import ATTR_MEDIA_VOLUME_LEVEL
 import voluptuous as vol
 from pydub import AudioSegment
 from ..const import (
@@ -175,7 +173,6 @@ class ChimeTTSHelper:
         entity_ids = media_player_helper.parse_entity_ids(data, hass) if is_say_url is False else []
         chime_path =str(data.get("chime_path", ""))
         end_chime_path = str(data.get("end_chime_path", ""))
-        _LOGGER.debug("```delay=%s", str(data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS))))
         offset = float(data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)) or 0)
         final_delay = float(data.get("final_delay", 0) or 0)
         message = str(data.get("message", ""))
