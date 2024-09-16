@@ -2,10 +2,9 @@
 
 import logging
 import asyncio
-from datetime import datetime
-from typing import Any, TypedDict
 from collections.abc import Callable, Coroutine
-
+from datetime import datetime
+from typing import TypedDict
 from .const import (
     QUEUE_TIMEOUT_DEFAULT,
     MAX_CONCURRENT_TASKS,
@@ -18,7 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 class ServiceCall(TypedDict):
     """Represents a service call in the Chime TTS queue."""
 
-    function: Callable[..., Coroutine[Any, Any, Any]]
+    function: Callable[..., Coroutine[any, any, any]]
     args: tuple
     kwargs: dict
     future: asyncio.Future
@@ -89,10 +88,10 @@ class ChimeTTSQueueManager:
                 await self.async_process_queue()
 
     def add_to_queue(self,
-                     function: Callable[..., Coroutine[Any, Any, Any]],
+                     function: Callable[..., Coroutine[any, any, any]],
                      p_timeout: int,
-                     *args: Any,
-                     **kwargs: Any) -> asyncio.Future:
+                     *args: any,
+                     **kwargs: any) -> asyncio.Future:
         """Add a new service call to the Chime TTS service call queue."""
         self.set_timeout(p_timeout)
         future: asyncio.Future = asyncio.Future()
