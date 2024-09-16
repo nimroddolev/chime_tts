@@ -307,7 +307,7 @@ class FilesystemHelper:
         """Convert file system path of public file to external URL."""
         if file_path is None:
             return None
-        
+
         # File is already external URL
         if file_path.startswith(self.get_external_address(hass)):
             return file_path
