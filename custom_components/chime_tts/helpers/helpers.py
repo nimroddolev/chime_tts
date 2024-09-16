@@ -175,19 +175,20 @@ class ChimeTTSHelper:
         entity_ids = media_player_helper.parse_entity_ids(data, hass) if is_say_url is False else []
         chime_path =str(data.get("chime_path", ""))
         end_chime_path = str(data.get("end_chime_path", ""))
-        offset = float(data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)))
-        final_delay = float(data.get("final_delay", 0))
+        _LOGGER.debug("```delay=%s", str(data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS))))
+        offset = float(data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)) or 0)
+        final_delay = float(data.get("final_delay", 0) or 0)
         message = str(data.get("message", ""))
         tts_platform = str(data.get("tts_platform", ""))
-        tts_speed = float(data.get("tts_playback_speed", data.get("tts_speed", 100)))
-        tts_pitch = data.get("tts_pitch", 0)
-        volume_level = data.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
-        join_players = data.get("join_players", False)
-        unjoin_players = data.get("unjoin_players", False)
+        tts_speed = float(data.get("tts_playback_speed", data.get("tts_speed", 100)) or 100)
+        tts_pitch = data.get("tts_pitch", 0) or 0
+        volume_level = data.get(ATTR_MEDIA_VOLUME_LEVEL, -1) or -1
+        join_players = data.get("join_players", False) or False
+        unjoin_players = data.get("unjoin_players", False) or False
         language = data.get("language", None)
-        cache = data.get("cache", False)
-        announce = data.get("announce", False)
-        fade_audio = data.get("fade_audio", False)
+        cache = data.get("cache", False) or False
+        announce = data.get("announce", False) or False
+        fade_audio = data.get("fade_audio", False) or False
         media_players_array = await media_player_helper.async_initialize_media_players(
             hass, entity_ids, volume_level, join_players, unjoin_players, announce, fade_audio
         ) if is_say_url is False else []

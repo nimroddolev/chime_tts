@@ -6,14 +6,13 @@ from .const import (
     SERVICE_SAY
 )
 from .helpers.helpers import ChimeTTSHelper
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.notify import BaseNotificationService
 from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 helpers = ChimeTTSHelper()
 
-async def async_get_service(hass: HomeAssistant, config, discovery_info=None):
+async def async_get_service(hass: HomeAssistant, config, _discovery_info):
     """Retrieve instance of ChimeTTSNotificationService class."""
     _config = config
     return ChimeTTSNotificationService(hass, config)
@@ -21,15 +20,15 @@ async def async_get_service(hass: HomeAssistant, config, discovery_info=None):
 class ChimeTTSNotificationService(BaseNotificationService):
     """Chime TTS Notify Service class."""
 
-    def __init__(self, hass: HomeAssistant, config: ConfigEntry = {}):
+    def __init__(self, hass: HomeAssistant, config: any):
         """Initialize the Chime TTS Notify Service."""
         self.hass = hass
-        self._config = config
+        self._config = config or {}
 
     async def async_send_message(self, message="", **kwargs):
         """Send a notification with the Chime TTS Notify Service."""
         kwargs["message"] = message
-        data = kwargs.get("data", {})
+        data = kwargs.get("data", {}) or {}
 
         for key in [
             "entity_id",
@@ -52,17 +51,11 @@ class ChimeTTSNotificationService(BaseNotificationService):
             "options",
             "audio_conversion"
         ]:
-            if key in self._config:
-                kwargs[key] = self._config.get(key)
-            # Override parameters from data dictionary
-            if data and key in data:
-                kwargs[key] = data[key]
+            kwargs[key] = data.get(key, self._config.get(key))
 
-        helpers.debug_title("Chime TTS Notify")
-        for key in kwargs:
-            value = kwargs[key]
-            quote = "'" if isinstance(value, str) else ""
-            _LOGGER.debug(" - %s = %s%s%s", key, quote, str(value), quote)
+        self.helpers.debug_title("Chime TTS Notify")
+        for key, value in kwargs.items():
+            _LOGGER.debug(f" - {key} = '{value}'" if isinstance(value, str) else f" - {key} = {value}")
 
         try:
             await self.hass.services.async_call(
@@ -72,4 +65,3 @@ class ChimeTTSNotificationService(BaseNotificationService):
                 blocking=True)
         except Exception as error:
             _LOGGER.error("Service `chime_tts.say` error: %s", error)
-
