@@ -96,7 +96,11 @@ class ChimeTTSQueueManager:
         """Add a new service call to the Chime TTS service call queue."""
         self.set_timeout(p_timeout)
         future: asyncio.Future = asyncio.Future()
-        _LOGGER.debug("Adding service call to queue")
+        queue_size = self.queue.qsize()
+        if queue_size == 0:
+            _LOGGER.debug("Adding service call to queue")
+        else:
+            _LOGGER.debug("Adding service call to queue (%s ahead)", str(queue_size))
         try:
             self.queue.put_nowait(ServiceCall(
                 function=function,
