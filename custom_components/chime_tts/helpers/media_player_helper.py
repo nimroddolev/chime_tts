@@ -75,7 +75,8 @@ class MediaPlayerHelper:
 
     async def async_get_media_player_object(self,
                                             hass: HomeAssistant,
-                                            entity_id, target_volume_level):
+                                            entity_id: str,
+                                            target_volume_level: any):
         """Create a Chime TTS media player object from a given entity_id."""
 
         if (hass is None

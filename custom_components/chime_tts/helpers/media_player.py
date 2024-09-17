@@ -16,13 +16,13 @@ class ChimeTTSMediaPlayer:
     hass: HomeAssistant
     entity_id: str
     platform: str
-    initial_volume_level: float
-    target_volume_level: float
+    initial_volume_level: float = -1
+    target_volume_level: float = -1
     initially_playing: bool
     announce_supported: bool
     join_supported: bool
 
-    def __init__(self, hass: HomeAssistant, entity_id: str, target_volume_level):
+    def __init__(self, hass: HomeAssistant, entity_id: str, target_volume_level: any):
         """Initialise the class."""
         self.hass: HomeAssistant = hass
         self.entity_id: str = entity_id
@@ -34,10 +34,21 @@ class ChimeTTSMediaPlayer:
                                   # Check that media_player is actually playing (HomePods can incorrectly have the state "playing" when no media is playing)
                                   and self.get_entity().attributes.get("media_duration", -1) != 0)
         self.initial_volume_level: float = self.get_current_volume_level()
-        self.target_volume_level: float = target_volume_level
         self.announce_supported = self.get_supported_feature(ATTR_MEDIA_ANNOUNCE)
         self.join_supported = self.get_supported_feature(ATTR_GROUP_MEMBERS)
 
+        # Extract target volume level
+        # From dictionary
+        if isinstance(target_volume_level, dict) and entity_id in target_volume_level:
+            self.target_volume_level = float(target_volume_level[entity_id])
+        # From array of dicts
+        elif isinstance(target_volume_level, list):
+            for volume_level_dict in target_volume_level:
+                if entity_id in volume_level_dict:
+                    self.target_volume_level = float(volume_level_dict[entity_id])
+        # From float
+        elif isinstance(target_volume_level, float):
+            self.target_volume_level = target_volume_level
 
     # Service Calls
 
