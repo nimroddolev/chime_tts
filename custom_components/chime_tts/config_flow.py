@@ -12,6 +12,8 @@ from .const import (
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
     TTS_PLATFORM_KEY,
+    DEFAULT_LANGUAGE_KEY,
+    DEFAULT_VOICE_KEY,
     OFFSET_KEY,
     DEFAULT_OFFSET_MS,
     FADE_TRANSITION_KEY,
@@ -78,9 +80,9 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         helpers.debug_title(f"Chime TTS Version {VERSION} Configuration")
         self.config_entry = config_entry
 
-    async def async_step_init(self, user_input={}):
+    async def async_step_init(self, user_input):
         """Initialize the options flow."""
-
+        # Default TTS Platform
         stripped_tts_platforms = self.get_installed_tts()
         default_tts = stripped_tts_platforms[0] if len(stripped_tts_platforms) > 0 else ""
         if self.hass is not None:
@@ -89,20 +91,13 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             LOGGER.warning("Unable to determine root path")
             root_path = ""
 
-        # Fetch entered values
-        if user_input is None:
-            user_input = {}
-
         # Installed TTS platforms
         tts_platforms = sorted(helpers.get_installed_tts_platforms(self.hass))
 
         # Media Folders
         media_dirs = self.hass.config.media_dirs or {}
         default_media_dir = MEDIA_DIR_DEFAULT if (MEDIA_DIR_DEFAULT in media_dirs) else (next(iter(media_dirs)) if media_dirs else "local")
-        selected_media_dir = self.get_data_key_value(
-                MEDIA_DIR_KEY,
-                user_input.get(MEDIA_DIR_KEY, default_media_dir)
-        )
+        selected_media_dir = self.get_data_key_value(MEDIA_DIR_KEY, user_input, default_media_dir)
         media_dirs_labels = ["local" if default_media_dir else "No media directories available"]
         for key, _value in media_dirs.items():
             if key not in media_dirs_labels:
@@ -110,50 +105,38 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
 
         self.data = {
-            QUEUE_TIMEOUT_KEY: self.get_data_key_value(
-                QUEUE_TIMEOUT_KEY,
-                user_input.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT)),
-            TTS_PLATFORM_KEY: self.get_data_key_value(
-                TTS_PLATFORM_KEY,
-                user_input.get(TTS_PLATFORM_KEY, default_tts)),
-            OFFSET_KEY: self.get_data_key_value(
-                OFFSET_KEY,
-                user_input.get(OFFSET_KEY, DEFAULT_OFFSET_MS)),
-            FADE_TRANSITION_KEY: self.get_data_key_value(
-                FADE_TRANSITION_KEY,
-                user_input.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)),
+            QUEUE_TIMEOUT_KEY: self.get_data_key_value(QUEUE_TIMEOUT_KEY, user_input, QUEUE_TIMEOUT_DEFAULT),
+            TTS_PLATFORM_KEY: self.get_data_key_value(TTS_PLATFORM_KEY, user_input, default_tts),
+            DEFAULT_LANGUAGE_KEY: self.get_data_key_value(DEFAULT_LANGUAGE_KEY, user_input, ""),
+            DEFAULT_VOICE_KEY: self.get_data_key_value(DEFAULT_VOICE_KEY, user_input, ""),
+            OFFSET_KEY: self.get_data_key_value(OFFSET_KEY, user_input, DEFAULT_OFFSET_MS),
+            FADE_TRANSITION_KEY: self.get_data_key_value(FADE_TRANSITION_KEY, user_input, DEFAULT_FADE_TRANSITION_MS),
             MEDIA_DIR_KEY: selected_media_dir,
-            CUSTOM_CHIMES_PATH_KEY: user_input.get(
-                CUSTOM_CHIMES_PATH_KEY,
-                self.get_data_key_value(CUSTOM_CHIMES_PATH_KEY, "")),
-            TEMP_CHIMES_PATH_KEY: self.get_data_key_value(
-                TEMP_CHIMES_PATH_KEY,
-                user_input.get(TEMP_CHIMES_PATH_KEY, f"{root_path}{TEMP_CHIMES_PATH_DEFAULT}")),
-            TEMP_PATH_KEY: self.get_data_key_value(
-                TEMP_PATH_KEY,
-                user_input.get(TEMP_PATH_KEY, f"{root_path}{TEMP_PATH_DEFAULT}")),
-            WWW_PATH_KEY: self.get_data_key_value(
-                WWW_PATH_KEY,
-                user_input.get(WWW_PATH_KEY, f"{root_path}{WWW_PATH_DEFAULT}")),
-            ADD_COVER_ART_KEY: self.get_data_key_value(
-                ADD_COVER_ART_KEY,
-                user_input.get(ADD_COVER_ART_KEY, False))
+            CUSTOM_CHIMES_PATH_KEY: self.get_data_key_value(CUSTOM_CHIMES_PATH_KEY, user_input, ""),
+            TEMP_CHIMES_PATH_KEY: self.get_data_key_value(TEMP_CHIMES_PATH_KEY, user_input, f"{root_path}{TEMP_CHIMES_PATH_DEFAULT}"),
+            TEMP_PATH_KEY: self.get_data_key_value(TEMP_PATH_KEY, user_input, f"{root_path}{TEMP_PATH_DEFAULT}"),
+            WWW_PATH_KEY: self.get_data_key_value(WWW_PATH_KEY, user_input, f"{root_path}{WWW_PATH_DEFAULT}"),
+            ADD_COVER_ART_KEY: self.get_data_key_value(ADD_COVER_ART_KEY, user_input, False)
         }
 
         options_schema = vol.Schema(
             {
                 vol.Required(QUEUE_TIMEOUT_KEY, default=self.data[QUEUE_TIMEOUT_KEY]): int,
                 vol.Required(TTS_PLATFORM_KEY, default=self.data[TTS_PLATFORM_KEY]):selector.SelectSelector(
-                    selector.SelectSelectorConfig(options=tts_platforms,
-                                                  mode=selector.SelectSelectorMode.DROPDOWN,
-                                                  custom_value=True)),
+                    selector.SelectSelectorConfig(
+                        options=tts_platforms,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                        custom_value=True)),
+                vol.Optional(DEFAULT_LANGUAGE_KEY, description={"suggested_value": self.data[DEFAULT_LANGUAGE_KEY]}): str,
+                vol.Optional(DEFAULT_VOICE_KEY, description={"suggested_value": self.data[DEFAULT_VOICE_KEY]}): str,
                 vol.Optional(OFFSET_KEY, default=self.data[OFFSET_KEY]): int,
                 vol.Optional(FADE_TRANSITION_KEY, default=self.data[FADE_TRANSITION_KEY]): int,
-                vol.Optional(CUSTOM_CHIMES_PATH_KEY,default=self.data[CUSTOM_CHIMES_PATH_KEY]): str,
+                vol.Optional(CUSTOM_CHIMES_PATH_KEY, description={"suggested_value": self.data[CUSTOM_CHIMES_PATH_KEY]}): str,
                 vol.Required(MEDIA_DIR_KEY, default=selected_media_dir):selector.SelectSelector(
-                    selector.SelectSelectorConfig(options=media_dirs_labels,
-                                                  mode=selector.SelectSelectorMode.DROPDOWN,
-                                                  custom_value=True)),
+                    selector.SelectSelectorConfig(
+                        options=media_dirs_labels,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                        custom_value=True)),
                 vol.Required(TEMP_CHIMES_PATH_KEY,default=self.data[TEMP_CHIMES_PATH_KEY]): str,
                 vol.Required(TEMP_PATH_KEY,default=self.data[TEMP_PATH_KEY]): str,
                 vol.Required(WWW_PATH_KEY,default=self.data[WWW_PATH_KEY]): str,
@@ -161,8 +144,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             }
         )
         # Display the configuration form with the current values
-        if user_input == {} or user_input is None:
-            user_input = None
+        if not user_input:
             return self.async_show_form(
                 step_id="init",
                 data_schema=options_schema,
@@ -213,8 +195,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             self.data[CUSTOM_CHIMES_PATH_KEY] = ""
 
         # 1st time Custom Chimes Folder path modified
-        if (user_input.get(CUSTOM_CHIMES_PATH_KEY)
-            and not self.config_entry.options.get(CUSTOM_CHIMES_PATH_KEY)):
+        if (user_input.get(CUSTOM_CHIMES_PATH_KEY) and not self.config_entry.options.get(CUSTOM_CHIMES_PATH_KEY)):
             # Show restart reminder step before saving config
             return self.async_show_form(
                 step_id="restart_required",
@@ -235,14 +216,14 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             data=self.data
         )
 
-    def get_data_key_value(self, key, default=None):
+    def get_data_key_value(self, key, user_input, default=None):
         """Get the value for a given key. Options flow 1st, Config flow 2nd."""
+        if user_input:
+            return user_input.get(key, default)
         dicts = [dict(self.config_entry.options), dict(self.config_entry.data)]
         for p_dict in dicts:
             if key in p_dict:
                 return p_dict[key]
-        return default
-
 
     async def ping_url(self, url: str):
         """Ping a URL and receive a boolean result."""

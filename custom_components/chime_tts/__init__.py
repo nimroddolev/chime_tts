@@ -75,6 +75,8 @@ from .const import (
     QUEUE_TIMEOUT_DEFAULT,
     SPOTIFY_PLATFORM,
     TTS_PLATFORM_KEY,
+    DEFAULT_LANGUAGE_KEY,
+    DEFAULT_VOICE_KEY,
     OFFSET_KEY,
     AMAZON_POLLY,
     BAIDU,
@@ -162,7 +164,7 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
         # Parse service parameters & TTS options
         params = await helpers.async_parse_params(hass, service.data, is_say_url, media_player_helper)
         if params is not None:
-            options = helpers.parse_options_yaml(service.data)
+            options = helpers.parse_options_yaml(data=service.data, default_data=_data)
             media_players_array = params.get("media_players_array", None)
 
             if not (params["message"] or params["chime_path"] or params["end_chime_path"]):
@@ -395,6 +397,12 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Default TTS Platform
     _data[TTS_PLATFORM_KEY] = options.get(TTS_PLATFORM_KEY, "")
 
+    # Default language
+    _data[DEFAULT_LANGUAGE_KEY] = options.get(DEFAULT_LANGUAGE_KEY, None)
+
+    # Default voice
+    _data[DEFAULT_VOICE_KEY] = options.get(DEFAULT_VOICE_KEY, None)
+
     # Default offset
     _data[OFFSET_KEY] = options.get(OFFSET_KEY, 0)
 
@@ -449,6 +457,8 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     for key_string in [
         QUEUE_TIMEOUT_KEY,
         TTS_PLATFORM_KEY,
+        DEFAULT_LANGUAGE_KEY,
+        DEFAULT_VOICE_KEY,
         OFFSET_KEY,
         FADE_TRANSITION_KEY,
         ADD_COVER_ART_KEY,

@@ -8,16 +8,18 @@ import shutil
 import yaml
 import aiofiles
 import aiofiles.os
-from homeassistant.core import HomeAssistant, SupportsResponse
-from homeassistant.components.media_player.const import ATTR_MEDIA_VOLUME_LEVEL
-import voluptuous as vol
-from pydub import AudioSegment
+from .media_player_helper import MediaPlayerHelper
+from .media_player import ChimeTTSMediaPlayer
+from .filesystem import FilesystemHelper
 from ..const import (
     DOMAIN,
     SERVICE_SAY,
     SERVICE_SAY_URL,
     DEFAULT_CHIME_OPTIONS,
     OFFSET_KEY,
+    TTS_PLATFORM_KEY,
+    DEFAULT_LANGUAGE_KEY,
+    DEFAULT_VOICE_KEY,
     DEFAULT_OFFSET_MS,
     FFMPEG_ARGS_ALEXA,
     FFMPEG_ARGS_VOLUME,
@@ -40,9 +42,10 @@ from ..const import (
     YANDEX_TTS,
     QUOTE_CHAR_SUBSTITUTE
 )
-from .media_player_helper import MediaPlayerHelper
-from .media_player import ChimeTTSMediaPlayer
-from .filesystem import FilesystemHelper
+from homeassistant.core import HomeAssistant, SupportsResponse
+from homeassistant.components.media_player.const import ATTR_MEDIA_VOLUME_LEVEL
+import voluptuous as vol
+from pydub import AudioSegment
 
 filesystem_helper = FilesystemHelper()
 
@@ -252,14 +255,13 @@ class ChimeTTSHelper:
             _LOGGER.debug(" --- Audio will be converted to Alexa-friendly format as Alexa speaker/s detected ---")
         return params
 
-    def parse_options_yaml(self, data: dict = {}):
+    def parse_options_yaml(self, data: dict, default_data: dict):
         """Parse TTS service options YAML into dict object."""
+        data = data or {}
         options = {}
         try:
             options_string = data.get("options", "")
-            options = self.convert_yaml_str(options_string)
-            if options is None:
-                options = {}
+            options = self.convert_yaml_str(options_string) or {}
         except yaml.YAMLError as error:
             _LOGGER.error("Error parsing options YAML: %s", error)
             return {}
@@ -273,10 +275,39 @@ class ChimeTTSHelper:
                 if value is not None:
                     options[key] = value
 
-        if len(options) > 0:
+        is_default_values = []
+
+        # Language
+        language = data.get("language", None) or (options["language"] if "language" in options else None)
+        # Apply default language if not already set, and TTS Platform is the default
+        default_tts_platform = default_data.get(TTS_PLATFORM_KEY, None)
+        selected_tts_platform = data.get("tts_platform", default_tts_platform)
+        tts_platform_is_default = default_tts_platform == selected_tts_platform
+        if (not language
+            and default_data.get(DEFAULT_LANGUAGE_KEY, None)
+            and tts_platform_is_default):
+            options["language"] = default_data.get(DEFAULT_LANGUAGE_KEY, None)
+            is_default_values.append("language")
+
+        # Voice
+        voice = data.get("voice", None) or (options["voice"] if "voice" in options else None)
+        # Apply default voice if not already set, and TTS Platform is the default
+        default_tts_platform = default_data.get(TTS_PLATFORM_KEY, None)
+        selected_tts_platform = data.get("tts_platform", default_tts_platform)
+        tts_platform_is_default = default_tts_platform == selected_tts_platform
+        if (not voice
+            and default_data.get(DEFAULT_VOICE_KEY, None)
+            and tts_platform_is_default):
+            options["voice"] = default_data.get(DEFAULT_VOICE_KEY, None)
+            is_default_values.append("voice")
+
+        if options:
             self.debug_subtitle("TTS-Specific Params")
             for key, value in options.items():
-                _LOGGER.debug(" * %s = %s", key, str(value))
+                if key in is_default_values:
+                    _LOGGER.debug(" * %s = %s (default value entered in configuration)", key, str(value))
+                else:
+                    _LOGGER.debug(" * %s = %s", key, str(value))
 
         return options
 
@@ -496,10 +527,20 @@ class ChimeTTSHelper:
             if str(entity.entity_id).startswith("tts."):
                 tts_entities.append(str(entity.entity_id))
 
-        # TTS Platforms
-        installed_tts_platforms: list[str] = tts_providers + tts_entities
+        # Installed TTS Components
+        tts_components = []
+        for key, _value in dict(hass.data["components"]).items():
+            if isinstance(key, str) and key.endswith(".tts"):
+                tts_components.append(key[0:len(key)-4])
 
-        return installed_tts_platforms
+        # Unique TTS Platforms
+        all_tts_platforms_found: list[str] = tts_providers + tts_components + tts_entities
+        final_tts_platforms: list[str] = []
+        for tts_platform in all_tts_platforms_found:
+            if tts_platform not in final_tts_platforms:
+                final_tts_platforms.append(tts_platform)
+        final_tts_platforms.sort()
+        return final_tts_platforms
 
 
     def get_default_tts_platform(self, hass, default_tts_platform: str = ""):

@@ -105,6 +105,8 @@ MAX_TIMEOUT = 600
 QUEUE_PROCESSOR_SLEEP_TIME = 0.2
 
 TTS_PLATFORM_KEY = "tts_platform_key"
+DEFAULT_LANGUAGE_KEY = "default_language_key"
+DEFAULT_VOICE_KEY = "default_voice_key"
 
 # FFmpeg Arguments
 FFMPEG_ARGS_ALEXA = "-y -ac 2 -codec:a libmp3lame -b:a 48k -ar 24000 -write_xing 0"
