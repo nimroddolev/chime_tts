@@ -29,7 +29,7 @@ export default function HomepageFeatures() {
               </div>
               <div className="text--center padding-horiz--md">
                 <Heading as="h3">No More Lag</Heading>
-                <p>Locally combine chimes and TTS audio for lag-free playback in a single service call.</p>
+                <p>Locally combine chimes and TTS audio for lag-free playback in a single action call.</p>
               </div>
             </div>
           </div>

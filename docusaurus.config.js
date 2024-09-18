@@ -115,23 +115,23 @@ const config = {
               },
               {
                 type: "doc",
-                label: "Say Service",
-                docId: "documentation/services/say-service/index"
+                label: "Say Action",
+                docId: "documentation/actions/say-action/index"
               },
               {
                 type: "doc",
-                label: "Say URL Service",
-                docId: "documentation/services/say_url-service/index"
+                label: "Say URL Action",
+                docId: "documentation/actions/say_url-action/index"
               },
               {
                 type: "doc",
-                label: "Replay Service",
-                docId: "documentation/services/replay-service"
+                label: "Replay Action",
+                docId: "documentation/actions/replay-action"
               },
               {
                 type: "doc",
-                label: "Clear Cache Service",
-                docId: "documentation/services/clear_cache-service"
+                label: "Clear Cache Action",
+                docId: "documentation/actions/clear_cache-action"
               },
               {
                 type: "doc",
@@ -242,15 +242,52 @@ const config = {
           var replacements = [
             {
               from: "docs/documentation/say",
-              to: "docs/documentation/services/say"
+              to: "docs/documentation/actions/say"
             },
             {
               from: "docs/documentation/clear",
-              to: "docs/documentation/services/clear"
+              to: "docs/documentation/actions/clear"
             },
             {
               from: "docs/quick-start/configuration",
               to: "docs/documentation/configuration"
+            },
+            // Rename from "service" to "action"
+            {
+              from: "docs/documentation/services",
+              to: "docs/documentation/actions"
+            },
+            {
+              from: "docs/documentation/services/clear_cache-service",
+              to: "docs/documentation/actions/clear_cache-action"
+            },
+            {
+              from: "docs/documentation/services/replay-service",
+              to: "docs/documentation/actions/replay-action"
+            },
+            {
+              from: "docs/documentation/services/say_url-service",
+              to: "docs/documentation/actions/say_url-action"
+            },
+            {
+              from: "docs/documentation/services/say_url-service/examples",
+              to: "docs/documentation/actions/say_url-action/examples"
+            },
+            {
+              from: "docs/documentation/services/say_url-service/parameters",
+              to: "docs/documentation/actions/say_url-action/parameters"
+            },
+            {
+              from: "docs/documentation/services/say-service",
+              to: "docs/documentation/actions/say-action"
+            },
+            {
+              from: "docs/documentation/services/say-service/examples",
+              to: "docs/documentation/actions/say-action/examples"
+            },
+            {
+              from: "docs/documentation/services/say-service/parameters",
+              to: "docs/documentation/actions/say-action/parameters"
             },
           ];
           for (var i = 0; i < replacements.length; i++) {

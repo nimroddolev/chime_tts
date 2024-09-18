@@ -16,7 +16,7 @@ class ContextReplacementPlugin {
 	 * @param {RegExp} resourceRegExp A regular expression that determines which files will be selected
 	 * @param {TODO=} newContentResource A new resource to replace the match
 	 * @param {TODO=} newContentRecursive If true, all subdirectories are searched for matches
-	 * @param {TODO=} newContentRegExp A regular expression that determines which files will be selected
+	 * @param {RegExp=} newContentRegExp A regular expression that determines which files will be selected
 	 */
 	constructor(
 		resourceRegExp,
@@ -154,14 +154,15 @@ const createResolveDependenciesFromContextMap = createContextMap => {
 	const resolveDependenciesFromContextMap = (fs, options, callback) => {
 		createContextMap(fs, (err, map) => {
 			if (err) return callback(err);
-			const dependencies = Object.keys(map).map(key => {
-				return new ContextElementDependency(
-					map[key] + options.resourceQuery + options.resourceFragment,
-					key,
-					options.category,
-					options.referencedExports
-				);
-			});
+			const dependencies = Object.keys(map).map(
+				key =>
+					new ContextElementDependency(
+						map[key] + options.resourceQuery + options.resourceFragment,
+						key,
+						options.category,
+						options.referencedExports
+					)
+			);
 			callback(null, dependencies);
 		});
 	};

@@ -6,9 +6,6 @@
 "use strict";
 
 /**
- * @template K
- * @template V
- *
  * The StackedCacheMap is a data structure designed as an alternative to a Map
  * in situations where you need to handle multiple item additions and
  * frequently access the largest map.
@@ -19,7 +16,6 @@
  * It has a fallback Map that is used when the map to be added is mutable.
  *
  * Note: `delete` and `has` are not supported for performance reasons.
- *
  * @example
  * ```js
  * const map = new StackedCacheMap();
@@ -31,6 +27,8 @@
  * 		console.log(key, value);
  * }
  * ```
+ * @template K
+ * @template V
  */
 class StackedCacheMap {
 	constructor() {
@@ -94,7 +92,7 @@ class StackedCacheMap {
 
 	/**
 	 * @param {K} item the key of the element to return
-	 * @returns {V} the value of the element
+	 * @returns {V | undefined} the value of the element
 	 */
 	get(item) {
 		for (const map of this.stack) {
@@ -130,7 +128,7 @@ class StackedCacheMap {
 			next() {
 				let result = current.next();
 				while (result.done && iterators.length > 0) {
-					current = iterators.pop();
+					current = /** @type {IterableIterator<[K, V]>} */ (iterators.pop());
 					result = current.next();
 				}
 				return result;

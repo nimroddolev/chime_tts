@@ -64,16 +64,14 @@ const RESERVED_IDENTIFIER = new Set([
  * @summary Returns a valid JS property name for the given property.
  * Certain strings like "default", "null", and names with whitespace are not
  * valid JS property names, so they are returned as strings.
- *
  * @param {string} prop property name to analyze
  * @returns {string} valid JS property name
  */
 const propertyName = prop => {
 	if (SAFE_IDENTIFIER.test(prop) && !RESERVED_IDENTIFIER.has(prop)) {
 		return prop;
-	} else {
-		return JSON.stringify(prop);
 	}
+	return JSON.stringify(prop);
 };
 
 module.exports = { SAFE_IDENTIFIER, RESERVED_IDENTIFIER, propertyName };

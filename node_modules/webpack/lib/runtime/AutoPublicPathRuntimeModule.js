@@ -10,6 +10,7 @@ const Template = require("../Template");
 const JavascriptModulesPlugin = require("../javascript/JavascriptModulesPlugin");
 const { getUndoPath } = require("../util/identifier");
 
+/** @typedef {import("../Chunk")} Chunk */
 /** @typedef {import("../Compilation")} Compilation */
 
 class AutoPublicPathRuntimeModule extends RuntimeModule {
@@ -25,7 +26,8 @@ class AutoPublicPathRuntimeModule extends RuntimeModule {
 		const { scriptType, importMetaName, path } = compilation.outputOptions;
 		const chunkName = compilation.getPath(
 			JavascriptModulesPlugin.getChunkFilenameTemplate(
-				this.chunk,
+				/** @type {Chunk} */
+				(this.chunk),
 				compilation.outputOptions
 			),
 			{
@@ -48,8 +50,11 @@ class AutoPublicPathRuntimeModule extends RuntimeModule {
 						`var document = ${RuntimeGlobals.global}.document;`,
 						"if (!scriptUrl && document) {",
 						Template.indent([
-							`if (document.currentScript)`,
-							Template.indent(`scriptUrl = document.currentScript.src;`),
+							// Technically we could use `document.currentScript instanceof window.HTMLScriptElement`,
+							// but an attacker could try to inject `<script>HTMLScriptElement = HTMLImageElement</script>`
+							// and use `<img name="currentScript" src="https://attacker.controlled.server/"></img>`
+							"if (document.currentScript && document.currentScript.tagName.toUpperCase() === 'SCRIPT')",
+							Template.indent("scriptUrl = document.currentScript.src;"),
 							"if (!scriptUrl) {",
 							Template.indent([
 								'var scripts = document.getElementsByTagName("script");',

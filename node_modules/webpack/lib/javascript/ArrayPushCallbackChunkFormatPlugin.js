@@ -33,6 +33,7 @@ class ArrayPushCallbackChunkFormatPlugin {
 						if (chunk.hasRuntime()) return;
 						if (chunkGraph.getNumberOfEntryModules(chunk) > 0) {
 							set.add(RuntimeGlobals.onChunksLoaded);
+							set.add(RuntimeGlobals.exports);
 							set.add(RuntimeGlobals.require);
 						}
 						set.add(RuntimeGlobals.chunkCallback);
@@ -83,10 +84,11 @@ class ArrayPushCallbackChunkFormatPlugin {
 							);
 							if (runtimeModules.length > 0 || entries.length > 0) {
 								const runtime = new ConcatSource(
-									(runtimeTemplate.supportsArrowFunction()
-										? `${RuntimeGlobals.require} =>`
-										: `function(${RuntimeGlobals.require})`) +
-										" { // webpackRuntimeModules\n"
+									`${
+										runtimeTemplate.supportsArrowFunction()
+											? `${RuntimeGlobals.require} =>`
+											: `function(${RuntimeGlobals.require})`
+									} { // webpackRuntimeModules\n`
 								);
 								if (runtimeModules.length > 0) {
 									runtime.add(

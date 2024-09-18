@@ -32,8 +32,10 @@ function createConfigSnippets({
 export default function pluginGoogleGtag(
   context: LoadContext,
   options: PluginOptions,
-): Plugin {
-  const isProd = process.env.NODE_ENV === 'production';
+): Plugin | null {
+  if (process.env.NODE_ENV !== 'production') {
+    return null;
+  }
 
   const firstTrackingId = options.trackingID[0];
 
@@ -45,13 +47,10 @@ export default function pluginGoogleGtag(
     },
 
     getClientModules() {
-      return isProd ? ['./gtag'] : [];
+      return ['./gtag'];
     },
 
     injectHtmlTags() {
-      if (!isProd) {
-        return {};
-      }
       return {
         // Gtag includes GA by default, so we also preconnect to
         // google-analytics.
@@ -70,7 +69,6 @@ export default function pluginGoogleGtag(
               href: 'https://www.googletagmanager.com',
             },
           },
-          // https://developers.google.com/analytics/devguides/collection/gtagjs/#install_the_global_site_tag
           {
             tagName: 'script',
             attributes: {

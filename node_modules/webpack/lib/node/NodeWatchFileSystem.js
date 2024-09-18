@@ -11,9 +11,7 @@ const Watchpack = require("watchpack");
 /** @typedef {import("../../declarations/WebpackOptions").WatchOptions} WatchOptions */
 /** @typedef {import("../FileSystemInfo").FileSystemInfoEntry} FileSystemInfoEntry */
 /** @typedef {import("../util/fs").InputFileSystem} InputFileSystem */
-/** @typedef {import("../util/fs").WatchFileSystem} WatchFileSystem */
 /** @typedef {import("../util/fs").WatchMethod} WatchMethod */
-/** @typedef {import("../util/fs").Watcher} Watcher */
 
 class NodeWatchFileSystem {
 	/**
@@ -27,16 +25,7 @@ class NodeWatchFileSystem {
 		this.watcher = new Watchpack(this.watcherOptions);
 	}
 
-	/**
-	 * @param {Iterable<string>} files watched files
-	 * @param {Iterable<string>} directories watched directories
-	 * @param {Iterable<string>} missing watched existence entries
-	 * @param {number} startTime timestamp of start time
-	 * @param {WatchOptions} options options object
-	 * @param {function(Error | null, Map<string, FileSystemInfoEntry>, Map<string, FileSystemInfoEntry>, Set<string>, Set<string>): void} callback aggregated callback
-	 * @param {function(string, number): void} callbackUndelayed callback when the first change was detected
-	 * @returns {Watcher} a watcher
-	 */
+	/** @type {WatchMethod} */
 	watch(
 		files,
 		directories,
@@ -161,16 +150,12 @@ class NodeWatchFileSystem {
 				"DEP_WEBPACK_WATCHER_GET_AGGREGATED_CHANGES"
 			),
 			getFileTimeInfoEntries: util.deprecate(
-				() => {
-					return fetchTimeInfo().fileTimeInfoEntries;
-				},
+				() => fetchTimeInfo().fileTimeInfoEntries,
 				"Watcher.getFileTimeInfoEntries is deprecated in favor of Watcher.getInfo since that's more performant.",
 				"DEP_WEBPACK_WATCHER_FILE_TIME_INFO_ENTRIES"
 			),
 			getContextTimeInfoEntries: util.deprecate(
-				() => {
-					return fetchTimeInfo().contextTimeInfoEntries;
-				},
+				() => fetchTimeInfo().contextTimeInfoEntries,
 				"Watcher.getContextTimeInfoEntries is deprecated in favor of Watcher.getInfo since that's more performant.",
 				"DEP_WEBPACK_WATCHER_CONTEXT_TIME_INFO_ENTRIES"
 			),

@@ -16,13 +16,13 @@ const WASM_HEADER = Buffer.from([0x00, 0x61, 0x73, 0x6d]);
 class ModuleParseError extends WebpackError {
 	/**
 	 * @param {string | Buffer} source source code
-	 * @param {Error&any} err the parse error
+	 * @param {Error & any} err the parse error
 	 * @param {string[]} loaders the loaders used
 	 * @param {string} type module type
 	 */
 	constructor(source, err, loaders, type) {
-		let message = "Module parse failed: " + (err && err.message);
-		let loc = undefined;
+		let message = `Module parse failed: ${err && err.message}`;
+		let loc;
 
 		if (
 			((Buffer.isBuffer(source) && source.slice(0, 4).equals(WASM_HEADER)) ||
@@ -57,7 +57,7 @@ class ModuleParseError extends WebpackError {
 			typeof err.loc === "object" &&
 			typeof err.loc.line === "number"
 		) {
-			var lineNumber = err.loc.line;
+			const lineNumber = err.loc.line;
 
 			if (
 				Buffer.isBuffer(source) ||
@@ -72,15 +72,14 @@ class ModuleParseError extends WebpackError {
 				const theLine = sourceLines[lineNumber - 1];
 				const linesAfter = sourceLines.slice(lineNumber, lineNumber + 2);
 
-				message +=
-					linesBefore.map(l => `\n| ${l}`).join("") +
-					`\n> ${theLine}` +
-					linesAfter.map(l => `\n| ${l}`).join("");
+				message += `${linesBefore
+					.map(l => `\n| ${l}`)
+					.join("")}\n> ${theLine}${linesAfter.map(l => `\n| ${l}`).join("")}`;
 			}
 
 			loc = { start: err.loc };
 		} else if (err && err.stack) {
-			message += "\n" + err.stack;
+			message += `\n${err.stack}`;
 		}
 
 		super(message);

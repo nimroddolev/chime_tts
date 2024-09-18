@@ -14,20 +14,18 @@
 const memoize = fn => {
 	let cache = false;
 	/** @type {T | undefined} */
-	let result = undefined;
+	let result;
 	return () => {
 		if (cache) {
 			return /** @type {T} */ (result);
-		} else {
-			result = fn();
-			cache = true;
-			// Allow to clean up memory for fn
-			// and all dependent resources
-			// eslint-disable-next-line no-warning-comments
-			// @ts-ignore
-			fn = undefined;
-			return /** @type {T} */ (result);
 		}
+
+		result = fn();
+		cache = true;
+		// Allow to clean up memory for fn
+		// and all dependent resources
+		fn = undefined;
+		return /** @type {T} */ (result);
 	};
 };
 

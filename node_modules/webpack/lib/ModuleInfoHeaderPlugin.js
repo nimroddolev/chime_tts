@@ -8,6 +8,7 @@
 const { ConcatSource, RawSource, CachedSource } = require("webpack-sources");
 const { UsageState } = require("./ExportsInfo");
 const Template = require("./Template");
+const CssModulesPlugin = require("./css/CssModulesPlugin");
 const JavascriptModulesPlugin = require("./javascript/JavascriptModulesPlugin");
 
 /** @typedef {import("webpack-sources").Source} Source */
@@ -84,7 +85,7 @@ const printExportsInfoToSource = (
 	for (const exportInfo of printedExports) {
 		const target = exportInfo.getTarget(moduleGraph);
 		source.add(
-			Template.toComment(
+			`${Template.toComment(
 				`${indent}export ${JSON.stringify(exportInfo.name).slice(
 					1,
 					-1
@@ -99,12 +100,12 @@ const printExportsInfoToSource = (
 							}`
 						: ""
 				}`
-			) + "\n"
+			)}\n`
 		);
 		if (exportInfo.exportsInfo) {
 			printExportsInfoToSource(
 				source,
-				indent + "  ",
+				`${indent}  `,
 				exportInfo.exportsInfo,
 				moduleGraph,
 				requestShortener,
@@ -115,9 +116,9 @@ const printExportsInfoToSource = (
 
 	if (alreadyPrintedExports) {
 		source.add(
-			Template.toComment(
+			`${Template.toComment(
 				`${indent}... (${alreadyPrintedExports} already listed exports)`
-			) + "\n"
+			)}\n`
 		);
 	}
 
@@ -133,13 +134,13 @@ const printExportsInfoToSource = (
 					? "other exports"
 					: "exports";
 			source.add(
-				Template.toComment(
+				`${Template.toComment(
 					`${indent}${title} [${otherExportsInfo.getProvidedInfo()}] [${otherExportsInfo.getUsedInfo()}]${
 						target
 							? ` -> ${target.module.readableIdentifier(requestShortener)}`
 							: ""
 					}`
-				) + "\n"
+				)}\n`
 			);
 		}
 	}
@@ -155,6 +156,7 @@ class ModuleInfoHeaderPlugin {
 	constructor(verbose = true) {
 		this._verbose = verbose;
 	}
+
 	/**
 	 * @param {Compiler} compiler the compiler
 	 * @returns {void}
@@ -162,8 +164,9 @@ class ModuleInfoHeaderPlugin {
 	apply(compiler) {
 		const { _verbose: verbose } = this;
 		compiler.hooks.compilation.tap("ModuleInfoHeaderPlugin", compilation => {
-			const hooks = JavascriptModulesPlugin.getCompilationHooks(compilation);
-			hooks.renderModulePackage.tap(
+			const javascriptHooks =
+				JavascriptModulesPlugin.getCompilationHooks(compilation);
+			javascriptHooks.renderModulePackage.tap(
 				"ModuleInfoHeaderPlugin",
 				(
 					moduleSource,
@@ -194,11 +197,7 @@ class ModuleInfoHeaderPlugin {
 					const source = new ConcatSource();
 					let header = cacheEntry.header;
 					if (header === undefined) {
-						const req = module.readableIdentifier(requestShortener);
-						const reqStr = req.replace(/\*\//g, "*_/");
-						const reqStrStar = "*".repeat(reqStr.length);
-						const headerStr = `/*!****${reqStrStar}****!*\\\n  !*** ${reqStr} ***!\n  \\****${reqStrStar}****/\n`;
-						header = new RawSource(headerStr);
+						header = this.generateHeader(module, requestShortener);
 						cacheEntry.header = header;
 					}
 					source.add(header);
@@ -206,11 +205,11 @@ class ModuleInfoHeaderPlugin {
 						const exportsType = /** @type {BuildMeta} */ (module.buildMeta)
 							.exportsType;
 						source.add(
-							Template.toComment(
+							`${Template.toComment(
 								exportsType
 									? `${exportsType} exports`
 									: "unknown exports (runtime-defined)"
-							) + "\n"
+							)}\n`
 						);
 						if (exportsType) {
 							const exportsInfo = moduleGraph.getExportsInfo(module);
@@ -223,40 +222,93 @@ class ModuleInfoHeaderPlugin {
 							);
 						}
 						source.add(
-							Template.toComment(
+							`${Template.toComment(
 								`runtime requirements: ${joinIterableWithComma(
 									chunkGraph.getModuleRuntimeRequirements(module, chunk.runtime)
 								)}`
-							) + "\n"
+							)}\n`
 						);
 						const optimizationBailout =
 							moduleGraph.getOptimizationBailout(module);
 						if (optimizationBailout) {
 							for (const text of optimizationBailout) {
-								let code;
-								if (typeof text === "function") {
-									code = text(requestShortener);
-								} else {
-									code = text;
-								}
-								source.add(Template.toComment(`${code}`) + "\n");
+								const code =
+									typeof text === "function" ? text(requestShortener) : text;
+								source.add(`${Template.toComment(`${code}`)}\n`);
 							}
 						}
 						source.add(moduleSource);
 						return source;
-					} else {
-						source.add(moduleSource);
-						const cachedSource = new CachedSource(source);
-						cacheEntry.full.set(moduleSource, cachedSource);
-						return cachedSource;
 					}
+					source.add(moduleSource);
+					const cachedSource = new CachedSource(source);
+					cacheEntry.full.set(moduleSource, cachedSource);
+					return cachedSource;
 				}
 			);
-			hooks.chunkHash.tap("ModuleInfoHeaderPlugin", (chunk, hash) => {
+			javascriptHooks.chunkHash.tap(
+				"ModuleInfoHeaderPlugin",
+				(_chunk, hash) => {
+					hash.update("ModuleInfoHeaderPlugin");
+					hash.update("1");
+				}
+			);
+			const cssHooks = CssModulesPlugin.getCompilationHooks(compilation);
+			cssHooks.renderModulePackage.tap(
+				"ModuleInfoHeaderPlugin",
+				(moduleSource, module, { runtimeTemplate }) => {
+					const { requestShortener } = runtimeTemplate;
+					let cacheEntry;
+					let cache = caches.get(requestShortener);
+					if (cache === undefined) {
+						caches.set(requestShortener, (cache = new WeakMap()));
+						cache.set(
+							module,
+							(cacheEntry = { header: undefined, full: new WeakMap() })
+						);
+					} else {
+						cacheEntry = cache.get(module);
+						if (cacheEntry === undefined) {
+							cache.set(
+								module,
+								(cacheEntry = { header: undefined, full: new WeakMap() })
+							);
+						} else if (!verbose) {
+							const cachedSource = cacheEntry.full.get(moduleSource);
+							if (cachedSource !== undefined) return cachedSource;
+						}
+					}
+					const source = new ConcatSource();
+					let header = cacheEntry.header;
+					if (header === undefined) {
+						header = this.generateHeader(module, requestShortener);
+						cacheEntry.header = header;
+					}
+					source.add(header);
+					source.add(moduleSource);
+					const cachedSource = new CachedSource(source);
+					cacheEntry.full.set(moduleSource, cachedSource);
+					return cachedSource;
+				}
+			);
+			cssHooks.chunkHash.tap("ModuleInfoHeaderPlugin", (_chunk, hash) => {
 				hash.update("ModuleInfoHeaderPlugin");
 				hash.update("1");
 			});
 		});
+	}
+
+	/**
+	 * @param {Module} module the module
+	 * @param {RequestShortener} requestShortener request shortener
+	 * @returns {RawSource} the header
+	 */
+	generateHeader(module, requestShortener) {
+		const req = module.readableIdentifier(requestShortener);
+		const reqStr = req.replace(/\*\//g, "*_/");
+		const reqStrStar = "*".repeat(reqStr.length);
+		const headerStr = `/*!****${reqStrStar}****!*\\\n  !*** ${reqStr} ***!\n  \\****${reqStrStar}****/\n`;
+		return new RawSource(headerStr);
 	}
 }
 module.exports = ModuleInfoHeaderPlugin;

@@ -25,6 +25,7 @@ const EMPTY_RESOLVE_OPTIONS = {};
 // TODO webpack 6 remove this
 const callDeprecatedExternals = util.deprecate(
 	(externalsFunction, context, request, cb) => {
+		// eslint-disable-next-line no-useless-call
 		externalsFunction.call(null, context, request, cb);
 	},
 	"The externals-function should be defined like ({context, request}, cb) => { ... }",
@@ -33,6 +34,11 @@ const callDeprecatedExternals = util.deprecate(
 
 const cache = new WeakMap();
 
+/**
+ * @param {object} obj obj
+ * @param {TODO} layer layer
+ * @returns {object} result
+ */
 const resolveLayer = (obj, layer) => {
 	let map = cache.get(obj);
 	if (map === undefined) {
@@ -46,6 +52,9 @@ const resolveLayer = (obj, layer) => {
 	map.set(layer, result);
 	return result;
 };
+
+/** @typedef {string|string[]|boolean|Record<string, string|string[]>} ExternalValue */
+/** @typedef {string|undefined} ExternalType */
 
 class ExternalModuleFactoryPlugin {
 	/**
@@ -72,8 +81,8 @@ class ExternalModuleFactoryPlugin {
 				const dependencyType = data.dependencyType;
 
 				/**
-				 * @param {string|string[]|boolean|Record<string, string|string[]>} value the external config
-				 * @param {string|undefined} type type of external
+				 * @param {ExternalValue} value the external config
+				 * @param {ExternalType | undefined} type type of external
 				 * @param {function((Error | null)=, ExternalModule=): void} callback callback
 				 * @returns {void}
 				 */
@@ -83,12 +92,7 @@ class ExternalModuleFactoryPlugin {
 						return callback();
 					}
 					/** @type {string | string[] | Record<string, string|string[]>} */
-					let externalConfig;
-					if (value === true) {
-						externalConfig = dependency.request;
-					} else {
-						externalConfig = value;
-					}
+					let externalConfig = value === true ? dependency.request : value;
 					// When no explicit type is specified, extract it from the externalConfig
 					if (type === undefined) {
 						if (
@@ -122,8 +126,16 @@ class ExternalModuleFactoryPlugin {
 						dependency instanceof ImportDependency ||
 						dependency instanceof ContextElementDependency
 					) {
+						const externalType =
+							dependency instanceof HarmonyImportDependency
+								? "module"
+								: dependency instanceof ImportDependency
+									? "import"
+									: undefined;
+
 						dependencyMeta = {
-							attributes: dependency.assertions
+							attributes: dependency.assertions,
+							externalType
 						};
 					} else if (dependency instanceof CssImportDependency) {
 						dependencyMeta = {
@@ -137,7 +149,8 @@ class ExternalModuleFactoryPlugin {
 						null,
 						new ExternalModule(
 							externalConfig,
-							type || globalType,
+							/** @type {string} */
+							(type || globalType),
 							dependency.request,
 							dependencyMeta
 						)

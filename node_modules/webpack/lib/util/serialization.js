@@ -39,7 +39,11 @@ const registerSerializers = memoize(() => {
 	// This allows bundling all internal serializers
 	const internalSerializables = require("./internalSerializables");
 	getObjectMiddleware().registerLoader(/^webpack\/lib\//, req => {
-		const loader = internalSerializables[req.slice("webpack/lib/".length)];
+		const loader =
+			internalSerializables[
+				/** @type {keyof import("./internalSerializables")} */
+				(req.slice("webpack/lib/".length))
+			];
 		if (loader) {
 			loader();
 		} else {
@@ -88,6 +92,9 @@ module.exports = {
 			new SingleItemMiddleware(),
 			new (getObjectMiddleware())(context => {
 				if (context.write) {
+					/**
+					 * @param {any} value value
+					 */
 					context.writeLazy = value => {
 						context.write(
 							SerializerMiddleware.createLazy(value, binaryMiddleware)
@@ -115,11 +122,19 @@ module.exports = {
 			new SingleItemMiddleware(),
 			new (getObjectMiddleware())(context => {
 				if (context.write) {
+					/**
+					 * @param {any} value value
+					 */
 					context.writeLazy = value => {
 						context.write(
 							SerializerMiddleware.createLazy(value, binaryMiddleware)
 						);
 					};
+					/**
+					 * @param {any} value value
+					 * @param {object=} options lazy options
+					 * @returns {function(): Promise<any> | any} lazy function
+					 */
 					context.writeSeparate = (value, options) => {
 						const lazy = SerializerMiddleware.createLazy(
 							value,

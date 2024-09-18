@@ -20,7 +20,11 @@ const { addLocalModule, getLocalModule } = require("./LocalModulesHelpers");
 /** @typedef {import("estree").CallExpression} CallExpression */
 /** @typedef {import("estree").Expression} Expression */
 /** @typedef {import("estree").FunctionExpression} FunctionExpression */
+/** @typedef {import("estree").Identifier} Identifier */
 /** @typedef {import("estree").Literal} Literal */
+/** @typedef {import("estree").MemberExpression} MemberExpression */
+/** @typedef {import("estree").ObjectExpression} ObjectExpression */
+/** @typedef {import("estree").SimpleCallExpression} SimpleCallExpression */
 /** @typedef {import("estree").SpreadElement} SpreadElement */
 /** @typedef {import("../../declarations/WebpackOptions").JavascriptParserOptions} JavascriptParserOptions */
 /** @typedef {import("../Dependency").DependencyLocation} DependencyLocation */
@@ -30,7 +34,7 @@ const { addLocalModule, getLocalModule } = require("./LocalModulesHelpers");
 
 /**
  * @param {Expression | SpreadElement} expr expression
- * @returns {boolean} true if it's a bound function expression
+ * @returns {expr is CallExpression} true if it's a bound function expression
  */
 const isBoundFunctionExpression = expr => {
 	if (expr.type !== "CallExpression") return false;
@@ -46,7 +50,7 @@ const isBoundFunctionExpression = expr => {
 
 /**
  * @param {Expression | SpreadElement} expr expression
- * @returns {boolean} true when unbound function expression
+ * @returns {expr is FunctionExpression | ArrowFunctionExpression} true when unbound function expression
  */
 const isUnboundFunctionExpression = expr => {
 	if (expr.type === "FunctionExpression") return true;
@@ -56,7 +60,7 @@ const isUnboundFunctionExpression = expr => {
 
 /**
  * @param {Expression | SpreadElement} expr expression
- * @returns {boolean} true when callable
+ * @returns {expr is FunctionExpression | ArrowFunctionExpression | CallExpression} true when callable
  */
 const isCallable = expr => {
 	if (isUnboundFunctionExpression(expr)) return true;
@@ -95,26 +99,28 @@ class AMDDefineDependencyParserPlugin {
 	 */
 	processArray(parser, expr, param, identifiers, namedModule) {
 		if (param.isArray()) {
-			/** @type {BasicEvaluatedExpression[]} */
-			(param.items).forEach((param, idx) => {
+			const items = /** @type {BasicEvaluatedExpression[]} */ (param.items);
+			for (const [idx, item] of items.entries()) {
 				if (
-					param.isString() &&
+					item.isString() &&
 					["require", "module", "exports"].includes(
-						/** @type {string} */ (param.string)
+						/** @type {string} */ (item.string)
 					)
 				)
-					identifiers[/** @type {number} */ (idx)] = param.string;
-				const result = this.processItem(parser, expr, param, namedModule);
+					identifiers[/** @type {number} */ (idx)] = /** @type {string} */ (
+						item.string
+					);
+				const result = this.processItem(parser, expr, item, namedModule);
 				if (result === undefined) {
-					this.processContext(parser, expr, param);
+					this.processContext(parser, expr, item);
 				}
-			});
+			}
 			return true;
 		} else if (param.isConstArray()) {
 			/** @type {(string | LocalModuleDependency | AMDRequireItemDependency)[]} */
 			const deps = [];
-			/** @type {string[]} */
-			(param.array).forEach((request, idx) => {
+			const array = /** @type {string[]} */ (param.array);
+			for (const [idx, request] of array.entries()) {
 				let dep;
 				let localModule;
 				if (request === "require") {
@@ -131,17 +137,17 @@ class AMDDefineDependencyParserPlugin {
 				} else {
 					dep = this.newRequireItemDependency(request);
 					dep.loc = /** @type {DependencyLocation} */ (expr.loc);
-					dep.optional = !!parser.scope.inTry;
+					dep.optional = Boolean(parser.scope.inTry);
 					parser.state.current.addDependency(dep);
 				}
 				deps.push(dep);
-			});
+			}
 			const dep = this.newRequireArrayDependency(
 				deps,
 				/** @type {Range} */ (param.range)
 			);
 			dep.loc = /** @type {DependencyLocation} */ (expr.loc);
-			dep.optional = !!parser.scope.inTry;
+			dep.optional = Boolean(parser.scope.inTry);
 			parser.state.module.addPresentationalDependency(dep);
 			return true;
 		}
@@ -156,16 +162,19 @@ class AMDDefineDependencyParserPlugin {
 	 */
 	processItem(parser, expr, param, namedModule) {
 		if (param.isConditional()) {
-			/** @type {BasicEvaluatedExpression[]} */
-			(param.options).forEach(param => {
-				const result = this.processItem(parser, expr, param);
+			const options = /** @type {BasicEvaluatedExpression[]} */ (param.options);
+			for (const item of options) {
+				const result = this.processItem(parser, expr, item);
 				if (result === undefined) {
-					this.processContext(parser, expr, param);
+					this.processContext(parser, expr, item);
 				}
-			});
+			}
+
 			return true;
 		} else if (param.isString()) {
-			let dep, localModule;
+			let dep;
+			let localModule;
+
 			if (param.string === "require") {
 				dep = new ConstDependency(
 					RuntimeGlobals.require,
@@ -198,7 +207,7 @@ class AMDDefineDependencyParserPlugin {
 					/** @type {string} */ (param.string),
 					param.range
 				);
-				dep.optional = !!parser.scope.inTry;
+				dep.optional = Boolean(parser.scope.inTry);
 				parser.state.current.addDependency(dep);
 				return true;
 			}
@@ -228,7 +237,7 @@ class AMDDefineDependencyParserPlugin {
 		);
 		if (!dep) return;
 		dep.loc = /** @type {DependencyLocation} */ (expr.loc);
-		dep.optional = !!parser.scope.inTry;
+		dep.optional = Boolean(parser.scope.inTry);
 		parser.state.current.addDependency(dep);
 		return true;
 	}
@@ -239,7 +248,14 @@ class AMDDefineDependencyParserPlugin {
 	 * @returns {boolean | undefined} result
 	 */
 	processCallDefine(parser, expr) {
-		let array, fn, obj, namedModule;
+		/** @type {TODO} */
+		let array;
+		/** @type {FunctionExpression | ArrowFunctionExpression | CallExpression | Identifier | undefined} */
+		let fn;
+		/** @type {ObjectExpression | Identifier | undefined} */
+		let obj;
+		/** @type {string | undefined} */
+		let namedModule;
 		switch (expr.arguments.length) {
 			case 1:
 				if (isCallable(expr.arguments[0])) {
@@ -251,12 +267,12 @@ class AMDDefineDependencyParserPlugin {
 				} else {
 					// define(expr)
 					// unclear if function or object
-					obj = fn = expr.arguments[0];
+					obj = fn = /** @type {Identifier} */ (expr.arguments[0]);
 				}
 				break;
 			case 2:
 				if (expr.arguments[0].type === "Literal") {
-					namedModule = expr.arguments[0].value;
+					namedModule = /** @type {string} */ (expr.arguments[0].value);
 					// define("…", …)
 					if (isCallable(expr.arguments[1])) {
 						// define("…", f() {…})
@@ -267,7 +283,7 @@ class AMDDefineDependencyParserPlugin {
 					} else {
 						// define("…", expr)
 						// unclear if function or object
-						obj = fn = expr.arguments[1];
+						obj = fn = /** @type {Identifier} */ (expr.arguments[1]);
 					}
 				} else {
 					array = expr.arguments[0];
@@ -280,13 +296,18 @@ class AMDDefineDependencyParserPlugin {
 					} else {
 						// define([…], expr)
 						// unclear if function or object
-						obj = fn = expr.arguments[1];
+						obj = fn = /** @type {Identifier} */ (expr.arguments[1]);
 					}
 				}
 				break;
 			case 3:
 				// define("…", […], f() {…})
-				namedModule = /** @type {TODO} */ (expr).arguments[0].value;
+				namedModule =
+					/** @type {string} */
+					(
+						/** @type {Literal} */
+						(expr.arguments[0]).value
+					);
 				array = expr.arguments[1];
 				if (isCallable(expr.arguments[2])) {
 					// define("…", […], f() {})
@@ -297,27 +318,36 @@ class AMDDefineDependencyParserPlugin {
 				} else {
 					// define("…", […], expr)
 					// unclear if function or object
-					obj = fn = expr.arguments[2];
+					obj = fn = /** @type {Identifier} */ (expr.arguments[2]);
 				}
 				break;
 			default:
 				return;
 		}
 		DynamicExports.bailout(parser.state);
+		/** @type {Identifier[] | null} */
 		let fnParams = null;
 		let fnParamsOffset = 0;
 		if (fn) {
 			if (isUnboundFunctionExpression(fn)) {
-				fnParams = /** @type {UnboundFunctionExpression} */ (fn).params;
+				fnParams =
+					/** @type {Identifier[]} */
+					(fn.params);
 			} else if (isBoundFunctionExpression(fn)) {
-				fnParams = /** @type {TODO} */ (fn).callee.object.params;
-				fnParamsOffset = /** @type {TODO} */ (fn).arguments.length - 1;
+				const object =
+					/** @type {FunctionExpression} */
+					(/** @type {MemberExpression} */ (fn.callee).object);
+
+				fnParams =
+					/** @type {Identifier[]} */
+					(object.params);
+				fnParamsOffset = fn.arguments.length - 1;
 				if (fnParamsOffset < 0) {
 					fnParamsOffset = 0;
 				}
 			}
 		}
-		let fnRenames = new Map();
+		const fnRenames = new Map();
 		if (array) {
 			/** @type {Record<number, string>} */
 			const identifiers = {};
@@ -372,9 +402,14 @@ class AMDDefineDependencyParserPlugin {
 			});
 		} else if (fn && isBoundFunctionExpression(fn)) {
 			inTry = parser.scope.inTry;
+
+			const object =
+				/** @type {FunctionExpression} */
+				(/** @type {MemberExpression} */ (fn.callee).object);
+
 			parser.inScope(
-				/** @type {TODO} */
-				(fn).callee.object.params.filter(
+				/** @type {Identifier[]} */
+				(object.params).filter(
 					i => !["require", "module", "exports"].includes(i.name)
 				),
 				() => {
@@ -382,19 +417,20 @@ class AMDDefineDependencyParserPlugin {
 						parser.setVariable(name, varInfo);
 					}
 					parser.scope.inTry = /** @type {boolean} */ (inTry);
-					if (fn.callee.object.body.type === "BlockStatement") {
-						parser.detectMode(fn.callee.object.body.body);
+
+					if (object.body.type === "BlockStatement") {
+						parser.detectMode(object.body.body);
 						const prev = parser.prevStatement;
-						parser.preWalkStatement(fn.callee.object.body);
+						parser.preWalkStatement(object.body);
 						parser.prevStatement = prev;
-						parser.walkStatement(fn.callee.object.body);
+						parser.walkStatement(object.body);
 					} else {
-						parser.walkExpression(fn.callee.object.body);
+						parser.walkExpression(object.body);
 					}
 				}
 			);
-			if (/** @type {TODO} */ (fn).arguments) {
-				parser.walkExpressions(/** @type {TODO} */ (fn).arguments);
+			if (fn.arguments) {
+				parser.walkExpressions(fn.arguments);
 			}
 		} else if (fn || obj) {
 			parser.walkExpression(fn || obj);
@@ -405,7 +441,7 @@ class AMDDefineDependencyParserPlugin {
 			array ? /** @type {Range} */ (array.range) : null,
 			fn ? /** @type {Range} */ (fn.range) : null,
 			obj ? /** @type {Range} */ (obj.range) : null,
-			namedModule ? namedModule : null
+			namedModule || null
 		);
 		dep.loc = /** @type {DependencyLocation} */ (expr.loc);
 		if (namedModule) {
@@ -420,7 +456,7 @@ class AMDDefineDependencyParserPlugin {
 	 * @param {Range | null} arrayRange array range
 	 * @param {Range | null} functionRange function range
 	 * @param {Range | null} objectRange object range
-	 * @param {boolean | null} namedModule true, when define is called with a name
+	 * @param {string | null} namedModule true, when define is called with a name
 	 * @returns {AMDDefineDependency} AMDDefineDependency
 	 */
 	newDefineDependency(
@@ -440,7 +476,7 @@ class AMDDefineDependencyParserPlugin {
 	}
 
 	/**
-	 * @param {TODO[]} depsArray deps array
+	 * @param {(string | LocalModuleDependency | AMDRequireItemDependency)[]} depsArray deps array
 	 * @param {Range} range range
 	 * @returns {AMDRequireArrayDependency} AMDRequireArrayDependency
 	 */

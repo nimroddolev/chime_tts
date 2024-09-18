@@ -15,6 +15,7 @@ const { getAllChunks } = require("./ChunkHelpers");
 /** @typedef {import("../Chunk").ChunkId} ChunkId */
 /** @typedef {import("../Compilation")} Compilation */
 /** @typedef {import("../ChunkGraph")} ChunkGraph */
+/** @typedef {import("../ChunkGraph").ModuleId} ModuleId */
 /** @typedef {import("../Entrypoint")} Entrypoint */
 /** @typedef {import("../ChunkGraph").EntryModuleWithChunkGroup} EntryModuleWithChunkGroup */
 /** @typedef {import("../ChunkGroup")} ChunkGroup */
@@ -22,6 +23,9 @@ const { getAllChunks } = require("./ChunkHelpers");
 /** @typedef {(string|number)[]} EntryItem */
 
 const EXPORT_PREFIX = `var ${RuntimeGlobals.exports} = `;
+
+/** @typedef {Set<Chunk>} Chunks */
+/** @typedef {ModuleId[]} ModuleIds */
 
 /**
  * @param {ChunkGraph} chunkGraph chunkGraph
@@ -31,7 +35,7 @@ const EXPORT_PREFIX = `var ${RuntimeGlobals.exports} = `;
  * @param {boolean} passive true: passive startup with on chunks loaded
  * @returns {string} runtime code
  */
-exports.generateEntryStartup = (
+module.exports.generateEntryStartup = (
 	chunkGraph,
 	runtimeTemplate,
 	entries,
@@ -46,9 +50,16 @@ exports.generateEntryStartup = (
 		)}`
 	];
 
-	const runModule = id => {
-		return `__webpack_exec__(${JSON.stringify(id)})`;
-	};
+	/**
+	 * @param {ModuleId} id id
+	 * @returns {string} fn to execute
+	 */
+	const runModule = id => `__webpack_exec__(${JSON.stringify(id)})`;
+	/**
+	 * @param {Chunks} chunks chunks
+	 * @param {ModuleIds} moduleIds module ids
+	 * @param {boolean=} final true when final, otherwise false
+	 */
 	const outputCombination = (chunks, moduleIds, final) => {
 		if (chunks.size === 0) {
 			runtime.push(
@@ -71,16 +82,19 @@ exports.generateEntryStartup = (
 		}
 	};
 
-	let currentChunks = undefined;
-	let currentModuleIds = undefined;
+	/** @type {Chunks | undefined} */
+	let currentChunks;
+	/** @type {ModuleIds | undefined} */
+	let currentModuleIds;
 
 	for (const [module, entrypoint] of entries) {
 		const runtimeChunk =
 			/** @type {Entrypoint} */
 			(entrypoint).getRuntimeChunk();
-		const moduleId = chunkGraph.getModuleId(module);
+		const moduleId = /** @type {ModuleId} */ (chunkGraph.getModuleId(module));
 		const chunks = getAllChunks(
-			/** @type {Entrypoint} */ (entrypoint),
+			/** @type {Entrypoint} */
+			(entrypoint),
 			chunk,
 			runtimeChunk
 		);
@@ -89,10 +103,14 @@ exports.generateEntryStartup = (
 			currentChunks.size === chunks.size &&
 			isSubset(currentChunks, chunks)
 		) {
-			currentModuleIds.push(moduleId);
+			/** @type {ModuleIds} */
+			(currentModuleIds).push(moduleId);
 		} else {
 			if (currentChunks) {
-				outputCombination(currentChunks, currentModuleIds);
+				outputCombination(
+					currentChunks,
+					/** @type {ModuleIds} */ (currentModuleIds)
+				);
 			}
 			currentChunks = chunks;
 			currentModuleIds = [moduleId];
@@ -101,7 +119,12 @@ exports.generateEntryStartup = (
 
 	// output current modules with export prefix
 	if (currentChunks) {
-		outputCombination(currentChunks, currentModuleIds, true);
+		outputCombination(
+			currentChunks,
+			/** @type {ModuleIds} */
+			(currentModuleIds),
+			true
+		);
 	}
 	runtime.push("");
 	return Template.asString(runtime);
@@ -114,7 +137,12 @@ exports.generateEntryStartup = (
  * @param {Chunk} chunk chunk
  * @returns {void}
  */
-exports.updateHashForEntryStartup = (hash, chunkGraph, entries, chunk) => {
+module.exports.updateHashForEntryStartup = (
+	hash,
+	chunkGraph,
+	entries,
+	chunk
+) => {
 	for (const [module, entrypoint] of entries) {
 		const runtimeChunk =
 			/** @type {Entrypoint} */
@@ -137,7 +165,7 @@ exports.updateHashForEntryStartup = (hash, chunkGraph, entries, chunk) => {
  * @param {function(Chunk, ChunkGraph): boolean} filterFn filter function
  * @returns {Set<number | string>} initially fulfilled chunk ids
  */
-exports.getInitialChunkIds = (chunk, chunkGraph, filterFn) => {
+module.exports.getInitialChunkIds = (chunk, chunkGraph, filterFn) => {
 	const initialChunkIds = new Set(chunk.ids);
 	for (const c of chunk.getAllInitialChunks()) {
 		if (c === chunk || filterFn(c, chunkGraph)) continue;

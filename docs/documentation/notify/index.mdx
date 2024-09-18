@@ -22,11 +22,11 @@ This allows you to create fully customized & reusable notify entries that can be
 
 ## Why Notify Entries?
 
-**Convenience**: Configure any/all [`chime_tts.say`](../services/say-service) [parameter](../services/say-service/parameters) values (chime paths, media players, TTS platform, language, voice, etc) once for all your use-cases, and reuse.
+**Convenience**: Configure any/all [`chime_tts.say`](../actions/say-action) [parameter](../actions/say-action/parameters) values (chime paths, media players, TTS platform, language, voice, etc) once for all your use-cases, and reuse.
 
 **Flexibility**: Retain the ability to override the defined notify settings across your scripts & automations when needed.
 
-**Efficiency**: Replace long complicated [`chime_tts.say`](../services/say-service) service calls with simple, clean and predefined notify service calls.
+**Efficiency**: Replace long complicated [`chime_tts.say`](../actions/say-action) action calls with simple, clean and predefined notify action calls.
 
 <table class="hide_table">
   <tr class="hide_table">
@@ -37,7 +37,7 @@ This allows you to create fully customized & reusable notify entries that can be
     <td class="hide_table">
 
     ```yaml
-    service: chime_tts.say
+    action: chime_tts.say
     data:
       chime_path: soft
       offset: -2250
@@ -61,7 +61,7 @@ This allows you to create fully customized & reusable notify entries that can be
     <td class="hide_table">
 
     ```yaml
-    service: notify.evening
+    action: notify.evening
     data:
       message: Someone's at the door
     ```

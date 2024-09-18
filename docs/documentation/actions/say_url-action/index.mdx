@@ -1,0 +1,60 @@
+---
+sidebar_position: 2
+title: 2. Say URL Action
+---
+
+# `chime_tts.say_url` Action
+
+The `chime_tts.say_url` action generates an audio file with the [`chime_tts.say`](../say-action) action and returns either a [publicly accessible URL](#url-key) or a [media content id](#media_content_id-key) to the generated file.
+
+## Response Object
+
+The action will return an object with the following key/values:
+
+| Key                | Description |
+|--------------------|-------------|
+| `url`              | Full path to the generated audio file (see below) |
+| `media_content_id` | Media content id that can be used with `media_player.play_media` (see below) |
+| `duration`         | Duration of the generated audio file |
+| success            | Boolean value to represent the action call result |
+
+## `url` Key
+The response object's `url` key holds a public URL path value to the generated file if the `chime_tts.say_url` folder path in the [integration's configuration field](../../configuration#chime_ttssay_url-folder) **is in the public `www` folder.**
+
+## `media_content_id` Key
+The response object's `media_content_id` key holds a media content id value to the generated file if the `chime_tts.say_url` folder path in the [integration's configuration field](../../configuration#chime_ttssay_url-folder) **is in the `media` folder.**
+
+## Example:
+
+### Action call
+```
+action: chime_tts.say_url
+data:
+  chime_path: toast
+  message: May I have your attention, please?
+  tts_platform: google_translate
+```
+
+### Result
+
+#### Option A: `chime_tts.say_url` folder path is within the public `www` folder
+
+```
+{
+  url: https://{YOUR-HOME-ASSISTANT-ADDRESS}:8123/local/chime_tts/gtv7ju45.mp3
+  media_content_id: null,
+  duration: 4.069,
+  success: true
+}
+```
+
+#### Option B: `chime_tts.say_url` folder path is within the `media` folder
+
+```
+{
+  url: null
+  media_content_id: media-source://media_source/local/chime_tts/gtv7ju45.mp3,
+  duration: 4.069,
+  success: true
+}
+```

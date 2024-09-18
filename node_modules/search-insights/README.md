@@ -17,6 +17,7 @@ Search Insights lets you report click, conversion and view metrics using the [Al
   - [Node.js](#nodejs)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
+  - [Releasing](#releasing)
 - [License](#license)
 
 <!-- tocstop -->

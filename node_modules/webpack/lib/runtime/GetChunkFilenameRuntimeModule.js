@@ -13,16 +13,14 @@ const { first } = require("../util/SetHelpers");
 /** @typedef {import("../ChunkGraph")} ChunkGraph */
 /** @typedef {import("../Compilation")} Compilation */
 /** @typedef {import("../Compilation").AssetInfo} AssetInfo */
-/** @typedef {import("../Compilation").PathData} PathData */
-
-/** @typedef {function(PathData, AssetInfo=): string} FilenameFunction */
+/** @typedef {import("../TemplatedPathPlugin").TemplatePath} TemplatePath */
 
 class GetChunkFilenameRuntimeModule extends RuntimeModule {
 	/**
 	 * @param {string} contentType the contentType to use the content hash for
 	 * @param {string} name kind of filename
 	 * @param {string} global function name to be assigned
-	 * @param {function(Chunk): string | FilenameFunction} getFilenameForChunk functor to get the filename or function
+	 * @param {function(Chunk): TemplatePath} getFilenameForChunk functor to get the filename or function
 	 * @param {boolean} allChunks when false, only async chunks are included
 	 */
 	constructor(contentType, name, global, getFilenameForChunk, allChunks) {
@@ -44,7 +42,7 @@ class GetChunkFilenameRuntimeModule extends RuntimeModule {
 		const chunk = /** @type {Chunk} */ (this.chunk);
 		const { runtimeTemplate } = compilation;
 
-		/** @type {Map<string | FilenameFunction, Set<Chunk>>} */
+		/** @type {Map<string | TemplatePath, Set<Chunk>>} */
 		const chunkFilenames = new Map();
 		let maxChunks = 0;
 		/** @type {string | undefined} */
@@ -74,11 +72,10 @@ class GetChunkFilenameRuntimeModule extends RuntimeModule {
 
 						if (
 							chunkFilename.length ===
-							/** @type {string} */ (dynamicFilename).length
+								/** @type {string} */ (dynamicFilename).length &&
+							chunkFilename < /** @type {string} */ (dynamicFilename)
 						) {
-							if (chunkFilename < /** @type {string} */ (dynamicFilename)) {
-								return;
-							}
+							return;
 						}
 					}
 					maxChunks = set.size;
@@ -122,7 +119,7 @@ class GetChunkFilenameRuntimeModule extends RuntimeModule {
 
 		/**
 		 * @param {Chunk} c the chunk
-		 * @param {string | FilenameFunction} chunkFilename the filename template for the chunk
+		 * @param {string | TemplatePath} chunkFilename the filename template for the chunk
 		 * @returns {void}
 		 */
 		const addStaticUrl = (c, chunkFilename) => {
@@ -137,7 +134,7 @@ class GetChunkFilenameRuntimeModule extends RuntimeModule {
 					return '" + chunkId + "';
 				}
 				const s = JSON.stringify(str);
-				return s.slice(1, s.length - 1);
+				return s.slice(1, -1);
 			};
 			/**
 			 * @param {string} value string
@@ -231,17 +228,14 @@ class GetChunkFilenameRuntimeModule extends RuntimeModule {
 		 * @param {function(Chunk): string | number} fn function from chunk to value
 		 * @returns {string} code with static mapping of results of fn for including in quoted string
 		 */
-		const mapExpr = fn => {
-			return `" + ${createMap(fn)} + "`;
-		};
+		const mapExpr = fn => `" + ${createMap(fn)} + "`;
 
 		/**
 		 * @param {function(Chunk): string | number} fn function from chunk to value
 		 * @returns {function(number): string} function which generates code with static mapping of results of fn for including in quoted string for specific length
 		 */
-		const mapExprWithLength = fn => length => {
-			return `" + ${createMap(c => `${fn(c)}`.slice(0, length))} + "`;
-		};
+		const mapExprWithLength = fn => length =>
+			`" + ${createMap(c => `${fn(c)}`.slice(0, length))} + "`;
 
 		const url =
 			dynamicFilename &&

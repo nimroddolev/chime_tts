@@ -30,11 +30,11 @@ class ModuleDependencyError extends WebpackError {
 		/** error is not (de)serialized, so it might be undefined after deserialization */
 		this.error = err;
 
-		if (err && /** @type {any} */ (err).hideStack) {
-			this.stack =
-				/** @type {string} */ (err.stack).split("\n").slice(1).join("\n") +
-				"\n\n" +
-				this.stack;
+		if (err && /** @type {any} */ (err).hideStack && err.stack) {
+			this.stack = /** @type {string} */ `${err.stack
+				.split("\n")
+				.slice(1)
+				.join("\n")}\n\n${this.stack}`;
 		}
 	}
 }
