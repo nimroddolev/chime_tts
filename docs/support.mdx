@@ -23,3 +23,24 @@ Add to or start a new discussion on topics that relate to using Chime TTS.
 
 ## 2. Home Assistant Forum
 Chime TTS has an active community on the Home Assistant forum. The main [Chime TTS post](https://community.home-assistant.io/t/chime-tts-play-audio-before-after-tts-audio-lag-free/578430) is a great place to ask questions, search for answers, share experiences and get advice from other users.
+
+---
+
+## Debug Logging
+
+To assist with troubleshooting, you can enable debug logging for Chime TTS and capture detailed log messages. Follow the steps below:
+
+1. Turn on debug logging for the Chime TTS integration:
+   ```
+   action: logger.set_level
+   data:
+     custom_components.chime_tts: debug
+   ```
+
+2. Call the `chime_tts.say` action again.
+
+3. Open your log messages in Home Assistant:
+   <a href="https://my.home-assistant.io/redirect/logs/?filter=chime_tts" alt="Show logs of Home Assistant" target="_blank"><img src="https://my.home-assistant.io/badges/logs.svg" /></a>
+
+4. Enter `chime_tts` in the "Search logs" field and click `LOAD FULL LOGS`
+   <img src={useBaseUrl('/img/quick-start/debug_logging.png')} />
