@@ -1,0 +1,62 @@
+---
+sidebar_position: 3
+title: 3. Additional Requirements
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import  './quick-start.css';
+
+## Additional Requirements
+
+You might run into issues when first using Chime TTS [actions](../documentation/actions). There are some additional requirements that you may need to implement, depending on your setup.
+
+---
+
+### TTS Platforms
+
+You must have add at least one **[TTS platform](https://www.home-assistant.io/integrations/#text-to-speech)** configured in order for Chime TTS to generate TTS audio,
+
+---
+
+### `media_dirs` Directories
+
+The `media_dirs` parameter allows Home Assistant to access and manage media files, such as the generated MP3 files from Chime TTS. Without proper configuration, Home Assistant will not be able to locate or play these files.
+
+Add the `media_dirs` parameter in your `configuration.yaml` file and specify your directory path/s. For example:
+
+`configuration.yaml`:
+```
+homeassistant:
+  media_dirs:
+    media: /media
+```
+
+After restarting Home Assistant, set the relevant `media_dirs` path as your [media folder](../documentation/configuration#media-folder) in the Chime TTS [configuration page](../documentation/configuration).
+
+:::info[Folder Paths in Configuration]
+
+Note that each of the folder paths in the Chime TTS [configuration page](../documentation/configuration) (see [downloaded chimes](../documentation/configuration#downloaded-chimes-folder), [temporary MP3s](../documentation/configuration#temporary-mp3-folder) and [`chime_tts.say_url` folder](../documentation/configuration#chime_ttssay_url-folder)) must reside within a `media_dir` path.
+
+:::
+
+---
+
+### Alexa and Chromecast/Cast
+
+Both the [Alexa Media Player](https://github.com/alandtse/alexa_media_player) and [Chromecast/Cast](https://www.home-assistant.io/integrations/cast/) integrations require MP3 files be publicly accessible from outside your local network.
+I you do not hear playback from Chime TTS on these media players, you may need to ensure that:
+
+1. Your Home Assistant's `configuration.yaml` file includes your `external_url`.
+    For example:
+
+    ```configuration.yaml```:
+    ```
+    homeassistant:
+      external_url: "https://YOUR_NABU_CASA_ADDRESS.ui.nabu.casa/"
+      internal_url: "http://192.168.X.X:8123/"
+    ```
+
+1. You have enabled the public facing [`/www` directory](https://www.home-assistant.io/integrations/http/#hosting-files).
+
+1. Your [`chime_tts.say_url` folder](../documentation/configuration#chime_ttssay_url-folder) is inside the [`/www` directory](https://www.home-assistant.io/integrations/http/#hosting-files).
+
