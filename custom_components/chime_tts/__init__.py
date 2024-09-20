@@ -140,7 +140,7 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
         except Exception as error:
             error_string = f"Error calling chime_tts.say{'_url' if is_say_url else ''} service: {str(error)}"
             _LOGGER.error("%s", str(error_string))
-            raise HomeAssistantError(error) from error
+            raise
 
         if result is not False:
             return result
