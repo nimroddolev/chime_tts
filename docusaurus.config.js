@@ -101,6 +101,11 @@ const config = {
                 label: "Adding the Integration",
                 docId: "quick-start/adding-the-integration"
               },
+              {
+                type: "doc",
+                label: "Additional Requirements",
+                docId: "quick-start/additional-requirements"
+              },
             ]
           },
           {
