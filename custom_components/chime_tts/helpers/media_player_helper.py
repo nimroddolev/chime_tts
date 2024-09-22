@@ -53,7 +53,7 @@ class MediaPlayerHelper:
         if len(entity_ids) == 0:
             return []
 
-        self.media_players = []
+        self.media_players: list[ChimeTTSMediaPlayer] = []
         self.joined_media_player_entity_ids = []
         self.unjoined_media_player_entity_ids = []
         self.join_players = join_players
@@ -75,7 +75,8 @@ class MediaPlayerHelper:
 
     async def async_get_media_player_object(self,
                                             hass: HomeAssistant,
-                                            entity_id, target_volume_level):
+                                            entity_id: str,
+                                            target_volume_level):
         """Create a Chime TTS media player object from a given entity_id."""
 
         if (hass is None

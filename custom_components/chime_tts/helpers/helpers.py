@@ -8,18 +8,18 @@ import shutil
 import yaml
 import aiofiles
 import aiofiles.os
-from homeassistant.core import HomeAssistant, SupportsResponse
-from homeassistant.components.media_player.const import (
-    ATTR_MEDIA_VOLUME_LEVEL,
-)
-import voluptuous as vol
-from pydub import AudioSegment
+from .media_player_helper import MediaPlayerHelper
+from .media_player import ChimeTTSMediaPlayer
+from .filesystem import FilesystemHelper
 from ..const import (
     DOMAIN,
     SERVICE_SAY,
     SERVICE_SAY_URL,
     DEFAULT_CHIME_OPTIONS,
     OFFSET_KEY,
+    TTS_PLATFORM_KEY,
+    DEFAULT_LANGUAGE_KEY,
+    DEFAULT_VOICE_KEY,
     DEFAULT_OFFSET_MS,
     FFMPEG_ARGS_ALEXA,
     FFMPEG_ARGS_VOLUME,
@@ -42,9 +42,10 @@ from ..const import (
     YANDEX_TTS,
     QUOTE_CHAR_SUBSTITUTE
 )
-from .media_player_helper import MediaPlayerHelper
-from .media_player import ChimeTTSMediaPlayer
-from .filesystem import FilesystemHelper
+from homeassistant.core import HomeAssistant, SupportsResponse
+from homeassistant.components.media_player.const import ATTR_MEDIA_VOLUME_LEVEL
+import voluptuous as vol
+from pydub import AudioSegment
 
 filesystem_helper = FilesystemHelper()
 
@@ -175,19 +176,19 @@ class ChimeTTSHelper:
         entity_ids = media_player_helper.parse_entity_ids(data, hass) if is_say_url is False else []
         chime_path =str(data.get("chime_path", ""))
         end_chime_path = str(data.get("end_chime_path", ""))
-        offset = float(data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)))
-        final_delay = float(data.get("final_delay", 0))
+        offset = float(data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)) or 0)
+        final_delay = float(data.get("final_delay", 0) or 0)
         message = str(data.get("message", ""))
         tts_platform = str(data.get("tts_platform", ""))
-        tts_speed = float(data.get("tts_playback_speed", data.get("tts_speed", 100)))
-        tts_pitch = data.get("tts_pitch", 0)
-        volume_level = data.get(ATTR_MEDIA_VOLUME_LEVEL, -1)
-        join_players = data.get("join_players", False)
-        unjoin_players = data.get("unjoin_players", False)
+        tts_speed = float(data.get("tts_playback_speed", data.get("tts_speed", 100)) or 100)
+        tts_pitch = data.get("tts_pitch", 0) or 0
+        volume_level = data.get(ATTR_MEDIA_VOLUME_LEVEL, -1) or -1
+        join_players = data.get("join_players", False) or False
+        unjoin_players = data.get("unjoin_players", False) or False
         language = data.get("language", None)
-        cache = data.get("cache", False)
-        announce = data.get("announce", False)
-        fade_audio = data.get("fade_audio", False)
+        cache = data.get("cache", False) or False
+        announce = data.get("announce", False) or False
+        fade_audio = data.get("fade_audio", False) or False
         media_players_array = await media_player_helper.async_initialize_media_players(
             hass, entity_ids, volume_level, join_players, unjoin_players, announce, fade_audio
         ) if is_say_url is False else []
@@ -237,7 +238,7 @@ class ChimeTTSHelper:
                     _LOGGER.debug(" * %s:", p_key)
                     for i in range(0, len(value)):
                         if isinstance(value[i], ChimeTTSMediaPlayer):
-                            media_player_i = value[i]
+                            media_player_i: ChimeTTSMediaPlayer = value[i]
                             _LOGGER.debug("   - %s: entity_id: %s", str(i), str(media_player_i.entity_id))
                             _LOGGER.debug("     platform: %s", str(media_player_i.platform))
                             _LOGGER.debug("     initial volume: %s", str(media_player_i.initial_volume_level))
@@ -254,14 +255,13 @@ class ChimeTTSHelper:
             _LOGGER.debug(" --- Audio will be converted to Alexa-friendly format as Alexa speaker/s detected ---")
         return params
 
-    def parse_options_yaml(self, data: dict = {}):
+    def parse_options_yaml(self, data: dict, default_data: dict):
         """Parse TTS service options YAML into dict object."""
+        data = data or {}
         options = {}
         try:
             options_string = data.get("options", "")
-            options = self.convert_yaml_str(options_string)
-            if options is None:
-                options = {}
+            options = self.convert_yaml_str(options_string) or {}
         except yaml.YAMLError as error:
             _LOGGER.error("Error parsing options YAML: %s", error)
             return {}
@@ -275,10 +275,39 @@ class ChimeTTSHelper:
                 if value is not None:
                     options[key] = value
 
-        if len(options) > 0:
+        is_default_values = []
+
+        # Language
+        language = data.get("language", None) or (options["language"] if "language" in options else None)
+        # Apply default language if not already set, and TTS Platform is the default
+        default_tts_platform = default_data.get(TTS_PLATFORM_KEY, None)
+        selected_tts_platform = data.get("tts_platform", default_tts_platform)
+        tts_platform_is_default = default_tts_platform == selected_tts_platform
+        if (not language
+            and default_data.get(DEFAULT_LANGUAGE_KEY, None)
+            and tts_platform_is_default):
+            options["language"] = default_data.get(DEFAULT_LANGUAGE_KEY, None)
+            is_default_values.append("language")
+
+        # Voice
+        voice = data.get("voice", None) or (options["voice"] if "voice" in options else None)
+        # Apply default voice if not already set, and TTS Platform is the default
+        default_tts_platform = default_data.get(TTS_PLATFORM_KEY, None)
+        selected_tts_platform = data.get("tts_platform", default_tts_platform)
+        tts_platform_is_default = default_tts_platform == selected_tts_platform
+        if (not voice
+            and default_data.get(DEFAULT_VOICE_KEY, None)
+            and tts_platform_is_default):
+            options["voice"] = default_data.get(DEFAULT_VOICE_KEY, None)
+            is_default_values.append("voice")
+
+        if options:
             self.debug_subtitle("TTS-Specific Params")
             for key, value in options.items():
-                _LOGGER.debug(" * %s = %s", key, str(value))
+                if key in is_default_values:
+                    _LOGGER.debug(" * %s = %s (default value entered in configuration)", key, str(value))
+                else:
+                    _LOGGER.debug(" * %s = %s", key, str(value))
 
         return options
 
@@ -498,10 +527,20 @@ class ChimeTTSHelper:
             if str(entity.entity_id).startswith("tts."):
                 tts_entities.append(str(entity.entity_id))
 
-        # TTS Platforms
-        installed_tts_platforms: list[str] = tts_providers + tts_entities
+        # Installed TTS Components
+        tts_components = []
+        for key, _value in dict(hass.data["components"]).items():
+            if isinstance(key, str) and key.endswith(".tts"):
+                tts_components.append(key[0:len(key)-4])
 
-        return installed_tts_platforms
+        # Unique TTS Platforms
+        all_tts_platforms_found: list[str] = tts_providers + tts_components + tts_entities
+        final_tts_platforms: list[str] = []
+        for tts_platform in all_tts_platforms_found:
+            if tts_platform not in final_tts_platforms:
+                final_tts_platforms.append(tts_platform)
+        final_tts_platforms.sort()
+        return final_tts_platforms
 
 
     def get_default_tts_platform(self, hass, default_tts_platform: str = ""):
