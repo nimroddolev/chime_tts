@@ -126,7 +126,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         options_schema = vol.Schema(
             {
                 vol.Required(QUEUE_TIMEOUT_KEY, default=self.data[QUEUE_TIMEOUT_KEY]): int,
-                vol.Required(TTS_PLATFORM_KEY, default=self.data[TTS_PLATFORM_KEY]):selector.SelectSelector(
+                vol.Optional(TTS_PLATFORM_KEY, default=self.data[TTS_PLATFORM_KEY]):selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=tts_platforms,
                         mode=selector.SelectSelectorMode.DROPDOWN,

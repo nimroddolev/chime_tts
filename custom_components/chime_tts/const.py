@@ -40,7 +40,6 @@ TRANSITION_STEP_MS = 150
 ADD_COVER_ART_KEY = "add_cover_art"
 
 ALEXA_MEDIA_PLAYER_PLATFORM = "alexa_media"
-CAST_PLATFORM = "cast"
 SONOS_PLATFORM = "sonos"
 SPOTIFY_PLATFORM = "spotify"
 
