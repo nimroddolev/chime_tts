@@ -61,7 +61,7 @@ class ChimeTTSHelper:
         services_file_path = os.path.join(os.path.dirname(__file__), '../services.yaml')
 
         try:
-            async with aiofiles.open(services_file_path, mode='r') as file:
+            async with aiofiles.open(services_file_path) as file:
                 services_yaml = yaml.safe_load(await file.read())
                 return services_yaml
         except FileNotFoundError:
