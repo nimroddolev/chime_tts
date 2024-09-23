@@ -246,7 +246,7 @@ say:
       selector:
         text: null
     tld:
-      description: The dialect Domain (supported by Google Translate)
+      description: The dialect (supported by Google Translate)
       example: com.au
       name: TLD
       required: false
@@ -454,7 +454,7 @@ say_url:
       selector:
         text: null
     tld:
-      description: The dialect Domain (supported by Google Translate)
+      description: The dialect (supported by Google Translate)
       example: com.au
       name: TLD
       required: false

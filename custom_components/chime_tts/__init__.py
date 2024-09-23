@@ -77,6 +77,7 @@ from .const import (
     TTS_PLATFORM_KEY,
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
+    DEFAULT_TLD_KEY,
     OFFSET_KEY,
     AMAZON_POLLY,
     BAIDU,
@@ -403,6 +404,9 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Default voice
     _data[DEFAULT_VOICE_KEY] = options.get(DEFAULT_VOICE_KEY, None)
 
+    # Default voice
+    _data[DEFAULT_TLD_KEY] = options.get(DEFAULT_TLD_KEY, None)
+
     # Default offset
     _data[OFFSET_KEY] = options.get(OFFSET_KEY, 0)
 
@@ -459,6 +463,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         TTS_PLATFORM_KEY,
         DEFAULT_LANGUAGE_KEY,
         DEFAULT_VOICE_KEY,
+        DEFAULT_TLD_KEY,
         OFFSET_KEY,
         FADE_TRANSITION_KEY,
         ADD_COVER_ART_KEY,

@@ -101,7 +101,7 @@
                 },
                 "tld": {
                     "name": "TLD",
-                    "description": "The dialect Domain (supported by Google Translate)"
+                    "description": "The dialect (supported by Google Translate)"
                 },
                 "voice": {
                     "name": "Voice",
@@ -164,7 +164,7 @@
                 },
                 "tld": {
                     "name": "TLD",
-                    "description": "The dialect Domain (supported by Google Translate)"
+                    "description": "The dialect (supported by Google Translate)"
                 },
                 "voice": {
                     "name": "Voice",
@@ -227,8 +227,9 @@
                 "data": {
                     "queue_timeout": "Service call timeout (in seconds)",
                     "tts_platform_key": "Default TTS platform",
-                    "default_language_key": "Default language (applied when using default TTS platform)",
-                    "default_voice_key": "Default voice (applied when using default TTS platform)",
+                    "default_language_key": "Default language (when using default TTS platform)",
+                    "default_voice_key": "Default voice (when using default TTS platform)",
+                    "default_tld_key": "Default dialect (when using the Google Translate TTS platform)",
                     "offset": "Default offset value (in milliseconds) between chimes & TTS audio",
                     "fade_transition_key": "Fade transition (in milliseconds) when fading currently playing audio for `announce` and `fade_audio`",
                     "media_dir": "Media folder",

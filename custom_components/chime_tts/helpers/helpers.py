@@ -20,6 +20,7 @@ from ..const import (
     TTS_PLATFORM_KEY,
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
+    DEFAULT_TLD_KEY,
     DEFAULT_OFFSET_MS,
     FFMPEG_ARGS_ALEXA,
     FFMPEG_ARGS_VOLUME,
@@ -277,11 +278,13 @@ class ChimeTTSHelper:
 
         is_default_values = []
 
-        # Language
-        language = data.get("language", None) or (options["language"] if "language" in options else None)
-        # Apply default language if not already set, and TTS Platform is the default
+
+        # Apply default values if not already set, and TTS Platform is the default
         default_tts_platform = default_data.get(TTS_PLATFORM_KEY, None)
         selected_tts_platform = data.get("tts_platform", default_tts_platform)
+
+        # Language
+        language = data.get("language", None) or (options["language"] if "language" in options else None)
         tts_platform_is_default = default_tts_platform == selected_tts_platform
         if (not language
             and default_data.get(DEFAULT_LANGUAGE_KEY, None)
@@ -292,14 +295,22 @@ class ChimeTTSHelper:
         # Voice
         voice = data.get("voice", None) or (options["voice"] if "voice" in options else None)
         # Apply default voice if not already set, and TTS Platform is the default
-        default_tts_platform = default_data.get(TTS_PLATFORM_KEY, None)
-        selected_tts_platform = data.get("tts_platform", default_tts_platform)
         tts_platform_is_default = default_tts_platform == selected_tts_platform
         if (not voice
             and default_data.get(DEFAULT_VOICE_KEY, None)
             and tts_platform_is_default):
             options["voice"] = default_data.get(DEFAULT_VOICE_KEY, None)
             is_default_values.append("voice")
+
+        # TLD
+        tld = data.get("tld", None) or (options["tld"] if "tld" in options else None)
+        # Apply default TLD if not already set, and TTS Platform is the default
+        tts_platform_is_default = default_tts_platform == selected_tts_platform
+        if (not tld
+            and default_data.get(DEFAULT_TLD_KEY, None)
+            and tts_platform_is_default):
+            options["tld"] = default_data.get(DEFAULT_TLD_KEY, None)
+            is_default_values.append("tld")
 
         if options:
             self.debug_subtitle("TTS-Specific Params")

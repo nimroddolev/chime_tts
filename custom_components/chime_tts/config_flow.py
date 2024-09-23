@@ -14,6 +14,7 @@ from .const import (
     TTS_PLATFORM_KEY,
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
+    DEFAULT_TLD_KEY,
     OFFSET_KEY,
     DEFAULT_OFFSET_MS,
     FADE_TRANSITION_KEY,
@@ -103,12 +104,15 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             if key not in media_dirs_labels:
                 media_dirs_labels.append(key)
 
+        # TLD Options
+        tld_options = ["", "com", "co.uk", "com.au", "ca", "co.in", "ie", "co.za", "fr", "com.br", "pt", "es"]
 
         self.data = {
             QUEUE_TIMEOUT_KEY: self.get_data_key_value(QUEUE_TIMEOUT_KEY, user_input, QUEUE_TIMEOUT_DEFAULT),
             TTS_PLATFORM_KEY: self.get_data_key_value(TTS_PLATFORM_KEY, user_input, default_tts),
             DEFAULT_LANGUAGE_KEY: self.get_data_key_value(DEFAULT_LANGUAGE_KEY, user_input, ""),
             DEFAULT_VOICE_KEY: self.get_data_key_value(DEFAULT_VOICE_KEY, user_input, ""),
+            DEFAULT_TLD_KEY: self.get_data_key_value(DEFAULT_TLD_KEY, user_input, ""),
             OFFSET_KEY: self.get_data_key_value(OFFSET_KEY, user_input, DEFAULT_OFFSET_MS),
             FADE_TRANSITION_KEY: self.get_data_key_value(FADE_TRANSITION_KEY, user_input, DEFAULT_FADE_TRANSITION_MS),
             MEDIA_DIR_KEY: selected_media_dir,
@@ -129,6 +133,13 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                         custom_value=True)),
                 vol.Optional(DEFAULT_LANGUAGE_KEY, description={"suggested_value": self.data[DEFAULT_LANGUAGE_KEY]}): str,
                 vol.Optional(DEFAULT_VOICE_KEY, description={"suggested_value": self.data[DEFAULT_VOICE_KEY]}): str,
+
+                vol.Optional(DEFAULT_TLD_KEY, description={"suggested_value": self.data[DEFAULT_TLD_KEY]}):selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=tld_options,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                        custom_value=False)),
+
                 vol.Optional(OFFSET_KEY, default=self.data[OFFSET_KEY]): int,
                 vol.Optional(FADE_TRANSITION_KEY, default=self.data[FADE_TRANSITION_KEY]): int,
                 vol.Optional(CUSTOM_CHIMES_PATH_KEY, description={"suggested_value": self.data[CUSTOM_CHIMES_PATH_KEY]}): str,
