@@ -16,7 +16,6 @@ from homeassistant.components.media_player.const import (
 )
 from ..const import (
     ALEXA_MEDIA_PLAYER_PLATFORM,
-    CAST_PLATFORM,
     SONOS_PLATFORM,
     SPOTIFY_PLATFORM,
     MEDIA_DIR_DEFAULT,
@@ -179,7 +178,7 @@ class MediaPlayerHelper:
     def get_is_standard_media_player(self, entity_id):
         """Determine whether a media_player can be used with the media_player.play_media service."""
         platform = self.get_platform_from_entity_id(entity_id)
-        return platform and platform not in (ALEXA_MEDIA_PLAYER_PLATFORM, CAST_PLATFORM, SONOS_PLATFORM, SPOTIFY_PLATFORM)
+        return platform and platform not in (ALEXA_MEDIA_PLAYER_PLATFORM, SONOS_PLATFORM, SPOTIFY_PLATFORM)
 
     def get_platform_from_entity_id(self, entity_id):
         """Platform for the media_player with entity_id."""
@@ -190,10 +189,6 @@ class MediaPlayerHelper:
     def get_is_media_player_alexa(self, entity_id):
         """Determine whether a media_player belongs to the Google Cast platform."""
         return self.get_platform_from_entity_id(entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM
-
-    def get_is_media_player_cast(self, entity_id):
-        """Determine whether a media_player belongs to the Google Cast platform."""
-        return self.get_platform_from_entity_id(entity_id) == CAST_PLATFORM
 
     def get_is_media_player_sonos(self, entity_id):
         """Determine whether a media_player belongs to the Sonos platform."""

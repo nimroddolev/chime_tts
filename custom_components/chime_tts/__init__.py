@@ -67,7 +67,6 @@ from .const import (
     MEDIA_DIR_KEY,
     MEDIA_DIR_DEFAULT,
     ALEXA_MEDIA_PLAYER_PLATFORM,
-    CAST_PLATFORM,
     SONOS_PLATFORM,
     MP3_PRESET_CUSTOM_PREFIX,
     MP3_PRESET_CUSTOM_KEY,
@@ -712,8 +711,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
     # Produce local and/or public mp3s?
     alexa_media_player_count = len(media_player_helper.get_media_players_of_platform(entity_ids, ALEXA_MEDIA_PLAYER_PLATFORM))
-    cast_media_player_count = len(media_player_helper.get_media_players_of_platform(entity_ids, CAST_PLATFORM))
-    public_count = alexa_media_player_count + cast_media_player_count
+    public_count = alexa_media_player_count
     is_public = public_count > 0 or (entity_ids is None or len(entity_ids) == 0)
     is_local = entity_ids is not None and len(entity_ids) > 0 and public_count != len(entity_ids)
 
@@ -1184,22 +1182,19 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
     joined_media_player_entity_id: str = media_player_helper.joined_entity_id
     standard_media_player_entity_ids: list[str] = [entity_id for entity_id in entity_ids if media_player_helper.get_is_standard_media_player(entity_id)]
     alexa_media_player_entity_ids: list[str] = media_player_helper.get_media_players_of_platform(entity_ids, ALEXA_MEDIA_PLAYER_PLATFORM)
-    cast_media_player_entity_ids: list[str] = media_player_helper.get_media_players_of_platform(entity_ids, CAST_PLATFORM)
     sonos_media_player_entity_ids: list[str] = media_player_helper.get_media_players_of_platform(entity_ids, SONOS_PLATFORM)
 
     # Remove speaker group media_players from the media_player lists
     if joined_media_player_entity_id and len(joined_media_player_entity_id) > 0:
         joined_media_player_entity_ids = media_player_helper.joined_media_player_entity_ids
-        for array in [standard_media_player_entity_ids, alexa_media_player_entity_ids, cast_media_player_entity_ids, sonos_media_player_entity_ids]:
+        for array in [standard_media_player_entity_ids, alexa_media_player_entity_ids, sonos_media_player_entity_ids]:
             for media_player_n in joined_media_player_entity_ids:
                 while media_player_n in array:
                     array.remove(media_player_n)
         # Make sure the speaker group leader is in the appropriate media player list
-        if joined_media_player_entity_id not in (standard_media_player_entity_ids + alexa_media_player_entity_ids + cast_media_player_entity_ids + sonos_media_player_entity_ids):
+        if joined_media_player_entity_id not in (standard_media_player_entity_ids + alexa_media_player_entity_ids + sonos_media_player_entity_ids):
             if media_player_helper.get_media_player_platform(hass, joined_media_player_entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM:
                 alexa_media_player_entity_ids.append(joined_media_player_entity_id)
-            elif media_player_helper.get_media_player_platform(hass, joined_media_player_entity_id) == CAST_PLATFORM:
-                cast_media_player_entity_ids.append(joined_media_player_entity_id)
             elif media_player_helper.get_media_player_platform(hass, joined_media_player_entity_id) == SONOS_PLATFORM:
                 sonos_media_player_entity_ids.append(joined_media_player_entity_id)
             else:
@@ -1222,29 +1217,6 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
                 "domain": "media_player",
                 "service": SERVICE_PLAY_MEDIA,
                 "service_data": standard_service_data,
-                "blocking": True,
-                "result": True
-            })
-
-    # Cast media_players
-    if len(cast_media_player_entity_ids) > 0:
-        cast_service_data = service_data.copy()
-        if not audio_dict.get(PUBLIC_PATH_KEY):
-            _LOGGER.warning("Error calling `media_player.play_media` service: No public URL found")
-        else:
-            _LOGGER.debug(
-                "   %s Cast media player%s detected:",
-                len(cast_media_player_entity_ids),
-                ("s" if len(cast_media_player_entity_ids) != 1 else ""))
-            for entity_id in cast_media_player_entity_ids:
-                _LOGGER.debug("     - %s", entity_id)
-
-            cast_service_data[CONF_ENTITY_ID] = cast_media_player_entity_ids
-            cast_service_data[ATTR_MEDIA_CONTENT_ID] = audio_dict.get(PUBLIC_PATH_KEY)
-            service_calls.append({
-                "domain": "media_player",
-                "service": SERVICE_PLAY_MEDIA,
-                "service_data": cast_service_data,
                 "blocking": True,
                 "result": True
             })
