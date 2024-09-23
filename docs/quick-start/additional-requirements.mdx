@@ -41,10 +41,10 @@ Note that each of the folder paths in the Chime TTS [configuration page](../docu
 
 ---
 
-### Alexa and Chromecast/Cast
+### Alexa Devices
 
-Both the [Alexa Media Player](https://github.com/alandtse/alexa_media_player) and [Chromecast/Cast](https://www.home-assistant.io/integrations/cast/) integrations require MP3 files be publicly accessible from outside your local network.
-I you do not hear playback from Chime TTS on these media players, you may need to ensure that:
+[Alexa Media Player](https://github.com/alandtse/alexa_media_player) media_player entities require MP3 files be publicly accessible from outside your local network.
+If you do not hear playback from Chime TTS on these media players, you may need to ensure that:
 
 1. Your Home Assistant's `configuration.yaml` file includes your `external_url`.
     For example:
@@ -58,5 +58,4 @@ I you do not hear playback from Chime TTS on these media players, you may need t
 
 1. You have enabled the public facing [`/www` directory](https://www.home-assistant.io/integrations/http/#hosting-files).
 
-1. Your [`chime_tts.say_url` folder](../documentation/configuration#chime_ttssay_url-folder) is inside the [`/www` directory](https://www.home-assistant.io/integrations/http/#hosting-files).
-
+1. Your [`chime_tts.say_url` folder](../documentation/configuration#chime_ttssay_url-folder) exists inside of your [`/www` directory](https://www.home-assistant.io/integrations/http/#hosting-files).
