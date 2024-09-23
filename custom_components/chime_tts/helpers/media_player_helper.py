@@ -187,7 +187,7 @@ class MediaPlayerHelper:
             return media_player.platform
 
     def get_is_media_player_alexa(self, entity_id):
-        """Determine whether a media_player belongs to the Google Cast platform."""
+        """Determine whether a media_player belongs to the Alexa Media Player platform."""
         return self.get_platform_from_entity_id(entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM
 
     def get_is_media_player_sonos(self, entity_id):
