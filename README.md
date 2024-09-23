@@ -7,7 +7,7 @@
 
 Chime TTS is a custom Home Assistant integration that eliminates the audio lag between playing a chime/notification sound effect before a TTS audio notification.
 
-#### If you find Chime TTS useful, consider showing your support: <a href="https://www.buymeacoffee.com/nimroddolev" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 30px !important; width: 120px !important;" ></a>
+#### If you find Chime TTS useful, consider showing your support: <a href="https://www.buymeacoffee.com/nimroddolev" target="_blank"><img src="https://i.ibb.co/D1sqFY8/buy-me-a-coffee.png" alt="Buy Me A Coffee"></a>
 
 
 - [What is Chime TTS?](https://nimroddolev.github.io/chime_tts/docs/getting-started#what-is-chime-tts)
@@ -28,13 +28,15 @@ Chime TTS is a custom Home Assistant integration that locally combines TTS audio
 <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/wiki/home/no_chime_tts-light.png">
 <img alt="Latency is introduced between the notification chime and the TTS audio" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/wiki/home/no_chime_tts-dark.png">
 
+Adding a notification chime before Text-To-Speech (TTS) audio messages requires two separate action calls, which introduces lag due to networking latency of cloud TTS platforms, audio processing, and delays before media_player playback begins.
+
 ### The Solution:
 
 <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/wiki/home/wuth_chime_tts-dark.png">
 <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/wiki/home/with_chime_tts-light.png">
 <img alt="Chime TTS removes the latency between the notification chime and the TTS audio" src="https://raw.githubusercontent.com/nimroddolev/chime_tts/main/images/wiki/home/with_chime_tts-dark.png">
 
-**Chime TTS** solves this issue by stitching the audio files together as _a single file_ locally on your Home Assistant device, and played to your speakers in a single event, eliminating any lag.
+**Chime TTS** addresses this issue by combining the audio files into _a single file_ locally on your Home Assistant device. This combined file is then played through your speakers in one seamless event, eliminating any lag.
 
 ***
 
