@@ -284,7 +284,7 @@ class ChimeTTSHelper:
         selected_tts_platform = data.get("tts_platform", default_tts_platform)
 
         # Language
-        language = data.get("language", None) or (options["language"] if "language" in options else None)
+        language = data.get("language", None) or options.get("language", None)
         tts_platform_is_default = default_tts_platform == selected_tts_platform
         if (not language
             and default_data.get(DEFAULT_LANGUAGE_KEY, None)
@@ -293,7 +293,7 @@ class ChimeTTSHelper:
             is_default_values.append("language")
 
         # Voice
-        voice = data.get("voice", None) or (options["voice"] if "voice" in options else None)
+        voice = data.get("voice", None) or options.get("voice", None)
         # Apply default voice if not already set, and TTS Platform is the default
         tts_platform_is_default = default_tts_platform == selected_tts_platform
         if (not voice
@@ -303,7 +303,7 @@ class ChimeTTSHelper:
             is_default_values.append("voice")
 
         # TLD
-        tld = data.get("tld", None) or (options["tld"] if "tld" in options else None)
+        tld = data.get("tld", None) or options.get("tld", None)
         # Apply default TLD if not already set, and TTS Platform is the default
         tts_platform_is_default = default_tts_platform == selected_tts_platform
         if (not tld

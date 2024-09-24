@@ -16,8 +16,8 @@ class ChimeTTSMediaPlayer:
     hass: HomeAssistant
     entity_id: str
     platform: str
-    initial_volume_level: float = -1
-    target_volume_level: float = -1
+    initial_volume_level: float
+    target_volume_level: float
     initially_playing: bool
     announce_supported: bool
     join_supported: bool
