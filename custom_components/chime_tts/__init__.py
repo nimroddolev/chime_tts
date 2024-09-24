@@ -776,12 +776,15 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
         # Add cover art
         if _data.get(ADD_COVER_ART_KEY):
-            cover_art_filepath = f"{filesystem_helper.path_to_parent_folder('custom_components')}/chime_tts/cover_art.jpg"
-            if os.path.exists(cover_art_filepath):
-                _LOGGER.debug("Adding cover art to %s", new_audio_file)
-                new_audio_file = helpers.ffmpeg_convert_from_file(
-                    new_audio_file,
-                    f"-i {cover_art_filepath} -c copy -map 0 -map 1")
+            if alexa_media_player_count > 0:
+                _LOGGER.warning("Unable to add cover art. Alexa Media Player media_players are unable to play MP3 file with cover art")
+            else:
+                cover_art_filepath = f"{filesystem_helper.path_to_parent_folder('custom_components')}/chime_tts/cover_art.jpg"
+                if os.path.exists(cover_art_filepath):
+                    _LOGGER.debug("Adding cover art to %s", new_audio_file)
+                    new_audio_file = helpers.ffmpeg_convert_from_file(
+                        new_audio_file,
+                        f"-i {cover_art_filepath} -c copy -map 0 -map 1")
 
         # Perform FFmpeg conversion
         if ffmpeg_args:
