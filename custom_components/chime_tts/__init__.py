@@ -9,6 +9,7 @@ from datetime import datetime
 from pydub import AudioSegment
 from pydub.exceptions import CouldntDecodeError
 
+from hass_nabucasa import voice as nabu_voices
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_CONTENT_ID,
     ATTR_MEDIA_CONTENT_TYPE,
@@ -553,10 +554,10 @@ async def async_request_tts_audio(
     if (tts_platform == NABU_CASA_CLOUD_TTS
         and voice
         and (language is None or len(language) == 0)):
-        for key, value in voice.TTS_VOICES.items():
+        for key, value in nabu_voices.TTS_VOICES.items():
             if voice in value:
                 language = key
-                _LOGGER.debug(" - language set to '%s' for voice: '%s'.", language, voice)
+                _LOGGER.debug(" - Setting language to '%s' for Nabu Casa TTS voice: '%s'.", language, voice)
 
     # Cache
     use_cache = bool(cache) and tts_platform not in [GOOGLE_TRANSLATE, NABU_CASA_CLOUD_TTS]
