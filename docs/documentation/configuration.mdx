@@ -71,7 +71,7 @@ The local folder path that contains custom audio files. Any changes to the folde
 ### Media Folder
 Default Value: `local`
 
-The name of your [media folder](https://www.home-assistant.io/integrations/media_source/#using-custom-or-additional-media-folders).
+The name of your [media folder](https://www.home-assistant.io/integrations/media_source/).
 
 ---
 
@@ -86,6 +86,13 @@ The local folder path where downloaded chime MP3 files will be stored.
 Default Value: `{root}/media/sounds/temp/chime_tts/`
 
 The local folder path where generated MP3 files will be stored.
+
+:::warning[Please Note]
+
+Make sure the folder path is inside a [media folder](https://www.home-assistant.io/integrations/media_source/) of your Home Assistant, otherwise the [`chime_tts.say`](../documentation/actions/say-action) action will not be able to play the generated MP3 on your media_players.
+
+:::
+
 
 ---
 
