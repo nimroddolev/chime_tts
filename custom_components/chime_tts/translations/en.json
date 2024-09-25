@@ -252,7 +252,8 @@
             "default_tts_platform_select": "The TTS platform was not found. Please make sure it has been installed before setting it as the default.",
             "multiple": "Multiple issues detected",
             "invalid_chime_paths": "Invalid custom chime path detected",
-            "www_path": "Folder path must be within `/config/www/` or `/media/`"
+            "www_path": "Folder path must be within `/config/www/` or `/media/`",
+            "temp_path": "The temp folder must be a subfolder of a media directory"
         }
     }
 }

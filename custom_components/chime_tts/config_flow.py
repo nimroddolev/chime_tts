@@ -1,6 +1,7 @@
 """Adds config flow for Chime TTS."""
 import logging
 import requests
+import os
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers import selector
@@ -95,11 +96,11 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         tts_platforms = sorted(helpers.get_installed_tts_platforms(self.hass))
 
         # Media Folders
-        media_dirs = self.hass.config.media_dirs or {}
-        default_media_dir = MEDIA_DIR_DEFAULT if (MEDIA_DIR_DEFAULT in media_dirs) else (next(iter(media_dirs)) if media_dirs else "local")
+        media_dirs_dict = self.hass.config.media_dirs or {}
+        default_media_dir = MEDIA_DIR_DEFAULT if (MEDIA_DIR_DEFAULT in media_dirs_dict) else (next(iter(media_dirs_dict)) if media_dirs_dict else "local")
         selected_media_dir = self.get_data_key_value(MEDIA_DIR_KEY, user_input, default_media_dir)
         media_dirs_labels = ["local" if default_media_dir else "No media directories available"]
-        for key, _value in media_dirs.items():
+        for key, _value in media_dirs_dict.items():
             if key not in media_dirs_labels:
                 media_dirs_labels.append(key)
 
@@ -193,6 +194,19 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         if not (www_path.startswith(f"{root_path}/media/") != -1 or
                 www_path.startswith(f"{root_path}/config/www/") != -1):
             _errors["www_path"] = "www_path"
+
+        # Temp folder must be a subfolder of a media directory
+        temp_folder_in_media_dir = False
+        # Get absolute paths of both directories
+        sub_dir = os.path.abspath(self.data[TEMP_PATH_KEY])
+        # Check if the subdirectory starts with the parent directory path
+        for key, value in media_dirs_dict.items():
+            parent_dir = os.path.abspath(value)
+            if os.path.commonpath([parent_dir]) == os.path.commonpath([parent_dir, sub_dir]):
+                temp_folder_in_media_dir = True
+        if not temp_folder_in_media_dir:
+            _errors[TEMP_PATH_KEY] = TEMP_PATH_KEY
+        ###
 
         if _errors:
             return self.async_show_form(
