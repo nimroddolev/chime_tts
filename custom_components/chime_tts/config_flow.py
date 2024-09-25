@@ -85,7 +85,6 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         """Initialize the options flow."""
         # Default TTS Platform
         stripped_tts_platforms = self.get_installed_tts()
-        default_tts = stripped_tts_platforms[0] if len(stripped_tts_platforms) > 0 else ""
         if self.hass is not None:
             root_path = self.hass.config.path("").replace("/config/", "")
         else:
@@ -109,7 +108,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
         self.data = {
             QUEUE_TIMEOUT_KEY: self.get_data_key_value(QUEUE_TIMEOUT_KEY, user_input, QUEUE_TIMEOUT_DEFAULT),
-            TTS_PLATFORM_KEY: self.get_data_key_value(TTS_PLATFORM_KEY, user_input, default_tts),
+            TTS_PLATFORM_KEY: self.get_data_key_value(TTS_PLATFORM_KEY, user_input, ""),
             DEFAULT_LANGUAGE_KEY: self.get_data_key_value(DEFAULT_LANGUAGE_KEY, user_input, ""),
             DEFAULT_VOICE_KEY: self.get_data_key_value(DEFAULT_VOICE_KEY, user_input, ""),
             DEFAULT_TLD_KEY: self.get_data_key_value(DEFAULT_TLD_KEY, user_input, ""),
@@ -133,15 +132,13 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                         custom_value=True)),
                 vol.Optional(DEFAULT_LANGUAGE_KEY, description={"suggested_value": self.data[DEFAULT_LANGUAGE_KEY]}): str,
                 vol.Optional(DEFAULT_VOICE_KEY, description={"suggested_value": self.data[DEFAULT_VOICE_KEY]}): str,
-
                 vol.Optional(DEFAULT_TLD_KEY, description={"suggested_value": self.data[DEFAULT_TLD_KEY]}):selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=tld_options,
                         mode=selector.SelectSelectorMode.DROPDOWN,
                         custom_value=False)),
-
-                vol.Optional(OFFSET_KEY, default=self.data[OFFSET_KEY]): int,
-                vol.Optional(FADE_TRANSITION_KEY, default=self.data[FADE_TRANSITION_KEY]): int,
+                vol.Optional(OFFSET_KEY, description={"suggested_value": self.data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)}): int,
+                vol.Optional(FADE_TRANSITION_KEY, description={"suggested_value": self.data[FADE_TRANSITION_KEY]}): int,
                 vol.Optional(CUSTOM_CHIMES_PATH_KEY, description={"suggested_value": self.data[CUSTOM_CHIMES_PATH_KEY]}): str,
                 vol.Required(MEDIA_DIR_KEY, default=selected_media_dir):selector.SelectSelector(
                     selector.SelectSelectorConfig(
@@ -232,9 +229,13 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input:
             return user_input.get(key, default)
         dicts = [dict(self.config_entry.options), dict(self.config_entry.data)]
+        value = None
         for p_dict in dicts:
-            if key in p_dict:
-                return p_dict[key]
+            if key in p_dict and not value:
+                value = p_dict[key]
+        if not value:
+            value = default
+        return value
 
     async def ping_url(self, url: str):
         """Ping a URL and receive a boolean result."""
