@@ -23,11 +23,11 @@
 
 @keyframes mergeAnimation {
   0% {
-    width: 92px;
+    width: 55px;
   }
 
   40% {
-    width: 92px;
+    width: 55px;
   }
 
   60% {
@@ -96,19 +96,128 @@
     opacity: 1;
   }
 
-  50% {
+  40% {
     opacity: 1;
+    transform: translate(0px, 0px);
   }
 
   60% {
+    opacity: 0;
+    transform: translate(80px, 0px);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(80px, 0px);
+  }
+}
+@keyframes tts-say {
+  0% {
+    opacity: 1;
+  }
+
+  40% {
+    opacity: 1;
+    transform: translate(0px, 0px);
+  }
+
+  60% {
+    opacity: 0;
+    transform: translate(-50px, 0px);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50px, 0px);
+  }
+}
+
+@keyframes chimeAnim {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+
+  5% {
+    opacity: 0;
+  }
+
+  15% {
+    opacity: 1;
+  }
+
+  40% {
+    transform: translate(0, 0);
+  }
+
+  60% {
+    transform: translate(16px, 0px);
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  97.5% {
     opacity: 0;
   }
 
   100% {
     opacity: 0;
+    transform: translate(16px, 0px);
   }
 }
 
+@keyframes ttsAnim {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+
+  5% {
+    opacity: 0;
+  }
+
+  15% {
+    opacity: 1;
+  }
+
+  40% {
+    transform: translate(0, 0);
+  }
+
+  60% {
+    transform: translate(-15px, 0px);
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  97.5% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-15px, 0px);
+  }
+}
+
+@keyframes waveShift {
+  0% {
+    transform: translate(0px, 0px);
+  }
+  40% {
+    transform: translate(0px, 0px);
+  }
+  60% {
+    transform: translate(-16px, 0px);
+  }
+  100% {
+    transform: translate(-16px, 0px);
+  }
+}
 
 .soundContainer {
   margin-bottom: 30px;
@@ -125,24 +234,42 @@
   animation: mergeAnimation 5.0s ease-out infinite;
 }
 
-.chime,
+.chime {
+  display: inline-block;
+  opacity: 1;
+  animation: chimeAnim 5.0s linear infinite;
+}
+
 .tts {
   display: inline-block;
   opacity: 1;
-  animation: fadeReset 5.0s linear infinite;
+  animation: ttsAnim 5.0s ease-out infinite;
 }
 
-.chime p,
-.tts p {
+.wave {
+  width: 365px;
+  left: calc(50% - 185px);
+  position: relative;  animation: waveShift 5.0s ease-out infinite;
+}
+
+.chime p {
   font-size: 10pt;
   animation: media_player-play_media 5.0s linear infinite;
+}
+.tts p {
+  font-size: 10pt;
+  animation: tts-say 5.0s linear infinite;
 }
 
 .spacer p {
   position: absolute;
-  transform: translate(-50%, -100%);
+  transform: translate(-50%, -125%);
   opacity: 0;
   animation: chime_tts-say 5.0s infinite linear;
+}
+
+.lagText {
+  margin-top: 36px;
 }
 
 /* Puzzle pieces animation */
@@ -162,18 +289,16 @@
 }
 
 .mergeContainer {
-  overflow: auto;
+  overflow: visible;
   position: relative;
-  min-width: 440px;
+  min-width: 330px;
 
   display: flex;
   align-items: center;
   flex-direction: column;
   justify-content: center;
-  --ifm-col-width: 33.33333%;
   margin-left: 0;
-  max-width: var(--ifm-col-width);
-}
+  }
 
 .puzzleContainer {
   width: 175px;

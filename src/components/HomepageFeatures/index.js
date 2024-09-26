@@ -9,27 +9,33 @@ export default function HomepageFeatures() {
       <div className="container">
         <div className={clsx('row', 'row1')} id={styles.hide_overflow}>
 
-          <div className={styles.mergeContainer}>
-            <div className={styles.cell}>
-              <div className={styles.soundContainer}>
-                <div className="text--center">
-                  <div className={styles.chime}>
-                    <img src={useBaseUrl('/img/animations/audio_chime.png')} />
-                    <p>media_player.play_media</p>
-                  </div>
-                  <div className={styles.spacer}>
-                    <img src={useBaseUrl('/img/animations/spacer.png')} />
-                    <p>chime_tts.say</p>
-                  </div>
-                  <div className={styles.tts}>
-                    <img src={useBaseUrl('/img/animations/audio_tts.png')} className={styles.tts} />
-                    <p>tts.speak <i>or</i> tts.*_say</p>
+          <div className={clsx('col col--4')}>
+            <div className={styles.mergeContainer}>
+              <div className={styles.cell}>
+                <div className={styles.soundContainer}>
+                  <div className="text--center">
+                    <div className={styles.wave}>
+                      <div className={styles.chime}>
+                        <img src={useBaseUrl('/img/animations/audio_chime.png')} />
+                        <p><font color="00a6e3">Chime</font><br/>media_player.play_media</p>
+                      </div>
+                      <div className={styles.spacer}>
+                        <img src={useBaseUrl('/img/animations/spacer.png')} />
+                        <p>chime_tts.say</p>
+                      </div>
+                      <div className={styles.tts}>
+                        <img src={useBaseUrl('/img/animations/audio_tts.png')} className={styles.tts} />
+                        <p><font color="ff7100">TTS</font><br/>tts.speak <i>or</i> tts.*_say</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="text--center padding-horiz--md">
-                <Heading as="h3">No More Lag</Heading>
-                <p>Locally combine chimes and TTS audio for lag-free playback in a single action call.</p>
+                <div className={styles.lagText}>
+                  <div className="text--center padding-horiz--md">
+                    <Heading as="h3">No More Lag</Heading>
+                    <p>Locally combine chimes and TTS audio for lag-free playback in a single action call.</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
