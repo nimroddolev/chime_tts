@@ -926,7 +926,7 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
 
     for index, segment in enumerate(segments):
         segment_cache: bool = segment.get("cache", params.get("cache", False))
-        segment_audio_conversion: str = segment.get("audio_conversion", "")
+        segment_audio_conversion: str = helpers.parse_ffmpeg_args(segment.get("audio_conversion", ""))
         segment_offset: float = get_segment_offset(output_audio, segment, params)
         segment_type =  segment.get("type", None)
         if not segment_type:
@@ -1098,9 +1098,14 @@ async def async_get_audio_from_path(
         _LOGGER.debug(' - Retrieving audio from path: "%s"...', filepath)
         try:
             audio_from_path: AudioSegment = await filesystem_helper.async_load_audio(filepath)
+
+            # Apply audio conversion
             if audio_conversion is not None and len(audio_conversion) > 0:
-                _LOGGER.debug("  - Performing FFmpeg audio conversion of audio file...")
-                audio_from_path = await helpers.async_ffmpeg_convert_from_audio_segment(audio_from_path)
+                _LOGGER.debug("  - Performing FFmpeg audio conversion of audio file: \"%s\"...", audio_conversion)
+                temp_folder: str = _data.get(TEMP_PATH_KEY, None)
+                audio_from_path = await helpers.async_ffmpeg_convert_from_audio_segment(audio_from_path,
+                                                                                        ffmpeg_args=audio_conversion,
+                                                                                        folder=temp_folder)
 
             # Remove downloaded file when cache=false
             if cache is False and file_hash is not None:
