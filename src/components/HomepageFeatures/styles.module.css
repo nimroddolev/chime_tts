@@ -540,6 +540,13 @@
   filter: sepia(80%) saturate(268%) brightness(62%) hue-rotate(180deg);
 }
 
+.knifeFfmpeg {
+  position: absolute;
+  transform: translate(calc(-50% - 58px), calc(50% - 58px)) rotate(0deg);
+  animation: ffmpeg 5.0s ease-in-out infinite;
+  filter: sepia(80%) saturate(268%) brightness(62%) hue-rotate(180deg);
+}
+
 .knifeTtsPlatform {
   position: absolute;
   transform: translate(calc(-50% - 18px), calc(50% - 18px)) rotate(0deg);
@@ -566,6 +573,28 @@
   transform: translate(calc(-100% + 5px), calc(-100% + 33px)) rotate(90deg);
   animation: offset 5.0s ease-in-out infinite;
   filter: sepia(80%) saturate(268%) brightness(62%) hue-rotate(180deg);
+}
+
+@keyframes ffmpeg {
+  0% {
+    transform: translate(calc(-50% - 50px), calc(50% - 18px)) rotate(0deg);
+  }
+
+  17% {
+    transform: translate(calc(-50% - 50px), calc(50% - 18px)) rotate(0deg);
+  }
+
+  50% {
+    transform: translate(calc(-50% - 50px), calc(50% - 18px)) rotate(95deg);
+  }
+
+  85% {
+    transform: translate(calc(-50% - 50px), calc(50% - 18px)) rotate(95deg);
+  }
+
+  100% {
+    transform: translate(calc(-50% - 50px), calc(50% - 18px)) rotate(0deg);
+  }
 }
 
 @keyframes tts_platform {

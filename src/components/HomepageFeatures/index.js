@@ -72,6 +72,7 @@ export default function HomepageFeatures() {
                     <img src={useBaseUrl('/img/animations/knife/pitch.png')} className={styles.knifePitch} />
                     <img src={useBaseUrl('/img/animations/knife/chimes.png')} className={styles.knifeChimes} />
                     <img src={useBaseUrl('/img/animations/knife/tts_platform.png')} className={styles.knifeTtsPlatform} />
+                    <img src={useBaseUrl('/img/animations/knife/ffmpeg.png')} className={styles.knifeFfmpeg} />
                     <img src={useBaseUrl('/img/animations/knife/offset.png')} className={styles.knifeOffset} />
                   </div>
                 </div>
