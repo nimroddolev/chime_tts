@@ -305,7 +305,7 @@ data:
 <audio controls src={useBaseUrl('/audio/examples/language.mp3?v=1')} />
 
 ### `join_players`
-Use the [`join_players`](./parameters#join_players) parameter to hear the announcement across multiple speakers at the same time (only on supported speakers)
+Use the [`join_players`](./parameters#join_players) parameter to hear the announcement across multiple speakers at the same time (only on supported speakers).
 ```
 action: chime_tts.say
 target:
@@ -321,6 +321,23 @@ data:
   unjoin_players: true
 ```
 <audio controls src={useBaseUrl('/audio/examples/join_players.mp3?v=1')} />
+
+
+### `audio_conversion`
+Use the [`audio_conversion`](./parameters#audio_conversion) parameter to specify FFmpeg arguments/presets to process the generated audio.
+```
+action: chime_tts.say
+target:
+  entity_id:
+    - media_player.kitchen
+data:
+  chime_path: bells
+  message: Audio at 50% volume
+  tts_platform: google_translate
+  tld: com.au
+  audio_conversion: Volume 50%
+```
+<audio controls src={useBaseUrl('/audio/examples/audio_conversion.mp3?v=1')} />
 
 ## Message Segments
 The `message` parameter can be used to specify multiple [`message segments`](./parameters#advanced-usage-segment-sequences) which can be used to construct complicated notifications of muliple chimes & TTS audio segments.
