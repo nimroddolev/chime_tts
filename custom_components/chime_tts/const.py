@@ -56,8 +56,6 @@ TEMP_PATH_DEFAULT = "/media/sounds/temp/chime_tts/"
 DEFAULT_WWW_PATH_KEY = "default_www_path"
 WWW_PATH_KEY = "www_path"
 WWW_PATH_DEFAULT = "/config/www/chime_tts/"
-MEDIA_DIR_KEY = "media_dir"
-MEDIA_DIR_DEFAULT = "local"
 
 MP3_PRESET_PATH = "custom_components/chime_tts/mp3s/"
 MP3_PRESET_PATH_PLACEHOLDER = "mp3_path_placeholder-"  # DEPRECATED

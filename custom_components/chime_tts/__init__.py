@@ -65,8 +65,6 @@ from .const import (
     WWW_PATH_KEY,
     WWW_PATH_DEFAULT,
 
-    MEDIA_DIR_KEY,
-    MEDIA_DIR_DEFAULT,
     ALEXA_MEDIA_PLAYER_PLATFORM,
     SONOS_PLATFORM,
     MP3_PRESET_CUSTOM_PREFIX,
@@ -416,9 +414,6 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Add cover art to generated MP3 files
     _data[ADD_COVER_ART_KEY] = options.get(ADD_COVER_ART_KEY, False)
 
-    # Media folder (default: 'local')
-    _data[MEDIA_DIR_KEY] = options.get(MEDIA_DIR_KEY, MEDIA_DIR_DEFAULT)
-
     # www / local folder path
     _data[WWW_PATH_KEY] = filesystem_helper.make_folder_path_safe(
         hass.config.path(
@@ -470,7 +465,6 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         TEMP_CHIMES_PATH_KEY,
         TEMP_PATH_KEY,
         WWW_PATH_KEY,
-        MEDIA_DIR_KEY,
         CUSTOM_CHIMES_PATH_KEY,
         MP3_PRESET_CUSTOM_KEY,
     ]:
@@ -807,9 +801,8 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         duration = len(new_audio_segment) / 1000.0
         audio_dict[AUDIO_DURATION_KEY] = duration
         audio_dict[LOCAL_PATH_KEY if is_local else PUBLIC_PATH_KEY] = new_audio_file
-        audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None)
-                                                                                     or audio_dict.get(PUBLIC_PATH_KEY, None),
-                                                                                     _data.get(MEDIA_DIR_KEY, None))
+        file_path: str = audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None)
+        audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(file_path)
 
         # Save audio to local and/or public folders
         for folder_key in [(LOCAL_PATH_KEY if is_local else None), (PUBLIC_PATH_KEY if is_public else None)]:
@@ -875,8 +868,7 @@ async def async_verify_cached_audio(hass, filepath_hash, params, options, is_loc
 
         audio_dict[PUBLIC_PATH_KEY] = await filesystem_helper.async_get_external_url(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
         audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, None) or
-                                                                                        audio_dict.get(PUBLIC_PATH_KEY, None),
-                                                                                        _data.get(MEDIA_DIR_KEY, None))
+                                                                                        audio_dict.get(PUBLIC_PATH_KEY, None))
 
         if (is_local is False or audio_dict.get(LOCAL_PATH_KEY, None)) and (is_public is False or audio_dict.get(PUBLIC_PATH_KEY, None)):
             _LOGGER.debug("   Cached audio found:")
@@ -1168,11 +1160,8 @@ async def async_play_media(
     service_data[CONF_ENTITY_ID] = entity_ids
     service_data[ATTR_MEDIA_ANNOUNCE] = announce
     service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE_MUSIC
-    service_data[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(
-        audio_dict.get(LOCAL_PATH_KEY, None)
-        or audio_dict.get(PUBLIC_PATH_KEY, None),
-        _data.get(MEDIA_DIR_KEY)
-    )
+    file_path = audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None)
+    service_data[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(file_path)
 
     # Play Chime TTS notification
     media_service_calls = prepare_media_service_calls(hass, entity_ids, service_data, audio_dict)

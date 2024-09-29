@@ -232,7 +232,6 @@
                     "default_tld_key": "Default dialect (when using the Google Translate TTS platform)",
                     "offset": "Default offset value (in milliseconds) between chimes & TTS audio",
                     "fade_transition_key": "Fade transition (in milliseconds) when fading currently playing audio for `announce` and `fade_audio`",
-                    "media_dir": "Media folder",
                     "custom_chimes_path": "Folder path for custom chime audio files",
                     "temp_chimes_path": "Folder path for downloaded chime audio files",
                     "temp_path": "Folder path for temporary TTS audio mp3 files",

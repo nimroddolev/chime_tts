@@ -21,8 +21,6 @@ from .const import (
     FADE_TRANSITION_KEY,
     DEFAULT_FADE_TRANSITION_MS,
     ADD_COVER_ART_KEY,
-    MEDIA_DIR_KEY,
-    MEDIA_DIR_DEFAULT,
     CUSTOM_CHIMES_PATH_KEY,
     TEMP_CHIMES_PATH_KEY,
     TEMP_CHIMES_PATH_DEFAULT,
@@ -95,15 +93,6 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         # Installed TTS platforms
         tts_platforms = sorted(helpers.get_installed_tts_platforms(self.hass))
 
-        # Media Folders
-        media_dirs_dict = self.hass.config.media_dirs or {}
-        default_media_dir = MEDIA_DIR_DEFAULT if (MEDIA_DIR_DEFAULT in media_dirs_dict) else (next(iter(media_dirs_dict)) if media_dirs_dict else "local")
-        selected_media_dir = self.get_data_key_value(MEDIA_DIR_KEY, user_input, default_media_dir)
-        media_dirs_labels = ["local" if default_media_dir else "No media directories available"]
-        for key, _value in media_dirs_dict.items():
-            if key not in media_dirs_labels:
-                media_dirs_labels.append(key)
-
         # TLD Options
         tld_options = ["", "com", "co.uk", "com.au", "ca", "co.in", "ie", "co.za", "fr", "com.br", "pt", "es"]
 
@@ -115,7 +104,6 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             DEFAULT_TLD_KEY: self.get_data_key_value(DEFAULT_TLD_KEY, user_input, ""),
             OFFSET_KEY: self.get_data_key_value(OFFSET_KEY, user_input, DEFAULT_OFFSET_MS),
             FADE_TRANSITION_KEY: self.get_data_key_value(FADE_TRANSITION_KEY, user_input, DEFAULT_FADE_TRANSITION_MS),
-            MEDIA_DIR_KEY: selected_media_dir,
             CUSTOM_CHIMES_PATH_KEY: self.get_data_key_value(CUSTOM_CHIMES_PATH_KEY, user_input, ""),
             TEMP_CHIMES_PATH_KEY: self.get_data_key_value(TEMP_CHIMES_PATH_KEY, user_input, f"{root_path}{TEMP_CHIMES_PATH_DEFAULT}"),
             TEMP_PATH_KEY: self.get_data_key_value(TEMP_PATH_KEY, user_input, f"{root_path}{TEMP_PATH_DEFAULT}"),
@@ -141,11 +129,6 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(OFFSET_KEY, description={"suggested_value": self.data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)}): int,
                 vol.Optional(FADE_TRANSITION_KEY, description={"suggested_value": self.data[FADE_TRANSITION_KEY]}): int,
                 vol.Optional(CUSTOM_CHIMES_PATH_KEY, description={"suggested_value": self.data[CUSTOM_CHIMES_PATH_KEY]}): str,
-                vol.Required(MEDIA_DIR_KEY, default=selected_media_dir):selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=media_dirs_labels,
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                        custom_value=True)),
                 vol.Required(TEMP_CHIMES_PATH_KEY,default=self.data[TEMP_CHIMES_PATH_KEY]): str,
                 vol.Required(TEMP_PATH_KEY,default=self.data[TEMP_PATH_KEY]): str,
                 vol.Required(WWW_PATH_KEY,default=self.data[WWW_PATH_KEY]): str,
@@ -199,8 +182,9 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         temp_folder_in_media_dir = False
         # Get absolute paths of both directories
         sub_dir = os.path.abspath(self.data[TEMP_PATH_KEY])
-        # Check if the subdirectory starts with the parent directory path
-        for key, value in media_dirs_dict.items():
+        # Verify the subdirectory starts with the parent directory path
+        media_dirs_dict = self.hass.config.media_dirs or {}
+        for _key, value in media_dirs_dict.items():
             parent_dir = os.path.abspath(value)
             if os.path.commonpath([parent_dir]) == os.path.commonpath([parent_dir, sub_dir]):
                 temp_folder_in_media_dir = True

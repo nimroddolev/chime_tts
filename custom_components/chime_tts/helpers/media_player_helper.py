@@ -18,7 +18,6 @@ from ..const import (
     ALEXA_MEDIA_PLAYER_PLATFORM,
     SONOS_PLATFORM,
     SPOTIFY_PLATFORM,
-    MEDIA_DIR_DEFAULT,
     TRANSITION_STEP_MS
 )
 from ..config import (
@@ -38,6 +37,7 @@ class MediaPlayerHelper:
     announce: bool = False
     fade_audio: bool = False
     sonos_restored: bool = False
+    media_dirs_dict: object = {}
 
     async def async_initialize_media_players(self,
                                              hass: HomeAssistant,
@@ -61,6 +61,7 @@ class MediaPlayerHelper:
         self.announce = announce
         self.fade_audio = fade_audio
         self.sonos_restored = False
+        self.media_dirs_dict: object = hass.config.media_dirs or {}
 
         for entity_id in entity_ids:
             media_player_object = await self.async_get_media_player_object(hass, entity_id, volume_level)
@@ -219,20 +220,26 @@ class MediaPlayerHelper:
 
         return False
 
-    def get_media_content_id(self, file_path: str, media_dir: str = MEDIA_DIR_DEFAULT):
+    def get_media_content_id(self, file_path: str):
         """Create the media content id for a local media directory file."""
         if file_path is None:
+            _LOGGER.error("Audio file path missing in call to get_media_content_id")
             return None
 
-        media_dir = f"/{media_dir}/".replace("//", "/")
         media_source_path = file_path
-        media_folder_path_index = media_source_path.find("/media/")
-        if media_folder_path_index != -1:
-            media_path = media_source_path[media_folder_path_index + len("/media/") :].replace("//", "/")
-            media_source_path = f"media-source://media_source{media_dir}{media_path}"
-            return media_source_path
 
-        return None
+        media_dir_key = ""
+        for name_i, path_i in self.media_dirs_dict.items():
+            if file_path.startswith(path_i) and len(media_dir_key) < len(path_i):
+                media_dir_key = name_i
+        if self.media_dirs_dict.get(media_dir_key, None):
+            path = self.media_dirs_dict.get(media_dir_key, None)
+            media_source_path = media_source_path[len(f"/{path}") :]
+            media_source_path = f"media-source://media_source/{media_dir_key}/{media_source_path}"
+            return media_source_path
+        else:
+            _LOGGER.error("Media file \"%s\" is not in a local media directory. See https://www.home-assistant.io/more-info/local-media/setup-media/")
+            return None
 
     #### ACTIONS ####
 
@@ -620,10 +627,10 @@ class MediaPlayerHelper:
 
         # Validation
         if joined_count == 0:
-            _LOGGER.warning("No media_players were found that support joining speakers into a group. A minimum of 2 is requied.")
+            _LOGGER.warning("No media_players were found that support joining speakers into a group. A minimum of 2 is required.")
             return
         if joined_count == 1:
-            _LOGGER.warning("Only 1 media_player was found that supports joining speakers into a group. A minimum of 2 is requied.")
+            _LOGGER.warning("Only 1 media_player was found that supports joining speakers into a group. A minimum of 2 is required.")
             return
 
         # Log the speaker group 'leader' (joined_entity_id)
