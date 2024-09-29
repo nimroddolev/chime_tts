@@ -18,29 +18,6 @@ You must have add at least one **[TTS platform](https://www.home-assistant.io/in
 
 ---
 
-### `media_dirs` Directories
-
-The `media_dirs` parameter allows Home Assistant to access and manage media files, such as the generated MP3 files from Chime TTS. Without proper configuration, Home Assistant will not be able to locate or play these files.
-
-Add the `media_dirs` parameter in your `configuration.yaml` file and specify your directory path/s. For example:
-
-`configuration.yaml`:
-```
-homeassistant:
-  media_dirs:
-    media: /media
-```
-
-After restarting Home Assistant, set the relevant `media_dirs` path as your [media folder](../documentation/configuration#media-folder) in the Chime TTS [configuration page](../documentation/configuration).
-
-:::info[Folder Paths in Configuration]
-
-Note that each of the folder paths in the Chime TTS [configuration page](../documentation/configuration) (see [downloaded chimes](../documentation/configuration#downloaded-chimes-folder), [temporary MP3s](../documentation/configuration#temporary-mp3-folder) and [`chime_tts.say_url` folder](../documentation/configuration#chime_ttssay_url-folder)) must reside within a `media_dir` path.
-
-:::
-
----
-
 ### Alexa Devices
 
 [Alexa Media Player](https://github.com/alandtse/alexa_media_player) media_player entities require MP3 files be publicly accessible from outside your local network.
