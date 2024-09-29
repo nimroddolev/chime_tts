@@ -588,14 +588,15 @@ class ChimeTTSHelper:
         """Convert pydub AudioSegment with FFmpeg and provided arguments."""
         ret_val = audio_segment
 
+        if not ffmpeg_args or len(ffmpeg_args) == 0:
+            return ret_val
+
         # Validate parameters
         error_string = ""
         if not audio_segment:
-            error_string = "no audio segment provided. "
-        if not ffmpeg_args or ffmpeg_args == "":
-            error_string += "no FFmpeg arguments provided. "
+            error_string = "No audio segment provided. "
         if not folder or folder == "":
-            error_string += "no temporary folder path provided."
+            error_string += "No temporary folder path provided."
         if len(error_string) > 0:
             _LOGGER.warning("Skipping FFmpeg conversion: %s", error_string)
             return ret_val
