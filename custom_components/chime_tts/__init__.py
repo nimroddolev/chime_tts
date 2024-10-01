@@ -317,11 +317,8 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
             # Remove temporary local generated mp3
             if not params.get("cache", False):
                 _LOGGER.debug("Removing temporary file%s:", "s" if local_path and public_path else "")
-                if local_path is not None:
-                    filesystem_helper.delete_file(local_path)
-                if public_path is not None:
-                    local_public_path = await filesystem_helper.async_get_local_url(hass, public_path)
-                    filesystem_helper.delete_file(local_public_path)
+                filesystem_helper.delete_file(hass, local_path)
+                filesystem_helper.delete_file(hass, public_path)
 
 
     end_time = datetime.now()
@@ -1101,7 +1098,7 @@ async def async_get_audio_from_path(
 
             # Remove downloaded file when cache=false
             if cache is False and file_hash is not None:
-                filesystem_helper.delete_file(filepath)
+                filesystem_helper.delete_file(hass, filepath)
 
             if audio_from_path is not None:
                 duration = float(len(audio_from_path) / 1000.0)
@@ -1489,15 +1486,15 @@ async def async_remove_cached_audio_data(hass: HomeAssistant,
         if key == LOCAL_PATH_KEY and audio_dict.get(LOCAL_PATH_KEY, None) is not None:
             if clear_chimes_cache and await filesystem_helper.async_file_exists_in_directory(value, temp_chimes_path):
                 _LOGGER.debug("...removing chime file %s", value)
-                filesystem_helper.delete_file(audio_dict.get(LOCAL_PATH_KEY, None))
+                filesystem_helper.delete_file(hass, audio_dict.get(LOCAL_PATH_KEY, None))
                 audio_dict[LOCAL_PATH_KEY] = None
             elif clear_temp_tts_cache and await filesystem_helper.async_file_exists_in_directory(value, temp_path):
                 _LOGGER.debug("...removing TTS file %s", value)
-                filesystem_helper.delete_file(audio_dict.get(LOCAL_PATH_KEY, None))
+                filesystem_helper.delete_file(hass, audio_dict.get(LOCAL_PATH_KEY, None))
                 audio_dict[LOCAL_PATH_KEY] = None
         elif key == PUBLIC_PATH_KEY and value is not None and clear_www_tts_cache:
             _LOGGER.debug("...removing public file %s", value)
-            filesystem_helper.delete_file(audio_dict.get(PUBLIC_PATH_KEY, None))
+            filesystem_helper.delete_file(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
             audio_dict[PUBLIC_PATH_KEY] = None
 
     # Remove key/value from integration storage if no paths remain

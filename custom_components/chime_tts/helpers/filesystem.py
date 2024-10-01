@@ -330,23 +330,30 @@ class FilesystemHelper:
             .replace(instance_url + "//", instance_url + "/")
         )
 
-    async def async_get_local_url(self, hass: HomeAssistant, external_url):
-        """Convert external URL back to file system public file path."""
-        if not external_url:
-            return None
+    def delete_file(self, hass: HomeAssistant, file_path) -> None:
+        """Delete local / public-facing file in filesystem."""
+        if file_path is None:
+            return
 
+        # Convert external URL to local filepath
         instance_url = hass.config.external_url
         if instance_url is None:
             instance_url = str(get_url(hass))
+        if file_path.startswith(instance_url):
+            file_path = (
+                file_path
+                .replace(f"{instance_url}/", "")
+                .replace(f"{instance_url}", "")
+                .replace("local/", "/config/www/")
+                .replace("//", "/")
+            )
 
-        local_filepath = (
-            external_url
-            .replace(f"{instance_url}/", "")
-            .replace(f"{instance_url}", "")
-            .replace("/local/", "/config/www/")
-            .replace("//", "/")
-        )
-        self.delete_file(local_filepath)
+        # If file exists, delete it
+        if os.path.exists(file_path):
+            _LOGGER.debug("Deleting file %s", file_path)
+            os.remove(file_path)
+        else:
+            _LOGGER.warning("No file at path %s - unable to delete", file_path)
 
     def get_local_path(self, hass: HomeAssistant, file_path):
         """Convert external URL to local public path."""
@@ -355,16 +362,6 @@ class FilesystemHelper:
             instance_url = str(get_url(hass))
         public_dir = hass.config.path('www')
         return file_path.replace(instance_url, public_dir).replace('/www/local/', '/www/')
-
-    def delete_file(self, file_path):
-        """Safely delete a file."""
-        if not file_path:
-            return
-        if os.path.exists(file_path):
-            _LOGGER.debug("Deleting file %s", file_path)
-            os.remove(file_path)
-        else:
-            _LOGGER.debug("No file at path %s - unable to delete", file_path)
 
     def get_hash_for_string(self, string):
         """Generate a has for a given string."""
