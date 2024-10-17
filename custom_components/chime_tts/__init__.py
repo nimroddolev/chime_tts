@@ -15,7 +15,7 @@ from homeassistant.components.media_player.const import (
     ATTR_MEDIA_CONTENT_TYPE,
     ATTR_MEDIA_ANNOUNCE,
     SERVICE_PLAY_MEDIA,
-    MEDIA_TYPE_MUSIC,
+    MediaType as MEDIA_TYPE,
 )
 
 from .helpers.helpers import ChimeTTSHelper
@@ -1156,7 +1156,7 @@ async def async_play_media(
     service_data = {}
     service_data[CONF_ENTITY_ID] = entity_ids
     service_data[ATTR_MEDIA_ANNOUNCE] = announce
-    service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE_MUSIC
+    service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE.MUSIC
     file_path = audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None)
     service_data[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(file_path)
 
