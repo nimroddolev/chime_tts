@@ -315,7 +315,7 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
                 )
 
             # Remove temporary local generated mp3
-            if not params.get("cache", False):
+            if not bool(params.get("cache", False)):
                 _LOGGER.debug("Removing temporary file%s:", "s" if local_path and public_path else "")
                 filesystem_helper.delete_file(hass, local_path)
                 filesystem_helper.delete_file(hass, public_path)
@@ -715,10 +715,8 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         _LOGGER.debug(" *** Checking Chime TTS audio cache ***")
         audio_dict: dict = await async_verify_cached_audio(hass, filepath_hash, params, options, is_local, is_public, ffmpeg_args)
         if audio_dict:
-            _LOGGER.debug("   ...cached audio found")
             return audio_dict
-        else:
-            _LOGGER.debug("   ...no cached audio found")
+        _LOGGER.debug("   ...no cached audio found")
 
     ######################
     # Generate new audio #
@@ -852,13 +850,13 @@ async def async_verify_cached_audio(hass, filepath_hash, params, options, is_loc
         duration = audio_dict.get(AUDIO_DURATION_KEY, None)
 
         # Make a local copy of the public file
-        if is_local and audio_dict.get(LOCAL_PATH_KEY, None) is None and os.path.exists(audio_dict.get(PUBLIC_PATH_KEY, None)):
+        if is_local and audio_dict.get(LOCAL_PATH_KEY, None) is None and os.path.exists(audio_dict.get(PUBLIC_PATH_KEY, "")):
             _LOGGER.debug("   - Copying public file to local directory")
             audio_dict[LOCAL_PATH_KEY] = filesystem_helper.copy_file(audio_dict.get(PUBLIC_PATH_KEY, None), _data.get(TEMP_PATH_KEY, None))
             await async_add_audio_file_to_cache(hass, audio_dict.get(LOCAL_PATH_KEY, None), duration, params, options)
 
         # Make a public copy of the local file
-        if is_public and audio_dict.get(PUBLIC_PATH_KEY, None) is None and os.path.exists(audio_dict.get(LOCAL_PATH_KEY, None)):
+        if is_public and audio_dict.get(PUBLIC_PATH_KEY, None) is None and os.path.exists(audio_dict.get(LOCAL_PATH_KEY, "")):
             _LOGGER.debug("    - Copying local file to public directory")
             audio_dict[PUBLIC_PATH_KEY] = filesystem_helper.copy_file(audio_dict.get(LOCAL_PATH_KEY, None), _data.get(WWW_PATH_KEY, None))
             await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, None), duration, params, options)
@@ -868,6 +866,11 @@ async def async_verify_cached_audio(hass, filepath_hash, params, options, is_loc
                                                                                         audio_dict.get(PUBLIC_PATH_KEY, None))
 
         if (is_local is False or audio_dict.get(LOCAL_PATH_KEY, None)) and (is_public is False or audio_dict.get(PUBLIC_PATH_KEY, None)):
+            # Test whether the cached file paths exist
+            public_exists = filesystem_helper.get_local_path(hass=hass, file_path=f"{audio_dict.get(PUBLIC_PATH_KEY, "")}")
+            local_exists = os.path.exists(f"{audio_dict.get(LOCAL_PATH_KEY, "")}")
+            if not (public_exists or local_exists):
+                return None
             _LOGGER.debug("   Cached audio found:")
             for key, value in audio_dict.items():
                 quote = '"' if value and isinstance(value, str) else ''

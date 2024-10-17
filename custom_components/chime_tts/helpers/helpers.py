@@ -460,7 +460,7 @@ class ChimeTTSHelper:
         # No TTS platform provided
         if not tts_platform:
             tts_platform = default_tts_platform
-            
+
         # Match for deprecated Nabu Casa platform string
         if tts_platform.lower() == NABU_CASA_CLOUD_TTS_OLD:
             tts_platform = NABU_CASA_CLOUD_TTS

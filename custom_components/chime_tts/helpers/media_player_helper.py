@@ -237,9 +237,8 @@ class MediaPlayerHelper:
             media_source_path = media_source_path[len(f"/{path}") :]
             media_source_path = f"media-source://media_source/{media_dir_key}/{media_source_path}"
             return media_source_path
-        else:
-            _LOGGER.error("Media file \"%s\" is not in a local media directory. See https://www.home-assistant.io/more-info/local-media/setup-media/")
-            return None
+        # Media file exists outside of a media folder
+        return None
 
     #### ACTIONS ####
 
