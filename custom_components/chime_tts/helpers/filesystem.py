@@ -261,13 +261,12 @@ class FilesystemHelper:
         if not destination_folder:
             _LOGGER.warning("Unable to copy file: No destination folder path provided")
             return None
-
         if self.create_folder(destination_folder):
             try:
                 copied_file_path = shutil.copy(source_file, destination_folder)
                 return copied_file_path
             except FileNotFoundError:
-                _LOGGER.warning("Unable to copy file: Source file not found.")
+                _LOGGER.warning("Unable to copy file: Source file %s not found.", source_file)
             except PermissionError:
                 _LOGGER.warning("Unable to copy file: Permission denied. Check if you have sufficient permissions.")
             except Exception as e:
