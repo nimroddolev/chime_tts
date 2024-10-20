@@ -199,9 +199,16 @@ class MediaPlayerHelper:
         """Determine whether a media_player belongs to the Spotify platform."""
         return self.get_platform_from_entity_id(entity_id) == SPOTIFY_PLATFORM
 
-    def get_media_players_of_platform(self, entity_ids, platform):
+    def get_alexa_media_players_count(self):
+        """Count of alexa_media_players."""
+        alexa_media_players = [media_player for media_player in self.media_players if media_player.platform == ALEXA_MEDIA_PLAYER_PLATFORM]
+        return len(alexa_media_players)
+
+    def get_media_players_of_platform(self, entity_ids: list = [], platform: str = ""):
         """List of media_players belonging to a specific platform."""
-        return [entity_id for entity_id in entity_ids if self.get_media_players_from_entity_id(entity_id) and self.get_media_players_from_entity_id(entity_id).platform == platform]
+        if entity_ids and platform:
+            return [entity_id for entity_id in entity_ids if self.get_media_players_from_entity_id(entity_id) and self.get_media_players_from_entity_id(entity_id).platform == platform]
+        return []
 
     def get_supported_feature(self, entity: State, feature: str):
         """Whether a feature is supported by the media_player device."""

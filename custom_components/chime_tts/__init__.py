@@ -66,6 +66,7 @@ from .const import (
     WWW_PATH_DEFAULT,
 
     ALEXA_MEDIA_PLAYER_PLATFORM,
+    FFMPEG_ARGS_ALEXA,
     SONOS_PLATFORM,
     MP3_PRESET_CUSTOM_PREFIX,
     MP3_PRESET_CUSTOM_KEY,
@@ -702,8 +703,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     ffmpeg_args = params.get("ffmpeg_args", "")
 
     # Produce local and/or public mp3s?
-    alexa_media_player_count = len(media_player_helper.get_media_players_of_platform(entity_ids, ALEXA_MEDIA_PLAYER_PLATFORM))
-    public_count = alexa_media_player_count
+    alexa_media_player_count = public_count = media_player_helper.get_alexa_media_players_count()
     is_public = public_count > 0 or (entity_ids is None or len(entity_ids) == 0)
     is_local = entity_ids is not None and len(entity_ids) > 0 and public_count != len(entity_ids)
 
@@ -1284,14 +1284,24 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
                     })
 
     # Alexa media_players
-    if len(alexa_media_player_entity_ids) > 0:
+    public_file = audio_dict.get(PUBLIC_PATH_KEY, None)
+    if len(alexa_media_player_entity_ids) > 0 and public_file:
+        # Debug
         _LOGGER.debug("   %s Alexa media player%s detected:",
                       len(alexa_media_player_entity_ids),
                       ("s" if len(alexa_media_player_entity_ids) != 1 else ""))
         for entity_id in alexa_media_player_entity_ids:
             _LOGGER.debug("     - %s", entity_id)
-        if len(audio_dict.get(PUBLIC_PATH_KEY, '')) > 0:
-            message_string = f"<audio src=\"{audio_dict.get(PUBLIC_PATH_KEY, '')}\"/>"
+
+        # Ensure audio file is Alexa Media Player compatible
+        if not helpers.audio_file_already_alexa_compatible(hass=hass, file_path=public_file):
+            local_public_file = filesystem_helper.get_local_path(hass=hass, file_path=public_file)
+            _LOGGER.debug("Applying Alexa Media Player audio conversion for file: %s", local_public_file)
+            public_file = helpers.ffmpeg_convert_from_file(local_public_file, FFMPEG_ARGS_ALEXA)
+
+        # Add service call
+        if len(public_file) > 0:
+            message_string = f"<audio src=\"{public_file}\"/>"
             service_calls.append({
                 "domain": "notify",
                 "service": "alexa_media",
