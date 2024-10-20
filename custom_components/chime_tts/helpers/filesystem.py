@@ -354,12 +354,18 @@ class FilesystemHelper:
         else:
             _LOGGER.warning("No file at path %s - unable to delete", file_path)
 
-    def get_local_path(self, hass: HomeAssistant, file_path):
+    def get_local_path(self, hass: HomeAssistant, file_path: str):
         """Convert external URL to local public path."""
         instance_url = hass.config.external_url
         if instance_url is None:
             instance_url = str(get_url(hass))
         public_dir = hass.config.path('www')
+
+        # File already begins with instance_url
+        if file_path.startswith(instance_url):
+            return file_path
+
+        # Replace start of file with instance url
         return file_path.replace(instance_url, public_dir).replace('/www/local/', '/www/')
 
     def get_hash_for_string(self, string):
