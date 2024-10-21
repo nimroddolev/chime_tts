@@ -687,6 +687,7 @@ class ChimeTTSHelper:
 
         Returns:
             bool: True if file meets Alexa compatibility requirements, False otherwise
+
         """
         # Validate file path
         file_path = filesystem_helper.get_local_path(hass=hass, file_path=file_path)
