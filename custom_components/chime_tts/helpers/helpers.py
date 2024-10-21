@@ -24,7 +24,6 @@ from ..const import (
     DEFAULT_OFFSET_MS,
     FFMPEG_ARGS_ALEXA,
     FFMPEG_ARGS_VOLUME,
-    ALEXA_MEDIA_PLAYER_PLATFORM,
     AMAZON_POLLY,
     BAIDU,
     ELEVENLABS_TTS,
@@ -201,12 +200,6 @@ class ChimeTTSHelper:
         # FFmpeg arguments
         ffmpeg_args: str = self.parse_ffmpeg_args(data.get("audio_conversion", None))
 
-        # Force "Alexa" conversion if any Alexa media_player entities included
-        alexa_conversion_forced = False
-        if ffmpeg_args is None and len(media_player_helper.get_media_players_of_platform(entity_ids, ALEXA_MEDIA_PLAYER_PLATFORM)) > 0:
-            ffmpeg_args = FFMPEG_ARGS_ALEXA
-            alexa_conversion_forced = True
-
         params = {
             "entity_ids": entity_ids,
             "hass": hass,
@@ -252,8 +245,6 @@ class ChimeTTSHelper:
                 else:
                     _LOGGER.debug(" * %s = %s", p_key, str(value))
 
-        if alexa_conversion_forced is True:
-            _LOGGER.debug(" --- Audio will be converted to Alexa-friendly format as Alexa speaker/s detected ---")
         return params
 
     def parse_options_yaml(self, data: dict, default_data: dict):
@@ -686,6 +677,57 @@ class ChimeTTSHelper:
                            error, ffmpeg_cmd_string)
 
         return file_path
+
+    def audio_file_already_alexa_compatible(self, hass: HomeAssistant, file_path: str) -> bool:
+        """Determine whether a given audio file is Alexa Media Player compatible.
+
+        Args:
+            hass: HomeAssistant object
+            file_path: Path to the audio file to check
+
+        Returns:
+            bool: True if file meets Alexa compatibility requirements, False otherwise
+
+        """
+        # Validate file path
+        file_path = filesystem_helper.get_local_path(hass=hass, file_path=file_path)
+        if not os.path.exists(file_path):
+            _LOGGER.debug("File not found: %s", file_path)
+            return False
+
+        try:
+            # Run ffmpeg command to get the file details with a timeout
+            result = subprocess.run(
+                ['ffmpeg', '-i', file_path],
+                capture_output=True,
+                text=True,
+                check=False,  # Don't raise on non-zero exit (ffmpeg writes to stderr normally)
+                timeout=30    # Add timeout to prevent hanging
+            )
+
+            output = result.stderr.lower()  # Case-insensitive matching
+
+            # More robust pattern matching
+            requirements = [
+                ('mp3' in output or 'mp3' in result.stdout.lower()),  # Check both stdout and stderr
+                any(rate in output for rate in ['24000 hz', '24khz', '24000hz']),
+                any(ch in output for ch in ['stereo', '2 channels', '2ch']),
+                any(rate in output for rate in ['48 kb/s', '48k', '48000']),
+                'xing' not in output  # Check for absence of Xing header
+            ]
+
+            # File failed Alexa Media Player compatibility test
+            if not all(requirements):
+                return False
+
+            return True
+
+        except subprocess.TimeoutExpired:
+            _LOGGER.error("FFmpeg process timed out analyzing %s", file_path)
+            return False
+        except Exception as e:
+            _LOGGER.error("Error analyzing file %s: %s", file_path, str(e))
+            return False
 
     def add_atempo_values_to_ffmpeg_args_string(self, tempo: float, ffmpeg_args_string: str = None):
         """Add atempo values (supporting values less than 0.5) to an FFmpeg argument string."""
