@@ -799,16 +799,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         file_path: str = audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None)
         audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(file_path)
 
-        # Save audio to local folder
-        if is_local and not audio_dict.get(LOCAL_PATH_KEY, None):
-            _LOGGER.debug(" - Saving generated audio to local folder: %s...", _data[TEMP_PATH_KEY])
-            audio_dict[LOCAL_PATH_KEY] = await filesystem_helper.async_save_audio_to_folder(
-                output_audio,  _data[TEMP_PATH_KEY])
-        # Save audio to public folder
-        if is_public and not audio_dict.get(PUBLIC_PATH_KEY, None):
-            _LOGGER.debug(" - Saving generated audio to public folder: %s...", _data[WWW_PATH_KEY])
-            audio_dict[PUBLIC_PATH_KEY] = await filesystem_helper.async_save_audio_to_folder(
-                output_audio, _data[WWW_PATH_KEY])
+        save_audio_to_folder(is_local, is_public, audio_dict, output_audio)
 
         # Convert external URL (for public paths)
         if audio_dict.get(PUBLIC_PATH_KEY, None):
@@ -819,6 +810,38 @@ async def async_get_playback_audio_path(params: dict, options: dict):
             audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, ''))
 
     # Valdiation
+    if not validate_audio_dict(hass, is_local, is_public, audio_dict):
+        return None
+
+    _LOGGER.debug(" - Chime TTS audio generated:")
+    for key, value in audio_dict.items():
+        quote = '"' if isinstance(value, str) else ''
+        value = f"{quote}{value}{quote}"
+        _LOGGER.debug("   * %s = %s", key, value)
+
+    # Save path to cache
+    if cache:
+        await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, None), duration, params, options)
+        await async_add_audio_file_to_cache(hass, audio_dict.get(LOCAL_PATH_KEY, None), duration, params, options)
+
+    return audio_dict
+
+async def save_audio_to_folder(is_local: bool, is_public: bool, audio_dict: dict, output_audio: AudioSegment):
+    """Save local/public audio to local/public folder/s."""
+    # Save audio to local folder
+    if is_local and not audio_dict.get(LOCAL_PATH_KEY, None):
+        _LOGGER.debug(" - Saving generated audio to local folder: %s...", _data[TEMP_PATH_KEY])
+        audio_dict[LOCAL_PATH_KEY] = await filesystem_helper.async_save_audio_to_folder(
+            output_audio, _data[TEMP_PATH_KEY])
+    # Save audio to public folder
+    if is_public and not audio_dict.get(PUBLIC_PATH_KEY, None):
+        _LOGGER.debug(" - Saving generated audio to public folder: %s...", _data[WWW_PATH_KEY])
+        audio_dict[PUBLIC_PATH_KEY] = await filesystem_helper.async_save_audio_to_folder(
+            output_audio, _data[WWW_PATH_KEY])
+
+
+def validate_audio_dict(hass: HomeAssistant, is_local: bool, is_public: bool, audio_dict: dict):
+    """Validate audio contained within an audio_dict."""
     is_valid = True
     if audio_dict[AUDIO_DURATION_KEY] == 0:
         _LOGGER.error("async_get_playback_audio_path --> Audio has no duration")
@@ -842,21 +865,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
             if not (external_local_path.startswith("http") or os.path.exists(external_local_path)):
                 _LOGGER.error("async_get_playback_audio_path --> Public audio file not found on filesystem: %s", external_local_path)
                 is_valid = False
-    if is_valid is False:
-        return None
-
-    _LOGGER.debug(" - Chime TTS audio generated:")
-    for key, value in audio_dict.items():
-        quote = '"' if isinstance(value, str) else ''
-        value = f"{quote}{value}{quote}"
-        _LOGGER.debug("   * %s = %s", key, value)
-
-    # Save path to cache
-    if cache:
-        await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, None), duration, params, options)
-        await async_add_audio_file_to_cache(hass, audio_dict.get(LOCAL_PATH_KEY, None), duration, params, options)
-
-    return audio_dict
+    return is_valid
 
 async def async_verify_cached_audio(hass: HomeAssistant,
                                     filepath_hash: str,
