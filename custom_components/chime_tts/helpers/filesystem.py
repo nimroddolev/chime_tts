@@ -158,7 +158,7 @@ class FilesystemHelper:
                     prefix=folder, suffix=".mp3"
                 ) as temp_obj:
                     audio_full_path = temp_obj.name
-                await self.export_audio(audio, audio_full_path)
+                await self.async_export_audio(audio, audio_full_path)
             except Exception as error:
                 _LOGGER.warning(
                     "An error occurred when creating the temp mp3 file: %s", error
@@ -171,7 +171,7 @@ class FilesystemHelper:
                 if audio_full_path and isinstance(audio_full_path, str):
                     if os.path.exists(audio_full_path):
                         os.remove(audio_full_path)
-                    await self.export_audio(audio, audio_full_path)
+                    await self.async_export_audio(audio, audio_full_path)
             except Exception as error:
                 _LOGGER.warning(
                     "An error occurred when creating the mp3 file: %s", error
@@ -385,7 +385,7 @@ class FilesystemHelper:
 
     ### Offloading to asyncio.to_thread ####
 
-    async def export_audio(self, audio: AudioSegment, audio_full_path: str):
+    async def async_export_audio(self, audio: AudioSegment, audio_full_path: str):
         """Save AudioSegment to a filepath."""
         await asyncio.to_thread(audio.export, audio_full_path, format="mp3")
 

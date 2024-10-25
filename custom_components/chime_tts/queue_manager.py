@@ -83,7 +83,7 @@ class ChimeTTSQueueManager:
             TimeoutError(f"Service call timed out after {elapsed_time} (configured timeout = {self.timeout_s}s)")
         )
 
-    async def queue_processor(self) -> None:
+    async def async_queue_processor(self) -> None:
         """Continuously process the Chime TTS service call queue."""
         while not self._shutdown_event.is_set():
             await asyncio.sleep(QUEUE_PROCESSOR_SLEEP_TIME)
@@ -140,7 +140,7 @@ class ChimeTTSQueueManager:
 
     def start_queue_processor(self) -> None:
         """Start the queue processor task."""
-        task = asyncio.create_task(self.queue_processor())
+        task = asyncio.create_task(self.async_queue_processor())
         task.add_done_callback(self.running_tasks.remove)  # Ensure task removal when done
         self.running_tasks.append(task)
 

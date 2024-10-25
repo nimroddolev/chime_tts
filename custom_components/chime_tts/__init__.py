@@ -272,7 +272,10 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
 
         # Summary
         elapsed_time = (datetime.now() - start_time).total_seconds() * 1000
-        helpers.debug_finish(f"Chime TTS Clear Cache Completed in %s ms {elapsed_time}")
+        elapsed_time = (f"{elapsed_time} s"
+                        if elapsed_time >= 1
+                        else f"{elapsed_time * 1000} ms")
+        helpers.debug_finish(f"Chime TTS Clear Cache Completed in {elapsed_time}")
 
         return True
 
@@ -331,7 +334,7 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
     # Convert public file path to external URL for chime_tts.say_url
     if is_say_url:
         _LOGGER.debug("Final URL = %s", public_path)
-        helpers.debug_finish(f"Chime TTS Say URL Completed in %s {elapsed_time}")
+        helpers.debug_finish(f"Chime TTS Say URL Completed in {elapsed_time}")
         ret_value = {
             "url": public_path,
             ATTR_MEDIA_CONTENT_ID: media_content_id,
@@ -1326,7 +1329,7 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
                     })
 
     # Alexa media_players
-    public_file = audio_dict.get(PUBLIC_PATH_KEY, None)
+    public_file = audio_dict.get(PUBLIC_PATH_KEY, "")
     if len(alexa_media_player_entity_ids) > 0 and public_file:
         # Debug
         _LOGGER.debug("   %s Alexa media player%s detected:",
