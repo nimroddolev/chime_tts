@@ -799,7 +799,8 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         file_path: str = audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None)
         audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(file_path)
 
-        save_audio_to_folder(is_local, is_public, audio_dict, output_audio)
+        # Copy generated audio to local/public folder/s
+        audio_dict = await async_save_audio_to_folder(is_local, is_public, audio_dict, output_audio)
 
         # Convert external URL (for public paths)
         if audio_dict.get(PUBLIC_PATH_KEY, None):
@@ -826,7 +827,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
     return audio_dict
 
-async def save_audio_to_folder(is_local: bool, is_public: bool, audio_dict: dict, output_audio: AudioSegment):
+async def async_save_audio_to_folder(is_local: bool, is_public: bool, audio_dict: dict, output_audio: AudioSegment):
     """Save local/public audio to local/public folder/s."""
     # Save audio to local folder
     if is_local and not audio_dict.get(LOCAL_PATH_KEY, None):
@@ -838,6 +839,7 @@ async def save_audio_to_folder(is_local: bool, is_public: bool, audio_dict: dict
         _LOGGER.debug(" - Saving generated audio to public folder: %s...", _data[WWW_PATH_KEY])
         audio_dict[PUBLIC_PATH_KEY] = await filesystem_helper.async_save_audio_to_folder(
             output_audio, _data[WWW_PATH_KEY])
+    return audio_dict
 
 
 def validate_audio_dict(hass: HomeAssistant, is_local: bool, is_public: bool, audio_dict: dict):
