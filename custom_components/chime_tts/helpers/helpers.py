@@ -546,9 +546,10 @@ class ChimeTTSHelper:
 
 
     async def async_ffmpeg_convert_from_audio_segment(self,
-                                          audio_segment: AudioSegment = None,
-                                          ffmpeg_args: str = "",
-                                          folder: str = ""):
+                                                      hass: HomeAssistant,
+                                                      audio_segment: AudioSegment = None,
+                                                      ffmpeg_args: str = "",
+                                                      folder: str = ""):
         """Convert pydub AudioSegment with FFmpeg and provided arguments."""
         ret_val = audio_segment
 
@@ -577,7 +578,7 @@ class ChimeTTSHelper:
             return ret_val
 
         # Convert with FFmpeg
-        converted_audio_file = self.ffmpeg_convert_from_file(temp_audio_file, ffmpeg_args)
+        converted_audio_file = self.ffmpeg_convert_from_file(hass, temp_audio_file, ffmpeg_args)
         if converted_audio_file is None or converted_audio_file is False or len(converted_audio_file) < 5:
             _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to convert audio segment from file %s", temp_audio_file)
 
@@ -602,11 +603,16 @@ class ChimeTTSHelper:
 
         return ret_val
 
-    def ffmpeg_convert_from_file(self, file_path: str, ffmpeg_args: str):
+    def ffmpeg_convert_from_file(self, hass: HomeAssistant, file_path: str, ffmpeg_args: str):
         """Convert audio file with FFmpeg and provided arguments."""
         if not os.path.exists(file_path):
             _LOGGER.warning("Unable to perform FFmpeg conversion: source file not found on file system: %s", file_path)
             return False
+
+        # Prevent Alexa FFmpeg comversion if file is aleady comaptible
+        if ffmpeg_args == FFMPEG_ARGS_ALEXA and filesystem_helper.is_audio_alexa_compatible(hass, file_path):
+            _LOGGER.debug("Audio is already Alexa Media Player compatible")
+            return file_path
 
         try:
             # Add standard arguments
@@ -640,7 +646,7 @@ class ChimeTTSHelper:
 
             # Convert the audio file
             ffmpeg_cmd_string = " ".join(ffmpeg_cmd)
-            _LOGGER.debug("Running FFMpeg operation: \"%s\"", ffmpeg_cmd_string)
+            _LOGGER.debug("Running FFmpeg operation: \"%s\"", ffmpeg_cmd_string)
             ffmpeg_process = subprocess.Popen(ffmpeg_cmd,
                                               stdin=subprocess.PIPE,
                                               stdout=subprocess.PIPE,
@@ -678,57 +684,6 @@ class ChimeTTSHelper:
 
         return file_path
 
-    def audio_file_already_alexa_compatible(self, hass: HomeAssistant, file_path: str) -> bool:
-        """Determine whether a given audio file is Alexa Media Player compatible.
-
-        Args:
-            hass: HomeAssistant object
-            file_path: Path to the audio file to check
-
-        Returns:
-            bool: True if file meets Alexa compatibility requirements, False otherwise
-
-        """
-        # Validate file path
-        file_path = filesystem_helper.get_local_path(hass=hass, file_path=file_path)
-        if not os.path.exists(file_path):
-            _LOGGER.debug("File not found: %s", file_path)
-            return False
-
-        try:
-            # Run ffmpeg command to get the file details with a timeout
-            result = subprocess.run(
-                ['ffmpeg', '-i', file_path],
-                capture_output=True,
-                text=True,
-                check=False,  # Don't raise on non-zero exit (ffmpeg writes to stderr normally)
-                timeout=30    # Add timeout to prevent hanging
-            )
-
-            output = result.stderr.lower()  # Case-insensitive matching
-
-            # More robust pattern matching
-            requirements = [
-                ('mp3' in output or 'mp3' in result.stdout.lower()),  # Check both stdout and stderr
-                any(rate in output for rate in ['24000 hz', '24khz', '24000hz']),
-                any(ch in output for ch in ['stereo', '2 channels', '2ch']),
-                any(rate in output for rate in ['48 kb/s', '48k', '48000']),
-                'xing' not in output  # Check for absence of Xing header
-            ]
-
-            # File failed Alexa Media Player compatibility test
-            if not all(requirements):
-                return False
-
-            return True
-
-        except subprocess.TimeoutExpired:
-            _LOGGER.error("FFmpeg process timed out analyzing %s", file_path)
-            return False
-        except Exception as e:
-            _LOGGER.error("Error analyzing file %s: %s", file_path, str(e))
-            return False
-
     def add_atempo_values_to_ffmpeg_args_string(self, tempo: float, ffmpeg_args_string: str = None):
         """Add atempo values (supporting values less than 0.5) to an FFmpeg argument string."""
         tempos = []
@@ -752,7 +707,7 @@ class ChimeTTSHelper:
 
         return ffmpeg_args_string
 
-    async def async_change_speed_of_audiosegment(self, audio_segment: AudioSegment, speed: float = 100.0, temp_folder: str = None):
+    async def async_change_speed_of_audiosegment(self, hass: HomeAssistant, audio_segment: AudioSegment, speed: float = 100.0, temp_folder: str = None):
         """Change the playback speed of an audio segment."""
         if not audio_segment or speed == 100 or speed < 1 or speed > 500:
             if not audio_segment:
@@ -768,11 +723,12 @@ class ChimeTTSHelper:
         ffmpeg_args_string = self.add_atempo_values_to_ffmpeg_args_string(tempo)
 
         return await self.async_ffmpeg_convert_from_audio_segment(
+            hass=hass,
             audio_segment=audio_segment,
             ffmpeg_args=ffmpeg_args_string,
             folder=temp_folder)
 
-    async def async_change_pitch_of_audiosegment(self, audio_segment: AudioSegment, pitch: int = 0, temp_folder: str = None):
+    async def async_change_pitch_of_audiosegment(self, hass: HomeAssistant, audio_segment: AudioSegment, pitch: int = 0, temp_folder: str = None):
         """Change the pitch of an audio segment."""
         if not audio_segment:
             _LOGGER.warning("Cannot change TTS audio pitch. No audio available")
@@ -793,6 +749,7 @@ class ChimeTTSHelper:
         ffmpeg_args_string = f"-af asetrate={frame_rate}*{pitch_shift}"
         ffmpeg_args_string = self.add_atempo_values_to_ffmpeg_args_string(tempo_adjustment, ffmpeg_args_string)
         return await self.async_ffmpeg_convert_from_audio_segment(
+            hass=hass,
             audio_segment=audio_segment,
             ffmpeg_args=ffmpeg_args_string,
             folder=temp_folder)

@@ -3,6 +3,7 @@
 import logging
 import tempfile
 import os
+import subprocess
 import hashlib
 import shutil
 from io import BytesIO
@@ -329,6 +330,58 @@ class FilesystemHelper:
             .replace(instance_url + "//", instance_url + "/")
         )
 
+
+    def is_audio_alexa_compatible(self, hass: HomeAssistant, file_path: str) -> bool:
+        """Determine whether a given audio file is Alexa Media Player compatible.
+
+        Args:
+            hass: HomeAssistant object
+            file_path: Path to the audio file to check
+
+        Returns:
+            bool: True if file meets Alexa compatibility requirements, False otherwise
+
+        """
+        # Validate file path
+        file_path = self.get_local_path(hass=hass, file_path=file_path)
+        if not os.path.exists(file_path):
+            _LOGGER.debug("File not found: %s", file_path)
+            return False
+
+        try:
+            # Run ffmpeg command to get the file details with a timeout
+            result = subprocess.run(
+                ['ffmpeg', '-i', file_path],
+                capture_output=True,
+                text=True,
+                check=False,  # Don't raise on non-zero exit (ffmpeg writes to stderr normally)
+                timeout=30    # Add timeout to prevent hanging
+            )
+
+            output = result.stderr.lower()  # Case-insensitive matching
+
+            # More robust pattern matching
+            requirements = [
+                ('mp3' in output or 'mp3' in result.stdout.lower()),  # Check both stdout and stderr
+                any(rate in output for rate in ['24000 hz', '24khz', '24000hz']),
+                any(ch in output for ch in ['stereo', '2 channels', '2ch']),
+                any(rate in output for rate in ['48 kb/s', '48k', '48000']),
+                'xing' not in output  # Check for absence of Xing header
+            ]
+
+            # File failed Alexa Media Player compatibility test
+            if not all(requirements):
+                return False
+
+            return True
+
+        except subprocess.TimeoutExpired:
+            _LOGGER.error("FFmpeg process timed out analyzing %s", file_path)
+            return False
+        except Exception as e:
+            _LOGGER.error("Error analyzing file %s: %s", file_path, str(e))
+            return False
+
     def delete_file(self, hass: HomeAssistant, file_path) -> None:
         """Delete local / public-facing file in filesystem."""
         if file_path is None:
@@ -357,13 +410,21 @@ class FilesystemHelper:
     def get_local_path(self, hass: HomeAssistant, file_path: str = ""):
         """Convert external URL to local public path."""
         file_path = f"{file_path}"
-        instance_url = hass.config.external_url
+        if file_path.startswith("/config"):
+            return file_path
+
+        instance_url = f"{hass.config.external_url}"
         if instance_url is None:
-            instance_url = str(get_url(hass))
+            instance_url = f"{str(get_url(hass))}"
         if instance_url.endswith("/"):
             instance_url = instance_url[:-1]
         public_dir = hass.config.path('www')
-        return file_path.replace(instance_url, public_dir).replace('/www/local/', '/www/')
+
+        local_file_path = file_path.replace(instance_url, public_dir).replace('/www/local/', '/www/')
+        if local_file_path != file_path:
+            _LOGGER.debug("Local file path for external URL is '%s'", local_file_path)
+
+        return local_file_path
 
     def get_hash_for_string(self, string):
         """Generate a has for a given string."""
