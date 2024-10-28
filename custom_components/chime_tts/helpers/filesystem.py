@@ -3,12 +3,13 @@
 import logging
 import tempfile
 import os
-import subprocess
 import hashlib
 import shutil
 from io import BytesIO
 import re
 import asyncio
+from asyncio import create_subprocess_exec
+from asyncio.subprocess import PIPE
 from concurrent.futures import ThreadPoolExecutor
 from pydub import AudioSegment
 import requests
@@ -342,45 +343,83 @@ class FilesystemHelper:
             bool: True if file meets Alexa compatibility requirements, False otherwise
 
         """
-        # Validate file path
-        file_path = self.get_local_path(hass=hass, file_path=file_path)
-        if not os.path.exists(file_path):
-            _LOGGER.debug("File not found: %s", file_path)
-            return False
-
         try:
-            # Run ffmpeg command to get the file details with a timeout
-            result = subprocess.run(
-                ['ffmpeg', '-i', file_path],
-                capture_output=True,
-                text=True,
-                check=False,  # Don't raise on non-zero exit (ffmpeg writes to stderr normally)
-                timeout=30    # Add timeout to prevent hanging
-            )
-
-            output = result.stderr.lower()  # Case-insensitive matching
-
-            # More robust pattern matching
-            requirements = [
-                ('mp3' in output or 'mp3' in result.stdout.lower()),  # Check both stdout and stderr
-                any(rate in output for rate in ['24000 hz', '24khz', '24000hz']),
-                any(ch in output for ch in ['stereo', '2 channels', '2ch']),
-                any(rate in output for rate in ['48 kb/s', '48k', '48000']),
-                'xing' not in output  # Check for absence of Xing header
-            ]
-
-            # File failed Alexa Media Player compatibility test
-            if not all(requirements):
+            # Validate file path
+            file_path = self.get_local_path(hass=hass, file_path=file_path)
+            if not os.path.exists(file_path):
+                _LOGGER.debug("File not found: %s", file_path)
                 return False
 
-            return True
+            try:
+                # Create and run async subprocess
+                process = await create_subprocess_exec(
+                    'ffmpeg', '-i', file_path,
+                    stdout=PIPE,
+                    stderr=PIPE
+                )
 
-        except subprocess.TimeoutExpired:
-            _LOGGER.error("FFmpeg process timed out analyzing %s", file_path)
+                try:
+                    # Wait for the process to complete with timeout
+                    stdout, stderr = await asyncio.wait_for(
+                        process.communicate(),
+                        timeout=30.0  # 30 second timeout
+                    )
+
+                    # Convert bytes to string and combine outputs for checking
+                    try:
+                        output = (stderr.decode('utf-8', errors='replace').lower() if stderr else '') + \
+                                (stdout.decode('utf-8', errors='replace').lower() if stdout else '')
+
+                        # More robust pattern matching
+                        requirements = [
+                            'mp3' in output,
+                            any(rate in output for rate in ['24000 hz', '24khz', '24000hz']),
+                            any(ch in output for ch in ['stereo', '2 channels', '2ch']),
+                            any(rate in output for rate in ['48 kb/s', '48k', '48000']),
+                            'xing' not in output  # Check for absence of Xing header
+                        ]
+
+                        # File failed Alexa Media Player compatibility test
+                        if not all(requirements):
+                            _LOGGER.debug("File failed compatibility requirements: %s", file_path)
+                            return False
+
+                        return True
+
+                    except UnicodeDecodeError as decode_error:
+                        _LOGGER.error("Failed to decode FFmpeg output: %s", decode_error)
+                        return False
+
+                except asyncio.TimeoutError:
+                    _LOGGER.error("FFmpeg process timed out while analyzing: %s", file_path)
+                    # Ensure we clean up the process
+                    try:
+                        process.kill()
+                        await process.wait()
+                    except ProcessLookupError:
+                        pass
+                    return False
+
+            except FileNotFoundError:
+                _LOGGER.error("FFmpeg executable not found. Please ensure FFmpeg is installed")
+                return False
+            except PermissionError:
+                _LOGGER.error("Permission denied when trying to execute FFmpeg")
+                return False
+            except asyncio.CancelledError:
+                _LOGGER.debug("Audio analysis cancelled for: %s", file_path)
+                raise  # Re-raise CancelledError to properly handle task cancellation
+            except Exception as subprocess_error:
+                _LOGGER.error("Subprocess error during FFmpeg execution: %s", subprocess_error)
+                return False
+
+        except OSError as os_error:
+            _LOGGER.error("OS error while processing file %s: %s", file_path, os_error)
             return False
-        except Exception as e:
-            _LOGGER.error("Error analyzing file %s: %s", file_path, str(e))
+        except Exception as general_error:
+            _LOGGER.error("Unexpected error while checking audio compatibility: %s", general_error)
             return False
+
 
     def delete_file(self, hass: HomeAssistant, file_path) -> None:
         """Delete local / public-facing file in filesystem."""
