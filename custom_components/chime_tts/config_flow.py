@@ -192,6 +192,19 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             _errors[TEMP_PATH_KEY] = TEMP_PATH_KEY
         ###
 
+        # chime_tts.say_url path must be a subfolder of an external directory
+        external_folder_in_external_dirs = False
+        # Get absolute paths of both directories
+        sub_dir = os.path.abspath(self.data[WWW_PATH_KEY])
+        # Verify the subdirectory starts with the parent directory path
+        external_dirs_dict = self.hass.config.allowlist_external_dirs or {}
+        for value in external_dirs_dict:
+            parent_dir = os.path.abspath(value)
+            if os.path.commonpath([parent_dir]) == os.path.commonpath([parent_dir, sub_dir]):
+                external_folder_in_external_dirs = True
+        if not external_folder_in_external_dirs:
+            _errors[WWW_PATH_KEY] = WWW_PATH_KEY
+
         if _errors:
             return self.async_show_form(
                 step_id="init", data_schema=options_schema, errors=_errors
