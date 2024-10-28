@@ -774,7 +774,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 cover_art_filepath = f"{filesystem_helper.path_to_parent_folder('custom_components')}/chime_tts/cover_art.jpg"
                 if os.path.exists(cover_art_filepath):
                     _LOGGER.debug("Adding cover art to %s", new_audio_file)
-                    new_audio_file = helpers.ffmpeg_convert_from_file(
+                    new_audio_file = await helpers.async_ffmpeg_convert_from_file(
                         hass,
                         new_audio_file,
                         f"-i {cover_art_filepath} -c copy -map 0 -map 1")
@@ -782,7 +782,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         # Perform FFmpeg conversion
         if ffmpeg_args:
             _LOGGER.debug("  - Performing FFmpeg audio conversion...")
-            converted_audio_file = helpers.ffmpeg_convert_from_file(hass, new_audio_file, ffmpeg_args)
+            converted_audio_file = await helpers.async_ffmpeg_convert_from_file(hass, new_audio_file, ffmpeg_args)
             if converted_audio_file is not False:
                 _LOGGER.debug("    ...FFmpeg audio conversion completed.")
                 new_audio_file = converted_audio_file
@@ -867,7 +867,7 @@ def validate_audio_dict(hass: HomeAssistant, is_local: bool, is_public: bool, au
             is_valid = False
         else:
             external_local_path: str = filesystem_helper.get_local_path(hass, audio_dict.get(PUBLIC_PATH_KEY, ""))
-            if not (external_local_path.startswith("http") or os.path.exists(external_local_path)):
+            if not (external_local_path.startswith("http://localhost") or os.path.exists(external_local_path)):
                 _LOGGER.error("async_get_playback_audio_path --> Public audio file not found on filesystem: %s", external_local_path)
                 is_valid = False
     return is_valid
@@ -888,7 +888,7 @@ async def async_verify_cached_audio(hass: HomeAssistant,
         # Test if cached audio file exists on the filesystem
         local_exists = os.path.exists(f"{audio_dict.get(LOCAL_PATH_KEY, "")}")
         local_external_filepath = f"{filesystem_helper.get_local_path(hass=hass, file_path=audio_dict.get(PUBLIC_PATH_KEY, ""))}"
-        public_exists = os.path.exists(local_external_filepath) or f"{audio_dict.get(PUBLIC_PATH_KEY, "")}".startswith("http")
+        public_exists = os.path.exists(local_external_filepath) or f"{audio_dict.get(PUBLIC_PATH_KEY, "")}".startswith("http://localhost")
         if not (public_exists or local_exists):
             _LOGGER.debug("   No cached audio found on filesystem")
             await async_delete_data(hass=hass, key=filepath_hash)
@@ -896,7 +896,7 @@ async def async_verify_cached_audio(hass: HomeAssistant,
         # No local file exists
         if is_local and not local_exists:
             # Make a local copy of the public file
-            if public_exists and not local_external_filepath.startswith("http"):
+            if public_exists and not local_external_filepath.startswith("http://localhost"):
                 _LOGGER.debug("   - Copying cached public file %s to local path %s", local_external_filepath, _data[TEMP_PATH_KEY])
                 audio_dict[LOCAL_PATH_KEY] = await hass.async_add_executor_job(filesystem_helper.copy_file,
                                                                             local_external_filepath,
@@ -916,7 +916,7 @@ async def async_verify_cached_audio(hass: HomeAssistant,
                 audio_dict[PUBLIC_PATH_KEY] = await hass.async_add_executor_job(filesystem_helper.copy_file,
                                                                                 audio_dict.get(LOCAL_PATH_KEY, ""),
                                                                                 _data[WWW_PATH_KEY])
-                if os.path.exists(audio_dict.get(PUBLIC_PATH_KEY, "")) or audio_dict.get(PUBLIC_PATH_KEY, "").startswith("http"):
+                if os.path.exists(audio_dict.get(PUBLIC_PATH_KEY, "")) or audio_dict.get(PUBLIC_PATH_KEY, "").startswith("http://localhost"):
                     await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, None), duration, params, options)
                     public_exists = True
                 else:
@@ -935,9 +935,9 @@ async def async_verify_cached_audio(hass: HomeAssistant,
         if (local_exists or public_exists) and ffmpeg_args is not None and len(ffmpeg_args) > 0:
             for local_path in [audio_dict.get(LOCAL_PATH_KEY, None), local_external_filepath]:
                 if local_path and os.path.exists(local_path):
-                    if not (ffmpeg_args == FFMPEG_ARGS_ALEXA and filesystem_helper.is_audio_alexa_compatible(hass, local_path)):
+                    if not (ffmpeg_args == FFMPEG_ARGS_ALEXA and await filesystem_helper.async_is_audio_alexa_compatible(hass, local_path)):
                         _LOGGER.debug("   Apply audio conversion")
-                        helpers.ffmpeg_convert_from_file(hass, local_path, ffmpeg_args)
+                        await helpers.async_ffmpeg_convert_from_file(hass, local_path, ffmpeg_args)
                     elif local_path == local_external_filepath:
                         _LOGGER.debug("Cached file already Alexa Media Player compatible: '%s'", local_path)
 
@@ -1228,14 +1228,14 @@ async def async_play_media(
     service_data[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(file_path)
 
     # Play Chime TTS notification
-    media_service_calls = prepare_media_service_calls(hass, entity_ids, service_data, audio_dict)
+    media_service_calls = await  async_prepare_media_service_calls(hass, entity_ids, service_data, audio_dict)
     play_result = await async_fire_media_service_calls(hass, media_service_calls)
     if play_result is False:
         _LOGGER.error("Playback failed")
 
     return play_result
 
-def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
+async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
     """Prepare the media_player service calls for audio playback."""
     helpers.debug_subtitle("Chime TTS playback")
     service_calls = []
@@ -1336,10 +1336,10 @@ def prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, a
             _LOGGER.debug("     - %s", entity_id)
 
         # Ensure audio file is Alexa Media Player compatible
-        if not filesystem_helper.is_audio_alexa_compatible(hass=hass, file_path=public_file):
+        if not await filesystem_helper.async_is_audio_alexa_compatible(hass=hass, file_path=public_file):
             local_public_file = filesystem_helper.get_local_path(hass=hass, file_path=public_file)
             _LOGGER.debug("Applying Alexa Media Player audio conversion for file: %s", local_public_file)
-            public_file = helpers.ffmpeg_convert_from_file(hass, local_public_file, FFMPEG_ARGS_ALEXA)
+            public_file = await helpers.async_ffmpeg_convert_from_file(hass, local_public_file, FFMPEG_ARGS_ALEXA)
 
         # Add service call
         if len(public_file) > 0:

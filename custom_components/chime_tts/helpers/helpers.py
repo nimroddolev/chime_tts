@@ -578,7 +578,7 @@ class ChimeTTSHelper:
             return ret_val
 
         # Convert with FFmpeg
-        converted_audio_file = self.ffmpeg_convert_from_file(hass, temp_audio_file, ffmpeg_args)
+        converted_audio_file = await self.async_ffmpeg_convert_from_file(hass, temp_audio_file, ffmpeg_args)
         if converted_audio_file is None or converted_audio_file is False or len(converted_audio_file) < 5:
             _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to convert audio segment from file %s", temp_audio_file)
 
@@ -603,14 +603,14 @@ class ChimeTTSHelper:
 
         return ret_val
 
-    def ffmpeg_convert_from_file(self, hass: HomeAssistant, file_path: str, ffmpeg_args: str):
+    async def async_ffmpeg_convert_from_file(self, hass: HomeAssistant, file_path: str, ffmpeg_args: str):
         """Convert audio file with FFmpeg and provided arguments."""
         if not os.path.exists(file_path):
             _LOGGER.warning("Unable to perform FFmpeg conversion: source file not found on file system: %s", file_path)
             return False
 
         # Prevent Alexa FFmpeg comversion if file is aleady comaptible
-        if ffmpeg_args == FFMPEG_ARGS_ALEXA and filesystem_helper.is_audio_alexa_compatible(hass, file_path):
+        if ffmpeg_args == FFMPEG_ARGS_ALEXA and await filesystem_helper.async_is_audio_alexa_compatible(hass, file_path):
             _LOGGER.debug("Audio is already Alexa Media Player compatible")
             return file_path
 

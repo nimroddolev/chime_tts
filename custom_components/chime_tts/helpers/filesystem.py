@@ -331,7 +331,7 @@ class FilesystemHelper:
         )
 
 
-    def is_audio_alexa_compatible(self, hass: HomeAssistant, file_path: str) -> bool:
+    async def async_is_audio_alexa_compatible(self, hass: HomeAssistant, file_path: str) -> bool:
         """Determine whether a given audio file is Alexa Media Player compatible.
 
         Args:
