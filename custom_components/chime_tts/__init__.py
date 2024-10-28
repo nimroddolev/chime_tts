@@ -1343,7 +1343,7 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
 
         # Add service call
         if len(public_file) > 0:
-            message_string = f"<audio src=\"{public_file}\"/>"
+            message_string = f"<audio src='{public_file}'/>"
             service_calls.append({
                 "domain": "notify",
                 "service": "alexa_media",
