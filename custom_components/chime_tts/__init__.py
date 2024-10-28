@@ -800,7 +800,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         audio_dict[AUDIO_DURATION_KEY] = duration
         audio_dict[LOCAL_PATH_KEY if is_local else PUBLIC_PATH_KEY] = new_audio_file
         file_path: str = audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None)
-        audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(file_path)
+        audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(hass, file_path)
 
         # Copy generated audio to local/public folder/s
         audio_dict = await async_save_audio_to_folder(is_local, is_public, audio_dict, output_audio)
@@ -811,7 +811,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
         # Fetch Media Content ID
         if is_local:
-            audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, ''))
+            audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(hass, audio_dict.get(LOCAL_PATH_KEY, ''))
 
     # Valdiation
     if not validate_audio_dict(hass, is_local, is_public, audio_dict):
@@ -886,9 +886,9 @@ async def async_verify_cached_audio(hass: HomeAssistant,
         duration = audio_dict.get(AUDIO_DURATION_KEY, None)
 
         # Test if cached audio file exists on the filesystem
-        local_exists = await hass.async_add_executor_job(os.path.exists, audio_dict.get(LOCAL_PATH_KEY, ""))
-        local_external_filepath = filesystem_helper.get_local_path(hass=hass, file_path=audio_dict.get(PUBLIC_PATH_KEY, ""))
-        public_exists = await hass.async_add_executor_job(os.path.exists, local_external_filepath) or audio_dict.get(PUBLIC_PATH_KEY, "").startswith("http://localhost")
+        local_exists = await hass.async_add_executor_job(os.path.exists, f"{audio_dict.get(LOCAL_PATH_KEY, '')}")
+        local_external_filepath = filesystem_helper.get_local_path(hass=hass, file_path=f"{audio_dict.get(PUBLIC_PATH_KEY, '')}")
+        public_exists = await hass.async_add_executor_job(os.path.exists, local_external_filepath) or f"{audio_dict.get(PUBLIC_PATH_KEY, '')}".startswith("http://localhost")
         
         if not (public_exists or local_exists):
             _LOGGER.debug("   No cached audio found on filesystem")
@@ -903,7 +903,7 @@ async def async_verify_cached_audio(hass: HomeAssistant,
                 audio_dict[LOCAL_PATH_KEY] = await hass.async_add_executor_job(filesystem_helper.copy_file,
                                                                                local_external_filepath,
                                                                                _data[TEMP_PATH_KEY])
-                if await hass.async_add_executor_job(os.path.exists, audio_dict.get(LOCAL_PATH_KEY, "")):
+                if await hass.async_add_executor_job(os.path.exists, f"{audio_dict.get(LOCAL_PATH_KEY, '')}"):
                     await async_add_audio_file_to_cache(hass, audio_dict.get(LOCAL_PATH_KEY, ""), duration, params, options)
                     local_exists = True
                 else:
@@ -923,13 +923,14 @@ async def async_verify_cached_audio(hass: HomeAssistant,
                 _LOGGER.warning("Unable to copy cached local file %s to public path: '%s'", audio_dict.get(LOCAL_PATH_KEY, ""), audio_dict.get(PUBLIC_PATH_KEY, ""))
                 return None
 
-            # Convert local file path to public file to external address
-            if audio_dict.get(PUBLIC_PATH_KEY, None):
-                audio_dict[PUBLIC_PATH_KEY] = await filesystem_helper.async_get_external_url(hass=hass, file_path=audio_dict.get(PUBLIC_PATH_KEY, ""))
+        # Convert local file path to public file to external address
+        if audio_dict.get(PUBLIC_PATH_KEY, None):
+            audio_dict[PUBLIC_PATH_KEY] = await filesystem_helper.async_get_external_url(hass=hass, file_path=audio_dict.get(PUBLIC_PATH_KEY, ""))
 
         # Get media content ID
-        audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(audio_dict.get(LOCAL_PATH_KEY, "") or
-                                                                                     audio_dict.get(PUBLIC_PATH_KEY, ""))
+        audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(hass,
+                                                                                     f"{audio_dict.get(LOCAL_PATH_KEY, '')}" or
+                                                                                     f"{audio_dict.get(PUBLIC_PATH_KEY, '')}")
 
         # Apply audio conversion
         if (local_exists or public_exists) and ffmpeg_args:
@@ -1224,7 +1225,7 @@ async def async_play_media(
     service_data[ATTR_MEDIA_ANNOUNCE] = announce
     service_data[ATTR_MEDIA_CONTENT_TYPE] = MEDIA_TYPE.MUSIC
     file_path = audio_dict.get(LOCAL_PATH_KEY, None) or audio_dict.get(PUBLIC_PATH_KEY, None)
-    service_data[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(file_path)
+    service_data[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(hass, file_path)
 
     # Play Chime TTS notification
     media_service_calls = await  async_prepare_media_service_calls(hass, entity_ids, service_data, audio_dict)

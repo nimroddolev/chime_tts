@@ -227,16 +227,16 @@ class MediaPlayerHelper:
 
         return False
 
-    def get_media_content_id(self, file_path: str):
+    def get_media_content_id(self, hass: HomeAssistant, file_path: str):
         """Create the media content id for a local media directory file."""
-        if file_path is None:
+        if not file_path:
             _LOGGER.error("Audio file path missing in call to get_media_content_id")
             return None
 
         media_source_path = file_path
 
         media_dir_key = ""
-        for name_i, path_i in self.media_dirs_dict.items():
+        for name_i, path_i in hass.config.media_dirs.items():
             if file_path.startswith(path_i) and len(media_dir_key) < len(path_i):
                 media_dir_key = name_i
         if self.media_dirs_dict.get(media_dir_key, None):
@@ -244,6 +244,7 @@ class MediaPlayerHelper:
             media_source_path = media_source_path[len(f"/{path}") :]
             media_source_path = f"media-source://media_source/{media_dir_key}/{media_source_path}"
             return media_source_path
+
         # Media file exists outside of a media folder
         return None
 
