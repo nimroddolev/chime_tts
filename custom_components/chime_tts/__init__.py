@@ -886,42 +886,42 @@ async def async_verify_cached_audio(hass: HomeAssistant,
         duration = audio_dict.get(AUDIO_DURATION_KEY, None)
 
         # Test if cached audio file exists on the filesystem
-        local_exists = os.path.exists(f"{audio_dict.get(LOCAL_PATH_KEY, "")}")
-        local_external_filepath = f"{filesystem_helper.get_local_path(hass=hass, file_path=audio_dict.get(PUBLIC_PATH_KEY, ""))}"
-        public_exists = os.path.exists(local_external_filepath) or f"{audio_dict.get(PUBLIC_PATH_KEY, "")}".startswith("http://localhost")
+        local_exists = await hass.async_add_executor_job(os.path.exists, audio_dict.get(LOCAL_PATH_KEY, ""))
+        local_external_filepath = filesystem_helper.get_local_path(hass=hass, file_path=audio_dict.get(PUBLIC_PATH_KEY, ""))
+        public_exists = await hass.async_add_executor_job(os.path.exists, local_external_filepath) or audio_dict.get(PUBLIC_PATH_KEY, "").startswith("http://localhost")
+        
         if not (public_exists or local_exists):
             _LOGGER.debug("   No cached audio found on filesystem")
             await async_delete_data(hass=hass, key=filepath_hash)
             return None
+
         # No local file exists
         if is_local and not local_exists:
             # Make a local copy of the public file
-            if public_exists and not local_external_filepath.startswith("http://localhost"):
+            if public_exists and await hass.async_add_executor_job(os.path.exists, local_external_filepath):
                 _LOGGER.debug("   - Copying cached public file %s to local path %s", local_external_filepath, _data[TEMP_PATH_KEY])
                 audio_dict[LOCAL_PATH_KEY] = await hass.async_add_executor_job(filesystem_helper.copy_file,
-                                                                            local_external_filepath,
-                                                                            _data[TEMP_PATH_KEY])
-                if os.path.exists(f"{audio_dict.get(LOCAL_PATH_KEY, "")}"):
-                    await async_add_audio_file_to_cache(hass, audio_dict.get(LOCAL_PATH_KEY, None), duration, params, options)
+                                                                               local_external_filepath,
+                                                                               _data[TEMP_PATH_KEY])
+                if await hass.async_add_executor_job(os.path.exists, audio_dict.get(LOCAL_PATH_KEY, "")):
+                    await async_add_audio_file_to_cache(hass, audio_dict.get(LOCAL_PATH_KEY, ""), duration, params, options)
                     local_exists = True
                 else:
-                    _LOGGER.warning("Unable to copy public file %s to path: '%s'", local_external_filepath, audio_dict.get(LOCAL_PATH_KEY), "")
+                    _LOGGER.warning("Unable to copy public file %s to path: '%s'", local_external_filepath, audio_dict.get(LOCAL_PATH_KEY, ""))
                     return None
 
         # No public file exists
-        if is_public:
-            # Copy from local
-            if not public_exists and local_exists:
-                _LOGGER.debug("    - Copying cached local file %s to public path %s", audio_dict.get(LOCAL_PATH_KEY, ""), _data[WWW_PATH_KEY])
-                audio_dict[PUBLIC_PATH_KEY] = await hass.async_add_executor_job(filesystem_helper.copy_file,
-                                                                                audio_dict.get(LOCAL_PATH_KEY, ""),
-                                                                                _data[WWW_PATH_KEY])
-                if os.path.exists(audio_dict.get(PUBLIC_PATH_KEY, "")) or audio_dict.get(PUBLIC_PATH_KEY, "").startswith("http://localhost"):
-                    await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, None), duration, params, options)
-                    public_exists = True
-                else:
-                    _LOGGER.warning("Unable to copy cached local file %s to public path: '%s'",  audio_dict.get(LOCAL_PATH_KEY, ""), audio_dict.get(PUBLIC_PATH_KEY), "")
-                    return None
+        if is_public and not public_exists and local_exists:
+            _LOGGER.debug("    - Copying cached local file %s to public path %s", audio_dict.get(LOCAL_PATH_KEY, ""), _data[WWW_PATH_KEY])
+            audio_dict[PUBLIC_PATH_KEY] = await hass.async_add_executor_job(filesystem_helper.copy_file,
+                                                                            audio_dict.get(LOCAL_PATH_KEY, ""),
+                                                                            _data[WWW_PATH_KEY])
+            if await hass.async_add_executor_job(os.path.exists, audio_dict.get(PUBLIC_PATH_KEY, "")) or audio_dict.get(PUBLIC_PATH_KEY, "").startswith("http://localhost"):
+                await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, ""), duration, params, options)
+                public_exists = True
+            else:
+                _LOGGER.warning("Unable to copy cached local file %s to public path: '%s'", audio_dict.get(LOCAL_PATH_KEY, ""), audio_dict.get(PUBLIC_PATH_KEY, ""))
+                return None
 
             # Convert local file path to public file to external address
             if audio_dict.get(PUBLIC_PATH_KEY, None):
@@ -932,9 +932,9 @@ async def async_verify_cached_audio(hass: HomeAssistant,
                                                                                      audio_dict.get(PUBLIC_PATH_KEY, ""))
 
         # Apply audio conversion
-        if (local_exists or public_exists) and ffmpeg_args is not None and len(ffmpeg_args) > 0:
-            for local_path in [audio_dict.get(LOCAL_PATH_KEY, None), local_external_filepath]:
-                if local_path and os.path.exists(local_path):
+        if (local_exists or public_exists) and ffmpeg_args:
+            for local_path in [audio_dict.get(LOCAL_PATH_KEY), local_external_filepath]:
+                if local_path and await hass.async_add_executor_job(os.path.exists, local_path):
                     if not (ffmpeg_args == FFMPEG_ARGS_ALEXA and await filesystem_helper.async_is_audio_alexa_compatible(hass, local_path)):
                         _LOGGER.debug("   Apply audio conversion")
                         await helpers.async_ffmpeg_convert_from_file(hass, local_path, ffmpeg_args)
@@ -945,13 +945,12 @@ async def async_verify_cached_audio(hass: HomeAssistant,
         if public_exists or local_exists:
             _LOGGER.debug("   Using cached audio:")
             for key, value in audio_dict.items():
-                quote = '"' if value and isinstance(value, str) else ''
-                value = f"{quote}{value}{quote}"
-                _LOGGER.debug("     - %s = %s", key, value)
+                _LOGGER.debug("     - %s = %s", key, f'"{value}"' if isinstance(value, str) else value)
 
             return audio_dict
 
     return None
+
 
 def get_segment_offset(output_audio, segment, params):
     """Offset value for segment."""
@@ -1326,7 +1325,7 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
                     })
 
     # Alexa media_players
-    public_file = audio_dict.get(PUBLIC_PATH_KEY, "")
+    public_file = f"{audio_dict.get(PUBLIC_PATH_KEY, '')}"
     if len(alexa_media_player_entity_ids) > 0 and public_file:
         # Debug
         _LOGGER.debug("   %s Alexa media player%s detected:",
