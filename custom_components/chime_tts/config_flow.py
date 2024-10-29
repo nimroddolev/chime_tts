@@ -172,12 +172,6 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
             user_input[TTS_PLATFORM_KEY] = default_tts_provider
 
-        # Folder path used for `chime_tts.say_url`
-        www_path: str = user_input.get(WWW_PATH_KEY, "")
-        if not (www_path.startswith(f"{root_path}/media/") != -1 or
-                www_path.startswith(f"{root_path}/config/www/") != -1):
-            _errors["www_path"] = "www_path"
-
         # Temp folder must be a subfolder of a media directory
         temp_folder_in_media_dir = False
         # Get absolute paths of both directories
@@ -192,18 +186,23 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             _errors[TEMP_PATH_KEY] = TEMP_PATH_KEY
         ###
 
-        # chime_tts.say_url path must be a subfolder of an external directory
+        # `chime_tts.say_url` folder must be subfolder of an external directory
         external_folder_in_external_dirs = False
-        # Get absolute paths of both directories
         sub_dir = os.path.abspath(self.data[WWW_PATH_KEY])
         # Verify the subdirectory starts with the parent directory path
         external_dirs_dict = self.hass.config.allowlist_external_dirs or {}
         for value in external_dirs_dict:
             parent_dir = os.path.abspath(value)
             if os.path.commonpath([parent_dir]) == os.path.commonpath([parent_dir, sub_dir]):
+                LOGGER.debug("```public folder %s is subfolder of %s", sub_dir, parent_dir)
                 external_folder_in_external_dirs = True
         if not external_folder_in_external_dirs:
-            _errors[WWW_PATH_KEY] = WWW_PATH_KEY
+            # /media or /config/www ?
+            www_path: str = user_input.get(WWW_PATH_KEY, "")
+            if not (www_path.startswith(f"{root_path}/media/") or
+                    www_path.startswith(f"{root_path}/config/www/")):
+                _errors[WWW_PATH_KEY] = WWW_PATH_KEY
+
 
         if _errors:
             return self.async_show_form(
