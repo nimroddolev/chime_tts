@@ -889,7 +889,7 @@ async def async_verify_cached_audio(hass: HomeAssistant,
         local_exists = await hass.async_add_executor_job(os.path.exists, f"{audio_dict.get(LOCAL_PATH_KEY, '')}")
         local_external_filepath = filesystem_helper.get_local_path(hass=hass, file_path=f"{audio_dict.get(PUBLIC_PATH_KEY, '')}")
         public_exists = await hass.async_add_executor_job(os.path.exists, local_external_filepath) or f"{audio_dict.get(PUBLIC_PATH_KEY, '')}".startswith("http://localhost")
-        
+
         if not (public_exists or local_exists):
             _LOGGER.debug("   No cached audio found on filesystem")
             await async_delete_data(hass=hass, key=filepath_hash)
