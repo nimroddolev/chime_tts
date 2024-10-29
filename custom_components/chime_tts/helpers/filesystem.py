@@ -381,7 +381,7 @@ class FilesystemHelper:
 
                         # File failed Alexa Media Player compatibility test
                         if not all(requirements):
-                            _LOGGER.debug("File failed compatibility requirements: %s", file_path)
+                            _LOGGER.debug("File is not Alexa Media Player compatibile: %s", file_path)
                             return False
 
                         return True

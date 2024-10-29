@@ -605,12 +605,14 @@ class ChimeTTSHelper:
 
     async def async_ffmpeg_convert_from_file(self, hass: HomeAssistant, file_path: str, ffmpeg_args: str):
         """Convert audio file with FFmpeg and provided arguments."""
-        if not os.path.exists(file_path):
-            _LOGGER.warning("Unable to perform FFmpeg conversion: source file not found on file system: %s", file_path)
+        
+        local_file_path = filesystem_helper.get_local_path(hass, file_path)
+        if not os.path.exists(local_file_path):
+            _LOGGER.warning("Unable to perform FFmpeg conversion: source file not found on file system: %s", local_file_path)
             return False
 
         # Prevent Alexa FFmpeg comversion if file is aleady comaptible
-        if ffmpeg_args == FFMPEG_ARGS_ALEXA and await filesystem_helper.async_is_audio_alexa_compatible(hass, file_path):
+        if ffmpeg_args == FFMPEG_ARGS_ALEXA and await filesystem_helper.async_is_audio_alexa_compatible(hass, local_file_path):
             _LOGGER.debug("Audio is already Alexa Media Player compatible")
             return file_path
 
@@ -619,7 +621,7 @@ class ChimeTTSHelper:
             ffmpeg_cmd = [
                 'ffmpeg',
                 '-i',
-                file_path,
+                local_file_path,
                 *ffmpeg_args.split()
             ]
 
@@ -630,13 +632,13 @@ class ChimeTTSHelper:
                 if index >= 0 and len(ffmpeg_args) >= index:
                     file_extension = ffmpeg_cmd[index+1]
                     if file_extension != "mp3":
-                        converted_file_path = file_path.replace(".mp3", f".{file_extension}")
+                        converted_file_path = local_file_path.replace(".mp3", f".{file_extension}")
             except Exception:
                 # Use mp3 as default
-                converted_file_path = file_path.replace(".mp3", "_converted.mp3")
+                converted_file_path = local_file_path.replace(".mp3", "_converted.mp3")
 
-            if converted_file_path == file_path:
-                converted_file_path = file_path.replace(".mp3", "_converted.mp3")
+            if converted_file_path == local_file_path:
+                converted_file_path = local_file_path.replace(".mp3", "_converted.mp3")
 
             # Delete converted output file if it exists
             if os.path.exists(converted_file_path):
@@ -663,16 +665,15 @@ class ChimeTTSHelper:
                 return False
 
             # Replace original with converted file
-            if converted_file_path == file_path.replace(".mp3", "_converted.mp3"):
+            if converted_file_path == local_file_path.replace(".mp3", "_converted.mp3"):
                 try:
-                    shutil.move(converted_file_path, file_path)
-                    return file_path
+                    shutil.move(converted_file_path, local_file_path)
                 except Exception as error:
                     _LOGGER.error("Error renaming file %s to %s. Error: %s. FFmpeg options: %s",
-                                   file_path, converted_file_path, error, ffmpeg_cmd_string)
+                                   local_file_path, converted_file_path, error, ffmpeg_cmd_string)
                     return False
 
-            return converted_file_path
+            return file_path
 
         except subprocess.CalledProcessError as error:
             _LOGGER.error("FFmpeg subproces error: %s FFmpeg options: %s",

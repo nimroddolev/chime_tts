@@ -1337,9 +1337,8 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
 
         # Ensure audio file is Alexa Media Player compatible
         if not await filesystem_helper.async_is_audio_alexa_compatible(hass=hass, file_path=public_file):
-            local_public_file = filesystem_helper.get_local_path(hass=hass, file_path=public_file)
-            _LOGGER.debug("Applying Alexa Media Player audio conversion for file: %s", local_public_file)
-            public_file = await helpers.async_ffmpeg_convert_from_file(hass, local_public_file, FFMPEG_ARGS_ALEXA)
+            _LOGGER.debug("Applying Alexa Media Player audio conversion for file: %s", public_file)
+            public_file = await helpers.async_ffmpeg_convert_from_file(hass, public_file, FFMPEG_ARGS_ALEXA)
 
         # Add service call
         if len(public_file) > 0:
