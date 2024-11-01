@@ -1053,7 +1053,7 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
                 if segment_cache is True:
                     _LOGGER.debug(" - Attempting to retrieve TTS audio from cache...")
                     audio_dict = await async_get_cached_audio_data(hass, segment_filepath_hash)
-                    if audio_dict is not None:
+                    if audio_dict and audio_dict.get(LOCAL_PATH_KEY, None):
                         tts_audio = await async_get_audio_from_path(hass=hass,
                                                                     filepath=audio_dict.get(LOCAL_PATH_KEY, None),
                                                                     cache=segment_cache,
