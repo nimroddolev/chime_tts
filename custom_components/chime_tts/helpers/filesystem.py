@@ -36,6 +36,30 @@ _AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.
 class FilesystemHelper:
     """Filesystem helper functions for Chime TTS."""
 
+    def path_exists(self, path):
+        """Test whether filepath/folderpath exists."""
+        parent_directory = os.path.dirname(path) or "."
+        target_name = os.path.basename(path).lower()
+
+        try:
+            dir_contents = os.listdir(parent_directory)
+        except FileNotFoundError:
+            _LOGGER.warning(f"Error: The directory '{parent_directory}' was not found.")
+            return False
+        except PermissionError:
+            _LOGGER.warning(f"Error: No permission to access '{parent_directory}'.")
+            return False
+
+        # Case-insensitive search for folder or file
+        for item in dir_contents:
+            if item.lower() == target_name:
+                full_path = os.path.join(parent_directory, item)
+                if os.path.isdir(full_path):
+                    return True
+                elif os.path.isfile(full_path):
+                    return True
+        return False
+        
     def validate_path(self, hass: HomeAssistant, p_filepath: str = ""):
         """Return a valid file path string."""
         ret_value = None
@@ -52,7 +76,7 @@ class FilesystemHelper:
 
         # Test each filepath
         for filepath in filepaths:
-            if os.path.exists(filepath) is True:
+            if self.path_exists(filepath) is True:
                 ret_value = filepath
 
         return ret_value
@@ -85,7 +109,7 @@ class FilesystemHelper:
                 if absolute_custom_comopnents_dir:
                     mp3_path = MP3_PRESET_PATH.replace("custom_components", absolute_custom_comopnents_dir)
                 final_chime_path = mp3_path + chime_path + ".mp3"
-                if os.path.exists(final_chime_path):
+                if self.path_exists(final_chime_path):
                     _LOGGER.debug("Local path to chime: %s", final_chime_path)
                     return final_chime_path
 
@@ -108,7 +132,7 @@ class FilesystemHelper:
             if chime_path == "":
                 _LOGGER.warning("MP3 file path missing for custom chime path `Custom #%s`", str(index))
                 return None
-            elif os.path.exists(chime_path):
+            elif self.path_exists(chime_path):
                 return chime_path
             else:
                 _LOGGER.debug("Custom chime not found at path: %s", chime_path)
@@ -120,7 +144,7 @@ class FilesystemHelper:
             # Use cached version?
             if cache is True:
                 local_file = self.get_downloaded_chime_path(folder=temp_chimes_path, url=chime_path)
-                if local_file is not None and os.path.exists(local_file):
+                if local_file is not None and self.path_exists(local_file):
                     _LOGGER.debug("Chime found in cache")
                     return local_file
                 _LOGGER.debug("External chime not found in cache")
@@ -171,7 +195,7 @@ class FilesystemHelper:
                 # Make file name safe
                 audio_full_path = self.get_downloaded_chime_path(url=file_name, folder=folder)
                 if audio_full_path and isinstance(audio_full_path, str):
-                    if os.path.exists(audio_full_path):
+                    if self.path_exists(audio_full_path):
                         os.remove(audio_full_path)
                     await self.async_export_audio(audio, audio_full_path)
             except Exception as error:
@@ -180,7 +204,7 @@ class FilesystemHelper:
                 )
                 return None
 
-        if os.path.exists(audio_full_path):
+        if self.path_exists(audio_full_path):
             _LOGGER.debug("File saved to path: %s", audio_full_path)
         else:
             _LOGGER.error("Saved file inaccessible, something went wrong. Path = %s", audio_full_path)
@@ -242,7 +266,7 @@ class FilesystemHelper:
 
     def create_folder(self, folder):
         """Create folder if it doesn't already exist."""
-        if os.path.exists(folder) is False:
+        if self.path_exists(folder) is False:
             _LOGGER.debug("Creating audio folder: %s", folder)
             try:
                 os.makedirs(folder)
@@ -291,7 +315,7 @@ class FilesystemHelper:
         """Determine whether a file path exists within a given directory."""
         for root, _, files in os.walk(directory):
             for filename in files:
-                if os.path.join(root, filename) == file_path:
+                if os.path.join(root, filename).lower() == file_path.lower():
                     return True
         return False
 
@@ -310,7 +334,7 @@ class FilesystemHelper:
             return None
 
         # File is already external URL
-        if file_path.startswith(self.get_external_address(hass)):
+        if file_path.lower().startswith(self.get_external_address(hass).lower()):
             return file_path
 
         # Return local path if file not in www folder
@@ -346,7 +370,7 @@ class FilesystemHelper:
         try:
             # Validate file path
             file_path = self.get_local_path(hass=hass, file_path=file_path)
-            if not os.path.exists(file_path):
+            if not self.path_exists(file_path):
                 _LOGGER.debug("File not found: %s", file_path)
                 return False
 
@@ -440,7 +464,7 @@ class FilesystemHelper:
             )
 
         # If file exists, delete it
-        if os.path.exists(file_path):
+        if self.path_exists(file_path):
             _LOGGER.debug("Deleting file %s", file_path)
             os.remove(file_path)
         else:
@@ -506,7 +530,7 @@ class FilesystemHelper:
         """Walk through a directory of chime audio files and return a formatted dictionary."""
         chime_options = []
 
-        if directory and os.path.exists(directory):
+        if directory and self.path_exists(directory):
             for dirpath, _, filenames in os.walk(directory):
                 for filename in filenames:
                     # Construct the absolute file path

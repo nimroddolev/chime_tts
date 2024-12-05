@@ -594,7 +594,7 @@ class ChimeTTSHelper:
         for file_path in [temp_audio_file, converted_audio_file]:
             if (file_path
                 and isinstance(file_path, str)
-                and os.path.exists(file_path)):
+                and filesystem_helper.path_exists(file_path)):
                 try:
                     os.remove(file_path)
                 except Exception as error:
@@ -607,7 +607,7 @@ class ChimeTTSHelper:
         """Convert audio file with FFmpeg and provided arguments."""
 
         local_file_path = filesystem_helper.get_local_path(hass, file_path)
-        if not os.path.exists(local_file_path):
+        if not filesystem_helper.path_exists(local_file_path):
             _LOGGER.warning("Unable to perform FFmpeg conversion: source file not found on file system: %s", local_file_path)
             return False
 
@@ -641,7 +641,7 @@ class ChimeTTSHelper:
                 converted_file_path = local_file_path.replace(".mp3", "_converted.mp3")
 
             # Delete converted output file if it exists
-            if os.path.exists(converted_file_path):
+            if filesystem_helper.path_exists(converted_file_path):
                 os.remove(converted_file_path)
 
             ffmpeg_cmd.append(converted_file_path)
