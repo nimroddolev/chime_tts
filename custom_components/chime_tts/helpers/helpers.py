@@ -485,7 +485,7 @@ class ChimeTTSHelper:
             tts_provider = AMAZON_POLLY
         elif stripped_tts_provider == "baidu":
             tts_provider = BAIDU
-        elif stripped_tts_provider == "elevenlabstts":
+        elif stripped_tts_provider == "elevenlabs":
             tts_provider = ELEVENLABS_TTS
         elif stripped_tts_provider == "googlecloud":
             tts_provider = GOOGLE_CLOUD
