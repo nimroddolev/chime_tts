@@ -569,6 +569,7 @@ class ChimeTTSHelper:
         # Save to temp file
         temp_filename = "temp_segment.mp3"
         temp_audio_file = await filesystem_helper.async_save_audio_to_folder(
+            hass=hass,
             audio=audio_segment,
             folder=folder,
             file_name=temp_filename)
@@ -594,7 +595,7 @@ class ChimeTTSHelper:
         for file_path in [temp_audio_file, converted_audio_file]:
             if (file_path
                 and isinstance(file_path, str)
-                and filesystem_helper.path_exists(file_path)):
+                and await hass.async_add_executor_job(filesystem_helper.path_exists, file_path)):
                 try:
                     os.remove(file_path)
                 except Exception as error:
@@ -607,7 +608,7 @@ class ChimeTTSHelper:
         """Convert audio file with FFmpeg and provided arguments."""
 
         local_file_path = filesystem_helper.get_local_path(hass, file_path)
-        if not filesystem_helper.path_exists(local_file_path):
+        if not await hass.async_add_executor_job(filesystem_helper.path_exists, local_file_path):
             _LOGGER.warning("Unable to perform FFmpeg conversion: source file not found on file system: %s", local_file_path)
             return False
 
@@ -641,7 +642,7 @@ class ChimeTTSHelper:
                 converted_file_path = local_file_path.replace(".mp3", "_converted.mp3")
 
             # Delete converted output file if it exists
-            if filesystem_helper.path_exists(converted_file_path):
+            if await hass.async_add_executor_job(filesystem_helper.path_exists, converted_file_path):
                 os.remove(converted_file_path)
 
             ffmpeg_cmd.append(converted_file_path)
