@@ -102,6 +102,7 @@ MAX_TIMEOUT = 600
 QUEUE_PROCESSOR_SLEEP_TIME = 0.2
 
 TTS_PLATFORM_KEY = "tts_platform_key"
+FALLBACK_TTS_PLATFORM_KEY = "fallback_tts_platform_key"
 DEFAULT_LANGUAGE_KEY = "default_language_key"
 DEFAULT_VOICE_KEY = "default_voice_key"
 DEFAULT_TLD_KEY = "default_tld_key"

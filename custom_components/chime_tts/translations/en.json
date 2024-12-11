@@ -230,6 +230,7 @@
                     "default_language_key": "Default language (when using default TTS platform)",
                     "default_voice_key": "Default voice (when using default TTS platform)",
                     "default_tld_key": "Default dialect (when using the Google Translate TTS platform)",
+                    "fallback_tts_platform_key": "Fallback TTS platform",
                     "offset": "Default offset value (in milliseconds) between chimes & TTS audio",
                     "fade_transition_key": "Fade transition (in milliseconds) when fading currently playing audio for `announce` and `fade_audio`",
                     "custom_chimes_path": "Folder path for custom chime audio files",
@@ -247,8 +248,8 @@
         "error": {
             "timeout": "The timeout value is invalid",
             "timeout_sub": "Enter a valid timeout duration",
-            "default_tts_platform_none": "No TTS platforms were detected. Please add at least 1 TTS integration.",
-            "default_tts_platform_select": "The TTS platform was not found. Please make sure it has been installed before setting it as the default.",
+            "tts_platform_none": "No TTS platforms were detected. Please add at least 1 TTS integration.",
+            "tts_platform_select": "The TTS platform was not found. Please make sure it has been installed before selecting it.",
             "multiple": "Multiple issues detected",
             "invalid_chime_paths": "Invalid custom chime path detected",
             "temp_path": "The temp folder must be a subfolder of a media directory",

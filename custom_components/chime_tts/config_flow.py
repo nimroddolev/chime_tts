@@ -16,6 +16,7 @@ from .const import (
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
     DEFAULT_TLD_KEY,
+    FALLBACK_TTS_PLATFORM_KEY,
     OFFSET_KEY,
     DEFAULT_OFFSET_MS,
     FADE_TRANSITION_KEY,
@@ -102,6 +103,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             DEFAULT_LANGUAGE_KEY: self.get_data_key_value(DEFAULT_LANGUAGE_KEY, user_input, ""),
             DEFAULT_VOICE_KEY: self.get_data_key_value(DEFAULT_VOICE_KEY, user_input, ""),
             DEFAULT_TLD_KEY: self.get_data_key_value(DEFAULT_TLD_KEY, user_input, ""),
+            FALLBACK_TTS_PLATFORM_KEY: self.get_data_key_value(FALLBACK_TTS_PLATFORM_KEY, user_input, ""),
             OFFSET_KEY: self.get_data_key_value(OFFSET_KEY, user_input, DEFAULT_OFFSET_MS),
             FADE_TRANSITION_KEY: self.get_data_key_value(FADE_TRANSITION_KEY, user_input, DEFAULT_FADE_TRANSITION_MS),
             CUSTOM_CHIMES_PATH_KEY: self.get_data_key_value(CUSTOM_CHIMES_PATH_KEY, user_input, ""),
@@ -126,6 +128,11 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
                         options=tld_options,
                         mode=selector.SelectSelectorMode.DROPDOWN,
                         custom_value=False)),
+                vol.Optional(FALLBACK_TTS_PLATFORM_KEY, default=self.data[FALLBACK_TTS_PLATFORM_KEY]):selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=tts_platforms,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                        custom_value=True)),
                 vol.Optional(OFFSET_KEY, description={"suggested_value": self.data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)}): int,
                 vol.Optional(FADE_TRANSITION_KEY, description={"suggested_value": self.data[FADE_TRANSITION_KEY]}): int,
                 vol.Optional(CUSTOM_CHIMES_PATH_KEY, description={"suggested_value": self.data[CUSTOM_CHIMES_PATH_KEY]}): str,
@@ -153,24 +160,43 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             _errors["base"] = "timeout"
             _errors[QUEUE_TIMEOUT_KEY] = "timeout_sub"
 
+
+        # List of TTS platforms
+        stripped_tts_platforms = [platform.lower().replace("tts", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "") for platform in helpers.get_installed_tts_platforms(self.hass)]
+
         # Default TTS Platform
-        if user_input.get(TTS_PLATFORM_KEY, None) and len(user_input[TTS_PLATFORM_KEY]) > 0:
+        if len(user_input.get(TTS_PLATFORM_KEY, "")) > 0:
 
             # Replace friendly name with entity/platform name
-            default_tts_provider = helpers.get_stripped_tts_platform(user_input[TTS_PLATFORM_KEY])
-            stripped_tts_platforms = [platform.lower().replace("tts", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "") for platform in helpers.get_installed_tts_platforms(self.hass)]
-            default_tts_provider = default_tts_provider.lower().replace("tts", "").replace(" ", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "")
+            default_tts_provider = helpers.get_stripped_tts_platform(user_input[TTS_PLATFORM_KEY]).lower().replace("tts", "").replace(" ", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "")
 
             if len(stripped_tts_platforms) == 0:
-                _errors[TTS_PLATFORM_KEY] = "default_tts_platform_none"
+                _errors[TTS_PLATFORM_KEY] = "tts_platform_none"
             elif default_tts_provider not in stripped_tts_platforms:
                 LOGGER.debug("Unable to find TTS platform %s", user_input[TTS_PLATFORM_KEY])
-                _errors[TTS_PLATFORM_KEY] = "default_tts_platform_select"
+                _errors[TTS_PLATFORM_KEY] = "tts_platform_select"
             else:
                 index = stripped_tts_platforms.index(default_tts_provider)
                 default_tts_provider = helpers.get_installed_tts_platforms(self.hass)[index]
 
             user_input[TTS_PLATFORM_KEY] = default_tts_provider
+
+        # Fallback TTS Platform
+        if len(user_input.get(FALLBACK_TTS_PLATFORM_KEY, "")) > 0:
+
+            # Replace friendly name with entity/platform name
+            fallback_tts_provider = helpers.get_stripped_tts_platform(user_input[FALLBACK_TTS_PLATFORM_KEY]).lower().replace("tts", "").replace(" ", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "")
+
+            if len(stripped_tts_platforms) == 0:
+                _errors[FALLBACK_TTS_PLATFORM_KEY] = "tts_platform_none"
+            elif fallback_tts_provider not in stripped_tts_platforms:
+                LOGGER.debug("Unable to find fallback TTS platform %s", user_input[FALLBACK_TTS_PLATFORM_KEY])
+                _errors[FALLBACK_TTS_PLATFORM_KEY] = "tts_platform_select"
+            else:
+                index = stripped_tts_platforms.index(fallback_tts_provider)
+                fallback_tts_provider = helpers.get_installed_tts_platforms(self.hass)[index]
+
+            user_input[FALLBACK_TTS_PLATFORM_KEY] = fallback_tts_provider
 
         # Temp folder must be a subfolder of a media directory
         temp_folder_in_media_dir = False
@@ -194,7 +220,6 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         for value in external_dirs_dict:
             parent_dir = os.path.abspath(value)
             if os.path.commonpath([parent_dir]) == os.path.commonpath([parent_dir, sub_dir]):
-                LOGGER.debug("```public folder %s is subfolder of %s", sub_dir, parent_dir)
                 external_folder_in_external_dirs = True
         if not external_folder_in_external_dirs:
             # /media or /config/www ?

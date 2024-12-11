@@ -77,6 +77,7 @@ from .const import (
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
     DEFAULT_TLD_KEY,
+    FALLBACK_TTS_PLATFORM_KEY,
     OFFSET_KEY,
     AMAZON_POLLY,
     BAIDU,
@@ -406,6 +407,9 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Default voice
     _data[DEFAULT_TLD_KEY] = options.get(DEFAULT_TLD_KEY, None)
 
+    # Fallback TTS Platform
+    _data[FALLBACK_TTS_PLATFORM_KEY] = options.get(FALLBACK_TTS_PLATFORM_KEY, "")
+
     # Default offset
     _data[OFFSET_KEY] = options.get(OFFSET_KEY, 0)
 
@@ -460,6 +464,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         DEFAULT_LANGUAGE_KEY,
         DEFAULT_VOICE_KEY,
         DEFAULT_TLD_KEY,
+        FALLBACK_TTS_PLATFORM_KEY,
         OFFSET_KEY,
         FADE_TRANSITION_KEY,
         ADD_COVER_ART_KEY,
@@ -604,7 +609,6 @@ async def async_request_tts_audio(
         _LOGGER.error(
             "   - Error calling tts.async_get_media_source_audio: %s", error
         )
-        return None
 
     if audio_data is not None:
         if len(audio_data) == 2:
@@ -613,10 +617,9 @@ async def async_request_tts_audio(
             if file is None:
                 _LOGGER.error("...could not convert TTS bytes to audio")
                 return None
-            audio = await filesystem_helper.async_load_audio(file)
-            if audio is not None:
-
-                # Done
+            audio: AudioSegment = await filesystem_helper.async_load_audio(file)
+            if audio is not None and len(audio) > 0:
+                # TTS generated successfully
                 end_time = datetime.now()
                 completion_time = round((end_time - start_time).total_seconds(), 2)
                 completion_time_string = (f"{completion_time}s"
@@ -629,6 +632,15 @@ async def async_request_tts_audio(
             _LOGGER.error("...audio_data did not contain audio bytes")
     else:
         _LOGGER.error("...audio_data generation failed")
+
+    if tts_platform != _data[FALLBACK_TTS_PLATFORM_KEY] and _data[FALLBACK_TTS_PLATFORM_KEY]:
+        _LOGGER.debug("Retrying TTS audio generation with fallback platform '%s'", _data[FALLBACK_TTS_PLATFORM_KEY])        
+        return await async_request_tts_audio(hass=hass,
+                                             tts_platform=_data[FALLBACK_TTS_PLATFORM_KEY],
+                                             message=message,
+                                             language=language,
+                                             cache=cache,
+                                             options=options)
     return None
 
 
