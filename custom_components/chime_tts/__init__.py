@@ -582,6 +582,7 @@ async def async_request_tts_audio(
     }.items():
         _LOGGER.debug("    * %s = %s", key, value)
 
+    audio_data = None
     media_source_id = None
     try:
         media_source_id = tts.media_source.generate_media_source_id(
@@ -592,6 +593,17 @@ async def async_request_tts_audio(
             cache=cache,
             options=tts_options,
         )
+        if media_source_id is None:
+            _LOGGER.error("Error: Unable to generate media_source_id")
+        else:
+            try:
+                audio_data = await tts.async_get_media_source_audio(
+                    hass=hass, media_source_id=media_source_id
+                )
+            except Exception as error:
+                _LOGGER.error("   - Error calling tts.async_get_media_source_audio with media_source_id = '%s': %s",
+                    str(media_source_id), str(error))
+                
     except Exception as error:
         if f"{error}" == "Invalid TTS provider selected":
             missing_tts_platform_error(tts_platform)
@@ -600,20 +612,6 @@ async def async_request_tts_audio(
                 "   - Error calling tts.media_source.generate_media_source_id: %s",
                 error,
             )
-        return None
-    if media_source_id is None:
-        _LOGGER.error("Error: Unable to generate media_source_id")
-        return None
-
-    audio_data = None
-    try:
-        audio_data = await tts.async_get_media_source_audio(
-            hass=hass, media_source_id=media_source_id
-        )
-    except Exception as error:
-        _LOGGER.error(
-            "   - Error calling tts.async_get_media_source_audio: %s", error
-        )
 
     if audio_data is not None:
         if len(audio_data) == 2:
@@ -621,18 +619,18 @@ async def async_request_tts_audio(
             file = io.BytesIO(audio_bytes)
             if file is None:
                 _LOGGER.error("...could not convert TTS bytes to audio")
-                return None
-            audio: AudioSegment = await filesystem_helper.async_load_audio(file)
-            if audio is not None and len(audio) > 0:
-                # TTS generated successfully
-                end_time = datetime.now()
-                completion_time = round((end_time - start_time).total_seconds(), 2)
-                completion_time_string = (f"{completion_time}s"
-                                          if completion_time >= 1
-                                          else f"{completion_time * 1000}ms")
-                _LOGGER.debug("   ...TTS audio generated in %s", completion_time_string)
-                return audio
-            _LOGGER.error("...could not extract TTS audio from file")
+            else:
+                audio: AudioSegment = await filesystem_helper.async_load_audio(file)
+                if audio is not None and len(audio) > 0:
+                    # TTS generated successfully
+                    end_time = datetime.now()
+                    completion_time = round((end_time - start_time).total_seconds(), 2)
+                    completion_time_string = (f"{completion_time}s"
+                                            if completion_time >= 1
+                                            else f"{completion_time * 1000}ms")
+                    _LOGGER.debug("   ...TTS audio generated in %s", completion_time_string)
+                    return audio
+                _LOGGER.error("...could not extract TTS audio from file")
         else:
             _LOGGER.error("...audio_data did not contain audio bytes")
     else:
