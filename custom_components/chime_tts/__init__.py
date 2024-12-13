@@ -82,7 +82,7 @@ from .const import (
     CROSSFADE_KEY,
     AMAZON_POLLY,
     BAIDU,
-    ELEVENLABS_TTS,
+    ELEVENLABS,
     GOOGLE_CLOUD,
     GOOGLE_TRANSLATE,
     IBM_WATSON_TTS,
@@ -657,12 +657,12 @@ def missing_tts_platform_error(tts_platform):
     if tts_platform is BAIDU:
         tts_platform_name = "Baidu"
         tts_platform_documentation = "https://www.home-assistant.io/integrations/baidu"
-    if tts_platform is ELEVENLABS_TTS:
-        tts_platform_name = "ElevenLabs TTS"
-        tts_platform_documentation = "https://github.com/carleeno/elevenlabs_tts"
+    if tts_platform is ELEVENLABS:
+        tts_platform_name = "ElevenLabsTS"
+        tts_platform_documentation = "https://github.com/carleeno/elevenlabs"
     if tts_platform is GOOGLE_CLOUD:
         tts_platform_name = "Google Cloud"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/google_cloud"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/elevenlabs"
     if tts_platform is GOOGLE_TRANSLATE:
         tts_platform_name = "Google Translate"
         tts_platform_documentation = "https://www.home-assistant.io/integrations/google_translate"

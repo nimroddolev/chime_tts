@@ -131,8 +131,8 @@ say:
             value: amazon_polly
           - label: Baidu
             value: baidu
-          - label: ElevenLabs TTS
-            value: tts.elevenlabs_tts
+          - label: ElevenLabs
+            value: tts.elevenlabs
           - label: Google Cloud
             value: google_cloud
           - label: Google Translate
@@ -391,8 +391,8 @@ say_url:
             value: amazon_polly
           - label: Baidu
             value: baidu
-          - label: ElevenLabs TTS
-            value: tts.elevenlabs_tts
+          - label: ElevenLabs
+            value: tts.elevenlabs
           - label: Google Cloud
             value: google_cloud
           - label: Google Translate

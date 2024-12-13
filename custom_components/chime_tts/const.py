@@ -115,7 +115,7 @@ FFMPEG_ARGS_VOLUME = '-filter:a volume=X'
 # TTS Platforms
 AMAZON_POLLY = "amazon_polly"
 BAIDU = "baidu"
-ELEVENLABS_TTS = "tts.elevenlabs"
+ELEVENLABS = "tts.elevenlabs"
 GOOGLE_CLOUD = "tts.google_cloud"
 GOOGLE_TRANSLATE = "google_translate"
 IBM_WATSON_TTS = "watson_tts"

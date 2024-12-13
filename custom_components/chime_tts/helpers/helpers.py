@@ -27,7 +27,7 @@ from ..const import (
     FFMPEG_ARGS_VOLUME,
     AMAZON_POLLY,
     BAIDU,
-    ELEVENLABS_TTS,
+    ELEVENLABS,
     GOOGLE_CLOUD,
     GOOGLE_TRANSLATE,
     IBM_WATSON_TTS,
@@ -489,7 +489,7 @@ class ChimeTTSHelper:
         elif stripped_tts_provider == "baidu":
             tts_provider = BAIDU
         elif stripped_tts_provider == "elevenlabs":
-            tts_provider = ELEVENLABS_TTS
+            tts_provider = ELEVENLABS
         elif stripped_tts_provider == "googlecloud":
             tts_provider = GOOGLE_CLOUD
         elif stripped_tts_provider == "googletranslate":
