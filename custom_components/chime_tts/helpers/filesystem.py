@@ -1,7 +1,7 @@
 """Filesystem helper functions for Chime TTS."""
 
 import logging
-import tempfile
+import secrets
 import os
 import hashlib
 import shutil
@@ -187,10 +187,14 @@ class FilesystemHelper:
         # Save to file
         if file_name is None:
             try:
-                with tempfile.NamedTemporaryFile(
-                    prefix=folder, suffix=".mp3"
-                ) as temp_obj:
-                    audio_full_path = temp_obj.name
+                # Generate a secure & unique file name
+                secure_name = f"{secrets.token_hex(16)}.mp3"
+                audio_full_path = os.path.join(folder, secure_name)
+
+                # Ensure the directory exists
+                os.makedirs(folder, exist_ok=True)
+
+                # Export the audio to the secure file path
                 await self.async_export_audio(audio, audio_full_path)
             except Exception as error:
                 _LOGGER.warning(
