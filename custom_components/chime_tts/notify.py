@@ -35,6 +35,7 @@ class ChimeTTSNotificationService(BaseNotificationService):
             "chime_path",
             "end_chime_path",
             "offset",
+            "crossafade",
             "final_delay",
             "tts_platform",
             "tts_speed",

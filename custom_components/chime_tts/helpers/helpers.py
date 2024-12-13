@@ -17,6 +17,7 @@ from ..const import (
     SERVICE_SAY_URL,
     DEFAULT_CHIME_OPTIONS,
     OFFSET_KEY,
+    CROSSFADE_KEY,
     TTS_PLATFORM_KEY,
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
@@ -177,6 +178,7 @@ class ChimeTTSHelper:
         chime_path =str(data.get("chime_path", ""))
         end_chime_path = str(data.get("end_chime_path", ""))
         offset = float(data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)) or 0)
+        crossfade = int(data.get(CROSSFADE_KEY, 0))
         final_delay = float(data.get("final_delay", 0) or 0)
         message = str(data.get("message", ""))
         tts_platform = str(data.get("tts_platform", ""))
@@ -207,6 +209,7 @@ class ChimeTTSHelper:
             "end_chime_path": end_chime_path,
             "cache": cache,
             "offset": offset,
+            "crossfade": crossfade,
             "final_delay": final_delay,
             "message": message,
             "language": language,
@@ -759,8 +762,9 @@ class ChimeTTSHelper:
     def combine_audio(self,
                       audio_1: AudioSegment,
                       audio_2: AudioSegment,
-                      offset: int = 0):
-        """Combine two AudioSegment object with either a delay (if >0) or overlay (if <0)."""
+                      offset: int = 0,
+                      crossfade: int = 0):
+        """Combine two AudioSegment object with a delay (if offset>0) overlay (if offset<0) or crossfade."""
         if audio_1 is None:
             return audio_2
         if audio_2 is None:
@@ -772,9 +776,14 @@ class ChimeTTSHelper:
             _LOGGER.debug("Performing overlay of %sms", str(offset))
             ret_val = self.overlay(audio_1, audio_2, offset)
         elif offset > 0:
+            _LOGGER.debug("Adding gap of %sms", str(offset))
             ret_val = audio_1 + (AudioSegment.silent(duration=offset) + audio_2)
+        elif crossfade > 0:
+            crossfade = min(len(audio_1), len(audio_2), crossfade)
+            _LOGGER.debug("Performing crossfade of %sms", str(crossfade))
+            ret_val = audio_1.append(audio_2, crossfade=crossfade)
         else:
-            _LOGGER.debug("Combining audio files with no delay or overlay")
+            _LOGGER.debug("Combining audio files with no delay, overlay or crossfade")
 
         return ret_val
 

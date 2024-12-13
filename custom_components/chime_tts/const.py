@@ -27,6 +27,7 @@ SERVICE_SAY_URL = "say_url"
 
 OFFSET_KEY = "offset"
 DEFAULT_OFFSET_MS = 450
+CROSSFADE_KEY = "crossfade"
 
 DATA_STORAGE_KEY = "chime_tts_integration_data"
 AUDIO_PATH_KEY = "audio_path" # <-- Deprecated

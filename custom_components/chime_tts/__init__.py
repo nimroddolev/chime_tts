@@ -79,6 +79,7 @@ from .const import (
     DEFAULT_TLD_KEY,
     FALLBACK_TTS_PLATFORM_KEY,
     OFFSET_KEY,
+    CROSSFADE_KEY,
     AMAZON_POLLY,
     BAIDU,
     ELEVENLABS_TTS,
@@ -413,6 +414,9 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Default offset
     _data[OFFSET_KEY] = options.get(OFFSET_KEY, 0)
 
+    # Default crossfade
+    _data[CROSSFADE_KEY] = options.get(CROSSFADE_KEY, 0)
+
     # Default audio fade transition duration
     _data[FADE_TRANSITION_KEY] = options.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)
 
@@ -466,6 +470,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         DEFAULT_TLD_KEY,
         FALLBACK_TTS_PLATFORM_KEY,
         OFFSET_KEY,
+        CROSSFADE_KEY,
         FADE_TRANSITION_KEY,
         ADD_COVER_ART_KEY,
         TEMP_CHIMES_PATH_KEY,
@@ -712,6 +717,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     chime_path = params.get("chime_path", None)
     end_chime_path = params.get("end_chime_path", None)
     offset = params.get("offset", _data[OFFSET_KEY])
+    crossfade = params.get("crossfade", _data[CROSSFADE_KEY])
     message = params.get("message", None)
     cache = params.get("cache", False)
     entity_ids = params.get("entity_ids", [])
@@ -754,6 +760,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                                                    filepath=end_chime_path,
                                                    cache=cache,
                                                    offset=offset,
+                                                   crossfade=crossfade,
                                                    audio=output_audio)
 
     # Save generated audio file
@@ -975,13 +982,13 @@ def get_segment_offset(output_audio, segment, params):
         # Get "offset" parameter
         if "offset" in segment:
             segment_offset = float(segment["offset"])
-
-        # Support deprecated "delay" parmeter
         else:
+            # Support deprecated "delay" parmeter
             if "delay" in segment:
                 segment_offset = float(segment["delay"])
             elif "delay" in params:
                 segment_offset = float(params["delay"])
+            # Fallback to "offset" in list of parameters
             elif "offset" in params:
                 segment_offset = float(params["offset"])
 
@@ -997,7 +1004,8 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
     for index, segment in enumerate(segments):
         segment_cache: bool = segment.get("cache", params.get("cache", False))
         segment_audio_conversion: str = helpers.parse_ffmpeg_args(segment.get("audio_conversion", ""))
-        segment_offset: float = get_segment_offset(output_audio, segment, params)
+        segment_offset: int = get_segment_offset(output_audio, segment, params)
+        segment_crossfade: int = segment.get("crossfade", params.get("crossfade", 0))
         segment_type =  segment.get("type", None)
         if not segment_type:
             _LOGGER.warning("Segment #%s has no type.", str(index+1))
@@ -1010,6 +1018,7 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
                                                                filepath=segment["path"],
                                                                cache=segment_cache,
                                                                offset=segment_offset,
+                                                               crossfade=segment_crossfade,
                                                                audio_conversion=segment_audio_conversion,
                                                                audio=output_audio)
             else:
@@ -1118,7 +1127,10 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
 
                 # Combine audio
                 if tts_audio is not None:
-                    output_audio = helpers.combine_audio(output_audio, tts_audio, segment_offset)
+                    output_audio = helpers.combine_audio(output_audio,
+                                                         tts_audio,
+                                                         segment_offset,
+                                                         segment_crossfade)
                 else:
                     _LOGGER.warning("Error generating TTS audio from messsage segment #%s: %s",
                                     str(index+1), str(segment))
@@ -1133,6 +1145,7 @@ async def async_get_audio_from_path(
         filepath: str,
         cache: bool = False,
         offset: float = 0,
+        crossfade: float = 0,
         audio_conversion: str = "",
         audio: AudioSegment = None
     ):
@@ -1193,7 +1206,7 @@ async def async_get_audio_from_path(
                     return audio_from_path
 
                 # Apply offset
-                return helpers.combine_audio(audio, audio_from_path, offset)
+                return helpers.combine_audio(audio, audio_from_path, offset, crossfade)
             _LOGGER.warning("Unable to find audio at filepath: %s", filepath)
         except Exception as error:
             _LOGGER.warning('Unable to extract audio from file: "%s"', error)
@@ -1636,6 +1649,7 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
         "audio_conversion",
         "end_chime_path",
         "offset",
+        "crossfade",
         "tts_playback_speed",
         "tts_speed",
         "tts_pitch"
