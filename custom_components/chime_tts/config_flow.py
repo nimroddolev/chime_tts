@@ -80,7 +80,6 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
         helpers.debug_title(f"Chime TTS Version {VERSION} Configuration")
-        self.config_entry = config_entry
 
     async def async_step_init(self, user_input):
         """Initialize the options flow."""
