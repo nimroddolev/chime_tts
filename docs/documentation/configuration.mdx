@@ -6,7 +6,7 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 
 # Configuration
 
-You can configure the following options for the [`chime_tts.say`](../documentation/actions/say-action) and [`chime_tts.say_url`](../documentation/actions/say_url-action) actions through the integration's configuration page:
+You can configure the following options for the [`chime_tts.say`]((/chime_tts/docs/documentation/actions/say-action) and [`chime_tts.say_url`]((/chime_tts/docs/documentation/actions/say_url-action) actions through the integration's configuration page:
 
 <a href="https://my.home-assistant.io/redirect/integration/?domain=chime_tts" alt="Chime TTS integration" target="_blank"><img src={useBaseUrl('/img/documentation/show_chime_tts_on_my.png')} /></a>
 
@@ -29,7 +29,7 @@ Increase the timeout duration intend to generate audio longer than 60 seconds in
 
 ### Default TTS Platform
 
-The default [`tts_platform`](../documentation/actions/say-action/parameters#tts_platform) value to use when not specified.
+The default [`tts_platform`]((/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) value to use when not specified.
 
 <table>
 <tr><td><b>Default Value:</b></td><td>None</td></tr>
@@ -40,7 +40,7 @@ The default [`tts_platform`](../documentation/actions/say-action/parameters#tts_
 
 ### Default Language
 
-The default [`language`](../documentation/actions/say-action/parameters#language) value to use if the [`tts_platform`](../documentation/actions/say-action/parameters#tts_platform) is set to the default TTS platform.
+The default [`language`]((/chime_tts/docs/documentation/actions/say-action/parameters#language) value to use if the [`tts_platform`]((/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) is set to the default TTS platform.
 
 <table>
 <tr><td><b>Default Value:</b></td><td>None</td></tr>
@@ -51,7 +51,7 @@ The default [`language`](../documentation/actions/say-action/parameters#language
 
 ### Default Voice
 
-The default [`voice`](../documentation/actions/say-action/parameters#voice) value to use if the [`tts_platform`](../documentation/actions/say-action/parameters#tts_platform) is set to the default TTS platform.
+The default [`voice`]((/chime_tts/docs/documentation/actions/say-action/parameters#voice) value to use if the [`tts_platform`]((/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) is set to the default TTS platform.
 
 <table>
 <tr><td><b>Default Value:</b></td><td>None</td></tr>
@@ -62,7 +62,7 @@ The default [`voice`](../documentation/actions/say-action/parameters#voice) valu
 
 ### Default Dialect
 
-The default dialect domain ([`tld`](../documentation/actions/say-action/parameters#tld)) value if the [`tts_platform`](../documentation/actions/say-action/parameters#tts_platform) is set to Google Translate.
+The default dialect domain ([`tld`](/chime_tts/docs/documentation/actions/say-action/parameters#tld)) value if the [`tts_platform`]((/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) is set to Google Translate.
 
 <table>
 <tr><td><b>Default Value:</b></td><td>None</td></tr>
@@ -84,7 +84,7 @@ The TTS platform to use if an error occured when using the specified or default 
 
 ### Default Offset
 
-The default [offset](../documentation/actions/say-action/parameters#offset) duration (in milliseconds) between chimes and TTS audio.<br />
+The default [offset]((/chime_tts/docs/documentation/actions/say-action/parameters#offset) duration (in milliseconds) between chimes and TTS audio.<br />
 Positive values introduce a delay, while negative values overlap the audio segments.
 
 <table>
@@ -98,7 +98,7 @@ Positive values introduce a delay, while negative values overlap the audio segme
 
 The fade out duration (in milliseconds) of the now playing audio _before_ an announcement and fading it duration of the now playing music _afterwards_.
 
-_This applies to [`chime_tts.say`](../documentation/actions/say-action) action calls when the [`announce`](../documentation/actions/say-action/parameters#announce) or [`fade_audio`](../documentation/actions/say-action/parameters#fade_audio) parameters are used._
+_This applies to [`chime_tts.say`]((/chime_tts/docs/documentation/actions/say-action) action calls when the [`announce`]((/chime_tts/docs/documentation/actions/say-action/parameters#announce) or [`fade_audio`]((/chime_tts/docs/documentation/actions/say-action/parameters#fade_audio) parameters are used._
 
 <table>
 <tr><td><b>Default Value:</b></td><td>`500`</td></tr>
@@ -109,7 +109,7 @@ _This applies to [`chime_tts.say`](../documentation/actions/say-action) action c
 
 ### Delay Before Removing Temporary Files
 
-The delay duaration after [`chime_tts.say`](../documentation/actions/say-action) playback is completed (in milliseconds), before removing the generated temporary audio file.
+The delay duaration after [`chime_tts.say`]((/chime_tts/docs/documentation/actions/say-action) playback is completed (in milliseconds), before removing the generated temporary audio file.
 
 <table>
 <tr><td><b>Default Value:</b></td><td>None</td></tr>
@@ -122,7 +122,7 @@ The delay duaration after [`chime_tts.say`](../documentation/actions/say-action)
 
 The local folder path containing custom audio files.
 
-Any changes to the folder path or its contents will require a restart to take effect. [More info](../documentation/actions/say-action/#custom-chimes-folder)
+Any changes to the folder path or its contents will require a restart to take effect. [More info]((/chime_tts/docs/documentation/actions/say-action/#custom-chimes-folder)
 
 <table>
 <tr><td><b>Default Value:</b></td><td>None</td></tr>
@@ -153,7 +153,7 @@ The local folder path where generated MP3 files will be stored.
 
 :::warning[Please Note]
 
-Make sure the temporary folder path is inside a [media folder](https://www.home-assistant.io/integrations/media_source/) of your Home Assistant, otherwise the [`chime_tts.say`](../documentation/actions/say-action) action will not be able to play the generated MP3 on your media_players.
+Make sure the temporary folder path is inside a [media folder](https://www.home-assistant.io/integrations/media_source/) of your Home Assistant, otherwise the [`chime_tts.say`]((/chime_tts/docs/documentation/actions/say-action) action will not be able to play the generated MP3 on your media_players.
 
 :::
 
@@ -161,7 +161,7 @@ Make sure the temporary folder path is inside a [media folder](https://www.home-
 
 ### `chime_tts.say_url` Folder
 
-The publicly facing folder path where MP3 files generated by the [`chime_tts.say_url`](../documentation/actions/say_url-action) action will be stored.
+The publicly facing folder path where MP3 files generated by the [`chime_tts.say_url`]((/chime_tts/docs/documentation/actions/say_url-action) action will be stored.
 
 <table>
 <tr><td><b>Default Value:</b></td><td>`{root}/config/www/chime_tts/`</td></tr>

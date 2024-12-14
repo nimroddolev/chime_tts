@@ -21,7 +21,7 @@ If additional calls are made before the current call is finished, it is added to
 ---
 
 ## Parameters
-The [parameters](./parameters) page provides explanations for each parameter supported by Chime TTS
+The [parameters]((/chime_tts/docs/documentation/actions/say-action/parameters) page provides explanations for each parameter supported by Chime TTS
 
 ---
 
@@ -44,19 +44,19 @@ Any TTS platform you wish to use _**must be configured separately.**_
 :::
 
 ### TTS Platform-Specific Options
-Each TTS platform offers its own set of options, which can also be used with Chime TTS in the `options` parameter. Several key TTS platform parameters exist as separate parameters in Chime TTS (*see* `chime_tts.say`*'s [additional parameters](./parameters#additional-parameters) documentation for more*).
+Each TTS platform offers its own set of options, which can also be used with Chime TTS in the `options` parameter. Several key TTS platform parameters exist as separate parameters in Chime TTS (*see* `chime_tts.say`*'s [additional parameters]((/chime_tts/docs/documentation/actions/say-action/parameters#additional-parameters) documentation for more*).
 
 ## Chimes
 
 Chime audio files can be incorporated into your notifications in a number of ways:
 
-- **Before** TTS audio *(using the* [`chime_path`](./parameters#chime_path) *parameter).*
-- **After** TTS audio *(using the* [`end_chime_path`](./parameters#end_chime_path) *parameter)*, and
-- **Between** TTS audio segments *(using* [`message`](./parameters#advanced-usage-segment-sequences) *segments).*
+- **Before** TTS audio *(using the* [`chime_path`]((/chime_tts/docs/documentation/actions/say-action/parameters#chime_path) *parameter).*
+- **After** TTS audio *(using the* [`end_chime_path`]((/chime_tts/docs/documentation/actions/say-action/parameters#end_chime_path) *parameter)*, and
+- **Between** TTS audio segments *(using* [`message`]((/chime_tts/docs/documentation/actions/say-action/parameters#advanced-usage-segment-sequences) *segments).*
 
 ### Selecting Chimes
 
-You can specify which chime/s to incorporate into your notifications by selecting a chime from the [drop-down lists in the user interface](#selecting-chimes-from-the-user-interface) for both the [`chime_path`](./parameters#chime_path) and [`end_chime_path`](./parameters#end_chime_path) parameters - as well as by specifying [local](#local-files) or [remote](#external-audio-file-urls) file paths to audio files.
+You can specify which chime/s to incorporate into your notifications by selecting a chime from the [drop-down lists in the user interface](#selecting-chimes-from-the-user-interface) for both the [`chime_path`]((/chime_tts/docs/documentation/actions/say-action/parameters#chime_path) and [`end_chime_path`]((/chime_tts/docs/documentation/actions/say-action/parameters#end_chime_path) parameters - as well as by specifying [local](#local-files) or [remote](#external-audio-file-urls) file paths to audio files.
 
 You can also add your own chimes from a local [Custom Chimes Folder](#custom-chimes-folder). 
 
@@ -73,7 +73,7 @@ You can find the preset chimes that ship with Chime TTS [here](https://github.co
 #### Custom Chimes Folder
 
 To add your own chimes, you can specify a local folder [in the Chime TTS configuration page](../../configuration#custom-chimes-folder), containing chime audio files.
-**After restarting Home Assistant**, the chimes will be added to the [`chime_path`](./parameters#chime_path) and [`end_chime_path`](./parameters#end_chime_path) drop down lists.
+**After restarting Home Assistant**, the chimes will be added to the [`chime_path`]((/chime_tts/docs/documentation/actions/say-action/parameters#chime_path) and [`end_chime_path`]((/chime_tts/docs/documentation/actions/say-action/parameters#end_chime_path) drop down lists.
 
 <img src={useBaseUrl('/img/say/custom_chimes_dropdown.png')} />
 
@@ -142,7 +142,7 @@ You can specify both local file paths or external URLs to your own audio files.
 
 
 * #### External audio file URLs
-  You can also specify URLs to audio files hosted online, which will be downloaded and optionally saved locally them to your [Downloaded Chimes Folder](../../configuration) when the [`cache`](../say-action/parameters#cache) property is set to `true`.
+  You can also specify URLs to audio files hosted online, which will be downloaded and optionally saved locally them to your [Downloaded Chimes Folder](../../configuration) when the [`cache`](/chime_tts/docs/documentation/actions/say-action/parameters#cache) property is set to `true`.
 
   <img src={useBaseUrl('/img/say/external_chime_path.png')} />
 
