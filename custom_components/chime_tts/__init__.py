@@ -535,7 +535,8 @@ async def async_request_tts_audio(
     # Verify TTS Platform
     tts_platform = helpers.get_tts_platform(hass=hass,
                                             tts_platform=tts_platform,
-                                            default_tts_platform=_data[TTS_PLATFORM_KEY])
+                                            default_tts_platform=_data[TTS_PLATFORM_KEY],
+                                            fallback_tts_platform=_data[FALLBACK_TTS_PLATFORM_KEY])
     if tts_platform is False:
         return None
 

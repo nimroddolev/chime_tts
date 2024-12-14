@@ -446,14 +446,15 @@ class ChimeTTSHelper:
     def get_tts_platform(self,
                          hass,
                          tts_platform: str = "",
-                         default_tts_platform: str = ""):
+                         default_tts_platform: str = "",
+                         fallback_tts_platform: str = ""):
         """TTS platform/entity_id to use for TTS audio."""
 
         installed_tts_platforms: list[str] = self.get_installed_tts_platforms(hass)
 
         # No TTS platform provided
         if not tts_platform:
-            tts_platform = default_tts_platform
+            tts_platform = default_tts_platform if default_tts_platform else fallback_tts_platform
 
         # Match for deprecated Nabu Casa platform string
         if tts_platform.lower() == NABU_CASA_CLOUD_TTS_OLD:
