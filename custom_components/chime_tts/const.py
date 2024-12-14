@@ -37,6 +37,7 @@ AUDIO_DURATION_KEY = "audio_duration"
 
 FADE_TRANSITION_KEY = "fade_transition_key"
 DEFAULT_FADE_TRANSITION_MS = 500
+REMOVE_TEMP_FILE_DELAY_KEY = "remove_temp_file_delay"
 TRANSITION_STEP_MS = 150
 ADD_COVER_ART_KEY = "add_cover_art"
 

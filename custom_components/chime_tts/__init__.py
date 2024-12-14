@@ -48,6 +48,7 @@ from .const import (
     PUBLIC_PATH_KEY,
     AUDIO_DURATION_KEY,
     FADE_TRANSITION_KEY,
+    REMOVE_TEMP_FILE_DELAY_KEY,
     DEFAULT_FADE_TRANSITION_MS,
     ADD_COVER_ART_KEY,
 
@@ -322,7 +323,12 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
 
             # Remove temporary local generated mp3
             if not bool(params.get("cache", False)):
-                _LOGGER.debug("Removing temporary file%s:", "s" if local_path and public_path else "")
+                remove_temp_file_delay_s = float(_data.get(REMOVE_TEMP_FILE_DELAY_KEY, 0) / 1000)
+                if remove_temp_file_delay_s > 0:
+                    _LOGGER.debug("Waiting %ss before removing temporary file%s:", str(remove_temp_file_delay_s), "s" if local_path and public_path else "")
+                    await hass.async_add_executor_job(time.sleep, remove_temp_file_delay_s)
+                else:
+                    _LOGGER.debug("Removing temporary file%s:", "s" if local_path and public_path else "")
                 filesystem_helper.delete_file(hass, local_path)
                 filesystem_helper.delete_file(hass, public_path)
 
@@ -420,6 +426,9 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Default audio fade transition duration
     _data[FADE_TRANSITION_KEY] = options.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)
 
+    # Delay before removing temporary file
+    _data[REMOVE_TEMP_FILE_DELAY_KEY] = options.get(REMOVE_TEMP_FILE_DELAY_KEY, 0)
+
     # Add cover art to generated MP3 files
     _data[ADD_COVER_ART_KEY] = options.get(ADD_COVER_ART_KEY, False)
 
@@ -472,6 +481,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         OFFSET_KEY,
         CROSSFADE_KEY,
         FADE_TRANSITION_KEY,
+        REMOVE_TEMP_FILE_DELAY_KEY,
         ADD_COVER_ART_KEY,
         TEMP_CHIMES_PATH_KEY,
         TEMP_PATH_KEY,
