@@ -66,7 +66,7 @@ class FilesystemHelper:
                 elif os.path.isfile(full_path):
                     return True
         return False
-        
+
     async def async_validate_path(self, hass: HomeAssistant, p_filepath: str = ""):
         """Return a valid file path string."""
         ret_value = None

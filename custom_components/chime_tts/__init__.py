@@ -1,7 +1,6 @@
 """The Chime TTS integration."""
 
 import logging
-import os
 import io
 import time
 from datetime import datetime
@@ -614,7 +613,7 @@ async def async_request_tts_audio(
             except Exception as error:
                 _LOGGER.error("   - Error calling tts.async_get_media_source_audio with media_source_id = '%s': %s",
                     str(media_source_id), str(error))
-                
+
     except Exception as error:
         if f"{error}" == "Invalid TTS provider selected":
             missing_tts_platform_error(tts_platform)
@@ -648,7 +647,7 @@ async def async_request_tts_audio(
         _LOGGER.error("...audio_data generation failed")
 
     if tts_platform != _data[FALLBACK_TTS_PLATFORM_KEY] and _data[FALLBACK_TTS_PLATFORM_KEY]:
-        _LOGGER.debug("Retrying TTS audio generation with fallback platform '%s'", _data[FALLBACK_TTS_PLATFORM_KEY])        
+        _LOGGER.debug("Retrying TTS audio generation with fallback platform '%s'", _data[FALLBACK_TTS_PLATFORM_KEY])
         return await async_request_tts_audio(hass=hass,
                                              tts_platform=_data[FALLBACK_TTS_PLATFORM_KEY],
                                              message=message,
