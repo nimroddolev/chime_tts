@@ -71,6 +71,17 @@ The default dialect domain ([`tld`](../documentation/actions/say-action/paramete
 
 ---
 
+### Fallback TTS Platform
+
+The TTS platform to use if an error occured when using the specified or default platform.
+
+<table>
+<tr><td><b>Default Value:</b></td><td>None</td></tr>
+<tr><td><b>Required:</b></td><td>No</td></tr>
+</table>
+
+---
+
 ### Default Offset
 
 The default [offset](../documentation/actions/say-action/parameters#offset) duration (in milliseconds) between chimes and TTS audio.<br />
@@ -91,6 +102,17 @@ _This applies to [`chime_tts.say`](../documentation/actions/say-action) action c
 
 <table>
 <tr><td><b>Default Value:</b></td><td>`500`</td></tr>
+<tr><td><b>Required:</b></td><td>No</td></tr>
+</table>
+
+---
+
+### Delay Before Removing Temporary Files
+
+The delay duaration after [`chime_tts.say`](../documentation/actions/say-action) playback is completed (in milliseconds), before removing the generated temporary audio file.
+
+<table>
+<tr><td><b>Default Value:</b></td><td>None</td></tr>
 <tr><td><b>Required:</b></td><td>No</td></tr>
 </table>
 
