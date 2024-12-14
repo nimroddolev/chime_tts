@@ -1,7 +1,7 @@
 """Filesystem helper functions for Chime TTS."""
 
 import logging
-import tempfile
+import secrets
 import os
 import hashlib
 import shutil
@@ -38,9 +38,16 @@ class FilesystemHelper:
 
     def path_exists(self, path):
         """Test whether filepath/folderpath exists."""
+        if not path or len(path) == 0:
+            return False
+        if os.path.exists(path):
+            return True
+        # Check if folder path not found due to incorrect letter case
         parent_directory = os.path.dirname(path) or "."
         target_name = os.path.basename(path).lower()
-
+        if not target_name or len(target_name) == 0:
+            return False
+        # List of all items in parent directory
         try:
             dir_contents = os.listdir(parent_directory)
         except FileNotFoundError:
@@ -50,7 +57,7 @@ class FilesystemHelper:
             _LOGGER.warning(f"Error: No permission to access '{parent_directory}'.")
             return False
 
-        # Case-insensitive search for folder or file
+        # Case-insensitive search for folder/file
         for item in dir_contents:
             if item.lower() == target_name:
                 full_path = os.path.join(parent_directory, item)
@@ -59,8 +66,8 @@ class FilesystemHelper:
                 elif os.path.isfile(full_path):
                     return True
         return False
-        
-    def validate_path(self, hass: HomeAssistant, p_filepath: str = ""):
+
+    async def async_validate_path(self, hass: HomeAssistant, p_filepath: str = ""):
         """Return a valid file path string."""
         ret_value = None
         if p_filepath is None:
@@ -76,7 +83,7 @@ class FilesystemHelper:
 
         # Test each filepath
         for filepath in filepaths:
-            if self.path_exists(filepath) is True:
+            if await hass.async_add_executor_job(self.path_exists, filepath) is True:
                 ret_value = filepath
 
         return ret_value
@@ -109,7 +116,7 @@ class FilesystemHelper:
                 if absolute_custom_comopnents_dir:
                     mp3_path = MP3_PRESET_PATH.replace("custom_components", absolute_custom_comopnents_dir)
                 final_chime_path = mp3_path + chime_path + ".mp3"
-                if self.path_exists(final_chime_path):
+                if await hass.async_add_executor_job(self.path_exists, final_chime_path):
                     _LOGGER.debug("Local path to chime: %s", final_chime_path)
                     return final_chime_path
 
@@ -132,7 +139,7 @@ class FilesystemHelper:
             if chime_path == "":
                 _LOGGER.warning("MP3 file path missing for custom chime path `Custom #%s`", str(index))
                 return None
-            elif self.path_exists(chime_path):
+            elif await hass.async_add_executor_job(self.path_exists, chime_path):
                 return chime_path
             else:
                 _LOGGER.debug("Custom chime not found at path: %s", chime_path)
@@ -144,7 +151,7 @@ class FilesystemHelper:
             # Use cached version?
             if cache is True:
                 local_file = self.get_downloaded_chime_path(folder=temp_chimes_path, url=chime_path)
-                if local_file is not None and self.path_exists(local_file):
+                if local_file is not None and await hass.async_add_executor_job(self.path_exists, local_file):
                     _LOGGER.debug("Chime found in cache")
                     return local_file
                 _LOGGER.debug("External chime not found in cache")
@@ -162,17 +169,17 @@ class FilesystemHelper:
             _LOGGER.warning("Unable to downloaded chime from URL: %s", chime_path)
             return None
 
-        chime_path = self.validate_path(hass, chime_path)
+        chime_path = await self.async_validate_path(hass, chime_path)
         return chime_path
 
     def get_downloaded_chime_path(self, folder: str, url: str):
         """Local file path string for chime URL in local folder."""
         return folder + ("" if folder.endswith("/") else "/") + re.sub(r'[\/:*?"<>|]', '_', url.replace("https://", "").replace("http://", ""))
 
-    async def async_save_audio_to_folder(self, audio: AudioSegment, folder, file_name: str = None):
+    async def async_save_audio_to_folder(self, hass: HomeAssistant, audio: AudioSegment, folder, file_name: str = None):
         """Save audio to local folder."""
 
-        folder_exists = self.create_folder(folder)
+        folder_exists = await self.async_create_folder(hass, folder)
         if folder_exists is False:
             _LOGGER.warning("Unable to create folder: %s", folder)
             return None
@@ -180,10 +187,14 @@ class FilesystemHelper:
         # Save to file
         if file_name is None:
             try:
-                with tempfile.NamedTemporaryFile(
-                    prefix=folder, suffix=".mp3"
-                ) as temp_obj:
-                    audio_full_path = temp_obj.name
+                # Generate a secure & unique file name
+                secure_name = f"{secrets.token_hex(16)}.mp3"
+                audio_full_path = os.path.join(folder, secure_name)
+
+                # Ensure the directory exists
+                os.makedirs(folder, exist_ok=True)
+
+                # Export the audio to the secure file path
                 await self.async_export_audio(audio, audio_full_path)
             except Exception as error:
                 _LOGGER.warning(
@@ -195,7 +206,7 @@ class FilesystemHelper:
                 # Make file name safe
                 audio_full_path = self.get_downloaded_chime_path(url=file_name, folder=folder)
                 if audio_full_path and isinstance(audio_full_path, str):
-                    if self.path_exists(audio_full_path):
+                    if await hass.async_add_executor_job(self.path_exists, audio_full_path):
                         os.remove(audio_full_path)
                     await self.async_export_audio(audio, audio_full_path)
             except Exception as error:
@@ -204,7 +215,7 @@ class FilesystemHelper:
                 )
                 return None
 
-        if self.path_exists(audio_full_path):
+        if await hass.async_add_executor_job(self.path_exists, audio_full_path):
             _LOGGER.debug("File saved to path: %s", audio_full_path)
         else:
             _LOGGER.error("Saved file inaccessible, something went wrong. Path = %s", audio_full_path)
@@ -249,9 +260,10 @@ class FilesystemHelper:
                 _LOGGER.warning("Error when loading audio from downloaded file: %s", str(error))
                 return None
             if audio_content is not None:
-                audio_file_path = await self.async_save_audio_to_folder(audio=audio_content,
-                                                            folder=folder,
-                                                            file_name=url)
+                audio_file_path = await self.async_save_audio_to_folder(hass=hass,
+                                                                        audio=audio_content,
+                                                                        folder=folder,
+                                                                        file_name=url)
                 audio_duration = float(len(audio_content) / 1000)
                 return {
                     LOCAL_PATH_KEY: audio_file_path,
@@ -264,9 +276,9 @@ class FilesystemHelper:
                             str(content_type))
         return None
 
-    def create_folder(self, folder):
+    async def async_create_folder(self, hass: HomeAssistant, folder):
         """Create folder if it doesn't already exist."""
-        if self.path_exists(folder) is False:
+        if await hass.async_add_executor_job(self.path_exists, folder) is False:
             _LOGGER.debug("Creating audio folder: %s", folder)
             try:
                 os.makedirs(folder)
@@ -282,12 +294,12 @@ class FilesystemHelper:
             return False
         return True
 
-    def copy_file(self, source_file, destination_folder):
+    async def async_copy_file(self, hass: HomeAssistant, source_file: str, destination_folder: str):
         """Copy a file to a folder."""
         if not destination_folder:
             _LOGGER.warning("Unable to copy file: No destination folder path provided")
             return None
-        if self.create_folder(destination_folder):
+        if await self.async_create_folder(hass, destination_folder):
             try:
                 copied_file_path = shutil.copy(source_file, destination_folder)
                 return copied_file_path
@@ -370,7 +382,7 @@ class FilesystemHelper:
         try:
             # Validate file path
             file_path = self.get_local_path(hass=hass, file_path=file_path)
-            if not self.path_exists(file_path):
+            if not await hass.async_add_executor_job(self.path_exists, file_path):
                 _LOGGER.debug("File not found: %s", file_path)
                 return False
 

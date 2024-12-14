@@ -85,6 +85,17 @@ say:
           mode: box
           step: 10
           unit_of_measurement: ms
+    crossfade:
+      description: Crossfade (in milliseconds) between audio segments
+      example: 1000
+      name: Crossfade
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+          step: 1
+          unit_of_measurement: ms
     final_delay:
       description: Final delay (in milliseconds) added to the end of the audio
       example: 100
@@ -120,8 +131,8 @@ say:
             value: amazon_polly
           - label: Baidu
             value: baidu
-          - label: ElevenLabs TTS
-            value: tts.elevenlabs_tts
+          - label: ElevenLabs
+            value: tts.elevenlabs
           - label: Google Cloud
             value: google_cloud
           - label: Google Translate
@@ -334,6 +345,17 @@ say_url:
           mode: box
           step: 10
           unit_of_measurement: ms
+    crossfade:
+      description: Crossfade (in milliseconds) between audio segments
+      example: 1000
+      name: Crossfade
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+          step: 1
+          unit_of_measurement: ms
     final_delay:
       description: Final delay (in milliseconds) added to the end of the audio
       example: 100
@@ -369,8 +391,8 @@ say_url:
             value: amazon_polly
           - label: Baidu
             value: baidu
-          - label: ElevenLabs TTS
-            value: tts.elevenlabs_tts
+          - label: ElevenLabs
+            value: tts.elevenlabs
           - label: Google Cloud
             value: google_cloud
           - label: Google Translate

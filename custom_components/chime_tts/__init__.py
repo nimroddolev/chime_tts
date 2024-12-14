@@ -1,7 +1,6 @@
 """The Chime TTS integration."""
 
 import logging
-import os
 import io
 import time
 from datetime import datetime
@@ -48,6 +47,7 @@ from .const import (
     PUBLIC_PATH_KEY,
     AUDIO_DURATION_KEY,
     FADE_TRANSITION_KEY,
+    REMOVE_TEMP_FILE_DELAY_KEY,
     DEFAULT_FADE_TRANSITION_MS,
     ADD_COVER_ART_KEY,
 
@@ -77,10 +77,12 @@ from .const import (
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
     DEFAULT_TLD_KEY,
+    FALLBACK_TTS_PLATFORM_KEY,
     OFFSET_KEY,
+    CROSSFADE_KEY,
     AMAZON_POLLY,
     BAIDU,
-    ELEVENLABS_TTS,
+    ELEVENLABS,
     GOOGLE_CLOUD,
     GOOGLE_TRANSLATE,
     IBM_WATSON_TTS,
@@ -320,7 +322,12 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
 
             # Remove temporary local generated mp3
             if not bool(params.get("cache", False)):
-                _LOGGER.debug("Removing temporary file%s:", "s" if local_path and public_path else "")
+                remove_temp_file_delay_s = float(_data.get(REMOVE_TEMP_FILE_DELAY_KEY, 0) / 1000)
+                if remove_temp_file_delay_s > 0:
+                    _LOGGER.debug("Waiting %ss before removing temporary file%s:", str(remove_temp_file_delay_s), "s" if local_path and public_path else "")
+                    await hass.async_add_executor_job(time.sleep, remove_temp_file_delay_s)
+                else:
+                    _LOGGER.debug("Removing temporary file%s:", "s" if local_path and public_path else "")
                 filesystem_helper.delete_file(hass, local_path)
                 filesystem_helper.delete_file(hass, public_path)
 
@@ -406,11 +413,20 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Default voice
     _data[DEFAULT_TLD_KEY] = options.get(DEFAULT_TLD_KEY, None)
 
+    # Fallback TTS Platform
+    _data[FALLBACK_TTS_PLATFORM_KEY] = options.get(FALLBACK_TTS_PLATFORM_KEY, "")
+
     # Default offset
     _data[OFFSET_KEY] = options.get(OFFSET_KEY, 0)
 
+    # Default crossfade
+    _data[CROSSFADE_KEY] = options.get(CROSSFADE_KEY, 0)
+
     # Default audio fade transition duration
     _data[FADE_TRANSITION_KEY] = options.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)
+
+    # Delay before removing temporary file
+    _data[REMOVE_TEMP_FILE_DELAY_KEY] = options.get(REMOVE_TEMP_FILE_DELAY_KEY, 0)
 
     # Add cover art to generated MP3 files
     _data[ADD_COVER_ART_KEY] = options.get(ADD_COVER_ART_KEY, False)
@@ -460,8 +476,11 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         DEFAULT_LANGUAGE_KEY,
         DEFAULT_VOICE_KEY,
         DEFAULT_TLD_KEY,
+        FALLBACK_TTS_PLATFORM_KEY,
         OFFSET_KEY,
+        CROSSFADE_KEY,
         FADE_TRANSITION_KEY,
+        REMOVE_TEMP_FILE_DELAY_KEY,
         ADD_COVER_ART_KEY,
         TEMP_CHIMES_PATH_KEY,
         TEMP_PATH_KEY,
@@ -515,7 +534,8 @@ async def async_request_tts_audio(
     # Verify TTS Platform
     tts_platform = helpers.get_tts_platform(hass=hass,
                                             tts_platform=tts_platform,
-                                            default_tts_platform=_data[TTS_PLATFORM_KEY])
+                                            default_tts_platform=_data[TTS_PLATFORM_KEY],
+                                            fallback_tts_platform=_data[FALLBACK_TTS_PLATFORM_KEY])
     if tts_platform is False:
         return None
 
@@ -572,6 +592,7 @@ async def async_request_tts_audio(
     }.items():
         _LOGGER.debug("    * %s = %s", key, value)
 
+    audio_data = None
     media_source_id = None
     try:
         media_source_id = tts.media_source.generate_media_source_id(
@@ -582,6 +603,17 @@ async def async_request_tts_audio(
             cache=cache,
             options=tts_options,
         )
+        if media_source_id is None:
+            _LOGGER.error("Error: Unable to generate media_source_id")
+        else:
+            try:
+                audio_data = await tts.async_get_media_source_audio(
+                    hass=hass, media_source_id=media_source_id
+                )
+            except Exception as error:
+                _LOGGER.error("   - Error calling tts.async_get_media_source_audio with media_source_id = '%s': %s",
+                    str(media_source_id), str(error))
+
     except Exception as error:
         if f"{error}" == "Invalid TTS provider selected":
             missing_tts_platform_error(tts_platform)
@@ -590,21 +622,6 @@ async def async_request_tts_audio(
                 "   - Error calling tts.media_source.generate_media_source_id: %s",
                 error,
             )
-        return None
-    if media_source_id is None:
-        _LOGGER.error("Error: Unable to generate media_source_id")
-        return None
-
-    audio_data = None
-    try:
-        audio_data = await tts.async_get_media_source_audio(
-            hass=hass, media_source_id=media_source_id
-        )
-    except Exception as error:
-        _LOGGER.error(
-            "   - Error calling tts.async_get_media_source_audio: %s", error
-        )
-        return None
 
     if audio_data is not None:
         if len(audio_data) == 2:
@@ -612,23 +629,31 @@ async def async_request_tts_audio(
             file = io.BytesIO(audio_bytes)
             if file is None:
                 _LOGGER.error("...could not convert TTS bytes to audio")
-                return None
-            audio = await filesystem_helper.async_load_audio(file)
-            if audio is not None:
-
-                # Done
-                end_time = datetime.now()
-                completion_time = round((end_time - start_time).total_seconds(), 2)
-                completion_time_string = (f"{completion_time}s"
-                                          if completion_time >= 1
-                                          else f"{completion_time * 1000}ms")
-                _LOGGER.debug("   ...TTS audio generated in %s", completion_time_string)
-                return audio
-            _LOGGER.error("...could not extract TTS audio from file")
+            else:
+                audio: AudioSegment = await filesystem_helper.async_load_audio(file)
+                if audio is not None and len(audio) > 0:
+                    # TTS generated successfully
+                    end_time = datetime.now()
+                    completion_time = round((end_time - start_time).total_seconds(), 2)
+                    completion_time_string = (f"{completion_time}s"
+                                            if completion_time >= 1
+                                            else f"{completion_time * 1000}ms")
+                    _LOGGER.debug("   ...TTS audio generated in %s", completion_time_string)
+                    return audio
+                _LOGGER.error("...could not extract TTS audio from file")
         else:
             _LOGGER.error("...audio_data did not contain audio bytes")
     else:
         _LOGGER.error("...audio_data generation failed")
+
+    if tts_platform != _data[FALLBACK_TTS_PLATFORM_KEY] and _data[FALLBACK_TTS_PLATFORM_KEY]:
+        _LOGGER.debug("Retrying TTS audio generation with fallback platform '%s'", _data[FALLBACK_TTS_PLATFORM_KEY])
+        return await async_request_tts_audio(hass=hass,
+                                             tts_platform=_data[FALLBACK_TTS_PLATFORM_KEY],
+                                             message=message,
+                                             language=language,
+                                             cache=cache,
+                                             options=options)
     return None
 
 
@@ -642,12 +667,12 @@ def missing_tts_platform_error(tts_platform):
     if tts_platform is BAIDU:
         tts_platform_name = "Baidu"
         tts_platform_documentation = "https://www.home-assistant.io/integrations/baidu"
-    if tts_platform is ELEVENLABS_TTS:
-        tts_platform_name = "ElevenLabs TTS"
-        tts_platform_documentation = "https://github.com/carleeno/elevenlabs_tts"
+    if tts_platform is ELEVENLABS:
+        tts_platform_name = "ElevenLabsTS"
+        tts_platform_documentation = "https://github.com/carleeno/elevenlabs"
     if tts_platform is GOOGLE_CLOUD:
         tts_platform_name = "Google Cloud"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/google_cloud"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/elevenlabs"
     if tts_platform is GOOGLE_TRANSLATE:
         tts_platform_name = "Google Translate"
         tts_platform_documentation = "https://www.home-assistant.io/integrations/google_translate"
@@ -700,6 +725,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     chime_path = params.get("chime_path", None)
     end_chime_path = params.get("end_chime_path", None)
     offset = params.get("offset", _data[OFFSET_KEY])
+    crossfade = params.get("crossfade", _data[CROSSFADE_KEY])
     message = params.get("message", None)
     cache = params.get("cache", False)
     entity_ids = params.get("entity_ids", [])
@@ -742,6 +768,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                                                    filepath=end_chime_path,
                                                    cache=cache,
                                                    offset=offset,
+                                                   crossfade=crossfade,
                                                    audio=output_audio)
 
     # Save generated audio file
@@ -760,6 +787,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
             return None
         _LOGGER.debug(" - Saving mp3 file to %s folder: %s...", initial_save_folder_name, save_folder)
         new_audio_file = await filesystem_helper.async_save_audio_to_folder(
+            hass,
             output_audio,
             save_folder)
         if new_audio_file is None:
@@ -772,7 +800,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 _LOGGER.warning("Unable to add cover art. Alexa Media Player media_players are unable to play MP3 file with cover art")
             else:
                 cover_art_filepath = f"{filesystem_helper.path_to_parent_folder('custom_components')}/chime_tts/cover_art.jpg"
-                if filesystem_helper.path_exists(cover_art_filepath):
+                if await hass.async_add_executor_job(filesystem_helper.path_exists, cover_art_filepath):
                     _LOGGER.debug("Adding cover art to %s", new_audio_file)
                     new_audio_file = await helpers.async_ffmpeg_convert_from_file(
                         hass,
@@ -803,7 +831,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(hass, file_path)
 
         # Copy generated audio to local/public folder/s
-        audio_dict = await async_save_audio_to_folder(is_local, is_public, audio_dict, output_audio)
+        audio_dict = await async_save_audio_to_folder(hass, is_local, is_public, audio_dict, output_audio)
 
         # Convert external URL (for public paths)
         if audio_dict.get(PUBLIC_PATH_KEY, None):
@@ -830,18 +858,18 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
     return audio_dict
 
-async def async_save_audio_to_folder(is_local: bool, is_public: bool, audio_dict: dict, output_audio: AudioSegment):
+async def async_save_audio_to_folder(hass: HomeAssistant, is_local: bool, is_public: bool, audio_dict: dict, output_audio: AudioSegment):
     """Save local/public audio to local/public folder/s."""
     # Save audio to local folder
     if is_local and not audio_dict.get(LOCAL_PATH_KEY, None):
         _LOGGER.debug(" - Saving generated audio to local folder: %s...", _data[TEMP_PATH_KEY])
         audio_dict[LOCAL_PATH_KEY] = await filesystem_helper.async_save_audio_to_folder(
-            output_audio, _data[TEMP_PATH_KEY])
+            hass, output_audio, _data[TEMP_PATH_KEY])
     # Save audio to public folder
     if is_public and not audio_dict.get(PUBLIC_PATH_KEY, None):
         _LOGGER.debug(" - Saving generated audio to public folder: %s...", _data[WWW_PATH_KEY])
         audio_dict[PUBLIC_PATH_KEY] = await filesystem_helper.async_save_audio_to_folder(
-            output_audio, _data[WWW_PATH_KEY])
+            hass, output_audio, _data[WWW_PATH_KEY])
     return audio_dict
 
 
@@ -900,7 +928,8 @@ async def async_verify_cached_audio(hass: HomeAssistant,
             # Make a local copy of the public file
             if public_exists and await hass.async_add_executor_job(filesystem_helper.path_exists, local_external_filepath):
                 _LOGGER.debug("   - Copying cached public file %s to local path %s", local_external_filepath, _data[TEMP_PATH_KEY])
-                audio_dict[LOCAL_PATH_KEY] = await hass.async_add_executor_job(filesystem_helper.copy_file,
+                audio_dict[LOCAL_PATH_KEY] = await hass.async_add_executor_job(filesystem_helper.async_copy_file,
+                                                                               hass,
                                                                                local_external_filepath,
                                                                                _data[TEMP_PATH_KEY])
                 if await hass.async_add_executor_job(filesystem_helper.path_exists, f"{audio_dict.get(LOCAL_PATH_KEY, '')}"):
@@ -913,7 +942,8 @@ async def async_verify_cached_audio(hass: HomeAssistant,
         # No public file exists
         if is_public and not public_exists and local_exists:
             _LOGGER.debug("    - Copying cached local file %s to public path %s", audio_dict.get(LOCAL_PATH_KEY, ""), _data[WWW_PATH_KEY])
-            audio_dict[PUBLIC_PATH_KEY] = await hass.async_add_executor_job(filesystem_helper.copy_file,
+            audio_dict[PUBLIC_PATH_KEY] = await hass.async_add_executor_job(filesystem_helper.async_copy_file,
+                                                                            hass,
                                                                             audio_dict.get(LOCAL_PATH_KEY, ""),
                                                                             _data[WWW_PATH_KEY])
             if await hass.async_add_executor_job(filesystem_helper.path_exists, audio_dict.get(PUBLIC_PATH_KEY, "")) or audio_dict.get(PUBLIC_PATH_KEY, "").startswith("http://localhost"):
@@ -960,13 +990,13 @@ def get_segment_offset(output_audio, segment, params):
         # Get "offset" parameter
         if "offset" in segment:
             segment_offset = float(segment["offset"])
-
-        # Support deprecated "delay" parmeter
         else:
+            # Support deprecated "delay" parmeter
             if "delay" in segment:
                 segment_offset = float(segment["delay"])
             elif "delay" in params:
                 segment_offset = float(params["delay"])
+            # Fallback to "offset" in list of parameters
             elif "offset" in params:
                 segment_offset = float(params["offset"])
 
@@ -982,7 +1012,8 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
     for index, segment in enumerate(segments):
         segment_cache: bool = segment.get("cache", params.get("cache", False))
         segment_audio_conversion: str = helpers.parse_ffmpeg_args(segment.get("audio_conversion", ""))
-        segment_offset: float = get_segment_offset(output_audio, segment, params)
+        segment_offset: int = get_segment_offset(output_audio, segment, params)
+        segment_crossfade: int = segment.get("crossfade", params.get("crossfade", 0))
         segment_type =  segment.get("type", None)
         if not segment_type:
             _LOGGER.warning("Segment #%s has no type.", str(index+1))
@@ -995,6 +1026,7 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
                                                                filepath=segment["path"],
                                                                cache=segment_cache,
                                                                offset=segment_offset,
+                                                               crossfade=segment_crossfade,
                                                                audio_conversion=segment_audio_conversion,
                                                                audio=output_audio)
             else:
@@ -1081,6 +1113,7 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
                         if segment_cache is True and audio_dict is None:
                             _LOGGER.debug(" - Saving generated TTS audio to cache...")
                             tts_audio_full_path = await filesystem_helper.async_save_audio_to_folder(
+                                hass,
                                 tts_audio,
                                 _data.get(TEMP_PATH_KEY, None))
                             if tts_audio_full_path is not None:
@@ -1102,7 +1135,10 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
 
                 # Combine audio
                 if tts_audio is not None:
-                    output_audio = helpers.combine_audio(output_audio, tts_audio, segment_offset)
+                    output_audio = helpers.combine_audio(output_audio,
+                                                         tts_audio,
+                                                         segment_offset,
+                                                         segment_crossfade)
                 else:
                     _LOGGER.warning("Error generating TTS audio from messsage segment #%s: %s",
                                     str(index+1), str(segment))
@@ -1117,6 +1153,7 @@ async def async_get_audio_from_path(
         filepath: str,
         cache: bool = False,
         offset: float = 0,
+        crossfade: float = 0,
         audio_conversion: str = "",
         audio: AudioSegment = None
     ):
@@ -1177,7 +1214,7 @@ async def async_get_audio_from_path(
                     return audio_from_path
 
                 # Apply offset
-                return helpers.combine_audio(audio, audio_from_path, offset)
+                return helpers.combine_audio(audio, audio_from_path, offset, crossfade)
             _LOGGER.warning("Unable to find audio at filepath: %s", filepath)
         except Exception as error:
             _LOGGER.warning('Unable to extract audio from file: "%s"', error)
@@ -1529,7 +1566,7 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
         for key in [LOCAL_PATH_KEY, PUBLIC_PATH_KEY]:
             audio_dict[key] = audio_dict.get(key, None)
             if audio_dict.get(key, None):
-                if filesystem_helper.path_exists(str(audio_dict.get(key, ""))):
+                if await hass.async_add_executor_job(filesystem_helper.path_exists, str(audio_dict.get(key, ""))):
                     # Add duration data if audio_dict is old format
                     if audio_dict.get(AUDIO_DURATION_KEY, None) is None:
                         audio = await async_get_audio_from_path(hass=hass,
@@ -1620,6 +1657,7 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
         "audio_conversion",
         "end_chime_path",
         "offset",
+        "crossfade",
         "tts_playback_speed",
         "tts_speed",
         "tts_pitch"

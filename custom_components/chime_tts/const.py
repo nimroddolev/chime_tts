@@ -27,6 +27,7 @@ SERVICE_SAY_URL = "say_url"
 
 OFFSET_KEY = "offset"
 DEFAULT_OFFSET_MS = 450
+CROSSFADE_KEY = "crossfade"
 
 DATA_STORAGE_KEY = "chime_tts_integration_data"
 AUDIO_PATH_KEY = "audio_path" # <-- Deprecated
@@ -36,6 +37,7 @@ AUDIO_DURATION_KEY = "audio_duration"
 
 FADE_TRANSITION_KEY = "fade_transition_key"
 DEFAULT_FADE_TRANSITION_MS = 500
+REMOVE_TEMP_FILE_DELAY_KEY = "remove_temp_file_delay"
 TRANSITION_STEP_MS = 150
 ADD_COVER_ART_KEY = "add_cover_art"
 
@@ -102,6 +104,7 @@ MAX_TIMEOUT = 600
 QUEUE_PROCESSOR_SLEEP_TIME = 0.2
 
 TTS_PLATFORM_KEY = "tts_platform_key"
+FALLBACK_TTS_PLATFORM_KEY = "fallback_tts_platform_key"
 DEFAULT_LANGUAGE_KEY = "default_language_key"
 DEFAULT_VOICE_KEY = "default_voice_key"
 DEFAULT_TLD_KEY = "default_tld_key"
@@ -113,7 +116,7 @@ FFMPEG_ARGS_VOLUME = '-filter:a volume=X'
 # TTS Platforms
 AMAZON_POLLY = "amazon_polly"
 BAIDU = "baidu"
-ELEVENLABS_TTS = "tts.elevenlabs_tts"
+ELEVENLABS = "tts.elevenlabs"
 GOOGLE_CLOUD = "tts.google_cloud"
 GOOGLE_TRANSLATE = "google_translate"
 IBM_WATSON_TTS = "watson_tts"

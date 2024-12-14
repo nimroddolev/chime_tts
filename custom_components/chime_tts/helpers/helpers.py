@@ -17,6 +17,7 @@ from ..const import (
     SERVICE_SAY_URL,
     DEFAULT_CHIME_OPTIONS,
     OFFSET_KEY,
+    CROSSFADE_KEY,
     TTS_PLATFORM_KEY,
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
@@ -26,7 +27,7 @@ from ..const import (
     FFMPEG_ARGS_VOLUME,
     AMAZON_POLLY,
     BAIDU,
-    ELEVENLABS_TTS,
+    ELEVENLABS,
     GOOGLE_CLOUD,
     GOOGLE_TRANSLATE,
     IBM_WATSON_TTS,
@@ -177,6 +178,7 @@ class ChimeTTSHelper:
         chime_path =str(data.get("chime_path", ""))
         end_chime_path = str(data.get("end_chime_path", ""))
         offset = float(data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)) or 0)
+        crossfade = int(data.get(CROSSFADE_KEY, 0))
         final_delay = float(data.get("final_delay", 0) or 0)
         message = str(data.get("message", ""))
         tts_platform = str(data.get("tts_platform", ""))
@@ -207,6 +209,7 @@ class ChimeTTSHelper:
             "end_chime_path": end_chime_path,
             "cache": cache,
             "offset": offset,
+            "crossfade": crossfade,
             "final_delay": final_delay,
             "message": message,
             "language": language,
@@ -443,14 +446,15 @@ class ChimeTTSHelper:
     def get_tts_platform(self,
                          hass,
                          tts_platform: str = "",
-                         default_tts_platform: str = ""):
+                         default_tts_platform: str = "",
+                         fallback_tts_platform: str = ""):
         """TTS platform/entity_id to use for TTS audio."""
 
         installed_tts_platforms: list[str] = self.get_installed_tts_platforms(hass)
 
         # No TTS platform provided
         if not tts_platform:
-            tts_platform = default_tts_platform
+            tts_platform = default_tts_platform if default_tts_platform else fallback_tts_platform
 
         # Match for deprecated Nabu Casa platform string
         if tts_platform.lower() == NABU_CASA_CLOUD_TTS_OLD:
@@ -485,8 +489,8 @@ class ChimeTTSHelper:
             tts_provider = AMAZON_POLLY
         elif stripped_tts_provider == "baidu":
             tts_provider = BAIDU
-        elif stripped_tts_provider == "elevenlabstts":
-            tts_provider = ELEVENLABS_TTS
+        elif stripped_tts_provider == "elevenlabs":
+            tts_provider = ELEVENLABS
         elif stripped_tts_provider == "googlecloud":
             tts_provider = GOOGLE_CLOUD
         elif stripped_tts_provider == "googletranslate":
@@ -569,6 +573,7 @@ class ChimeTTSHelper:
         # Save to temp file
         temp_filename = "temp_segment.mp3"
         temp_audio_file = await filesystem_helper.async_save_audio_to_folder(
+            hass=hass,
             audio=audio_segment,
             folder=folder,
             file_name=temp_filename)
@@ -594,7 +599,7 @@ class ChimeTTSHelper:
         for file_path in [temp_audio_file, converted_audio_file]:
             if (file_path
                 and isinstance(file_path, str)
-                and filesystem_helper.path_exists(file_path)):
+                and await hass.async_add_executor_job(filesystem_helper.path_exists, file_path)):
                 try:
                     os.remove(file_path)
                 except Exception as error:
@@ -607,7 +612,7 @@ class ChimeTTSHelper:
         """Convert audio file with FFmpeg and provided arguments."""
 
         local_file_path = filesystem_helper.get_local_path(hass, file_path)
-        if not filesystem_helper.path_exists(local_file_path):
+        if not await hass.async_add_executor_job(filesystem_helper.path_exists, local_file_path):
             _LOGGER.warning("Unable to perform FFmpeg conversion: source file not found on file system: %s", local_file_path)
             return False
 
@@ -641,7 +646,7 @@ class ChimeTTSHelper:
                 converted_file_path = local_file_path.replace(".mp3", "_converted.mp3")
 
             # Delete converted output file if it exists
-            if filesystem_helper.path_exists(converted_file_path):
+            if await hass.async_add_executor_job(filesystem_helper.path_exists, converted_file_path):
                 os.remove(converted_file_path)
 
             ffmpeg_cmd.append(converted_file_path)
@@ -758,8 +763,9 @@ class ChimeTTSHelper:
     def combine_audio(self,
                       audio_1: AudioSegment,
                       audio_2: AudioSegment,
-                      offset: int = 0):
-        """Combine two AudioSegment object with either a delay (if >0) or overlay (if <0)."""
+                      offset: int = 0,
+                      crossfade: int = 0):
+        """Combine two AudioSegment object with a delay (if offset>0) overlay (if offset<0) or crossfade."""
         if audio_1 is None:
             return audio_2
         if audio_2 is None:
@@ -771,9 +777,14 @@ class ChimeTTSHelper:
             _LOGGER.debug("Performing overlay of %sms", str(offset))
             ret_val = self.overlay(audio_1, audio_2, offset)
         elif offset > 0:
+            _LOGGER.debug("Adding gap of %sms", str(offset))
             ret_val = audio_1 + (AudioSegment.silent(duration=offset) + audio_2)
+        elif crossfade > 0:
+            crossfade = min(len(audio_1), len(audio_2), crossfade)
+            _LOGGER.debug("Performing crossfade of %sms", str(crossfade))
+            ret_val = audio_1.append(audio_2, crossfade=crossfade)
         else:
-            _LOGGER.debug("Combining audio files with no delay or overlay")
+            _LOGGER.debug("Combining audio files with no delay, overlay or crossfade")
 
         return ret_val
 
