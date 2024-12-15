@@ -669,10 +669,10 @@ def missing_tts_platform_error(tts_platform):
         tts_platform_documentation = "https://www.home-assistant.io/integrations/baidu"
     if tts_platform is ELEVENLABS:
         tts_platform_name = "ElevenLabsTS"
-        tts_platform_documentation = "https://github.com/carleeno/elevenlabs"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/elevenlabs"
     if tts_platform is GOOGLE_CLOUD:
         tts_platform_name = "Google Cloud"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/elevenlabs"
+        tts_platform_documentation = "https://www.home-assistant.io/integrations/google_cloud"
     if tts_platform is GOOGLE_TRANSLATE:
         tts_platform_name = "Google Translate"
         tts_platform_documentation = "https://www.home-assistant.io/integrations/google_translate"
