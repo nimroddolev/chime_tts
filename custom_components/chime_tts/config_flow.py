@@ -43,9 +43,7 @@ class ChimeTTSFlowHandler(config_entries.ConfigFlow):
     VERSION = 1
 
     @staticmethod
-    def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry
-    ) -> config_entries.OptionsFlow:
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
         """Create the options flow."""
         return ChimeTTSOptionsFlowHandler(config_entry)
 
@@ -81,6 +79,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
         helpers.debug_title(f"Chime TTS Version {VERSION} Configuration")
+        self._config_entry = config_entry
 
     async def async_step_init(self, user_input):
         """Initialize the options flow."""
@@ -243,7 +242,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             self.data[CUSTOM_CHIMES_PATH_KEY] = ""
 
         # 1st time Custom Chimes Folder path modified
-        if (user_input.get(CUSTOM_CHIMES_PATH_KEY) and not self.config_entry.options.get(CUSTOM_CHIMES_PATH_KEY)):
+        if (user_input.get(CUSTOM_CHIMES_PATH_KEY) and not self._config_entry.options.get(CUSTOM_CHIMES_PATH_KEY)):
             # Show restart reminder step before saving config
             return self.async_show_form(
                 step_id="restart_required",
@@ -268,7 +267,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         """Get the value for a given key. Options flow 1st, Config flow 2nd."""
         if user_input:
             return user_input.get(key, default)
-        dicts = [dict(self.config_entry.options), dict(self.config_entry.data)]
+        dicts = [dict(self._config_entry.options), dict(self._config_entry.data)]
         value = None
         for p_dict in dicts:
             if key in p_dict and not value:
