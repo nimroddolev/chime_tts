@@ -226,6 +226,7 @@
                 "description": "Configurable options for the `chime_tts.say` and `chime_tts.say_url` actions.\r\n\r\nPlease review the [documentation](https://nimroddolev.github.io/chime_tts/docs/documentation/configuration/) for more details",
                 "data": {
                     "queue_timeout": "Service call timeout (in seconds)",
+                    "tts_timeout": "TTS audio generation timeout (in seconds)",
                     "tts_platform_key": "Default TTS platform",
                     "default_language_key": "Default language (when using default TTS platform)",
                     "default_voice_key": "Default voice (when using default TTS platform)",

@@ -4,6 +4,7 @@ import logging
 import io
 import time
 from datetime import datetime
+import asyncio
 
 from pydub import AudioSegment
 from pydub.exceptions import CouldntDecodeError
@@ -72,6 +73,7 @@ from .const import (
     MP3_PRESET_CUSTOM_KEY,
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
+    TTS_TIMEOUT_KEY,
     SPOTIFY_PLATFORM,
     TTS_PLATFORM_KEY,
     DEFAULT_LANGUAGE_KEY,
@@ -404,6 +406,9 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Default TTS Platform
     _data[TTS_PLATFORM_KEY] = options.get(TTS_PLATFORM_KEY, "")
 
+    # TTS timeout
+    _data[TTS_TIMEOUT_KEY] = options.get(TTS_TIMEOUT_KEY, None)
+
     # Default language
     _data[DEFAULT_LANGUAGE_KEY] = options.get(DEFAULT_LANGUAGE_KEY, None)
 
@@ -472,6 +477,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
 
     for key_string in [
         QUEUE_TIMEOUT_KEY,
+        TTS_TIMEOUT_KEY,
         TTS_PLATFORM_KEY,
         DEFAULT_LANGUAGE_KEY,
         DEFAULT_VOICE_KEY,
@@ -592,28 +598,26 @@ async def async_request_tts_audio(
     }.items():
         _LOGGER.debug("    * %s = %s", key, value)
 
+    # Genreate TTS audio
     audio_data = None
     media_source_id = None
     try:
-        media_source_id = tts.media_source.generate_media_source_id(
-            hass=hass,
-            message=message,
-            engine=tts_platform,
-            language=language,
-            cache=cache,
-            options=tts_options,
-        )
-        if media_source_id is None:
-            _LOGGER.error("Error: Unable to generate media_source_id")
-        else:
-            try:
-                audio_data = await tts.async_get_media_source_audio(
-                    hass=hass, media_source_id=media_source_id
-                )
-            except Exception as error:
-                _LOGGER.error("   - Error calling tts.async_get_media_source_audio with media_source_id = '%s': %s",
-                    str(media_source_id), str(error))
-
+        timeout = _data.get(TTS_TIMEOUT_KEY, None)
+        _LOGGER.debug("```Generating TTS audio with a timeout of %ss", str(timeout or 0))
+        media_source_id = await asyncio.wait_for(
+            asyncio.to_thread(
+                tts.media_source.generate_media_source_id,
+                hass=hass,
+                message=message,
+                engine=tts_platform,
+                language=language,
+                cache=cache,
+                options=tts_options,
+            ),
+            timeout=timeout
+        )   
+    except asyncio.TimeoutError:
+        _LOGGER.error("TTS audio generation with %s timed out.", tts_platform)     
     except Exception as error:
         if f"{error}" == "Invalid TTS provider selected":
             missing_tts_platform_error(tts_platform)
@@ -622,6 +626,25 @@ async def async_request_tts_audio(
                 "   - Error calling tts.media_source.generate_media_source_id: %s",
                 error,
             )
+        if media_source_id:
+            try:
+                audio_data = await tts.async_get_media_source_audio(
+                    hass=hass, media_source_id=media_source_id
+                )
+            except Exception as error:
+                _LOGGER.error("   - Error calling tts.async_get_media_source_audio with media_source_id = '%s': %s",
+                    str(media_source_id), str(error))
+
+    if media_source_id is None:
+        _LOGGER.error("Error: Unable to generate media_source_id")
+    else:
+        try:
+            audio_data = await tts.async_get_media_source_audio(
+                hass=hass, media_source_id=media_source_id
+            )
+        except Exception as error:
+            _LOGGER.error("   - Error calling tts.async_get_media_source_audio with media_source_id = '%s': %s",
+                str(media_source_id), str(error))
 
     if audio_data is not None:
         if len(audio_data) == 2:
@@ -643,17 +666,18 @@ async def async_request_tts_audio(
                 _LOGGER.error("...could not extract TTS audio from file")
         else:
             _LOGGER.error("...audio_data did not contain audio bytes")
-    else:
-        _LOGGER.error("...audio_data generation failed")
 
     if tts_platform != _data[FALLBACK_TTS_PLATFORM_KEY] and _data[FALLBACK_TTS_PLATFORM_KEY]:
         _LOGGER.debug("Retrying TTS audio generation with fallback platform '%s'", _data[FALLBACK_TTS_PLATFORM_KEY])
-        return await async_request_tts_audio(hass=hass,
+        audio = await async_request_tts_audio(hass=hass,
                                              tts_platform=_data[FALLBACK_TTS_PLATFORM_KEY],
                                              message=message,
                                              language=language,
                                              cache=cache,
                                              options=options)
+    if audio:
+        return audio
+    _LOGGER.error("...audio_data generation failed")
     return None
 
 

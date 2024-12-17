@@ -12,6 +12,7 @@ from .const import (
     VERSION,
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
+    TTS_TIMEOUT_KEY,
     TTS_PLATFORM_KEY,
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
@@ -99,6 +100,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
         self.data = {
             QUEUE_TIMEOUT_KEY: self.get_data_key_value(QUEUE_TIMEOUT_KEY, user_input, QUEUE_TIMEOUT_DEFAULT),
+            TTS_TIMEOUT_KEY: self.get_data_key_value(TTS_TIMEOUT_KEY, user_input, ""),
             TTS_PLATFORM_KEY: self.get_data_key_value(TTS_PLATFORM_KEY, user_input, ""),
             DEFAULT_LANGUAGE_KEY: self.get_data_key_value(DEFAULT_LANGUAGE_KEY, user_input, ""),
             DEFAULT_VOICE_KEY: self.get_data_key_value(DEFAULT_VOICE_KEY, user_input, ""),
@@ -118,6 +120,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
         options_schema = vol.Schema(
             {
                 vol.Required(QUEUE_TIMEOUT_KEY, default=self.data[QUEUE_TIMEOUT_KEY]): int,
+                vol.Optional(TTS_TIMEOUT_KEY, default=self.data[TTS_TIMEOUT_KEY]): int,
                 vol.Optional(TTS_PLATFORM_KEY, default=self.data[TTS_PLATFORM_KEY]):selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=tts_platforms,
@@ -164,6 +167,10 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             _errors["base"] = "timeout"
             _errors[QUEUE_TIMEOUT_KEY] = "timeout_sub"
 
+        # TTS timeout
+        if user_input[TTS_TIMEOUT_KEY] < -1:
+            _errors["base"] = "timeout"
+            _errors[TTS_TIMEOUT_KEY] = "timeout_sub"
 
         # List of TTS platforms
         stripped_tts_platforms = [platform.lower().replace("tts", "").replace(" ", "").replace(" ", "").replace(".", "").replace("-", "").replace("_", "") for platform in helpers.get_installed_tts_platforms(self.hass)]
