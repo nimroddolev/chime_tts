@@ -114,8 +114,7 @@ say:
       name: Message
       required: false
       selector:
-        text:
-          multiline: true
+        template: null
     tts_platform:
       description: TTS platform used to generate TTS audio
       example: google_translate
@@ -374,8 +373,7 @@ say_url:
       name: Message
       required: false
       selector:
-        text:
-          multiline: true
+        template: null
     tts_platform:
       description: TTS platform used to generate TTS audio
       example: google_translate
