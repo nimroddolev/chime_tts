@@ -11,6 +11,7 @@ import aiofiles.os
 from .media_player_helper import MediaPlayerHelper
 from .media_player import ChimeTTSMediaPlayer
 from .filesystem import FilesystemHelper
+from .message_parser import MessageParser
 from ..const import (
     DOMAIN,
     SERVICE_SAY,
@@ -49,6 +50,7 @@ import voluptuous as vol
 from pydub import AudioSegment
 
 filesystem_helper = FilesystemHelper()
+message_parser = MessageParser()
 
 _LOGGER = logging.getLogger(__name__)
 class ChimeTTSHelper:
@@ -180,7 +182,7 @@ class ChimeTTSHelper:
         offset = float(data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)) or 0)
         crossfade = int(data.get(CROSSFADE_KEY, 0))
         final_delay = float(data.get("final_delay", 0) or 0)
-        message = str(data.get("message", ""))
+        message = message_parser.parse_message_templates(hass, str(data.get("message", "")))
         tts_platform = str(data.get("tts_platform", ""))
         tts_speed = float(data.get("tts_playback_speed", data.get("tts_speed", 100)) or 100)
         tts_pitch = data.get("tts_pitch", 0) or 0
