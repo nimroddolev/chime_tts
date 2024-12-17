@@ -51,7 +51,6 @@ class FilesystemHelper:
         try:
             dir_contents = os.listdir(parent_directory)
         except FileNotFoundError:
-            _LOGGER.warning(f"Error: The directory '{parent_directory}' was not found.")
             return False
         except PermissionError:
             _LOGGER.warning(f"Error: No permission to access '{parent_directory}'.")
