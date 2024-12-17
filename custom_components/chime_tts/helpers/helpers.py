@@ -621,6 +621,7 @@ class ChimeTTSHelper:
             _LOGGER.debug("Audio is already Alexa Media Player compatible")
             return file_path
 
+        ffmpeg_cmd_string = ""
         try:
             # Add standard arguments
             ffmpeg_cmd = [
