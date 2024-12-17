@@ -351,7 +351,10 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
             "success": (public_path is not None or media_content_id is not None)
         }
         if ret_value["success"] is False:
-            _LOGGER.warning("Check that the folder path in the configuration for `chime_tts.say_url` is within the public \"www\" folder or the local media folder")
+            if public_path is None:
+                _LOGGER.warning("No public filepath was found for the generated MP3 file")
+            else:
+                _LOGGER.warning("The folder path '%s' should be within the public \"www\" folder or the local media folder.", public_path)
 
         return ret_value
 
