@@ -541,11 +541,11 @@ class ChimeTTSHelper:
             if isinstance(key, str) and key.endswith(".tts"):
                 tts_components.append(key[0:len(key)-4])
 
-        # Unique TTS Platforms
-        all_tts_platforms_found: list[str] = tts_providers + tts_components + tts_entities
+        # Remove any duplicates and sort alphabetically
+        all_tts_platforms_found: list[str] = tts_entities + tts_providers + tts_components
         final_tts_platforms: list[str] = []
         for tts_platform in all_tts_platforms_found:
-            if tts_platform not in final_tts_platforms:
+            if tts_platform not in final_tts_platforms and f"tts.{tts_platform}" not in final_tts_platforms:
                 final_tts_platforms.append(tts_platform)
         final_tts_platforms.sort()
         return final_tts_platforms
