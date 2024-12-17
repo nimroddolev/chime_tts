@@ -74,6 +74,7 @@ from .const import (
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
     TTS_TIMEOUT_KEY,
+    TTS_TIMEOUT_DEFAULT,
     SPOTIFY_PLATFORM,
     TTS_PLATFORM_KEY,
     DEFAULT_LANGUAGE_KEY,
@@ -410,7 +411,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     _data[TTS_PLATFORM_KEY] = options.get(TTS_PLATFORM_KEY, "")
 
     # TTS timeout
-    _data[TTS_TIMEOUT_KEY] = options.get(TTS_TIMEOUT_KEY, None)
+    _data[TTS_TIMEOUT_KEY] = options.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT)
 
     # Default language
     _data[DEFAULT_LANGUAGE_KEY] = options.get(DEFAULT_LANGUAGE_KEY, None)
@@ -605,8 +606,7 @@ async def async_request_tts_audio(
     audio_data = None
     media_source_id = None
     try:
-        timeout = _data.get(TTS_TIMEOUT_KEY, None)
-        _LOGGER.debug("```Generating TTS audio with a timeout of %ss", str(timeout or 0))
+        timeout = _data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT)
         media_source_id = await asyncio.wait_for(
             asyncio.to_thread(
                 tts.media_source.generate_media_source_id,

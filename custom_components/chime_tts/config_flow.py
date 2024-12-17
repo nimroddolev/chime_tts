@@ -13,6 +13,7 @@ from .const import (
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
     TTS_TIMEOUT_KEY,
+    TTS_TIMEOUT_DEFAULT,
     TTS_PLATFORM_KEY,
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
@@ -100,7 +101,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
         self.data = {
             QUEUE_TIMEOUT_KEY: self.get_data_key_value(QUEUE_TIMEOUT_KEY, user_input, QUEUE_TIMEOUT_DEFAULT),
-            TTS_TIMEOUT_KEY: self.get_data_key_value(TTS_TIMEOUT_KEY, user_input, ""),
+            TTS_TIMEOUT_KEY: self.get_data_key_value(TTS_TIMEOUT_KEY, user_input, TTS_TIMEOUT_DEFAULT),
             TTS_PLATFORM_KEY: self.get_data_key_value(TTS_PLATFORM_KEY, user_input, ""),
             DEFAULT_LANGUAGE_KEY: self.get_data_key_value(DEFAULT_LANGUAGE_KEY, user_input, ""),
             DEFAULT_VOICE_KEY: self.get_data_key_value(DEFAULT_VOICE_KEY, user_input, ""),
