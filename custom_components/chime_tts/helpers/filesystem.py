@@ -334,7 +334,7 @@ class FilesystemHelper:
         """External address of the Home Assistant instance."""
         instance_url = hass.config.external_url
         if instance_url is None:
-            instance_url = str(get_url(hass))
+            instance_url = str(get_url(hass, prefer_external=True))
         if instance_url and instance_url.endswith("/"):
             instance_url = instance_url[:-1]
         return instance_url
@@ -462,9 +462,7 @@ class FilesystemHelper:
             return
 
         # Convert external URL to local filepath
-        instance_url = hass.config.external_url
-        if instance_url is None:
-            instance_url = str(get_url(hass))
+        instance_url = self.get_external_address(hass)
         if f"{file_path}".startswith(instance_url):
             file_path = (
                 file_path
@@ -487,9 +485,12 @@ class FilesystemHelper:
         if file_path.startswith("/config"):
             return file_path
 
-        instance_url = f"{hass.config.external_url}"
-        if instance_url is None:
-            instance_url = f"{str(get_url(hass))}"
+        instance_url = self.get_external_address(hass)
+        if not instance_url:
+            _LOGGER.error("Failed to determine the instance URL.")
+            return file_path
+
+        instance_url = f"{instance_url}"
         if instance_url.endswith("/"):
             instance_url = instance_url[:-1]
         public_dir = hass.config.path('www')
