@@ -869,7 +869,8 @@ async def async_get_playback_audio_path(params: dict, options: dict):
             audio_dict[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(hass, audio_dict.get(LOCAL_PATH_KEY, ''))
 
     # Valdiation
-    if not validate_audio_dict(hass, is_local, is_public, audio_dict):
+    is_valid = await hass.async_add_executor_job(validate_audio_dict, hass, is_local, is_public, audio_dict)
+    if not is_valid:
         return None
 
     _LOGGER.debug(" - Chime TTS audio generated:")
@@ -955,10 +956,7 @@ async def async_verify_cached_audio(hass: HomeAssistant,
             # Make a local copy of the public file
             if public_exists and await hass.async_add_executor_job(filesystem_helper.path_exists, local_external_filepath):
                 _LOGGER.debug("   - Copying cached public file %s to local path %s", local_external_filepath, _data[TEMP_PATH_KEY])
-                audio_dict[LOCAL_PATH_KEY] = await hass.async_add_executor_job(filesystem_helper.async_copy_file,
-                                                                               hass,
-                                                                               local_external_filepath,
-                                                                               _data[TEMP_PATH_KEY])
+                audio_dict[LOCAL_PATH_KEY] = await filesystem_helper.async_copy_file(hass, local_external_filepath, _data[TEMP_PATH_KEY])
                 if await hass.async_add_executor_job(filesystem_helper.path_exists, f"{audio_dict.get(LOCAL_PATH_KEY, '')}"):
                     await async_add_audio_file_to_cache(hass, audio_dict.get(LOCAL_PATH_KEY, ""), duration, params, options)
                     local_exists = True
@@ -969,10 +967,7 @@ async def async_verify_cached_audio(hass: HomeAssistant,
         # No public file exists
         if is_public and not public_exists and local_exists:
             _LOGGER.debug("    - Copying cached local file %s to public path %s", audio_dict.get(LOCAL_PATH_KEY, ""), _data[WWW_PATH_KEY])
-            audio_dict[PUBLIC_PATH_KEY] = await hass.async_add_executor_job(filesystem_helper.async_copy_file,
-                                                                            hass,
-                                                                            audio_dict.get(LOCAL_PATH_KEY, ""),
-                                                                            _data[WWW_PATH_KEY])
+            audio_dict[PUBLIC_PATH_KEY] = await filesystem_helper.async_copy_file(hass, audio_dict.get(LOCAL_PATH_KEY, ""), _data[WWW_PATH_KEY])
             if await hass.async_add_executor_job(filesystem_helper.path_exists, audio_dict.get(PUBLIC_PATH_KEY, "")) or audio_dict.get(PUBLIC_PATH_KEY, "").startswith("http://localhost"):
                 await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, ""), duration, params, options)
                 public_exists = True
