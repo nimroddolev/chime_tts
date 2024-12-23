@@ -606,7 +606,8 @@ async def async_request_tts_audio(
     audio_data = None
     media_source_id = None
     try:
-        timeout = _data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT)
+        timeout = int(_data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT))
+
         media_source_id = await asyncio.wait_for(
             asyncio.to_thread(
                 tts.media_source.generate_media_source_id,
@@ -618,9 +619,9 @@ async def async_request_tts_audio(
                 options=tts_options,
             ),
             timeout=timeout
-        )   
+        )
     except asyncio.TimeoutError:
-        _LOGGER.error("TTS audio generation with %s timed out.", tts_platform)     
+        _LOGGER.error("TTS audio generation with %s timed out after %ss.", tts_platform, str(timeout))
     except Exception as error:
         if f"{error}" == "Invalid TTS provider selected":
             missing_tts_platform_error(tts_platform)
@@ -678,8 +679,8 @@ async def async_request_tts_audio(
                                              language=language,
                                              cache=cache,
                                              options=options)
-    if audio:
-        return audio
+        if audio:
+            return audio
     _LOGGER.error("...audio_data generation failed")
     return None
 
