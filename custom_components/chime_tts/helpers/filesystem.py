@@ -36,6 +36,11 @@ _AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.
 class FilesystemHelper:
     """Filesystem helper functions for Chime TTS."""
 
+    def filepath_exists_locally(self, hass: HomeAssistant, filepath):
+        """Test whether a local filepath or extenral URL exists locally."""
+        local_path = self.get_local_path(hass, filepath)
+        return local_path and os.path.isfile(local_path)
+
     def path_exists(self, path):
         """Test whether filepath/folderpath exists."""
         if not path or len(path) == 0:
@@ -381,8 +386,8 @@ class FilesystemHelper:
         try:
             # Validate file path
             file_path = self.get_local_path(hass=hass, file_path=file_path)
-            if not await hass.async_add_executor_job(self.path_exists, file_path):
-                _LOGGER.debug("File not found: %s", file_path)
+            if not (os.path.isfile(file_path) and await hass.async_add_executor_job(self.path_exists, file_path)):
+                _LOGGER.debug("Unable to convert audio. File not found: %s", file_path)
                 return False
 
             try:
@@ -482,7 +487,10 @@ class FilesystemHelper:
     def get_local_path(self, hass: HomeAssistant, file_path: str = ""):
         """Convert external URL to local public path."""
         file_path = f"{file_path}"
-        if file_path.startswith("/config"):
+        if not file_path:
+            _LOGGER.debug("get_local_path(): No file_path provided")
+            return None
+        if file_path.startswith("/"):
             return file_path
 
         instance_url = self.get_external_address(hass)
@@ -496,10 +504,11 @@ class FilesystemHelper:
         public_dir = hass.config.path('www')
 
         local_file_path = file_path.replace(instance_url, public_dir).replace('/www/local/', '/www/')
-        if local_file_path != file_path:
-            _LOGGER.debug("Local file path for external URL is '%s'", local_file_path)
-
-        return local_file_path
+        if self.path_exists(local_file_path) and os.path.isfile(local_file_path):
+            if local_file_path != file_path:
+                _LOGGER.debug("Local file path for external URL is '%s'", local_file_path)
+            return local_file_path
+        return None
 
     def get_hash_for_string(self, string):
         """Generate a has for a given string."""

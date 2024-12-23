@@ -913,7 +913,7 @@ def validate_audio_dict(hass: HomeAssistant, is_local: bool, is_public: bool, au
             _LOGGER.error("async_get_playback_audio_path --> Unable to generate local audio file")
             is_valid = False
         elif not filesystem_helper.path_exists(audio_dict.get(LOCAL_PATH_KEY, "")):
-            _LOGGER.error("async_get_playback_audio_path --> Local audio file not found on filesystem")
+            _LOGGER.error("async_get_playback_audio_path --> Local audio file '%s' not found on filesystem", audio_dict.get(LOCAL_PATH_KEY, ""))
             is_valid = False
         if not audio_dict.get(ATTR_MEDIA_CONTENT_ID, None):
             _LOGGER.error("async_get_playback_audio_path --> Unable to generate Media Content Id")
@@ -923,8 +923,9 @@ def validate_audio_dict(hass: HomeAssistant, is_local: bool, is_public: bool, au
             _LOGGER.error("async_get_playback_audio_path --> Unable to generate public audio file")
             is_valid = False
         else:
+            _LOGGER.debug("Checking if file '%s' exists locally", audio_dict.get(PUBLIC_PATH_KEY, ""))
             external_local_path: str = filesystem_helper.get_local_path(hass, audio_dict.get(PUBLIC_PATH_KEY, ""))
-            if not (external_local_path.startswith("http://localhost") or filesystem_helper.path_exists(external_local_path)):
+            if not (external_local_path or external_local_path.startswith("http://localhost") or filesystem_helper.path_exists(external_local_path)):
                 _LOGGER.error("async_get_playback_audio_path --> Public audio file not found on filesystem: %s", external_local_path)
                 is_valid = False
     return is_valid
@@ -1397,7 +1398,6 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
 
         # Ensure audio file is Alexa Media Player compatible
         if not await filesystem_helper.async_is_audio_alexa_compatible(hass=hass, file_path=public_file):
-            _LOGGER.debug("Applying Alexa Media Player audio conversion for file: %s", public_file)
             public_file = await helpers.async_ffmpeg_convert_from_file(hass, public_file, FFMPEG_ARGS_ALEXA)
 
         # Add service call
