@@ -1,15 +1,12 @@
 """The Chime TTS integration."""
 
 import logging
-import io
 import time
 from datetime import datetime
-import asyncio
 
 from pydub import AudioSegment
 from pydub.exceptions import CouldntDecodeError
 
-from hass_nabucasa import voice as nabu_voices
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_CONTENT_ID,
     ATTR_MEDIA_CONTENT_TYPE,
@@ -21,6 +18,8 @@ from homeassistant.components.media_player.const import (
 from .helpers.helpers import ChimeTTSHelper
 from .helpers.media_player_helper import (MediaPlayerHelper, ChimeTTSMediaPlayer)
 from .helpers.filesystem import FilesystemHelper
+from .helpers.services_helper import ChimeTTSServicesHelper
+from .helpers.tts_audio_helper import TTSAudioHelper
 from .queue_manager import ChimeTTSQueueManager
 from .config_flow import ChimeTTSOptionsFlowHandler
 
@@ -28,7 +27,6 @@ from homeassistant.const import CONF_ENTITY_ID
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceResponse, SupportsResponse
 from homeassistant.helpers import storage
-from homeassistant.components import tts
 from homeassistant.exceptions import (
     HomeAssistantError,
     ServiceNotFound,
@@ -83,22 +81,6 @@ from .const import (
     FALLBACK_TTS_PLATFORM_KEY,
     OFFSET_KEY,
     CROSSFADE_KEY,
-    AMAZON_POLLY,
-    BAIDU,
-    ELEVENLABS,
-    GOOGLE_CLOUD,
-    GOOGLE_TRANSLATE,
-    IBM_WATSON_TTS,
-    MARYTTS,
-    MICROSOFT_EDGE_TTS,
-    MICROSOFT_TTS,
-    NABU_CASA_CLOUD_TTS,
-    NABU_CASA_CLOUD_TTS_OLD,
-    OPENAI_TTS,
-    PICOTTS,
-    PIPER,
-    VOICE_RSS,
-    YANDEX_TTS,
 )
 from .config import SONOS_SNAPSHOT_ENABLED
 
@@ -106,9 +88,11 @@ _LOGGER = logging.getLogger(__name__)
 _data = {}
 
 helpers = ChimeTTSHelper()
+tts_audio_helper = TTSAudioHelper()
 media_player_helper = MediaPlayerHelper()
 filesystem_helper = FilesystemHelper()
 queue = ChimeTTSQueueManager()
+services_helper = ChimeTTSServicesHelper()
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
@@ -463,10 +447,16 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
 
     # Update the services.yaml file with refreshed chimes options
     _data[CUSTOM_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(options.get(CUSTOM_CHIMES_PATH_KEY))
-    await helpers.async_update_chime_lists(hass,
-                                           _data[CUSTOM_CHIMES_PATH_KEY],
-                                           _data["async_say"],
-                                           _data["async_say_url"])
+
+    # Update _data in helper classes
+    tts_audio_helper._data = _data
+    services_helper._data = _data
+
+    # Update the services.yaml file with refreshed chimes options
+    await services_helper.async_update_services_yaml(
+        hass=hass,
+        say_service_func=_data["async_say"],
+        say_url_service_func=_data["async_say_url"])
 
     # Custom chime path slots (DEPRECATED SINCE v1.1.0)
     _data[MP3_PRESET_CUSTOM_KEY] = {}
@@ -514,232 +504,6 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         else:
             quote = "'" if isinstance(value, str) and value is not None and value != 'None' else ""
             _LOGGER.debug(" - %s: %s%s%s", str(key_string).replace("_key", ""), quote, str(value), quote)
-
-####################################
-### Retrieve TTS Audio Functions ###
-####################################
-
-async def async_request_tts_audio(
-    hass: HomeAssistant,
-    tts_platform: str,
-    message: str,
-    language: str,
-    cache: bool,
-    options: dict,
-):
-    """Send an API request for TTS audio and return the audio file's local filepath."""
-
-    start_time = datetime.now()
-
-    # Data validation
-    if not options:
-        options = {}
-    tts_options = options.copy()
-
-
-    if message is False or message == "":
-        _LOGGER.warning("No message text provided for TTS audio")
-        return None
-
-    # Verify TTS Platform
-    tts_platform = helpers.get_tts_platform(hass=hass,
-                                            tts_platform=tts_platform,
-                                            default_tts_platform=_data[TTS_PLATFORM_KEY],
-                                            fallback_tts_platform=_data[FALLBACK_TTS_PLATFORM_KEY])
-    if tts_platform is False:
-        return None
-
-    # Add & validate additional parameters
-    voice = tts_options.get("voice", None)
-
-    # Language
-    if (language or tts_options.get("language")) and tts_platform in [
-        AMAZON_POLLY,
-        GOOGLE_TRANSLATE,
-        NABU_CASA_CLOUD_TTS,
-        IBM_WATSON_TTS,
-        MICROSOFT_EDGE_TTS,
-        MICROSOFT_TTS,
-    ]:
-        if tts_platform == IBM_WATSON_TTS and voice is None:
-            tts_options["voice"] = language
-            language = None
-        if tts_platform == MICROSOFT_TTS:
-            if not language:
-                language = tts_options.get("language")
-            if "language" in tts_options:
-                del tts_options["language"]
-            if voice:
-                tts_options["type"] = voice
-                del tts_options["voice"]
-    else:
-        language = None
-
-    # Assign `language` for Nabu Casa if missing, when `voice` provided
-    if (tts_platform == NABU_CASA_CLOUD_TTS
-        and voice
-        and (language is None or len(language) == 0)):
-        for key, value in nabu_voices.TTS_VOICES.items():
-            if voice in value:
-                language = key
-                _LOGGER.debug(" - Setting language to '%s' for Nabu Casa TTS voice: '%s'.", language, voice)
-
-    # Cache
-    use_cache = bool(cache) and tts_platform not in [GOOGLE_TRANSLATE, NABU_CASA_CLOUD_TTS]
-
-    # tld
-    if "tld" in tts_options and tts_platform not in [GOOGLE_TRANSLATE]:
-        del tts_options["tld"]
-
-    # Debug log
-    _LOGGER.debug(" - Generating new TTS audio with parameters:")
-    for key, value in {
-        "tts_platform":  f"'{tts_platform}'",
-        "message":  f"'{message}'",
-        "cache":  str(use_cache),
-        "language":  "'"+str(language)+"'" if language is not None else 'None',
-        "options": str(tts_options),
-    }.items():
-        _LOGGER.debug("    * %s = %s", key, value)
-
-    # Genreate TTS audio
-    audio_data = None
-    media_source_id = None
-    try:
-        timeout = int(_data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT))
-
-        media_source_id = await asyncio.wait_for(
-            asyncio.to_thread(
-                tts.media_source.generate_media_source_id,
-                hass=hass,
-                message=message,
-                engine=tts_platform,
-                language=language,
-                cache=cache,
-                options=tts_options,
-            ),
-            timeout=timeout
-        )
-    except asyncio.TimeoutError:
-        _LOGGER.error("TTS audio generation with %s timed out after %ss.", tts_platform, str(timeout))
-    except Exception as error:
-        if f"{error}" == "Invalid TTS provider selected":
-            missing_tts_platform_error(tts_platform)
-        else:
-            _LOGGER.error(
-                "   - Error calling tts.media_source.generate_media_source_id: %s",
-                error,
-            )
-        if media_source_id:
-            try:
-                audio_data = await tts.async_get_media_source_audio(
-                    hass=hass, media_source_id=media_source_id
-                )
-            except Exception as error:
-                _LOGGER.error("   - Error calling tts.async_get_media_source_audio with media_source_id = '%s': %s",
-                    str(media_source_id), str(error))
-
-    if media_source_id is None:
-        _LOGGER.error("Error: Unable to generate media_source_id")
-    else:
-        try:
-            audio_data = await tts.async_get_media_source_audio(
-                hass=hass, media_source_id=media_source_id
-            )
-        except Exception as error:
-            _LOGGER.error("   - Error calling tts.async_get_media_source_audio with media_source_id = '%s': %s",
-                str(media_source_id), str(error))
-
-    if audio_data is not None:
-        if len(audio_data) == 2:
-            audio_bytes = audio_data[1]
-            file = io.BytesIO(audio_bytes)
-            if file is None:
-                _LOGGER.error("...could not convert TTS bytes to audio")
-            else:
-                audio: AudioSegment = await filesystem_helper.async_load_audio(file)
-                if audio is not None and len(audio) > 0:
-                    # TTS generated successfully
-                    end_time = datetime.now()
-                    completion_time = round((end_time - start_time).total_seconds(), 2)
-                    completion_time_string = (f"{completion_time}s"
-                                            if completion_time >= 1
-                                            else f"{completion_time * 1000}ms")
-                    _LOGGER.debug("   ...TTS audio generated in %s", completion_time_string)
-                    return audio
-                _LOGGER.error("...could not extract TTS audio from file")
-        else:
-            _LOGGER.error("...audio_data did not contain audio bytes")
-
-    if tts_platform != _data[FALLBACK_TTS_PLATFORM_KEY] and _data[FALLBACK_TTS_PLATFORM_KEY]:
-        _LOGGER.debug("Retrying TTS audio generation with fallback platform '%s'", _data[FALLBACK_TTS_PLATFORM_KEY])
-        audio = await async_request_tts_audio(hass=hass,
-                                             tts_platform=_data[FALLBACK_TTS_PLATFORM_KEY],
-                                             message=message,
-                                             language=language,
-                                             cache=cache,
-                                             options=options)
-        if audio:
-            return audio
-    _LOGGER.error("...audio_data generation failed")
-    return None
-
-
-def missing_tts_platform_error(tts_platform):
-    """Write a TTS platform specific debug warning when the TTS platform has not been configured."""
-    tts_platform_name = tts_platform
-    tts_platform_documentation = "https://www.home-assistant.io/integrations/#text-to-speech"
-    if tts_platform is AMAZON_POLLY:
-        tts_platform_name = "Amazon Polly"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/amazon_polly"
-    if tts_platform is BAIDU:
-        tts_platform_name = "Baidu"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/baidu"
-    if tts_platform is ELEVENLABS:
-        tts_platform_name = "ElevenLabsTS"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/elevenlabs"
-    if tts_platform is GOOGLE_CLOUD:
-        tts_platform_name = "Google Cloud"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/google_cloud"
-    if tts_platform is GOOGLE_TRANSLATE:
-        tts_platform_name = "Google Translate"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/google_translate"
-    if tts_platform is IBM_WATSON_TTS:
-        tts_platform_name = "Watson TTS"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/watson_tts"
-    if tts_platform is MARYTTS:
-        tts_platform_name = "MaryTTS"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/marytts"
-    if tts_platform is MICROSOFT_TTS:
-        tts_platform_name = "Microsoft TTS"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/microsoft"
-    if tts_platform is MICROSOFT_EDGE_TTS:
-        tts_platform_name = "Microsoft Edge TTS"
-        tts_platform_documentation = "https://github.com/hasscc/hass-edge-tts"
-    if tts_platform is NABU_CASA_CLOUD_TTS or tts_platform is NABU_CASA_CLOUD_TTS_OLD:
-        tts_platform_name = "Nabu Casa Cloud TTS"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/cloud"
-    if tts_platform is OPENAI_TTS:
-        tts_platform_name = "OpenAI TTS"
-        tts_platform_documentation = "https://github.com/sfortis/openai_tts"
-    if tts_platform is PICOTTS:
-        tts_platform_name = "PicoTTS"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/picotts"
-    if tts_platform is PIPER:
-        tts_platform_name = "Piper"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/piper"
-    if tts_platform is VOICE_RSS:
-        tts_platform_name = "VoiceRSS"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/voicerss"
-    if tts_platform is YANDEX_TTS:
-        tts_platform_name = "Yandex TTS"
-        tts_platform_documentation = "https://www.home-assistant.io/integrations/yandextts"
-    _LOGGER.error(
-        "The %s platform was not found. Please check that it has been configured correctly: %s",
-        tts_platform_name,
-        tts_platform_documentation
-    )
-
 
 ##############################
 ### Audio Helper Functions ###
@@ -1122,7 +886,7 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
 
                 # Generate new TTS audio
                 if tts_audio is None:
-                    tts_audio = await async_request_tts_audio(
+                    tts_audio = await tts_audio_helper.async_request_tts_audio(
                         hass=hass,
                         tts_platform=segment_tts_platform,
                         message=segment_message,
