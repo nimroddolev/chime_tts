@@ -172,7 +172,6 @@ class TTSAudioHelper:
         if audio_data is not None and len(audio_data) == 2:
             return await self._extract_audio(audio_data, start_time)
 
-        _LOGGER.error("...audio_data did not contain audio bytes")
         return None
 
     async def _extract_audio(self, audio_data, start_time):

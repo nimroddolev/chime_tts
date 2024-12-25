@@ -420,7 +420,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
 
     # Delay before removing temporary file
     conf_remove_temp_file_delay = options.get(REMOVE_TEMP_FILE_DELAY_KEY, 0)
-    _data[REMOVE_TEMP_FILE_DELAY_KEY] = int(conf_remove_temp_file_delay) if conf_remove_temp_file_delay.isdigit() else 0
+    _data[REMOVE_TEMP_FILE_DELAY_KEY] = int(conf_remove_temp_file_delay) if str(conf_remove_temp_file_delay).isdigit() else 0
 
     # Add cover art to generated MP3 files
     _data[ADD_COVER_ART_KEY] = options.get(ADD_COVER_ART_KEY, False)
