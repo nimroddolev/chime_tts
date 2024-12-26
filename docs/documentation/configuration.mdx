@@ -73,7 +73,7 @@ The default dialect domain ([`tld`](/chime_tts/docs/documentation/actions/say-ac
 
 ### Fallback TTS Platform
 
-The TTS platform to use if an error occured when using the specified or default platform.
+The [TTS platform](/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) to retry generating TTS audio if the specified/default platform failed.
 
 <table>
 <tr><td><b>Default Value:</b></td><td>None</td></tr>
@@ -96,7 +96,7 @@ Positive values introduce a delay, while negative values overlap the audio segme
 
 ### Fade Transition
 
-The fade out duration (in milliseconds) of the now playing audio _before_ an announcement and fading it duration of the now playing music _afterwards_.
+The duration (in milliseconds) to fade out the now playing audio _before_ an announcement, and then fade it back in _after_ the announcement is completed.
 
 _This applies to [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) action calls when the [`announce`](/chime_tts/docs/documentation/actions/say-action/parameters#announce) or [`fade_audio`](/chime_tts/docs/documentation/actions/say-action/parameters#fade_audio) parameters are used._
 
@@ -120,14 +120,18 @@ The delay duaration after [`chime_tts.say`](/chime_tts/docs/documentation/action
 
 ### Custom Chimes Folder
 
-The local folder path containing custom audio files.
-
-Any changes to the folder path or its contents will require a restart to take effect. [More info](/chime_tts/docs/documentation/actions/say-action/#custom-chimes-folder)
+The local folder path containing custom audio files. Please [read here](/chime_tts/docs/documentation/actions/say-action/#custom-chimes-folder) for more information.
 
 <table>
 <tr><td><b>Default Value:</b></td><td>None</td></tr>
 <tr><td><b>Required:</b></td><td>No</td></tr>
 </table>
+
+:::warning[Restart Requierd]
+
+Any changes to the folder path or its contents will require a restart to take effect.
+
+:::
 
 ---
 
