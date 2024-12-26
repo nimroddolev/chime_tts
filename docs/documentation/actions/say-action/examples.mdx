@@ -11,7 +11,7 @@ import './chime_tts.say.css'
 The following YAML examples cover additional features provided by the [`chime_tts.say` action](./):
 
 ## Basic TTS Audio
-All action calls to [`chime_tts.say` action](./) must include one or more `media_player` entity targets, and a data object with the TTS [`message`]((/chime_tts/docs/documentation/actions/say-action/parameters#message) and [`tts_platform`]((/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) values.
+All action calls to [`chime_tts.say` action](./) must include one or more `media_player` entity targets, and a data object with the TTS [`message`](/chime_tts/docs/documentation/actions/say-action/parameters#message) and [`tts_platform`](/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) values.
 
 ### Basic example
 
@@ -27,7 +27,7 @@ data:
 <audio controls src={useBaseUrl('/audio/examples/basic.mp3?v=1')} />
 
 ### `chime_path`
-Use [`chime_path`]((/chime_tts/docs/documentation/actions/say-action/parameters#chime_path) to play a chime before the TTS audio (using a 'Chime TTS' chime):
+Use [`chime_path`](/chime_tts/docs/documentation/actions/say-action/parameters#chime_path) to play a chime before the TTS audio (using a 'Chime TTS' chime):
 
 ```
 action: chime_tts.say
@@ -42,7 +42,7 @@ data:
 <audio controls src={useBaseUrl('/audio/examples/chime_path.mp3?v=1')} class="audio" />
 
 ### `end_chime_path`
-Use [`end_chime_path`]((/chime_tts/docs/documentation/actions/say-action/parameters#end_chime_path) to play a chime after the TTS audio (from your media folder)
+Use [`end_chime_path`](/chime_tts/docs/documentation/actions/say-action/parameters#end_chime_path) to play a chime after the TTS audio (from your media folder)
 ```
 action: chime_tts.say
 target:
@@ -56,7 +56,7 @@ data:
 <audio controls src={useBaseUrl('/audio/examples/end_chime_path.mp3?v=1')} class="audio" />
 
 ### `chime_path` and `end_chime_path`
-Include both [`chime_path`]((/chime_tts/docs/documentation/actions/say-action/parameters#chime_path) and [`end_chime_path`]((/chime_tts/docs/documentation/actions/say-action/parameters#end_chime_path) to play a chime before and after TTS audio
+Include both [`chime_path`](/chime_tts/docs/documentation/actions/say-action/parameters#chime_path) and [`end_chime_path`](/chime_tts/docs/documentation/actions/say-action/parameters#end_chime_path) to play a chime before and after TTS audio
 ```
 action: chime_tts.say
 target:
@@ -73,7 +73,7 @@ data:
 ## More complex examples
 
 ### `tts_speed`
-Use the [`tts_speed`]((/chime_tts/docs/documentation/actions/say-action/parameters#tts_speed) parameter to increase/decrease the TTS audio speed
+Use the [`tts_speed`](/chime_tts/docs/documentation/actions/say-action/parameters#tts_speed) parameter to increase/decrease the TTS audio speed
 
 #### Increase speed
 ```
@@ -106,7 +106,7 @@ data:
 <audio controls src={useBaseUrl('/audio/examples/speed_decrease.mp3?v=1')} />
 
 ### `tts_pitch`
-Use the [`tts_pitch`]((/chime_tts/docs/documentation/actions/say-action/parameters#tts_pitch) parameter to raise/lower the pitch of the TTS audio
+Use the [`tts_pitch`](/chime_tts/docs/documentation/actions/say-action/parameters#tts_pitch) parameter to raise/lower the pitch of the TTS audio
 
 #### Raise pitch
 ```
@@ -252,10 +252,10 @@ data:
 
 
 ### `offset`
-Use the [`offset`]((/chime_tts/docs/documentation/actions/say-action/parameters#offset) parameter to shift the start of chime/TTS audio backward (to overlap) or forward (to add a delay)
+Use the [`offset`](/chime_tts/docs/documentation/actions/say-action/parameters#offset) parameter to shift the start of chime/TTS audio backward (to overlap) or forward (to add a delay)
 
 #### Positive Offset (delay audio)
-Using a positive [`offset`]((/chime_tts/docs/documentation/actions/say-action/parameters#offset) value adds a delay between chimes and TTS audio.
+Using a positive [`offset`](/chime_tts/docs/documentation/actions/say-action/parameters#offset) value adds a delay between chimes and TTS audio.
 ```
 action: chime_tts.say
 target:
@@ -272,7 +272,7 @@ data:
 <audio controls src={useBaseUrl('/audio/examples/offset_delay.mp3?v=1')} />
 
 #### Negative Offset (overlay audio)
-Using a negative [`offset`]((/chime_tts/docs/documentation/actions/say-action/parameters#offset) value overlays chimes and TTS audio on top of each other.
+Using a negative [`offset`](/chime_tts/docs/documentation/actions/say-action/parameters#offset) value overlays chimes and TTS audio on top of each other.
 ```
 action: chime_tts.say
 target:
@@ -288,7 +288,7 @@ data:
 <audio controls src={useBaseUrl('/audio/examples/offset_overlay.mp3?v=1')} />
 
 ### `language` and `tld`
-You can use [`language`]((/chime_tts/docs/documentation/actions/say-action/parameters#language) and [`tld`]((/chime_tts/docs/documentation/actions/say-action/parameters#tld) to play TTS audio with a different language and/or accent on the [Google Translate](https://www.home-assistant.io/integrations/google_translate/) TTS platform
+You can use [`language`](/chime_tts/docs/documentation/actions/say-action/parameters#language) and [`tld`](/chime_tts/docs/documentation/actions/say-action/parameters#tld) to play TTS audio with a different language and/or accent on the [Google Translate](https://www.home-assistant.io/integrations/google_translate/) TTS platform
 ```
 action: chime_tts.say
 target:
@@ -305,7 +305,7 @@ data:
 <audio controls src={useBaseUrl('/audio/examples/language.mp3?v=1')} />
 
 ### `join_players`
-Use the [`join_players`]((/chime_tts/docs/documentation/actions/say-action/parameters#join_players) parameter to hear the announcement across multiple speakers at the same time (only on supported speakers).
+Use the [`join_players`](/chime_tts/docs/documentation/actions/say-action/parameters#join_players) parameter to hear the announcement across multiple speakers at the same time (only on supported speakers).
 ```
 action: chime_tts.say
 target:
@@ -324,7 +324,7 @@ data:
 
 
 ### `audio_conversion`
-Use the [`audio_conversion`]((/chime_tts/docs/documentation/actions/say-action/parameters#audio_conversion) parameter to specify FFmpeg arguments/presets to process the generated audio.
+Use the [`audio_conversion`](/chime_tts/docs/documentation/actions/say-action/parameters#audio_conversion) parameter to specify FFmpeg arguments/presets to process the generated audio.
 ```
 action: chime_tts.say
 target:
@@ -340,10 +340,10 @@ data:
 <audio controls src={useBaseUrl('/audio/examples/audio_conversion.mp3?v=1')} />
 
 ## Message Segments
-The `message` parameter can be used to specify multiple [`message segments`]((/chime_tts/docs/documentation/actions/say-action/parameters#advanced-usage-segment-sequences) which can be used to construct complicated notifications of muliple chimes & TTS audio segments.
+The `message` parameter can be used to specify multiple [`message segments`](/chime_tts/docs/documentation/actions/say-action/parameters#advanced-usage-segment-sequences) which can be used to construct complicated notifications of muliple chimes & TTS audio segments.
 
 ### `tts` Segment Type
-Review the [tts segment type]((/chime_tts/docs/documentation/actions/say-action/parameters#tts-segment-type) documentation to learn more.
+Review the [tts segment type](/chime_tts/docs/documentation/actions/say-action/parameters#tts-segment-type) documentation to learn more.
 ```
 action: chime_tts.say
 target:
@@ -379,7 +379,7 @@ In the above example:
 - The 4th segment overrides the TTS platform, setting it to Amazon Polly.
 
 ### `chime` Segment Type
-Review the [chime segment type]((/chime_tts/docs/documentation/actions/say-action/parameters#chime-segment-type) documentation to learn more.
+Review the [chime segment type](/chime_tts/docs/documentation/actions/say-action/parameters#chime-segment-type) documentation to learn more.
 ```
 action: chime_tts.say
 target:
@@ -402,7 +402,7 @@ data:
 <audio controls src={useBaseUrl('/audio/examples/segments_chime.mp3?v=1')} />
 
 ### `delay` Segment Type
-Review the [delay segment type]((/chime_tts/docs/documentation/actions/say-action/parameters#delay-segment-type) documentation to learn more.
+Review the [delay segment type](/chime_tts/docs/documentation/actions/say-action/parameters#delay-segment-type) documentation to learn more.
 ```
 action: chime_tts.say
 target:
