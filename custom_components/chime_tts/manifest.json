@@ -18,5 +18,5 @@
     "pydub",
     "aiofiles"
   ],
-  "version": "v1.2.2-beta3"
+  "version": "v1.2.2"
 }
