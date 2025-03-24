@@ -30,9 +30,12 @@ class ChimeTTSMediaPlayer:
 
         # Initialise state and values
         self.turn_on()
-        self.initially_playing = (self.get_state() == "playing"
-                                  # Check that media_player is actually playing (HomePods can incorrectly have the state "playing" when no media is playing)
-                                  and self.get_entity().attributes.get("media_duration", -1) != 0)
+        self.initially_playing = (
+            self.get_state() == "playing" and
+            # Check that media_player is actually playing (HomePods can incorrectly have the state "playing" when no media is playing)
+            self.get_entity().attributes.get("media_duration", 0) > 0 and
+            self.get_entity().attributes.get("media_position", 0) > 0
+        )
         self.initial_volume_level: float = self.get_current_volume_level()
         self.announce_supported = self.get_supported_feature(ATTR_MEDIA_ANNOUNCE)
         self.join_supported = self.get_supported_feature(ATTR_GROUP_MEMBERS)
