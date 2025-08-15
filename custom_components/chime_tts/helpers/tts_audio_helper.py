@@ -129,6 +129,8 @@ class TTSAudioHelper:
     async def _generate_tts_audio(self, hass: HomeAssistant, tts_platform, message, language, cache, tts_options):
         media_source_id = None
         audio_data = None
+        if not tts_platform.startswith("tts."):
+            tts_platform = f"tts.{tts_platform}"
         try:
             timeout = int(self._data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT))
             media_source_id = await asyncio.wait_for(
