@@ -31,7 +31,7 @@ from .media_player_helper import MediaPlayerHelper
 media_player_helper = MediaPlayerHelper()
 
 _LOGGER = logging.getLogger(__name__)
-_AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.aiff', '.aif', '.ape']
+_AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.aiff', '.aif', '.ape', '.oga']
 
 class FilesystemHelper:
     """Filesystem helper functions for Chime TTS."""
@@ -253,7 +253,7 @@ class FilesystemHelper:
             return None
 
         content_type = response.headers.get('Content-Type', '')
-        if 'audio' in content_type:
+        if 'audio' in content_type or 'octet-stream' in content_type:
             _LOGGER.debug("Audio downloaded successfully")
             _, file_extension = os.path.splitext(url)
             try:
