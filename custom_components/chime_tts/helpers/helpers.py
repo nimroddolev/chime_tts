@@ -340,6 +340,7 @@ class ChimeTTSHelper:
 
         installed_tts_platforms: list[str] = self.get_installed_tts_platforms(hass)
 
+        selected_platform = None
         # No TTS platform provided
         if not tts_platform:
             tts_platform = default_tts_platform if default_tts_platform else fallback_tts_platform
@@ -350,24 +351,24 @@ class ChimeTTSHelper:
 
         # Match for installed tts platform
         if tts_platform.lower() in installed_tts_platforms:
-            return tts_platform.lower()
-
-        # Contains "google" - return alternate Google platform, if available
-        if tts_platform.find("google") != -1:
+            selected_platform = tts_platform.lower()            
+        elif tts_platform.find("google") != -1:
             # Return alternate Google Translate entity, eg: "tts.google_en_com"
             if tts_platform.startswith("tts."):
                 for installed_tts_platform in installed_tts_platforms:
                     if (installed_tts_platform.lower().find("google") != -1
                         and installed_tts_platform.startswith("tts.")):
                         _LOGGER.warning("The TTS entity '%s' was not found. Using '%s' instead.", tts_platform, installed_tts_platform)
-                        return installed_tts_platform
+                        selected_platform = installed_tts_platform
             # Return Google Translate, if installed
             if GOOGLE_TRANSLATE in installed_tts_platforms:
                 _LOGGER.warning("The TTS platform '%s' was not found. Using '%s' instead.", tts_platform, GOOGLE_TRANSLATE)
                 return GOOGLE_TRANSLATE
 
-        _LOGGER.warning("Unable to select a TTS platform")
-        return None
+        _LOGGER.debug("Selected TTS platform: %s", selected_platform)
+        if selected_platform is None:
+            _LOGGER.warning("Unable to select a TTS platform - installed TTS platforms: %s", installed_tts_platforms)
+        return selected_platform
 
 
     def get_stripped_tts_platform(self, tts_provider = ""):
@@ -411,30 +412,48 @@ class ChimeTTSHelper:
 
     def get_installed_tts_platforms(self, hass: HomeAssistant) -> list[str]:
         """List of installed tts platforms."""
-        # Installed TTS Providers
-        tts_providers = list((hass.data["tts_manager"].providers).keys())
+        
+        # Try the new 2025.8+ method first
+        try:
+            # Check for TTS entities (most reliable method in 2025.8+)
+            tts_entities = []
+            all_entities = hass.states.async_all()
+            for entity in all_entities:
+                if str(entity.entity_id).startswith("tts."):
+                    platform_name = str(entity.entity_id).replace("tts.", "").split("_")[0]
+                    if platform_name not in tts_entities:
+                        tts_entities.append(platform_name)
+            
+            # Add common TTS platforms if they exist
+            known_platforms = ["google_translate", "cloud", "edge_tts", "openai_tts", "piper"]
+            for platform in known_platforms:
+                if platform not in tts_entities:
+                    # Check if service exists
+                    try:
+                        service_exists = hass.services.has_service("tts", f"{platform}_say")
+                        if service_exists and platform not in tts_entities:
+                            tts_entities.append(platform)
+                    except:
+                        pass
+            
+            if tts_entities:
+                return sorted(tts_entities)
+                
+        except Exception as e:
+            _LOGGER.debug("New TTS detection method failed: %s", e)
+        
+        # Fallback to old method for older HA versions
+        try:
+            # Old method for HA < 2025.8
+            tts_providers = list((hass.data["tts_manager"].providers).keys())
+            return sorted(tts_providers)
+        except Exception as e:
+            _LOGGER.debug("Legacy TTS detection method failed: %s", e)
+        
+        # Last resort - return common platforms
+        _LOGGER.warning("Could not detect TTS platforms, returning common defaults")
+        return ["google_translate", "cloud", "edge_tts"]
 
-        # Installed TTS Platform Entities
-        tts_entities = []
-        all_entities = hass.states.async_all()
-        for entity in all_entities:
-            if str(entity.entity_id).startswith("tts."):
-                tts_entities.append(str(entity.entity_id))
-
-        # Installed TTS Components
-        tts_components = []
-        for key, _value in dict(hass.data["components"]).items():
-            if isinstance(key, str) and key.endswith(".tts"):
-                tts_components.append(key[0:len(key)-4])
-
-        # Remove any duplicates and sort alphabetically
-        all_tts_platforms_found: list[str] = tts_entities + tts_providers + tts_components
-        final_tts_platforms: list[str] = []
-        for tts_platform in all_tts_platforms_found:
-            if tts_platform not in final_tts_platforms and f"tts.{tts_platform}" not in final_tts_platforms:
-                final_tts_platforms.append(tts_platform)
-        final_tts_platforms.sort()
-        return final_tts_platforms
 
 
     async def async_ffmpeg_convert_from_audio_segment(self,
