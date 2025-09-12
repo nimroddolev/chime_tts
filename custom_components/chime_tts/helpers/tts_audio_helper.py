@@ -125,14 +125,23 @@ class TTSAudioHelper:
                         voice,
                     )
         return language
+    
+    async def _generate_tts_audio(
+        self,
+        hass: HomeAssistant,
+        tts_platform: str,
+        message: str,
+        language: str | None,
+        cache: bool,
+        tts_options: dict | None,
+    ) -> tuple[str | None, bytes | None]:
+        media_source_id: str | None = None
+        audio_data: bytes | None = None
 
-    async def _generate_tts_audio(self, hass: HomeAssistant, tts_platform, message, language, cache, tts_options):
-        media_source_id = None
-        audio_data = None
-        if not tts_platform.startswith("tts."):
-            tts_platform = f"tts.{tts_platform}"
+        timeout = int(self._data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT))
+
         try:
-            timeout = int(self._data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT))
+            # generate_media_source_id is sync; offload to thread, guard with timeout
             media_source_id = await asyncio.wait_for(
                 asyncio.to_thread(
                     tts.media_source.generate_media_source_id,
@@ -145,15 +154,47 @@ class TTSAudioHelper:
                 ),
                 timeout=timeout,
             )
-        except asyncio.TimeoutError:
-            _LOGGER.error("TTS audio generation with %s timed out after %ss. Consider increasing the TTS audio generation timeout value in the configuration.", tts_platform, str(timeout))
-        except asyncio.CancelledError:
-            _LOGGER.error("TTS audio generation with %s cancelled.", tts_platform)
-        except Exception as error:
-            _LOGGER.error("Error generating TTS audio with %s.", tts_platform)
-            self._handle_generation_error(error, tts_platform, media_source_id)
+            return media_source_id, audio_data
 
-        return media_source_id, audio_data
+        except asyncio.TimeoutError:
+            _LOGGER.error(
+                "TTS audio generation with %s timed out after %ss. "
+                "Consider increasing the TTS timeout in the configuration.",
+                tts_platform, timeout,
+            )
+            return None, None
+
+        except asyncio.CancelledError:
+            _LOGGER.warning("TTS audio generation with %s cancelled.", tts_platform)
+            raise  # preserve cancellation
+
+        except Exception as exc:
+            # If caller passed e.g. "google_translate" instead of "tts.google_translate", try once
+            if not tts_platform.startswith("tts."):
+                _LOGGER.debug(
+                    "Attempting to generate audio with tts.%s (instead of %s)",
+                    tts_platform, tts_platform,
+                )
+                try:
+                    return await self._generate_tts_audio(
+                        hass,
+                        f"tts.{tts_platform}",
+                        message,
+                        language,
+                        cache,
+                        tts_options,
+                    )
+                except Exception as prefixed_exc:
+                    self._handle_generation_error(
+                        prefixed_exc, f"tts.{tts_platform}", media_source_id
+                    )
+                    return None, None
+
+            # Already prefixed or other failure path
+            self._handle_generation_error(exc, tts_platform, media_source_id)
+            return None, None
+
+
 
     async def _process_audio_data(self, hass: HomeAssistant, media_source_id, audio_data, start_time):
         if not media_source_id:

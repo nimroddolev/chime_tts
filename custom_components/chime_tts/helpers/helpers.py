@@ -413,9 +413,21 @@ class ChimeTTSHelper:
     def get_installed_tts_platforms(self, hass: HomeAssistant) -> list[str]:
         """List of installed tts platforms."""
         
+        # Look up TTS platforms
+        try:
+            _LOGGER.debug("Looking up TTS platforms m(HA < 2025.8)")
+            # Method for HA < 2025.8
+            tts_providers = list((hass.data["tts_manager"].providers).keys())
+            _LOGGER.debug("tts_providers found: %s", str(tts_providers))
+            if tts_providers:
+                return sorted(tts_providers)
+        except Exception as e:
+            _LOGGER.debug("Initial TTS detection method failed: %s", e)
+
         # Try the new 2025.8+ method first
         try:
-            # Check for TTS entities (most reliable method in 2025.8+)
+            # Check for TTS entities (HA >= 2025.8)
+            _LOGGER.debug("Check for TTS entities (HA 2025.8+)")
             tts_entities = []
             all_entities = hass.states.async_all()
             for entity in all_entities:
@@ -423,6 +435,8 @@ class ChimeTTSHelper:
                     platform_name = str(entity.entity_id).replace("tts.", "").split("_")[0]
                     if platform_name not in tts_entities:
                         tts_entities.append(platform_name)
+                        _LOGGER.debug("TTS entity found: %s", platform_name)
+
             
             # Add common TTS platforms if they exist
             known_platforms = ["google_translate", "cloud", "edge_tts", "openai_tts", "piper"]
@@ -433,23 +447,17 @@ class ChimeTTSHelper:
                         service_exists = hass.services.has_service("tts", f"{platform}_say")
                         if service_exists and platform not in tts_entities:
                             tts_entities.append(platform)
+                            _LOGGER.debug("Common TTS platform found: %s", platform_name)
                     except:
                         pass
             
             if tts_entities:
+                _LOGGER.debug("Returning list of TTS platforms: %s", str(tts_entities))
                 return sorted(tts_entities)
                 
         except Exception as e:
             _LOGGER.debug("New TTS detection method failed: %s", e)
-        
-        # Fallback to old method for older HA versions
-        try:
-            # Old method for HA < 2025.8
-            tts_providers = list((hass.data["tts_manager"].providers).keys())
-            return sorted(tts_providers)
-        except Exception as e:
-            _LOGGER.debug("Legacy TTS detection method failed: %s", e)
-        
+                
         # Last resort - return common platforms
         _LOGGER.warning("Could not detect TTS platforms, returning common defaults")
         return ["google_translate", "cloud", "edge_tts"]
