@@ -18,6 +18,7 @@ from ..const import (
     ALEXA_MEDIA_PLAYER_PLATFORM,
     SONOS_PLATFORM,
     SPOTIFY_PLATFORM,
+    SQUEEZEBOX_PLATFORM,
     TRANSITION_STEP_MS
 )
 from ..config import (
@@ -126,7 +127,7 @@ class MediaPlayerHelper:
         for media_player in self.media_players:
             if (media_player not in self.get_fade_in_out_media_players()
                 and media_player.target_volume_level not in [-1, media_player.initial_volume_level]
-                and media_player.platform not in (SPOTIFY_PLATFORM, SONOS_PLATFORM)
+                and media_player.platform not in (SPOTIFY_PLATFORM, SONOS_PLATFORM, SQUEEZEBOX_PLATFORM)
             ):
                 set_volume_media_players.append(media_player)
         return set_volume_media_players
@@ -179,7 +180,7 @@ class MediaPlayerHelper:
     def get_is_standard_media_player(self, entity_id):
         """Determine whether a media_player can be used with the media_player.play_media service."""
         platform = self.get_platform_from_entity_id(entity_id)
-        return platform and platform not in (ALEXA_MEDIA_PLAYER_PLATFORM, SONOS_PLATFORM, SPOTIFY_PLATFORM)
+        return platform and platform not in (ALEXA_MEDIA_PLAYER_PLATFORM, SONOS_PLATFORM, SPOTIFY_PLATFORM, SQUEEZEBOX_PLATFORM)
 
     def get_platform_from_entity_id(self, entity_id):
         """Platform for the media_player with entity_id."""

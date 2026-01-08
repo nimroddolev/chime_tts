@@ -15,6 +15,10 @@ from homeassistant.components.media_player.const import (
     MediaType as MEDIA_TYPE,
 )
 
+from homeassistant.components.squeezebox.const import (
+    ATTR_ANNOUNCE_VOLUME,
+)
+
 from .helpers.helpers import ChimeTTSHelper
 from .helpers.media_player_helper import (MediaPlayerHelper, ChimeTTSMediaPlayer)
 from .helpers.filesystem import FilesystemHelper
@@ -67,6 +71,7 @@ from .const import (
     ALEXA_MEDIA_PLAYER_PLATFORM,
     FFMPEG_ARGS_ALEXA,
     SONOS_PLATFORM,
+    SQUEEZEBOX_PLATFORM,
     MP3_PRESET_CUSTOM_PREFIX,
     MP3_PRESET_CUSTOM_KEY,
     QUEUE_TIMEOUT_KEY,
@@ -1071,6 +1076,7 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
     standard_media_player_entity_ids: list[str] = [entity_id for entity_id in entity_ids if media_player_helper.get_is_standard_media_player(entity_id)]
     alexa_media_player_entity_ids: list[str] = media_player_helper.get_media_players_of_platform(entity_ids, ALEXA_MEDIA_PLAYER_PLATFORM)
     sonos_media_player_entity_ids: list[str] = media_player_helper.get_media_players_of_platform(entity_ids, SONOS_PLATFORM)
+    squeezebox_media_player_entity_ids: list[str] = media_player_helper.get_media_players_of_platform(entity_ids, SQUEEZEBOX_PLATFORM)
 
     # Remove speaker group media_players from the media_player lists
     if joined_media_player_entity_id and len(joined_media_player_entity_id) > 0:
@@ -1181,6 +1187,46 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
         else:
             _LOGGER.warning("Unable to play audio on Alexa device. No public URL found.")
 
+    # Squeezebox media_players
+    if len(squeezebox_media_player_entity_ids) > 0:
+        squeezebox_service_data = service_data.copy()
+        if squeezebox_service_data[ATTR_MEDIA_CONTENT_ID] is None:
+            _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
+        else:
+            _LOGGER.debug(
+                "   %s Squeezebox media player%s detected:",
+                len(squeezebox_media_player_entity_ids),
+                ("s" if len(squeezebox_media_player_entity_ids) != 1 else ""))
+            for entity_id in squeezebox_media_player_entity_ids:
+                _LOGGER.debug("     - %s", entity_id)
+            
+            # If all media_players have same target volume level
+            uniform_target_volume = media_player_helper.get_uniform_target_volume_level(squeezebox_media_player_entity_ids)
+            if uniform_target_volume != -1:
+                squeezebox_service_data[CONF_ENTITY_ID] = squeezebox_media_player_entity_ids
+                if uniform_target_volume >= 0:
+                    squeezebox_service_data["extra"] = { ATTR_ANNOUNCE_VOLUME: uniform_target_volume }
+                service_calls.append({
+                    "domain": "media_player",
+                    "service": SERVICE_PLAY_MEDIA,
+                    "service_data": squeezebox_service_data,
+                    "blocking": True,
+                    "result": True
+                })
+            else:
+                # Else 1 media_player.play_media service call per Squeezebox media_player, with the media_player's target volume level
+                for media_player in media_player_helper.get_media_players_from_entity_ids(squeezebox_media_player_entity_ids):
+                    individual_service_data = squeezebox_service_data.copy()
+                    individual_service_data[CONF_ENTITY_ID] = media_player.entity_id
+                    individual_service_data["extra"] = { ATTR_ANNOUNCE_VOLUME: media_player.target_volume_level }
+                    service_calls.append({
+                        "domain": "media_player",
+                        "service": SERVICE_PLAY_MEDIA,
+                        "service_data": individual_service_data,
+                        "blocking": True,
+                        "result": True
+                    })
+
     return service_calls
 
 
@@ -1243,7 +1289,7 @@ async def async_post_playback_actions(hass: HomeAssistant,
     # Wait for playback to end on all media_players
     playing_media_players: list[ChimeTTSMediaPlayer] = []
     for media_player in media_players_array:
-        if not(media_player_helper.announce and (media_player.platform == SPOTIFY_PLATFORM or media_player.platform == SONOS_PLATFORM)):
+        if not(media_player_helper.announce and (media_player.platform == SPOTIFY_PLATFORM or media_player.platform == SONOS_PLATFORM or media_player.platform == SQUEEZEBOX_PLATFORM)):
             playing_media_players.append(media_player)
     if not await media_player_helper.async_wait_until_media_players_state_not(hass, playing_media_players, "playing"):
         _LOGGER.debug(" - Timed out waiting for playback to complete")
