@@ -44,6 +44,7 @@ ADD_COVER_ART_KEY = "add_cover_art"
 ALEXA_MEDIA_PLAYER_PLATFORM = "alexa_media"
 SONOS_PLATFORM = "sonos"
 SPOTIFY_PLATFORM = "spotify"
+SQUEEZEBOX_PLATFORM = "squeezebox"
 
 ROOT_PATH_KEY = "root_path_key"
 MEDIA_FOLDER_PATH = "/local/"
@@ -134,3 +135,5 @@ VOICE_RSS = "voicerss"
 YANDEX_TTS = "yandextts"
 
 QUOTE_CHAR_SUBSTITUTE = "🁢"
+
+SQUEEZEBOX_ATTR_ANNOUNCE_VOLUME = "announce_volume"
