@@ -15,10 +15,6 @@ from homeassistant.components.media_player.const import (
     MediaType as MEDIA_TYPE,
 )
 
-from homeassistant.components.squeezebox.const import (
-    ATTR_ANNOUNCE_VOLUME,
-)
-
 from .helpers.helpers import ChimeTTSHelper
 from .helpers.media_player_helper import (MediaPlayerHelper, ChimeTTSMediaPlayer)
 from .helpers.filesystem import FilesystemHelper
@@ -86,6 +82,8 @@ from .const import (
     FALLBACK_TTS_PLATFORM_KEY,
     OFFSET_KEY,
     CROSSFADE_KEY,
+
+    SQUEEZEBOX_ATTR_ANNOUNCE_VOLUME,
 )
 from .config import SONOS_SNAPSHOT_ENABLED
 
@@ -1205,7 +1203,7 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
             if uniform_target_volume != -1:
                 squeezebox_service_data[CONF_ENTITY_ID] = squeezebox_media_player_entity_ids
                 if uniform_target_volume >= 0:
-                    squeezebox_service_data["extra"] = { ATTR_ANNOUNCE_VOLUME: uniform_target_volume }
+                    squeezebox_service_data["extra"] = { SQUEEZEBOX_ATTR_ANNOUNCE_VOLUME: uniform_target_volume }
                 service_calls.append({
                     "domain": "media_player",
                     "service": SERVICE_PLAY_MEDIA,
@@ -1219,7 +1217,7 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
                     individual_service_data = squeezebox_service_data.copy()
                     individual_service_data[CONF_ENTITY_ID] = media_player.entity_id
                     if media_player.target_volume_level >= 0:
-                        individual_service_data["extra"] = { ATTR_ANNOUNCE_VOLUME: media_player.target_volume_level }
+                        individual_service_data["extra"] = { SQUEEZEBOX_ATTR_ANNOUNCE_VOLUME: media_player.target_volume_level }
                     service_calls.append({
                         "domain": "media_player",
                         "service": SERVICE_PLAY_MEDIA,

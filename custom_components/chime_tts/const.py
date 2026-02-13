@@ -135,3 +135,5 @@ VOICE_RSS = "voicerss"
 YANDEX_TTS = "yandextts"
 
 QUOTE_CHAR_SUBSTITUTE = "🁢"
+
+SQUEEZEBOX_ATTR_ANNOUNCE_VOLUME = "announce_volume"
