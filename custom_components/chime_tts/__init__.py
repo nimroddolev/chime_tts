@@ -1218,7 +1218,8 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
                 for media_player in media_player_helper.get_media_players_from_entity_ids(squeezebox_media_player_entity_ids):
                     individual_service_data = squeezebox_service_data.copy()
                     individual_service_data[CONF_ENTITY_ID] = media_player.entity_id
-                    individual_service_data["extra"] = { ATTR_ANNOUNCE_VOLUME: media_player.target_volume_level }
+                    if media_player.target_volume_level >= 0:
+                        individual_service_data["extra"] = { ATTR_ANNOUNCE_VOLUME: media_player.target_volume_level }
                     service_calls.append({
                         "domain": "media_player",
                         "service": SERVICE_PLAY_MEDIA,
