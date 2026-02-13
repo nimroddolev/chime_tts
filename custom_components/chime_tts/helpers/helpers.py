@@ -339,19 +339,22 @@ class ChimeTTSHelper:
         """TTS platform/entity_id to use for TTS audio."""
 
         installed_tts_platforms: list[str] = self.get_installed_tts_platforms(hass)
-
         selected_platform = None
+
         # No TTS platform provided
         if not tts_platform:
             tts_platform = default_tts_platform if default_tts_platform else fallback_tts_platform
 
+        tts_platform = tts_platform.lower()
+        tts_platform_name = tts_platform.replace("tts.", "") if tts_platform.startswith("tts.") else None
+
         # Match for deprecated Nabu Casa platform string
-        if tts_platform.lower() == NABU_CASA_CLOUD_TTS_OLD:
+        if tts_platform == NABU_CASA_CLOUD_TTS_OLD:
             tts_platform = NABU_CASA_CLOUD_TTS
 
         # Match for installed tts platform
-        if tts_platform.lower() in installed_tts_platforms:
-            selected_platform = tts_platform.lower()            
+        if tts_platform in installed_tts_platforms or tts_platform_name in installed_tts_platforms:
+            selected_platform = tts_platform
         elif tts_platform.find("google") != -1:
             # Return alternate Google Translate entity, eg: "tts.google_en_com"
             if tts_platform.startswith("tts."):
