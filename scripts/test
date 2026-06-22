@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+from pathlib import Path
+import hashlib
+
+
+ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_PYTHON = "/opt/homebrew/bin/python3.10"
+DEFAULT_VENV = "/tmp/chime-tts-test-venv"
+BOOTSTRAP_PIP = "24.3.1"
+
+
+def dependency_fingerprint() -> str:
+    """Hash the dependency inputs that control test environment setup."""
+    digest = hashlib.sha256()
+    digest.update(f"pip={BOOTSTRAP_PIP}\n".encode())
+    digest.update((ROOT / "requirements.txt").read_bytes())
+    digest.update(b"\npydub\npytest\npytest-asyncio\n")
+    return digest.hexdigest()
+
+
+def run(command: list[str]) -> None:
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(ROOT) if not env.get("PYTHONPATH") else f"{ROOT}{os.pathsep}{env['PYTHONPATH']}"
+    subprocess.run(command, cwd=ROOT, check=True, env=env)
+
+
+def ensure_venv(python_bin: str, venv_dir: Path) -> None:
+    if not Path(python_bin).exists():
+        print(f"Python 3.11 not found at {python_bin}", file=sys.stderr)
+        print("Set PYTHON_BIN=/path/to/python3.11 and rerun.", file=sys.stderr)
+        raise SystemExit(1)
+
+    if not (venv_dir / "bin" / "python").exists():
+        run([python_bin, "-m", "venv", str(venv_dir)])
+
+    stamp_file = venv_dir / ".deps-fingerprint"
+    fingerprint = dependency_fingerprint()
+    if stamp_file.exists() and stamp_file.read_text() == fingerprint:
+        return
+
+    run([str(venv_dir / "bin" / "python"), "-m", "pip", "install", "-q", f"pip=={BOOTSTRAP_PIP}"])
+    run(
+        [
+            str(venv_dir / "bin" / "pip"),
+            "install",
+            "-q",
+            "-r",
+            "requirements.txt",
+            "pydub",
+            "pytest",
+            "pytest-asyncio",
+        ]
+    )
+    stamp_file.write_text(fingerprint)
+
+
+def main() -> int:
+    action = sys.argv[1] if len(sys.argv) > 1 else "pytest"
+    extra_args = sys.argv[2:]
+
+    python_bin = os.environ.get("PYTHON_BIN", DEFAULT_PYTHON)
+    venv_dir = Path(os.environ.get("VENV_DIR", DEFAULT_VENV))
+    ensure_venv(python_bin, venv_dir)
+
+    if action == "pytest":
+        run([str(venv_dir / "bin" / "pytest"), *(extra_args or ["tests"]), "-q"])
+        return 0
+
+    if action == "lint":
+        run(
+            [
+                str(venv_dir / "bin" / "ruff"),
+                "check",
+                *(extra_args or ["custom_components/chime_tts/helpers/helpers.py", "tests"]),
+            ]
+        )
+        return 0
+
+    if action == "all":
+        run([str(venv_dir / "bin" / "pytest"), "tests", "-q"])
+        run(
+            [
+                str(venv_dir / "bin" / "ruff"),
+                "check",
+                "custom_components/chime_tts/helpers/helpers.py",
+                "tests",
+            ]
+        )
+        return 0
+
+    print("Usage: scripts/test [pytest|lint|all] [extra args...]", file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

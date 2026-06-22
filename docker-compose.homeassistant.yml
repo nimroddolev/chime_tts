@@ -1,0 +1,28 @@
+services:
+  homeassistant-stable:
+    container_name: chime_tts_ha_stable
+    image: ghcr.io/home-assistant/home-assistant:stable
+    restart: unless-stopped
+    ports:
+      - "8123:8123"
+    environment:
+      TZ: ${TZ:-Asia/Jerusalem}
+    volumes:
+      - ./.ha/stable/config:/config
+      - ./custom_components/chime_tts:/config/custom_components/chime_tts
+      - ./:/workspaces/chime_tts
+      - ./.ha/shared/media:/media
+
+  homeassistant-dev:
+    container_name: chime_tts_ha_dev
+    image: ghcr.io/home-assistant/home-assistant:dev
+    restart: unless-stopped
+    ports:
+      - "18123:8123"
+    environment:
+      TZ: ${TZ:-Asia/Jerusalem}
+    volumes:
+      - ./.ha/dev/config:/config
+      - ./custom_components/chime_tts:/config/custom_components/chime_tts
+      - ./:/workspaces/chime_tts
+      - ./.ha/shared/media:/media

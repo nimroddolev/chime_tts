@@ -15,6 +15,7 @@ coverage.xml
 # Home Assistant configuration
 config/*
 !config/configuration.yaml
+.ha/
 node_modules
 build
 .docusaurus
