@@ -133,6 +133,8 @@ class ChimeTTSQueueManager:
                 task = self.queue.get_nowait()
                 if isinstance(task, asyncio.Future):
                     task.cancel()
+                elif isinstance(task, dict) and isinstance(task.get("future"), asyncio.Future):
+                    task["future"].cancel()
                 self.queue.task_done()
             except asyncio.QueueEmpty:
                 break

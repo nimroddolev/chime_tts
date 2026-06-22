@@ -1123,8 +1123,9 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
                 _LOGGER.debug("     - %s", entity_id)
 
             # If all media_players have same target volume level
-            uniform_target_volume = int(media_player_helper.get_uniform_target_volume_level(sonos_media_player_entity_ids) * 100)
-            if uniform_target_volume != -1:
+            uniform_target_volume_level = media_player_helper.get_uniform_target_volume_level(sonos_media_player_entity_ids)
+            if uniform_target_volume_level != -1:
+                uniform_target_volume = int(uniform_target_volume_level * 100)
                 sonos_service_data[CONF_ENTITY_ID] = sonos_media_player_entity_ids
                 if uniform_target_volume >= 0:
                     sonos_service_data["extra"] = {"volume": uniform_target_volume}
@@ -1399,7 +1400,10 @@ async def async_remove_cached_audio_data(hass: HomeAssistant,
             audio_dict[PUBLIC_PATH_KEY] = None
 
     # Remove key/value from integration storage if no paths remain
-    if audio_dict.get(LOCAL_PATH_KEY, None) is not None or (audio_dict.get(PUBLIC_PATH_KEY, None)):
+    if (
+        audio_dict.get(LOCAL_PATH_KEY, None) is None
+        and audio_dict.get(PUBLIC_PATH_KEY, None) is None
+    ):
         await async_delete_data(hass, filepath_hash)
 
 
