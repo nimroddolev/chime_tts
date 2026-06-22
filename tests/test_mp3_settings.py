@@ -25,6 +25,7 @@ from custom_components.chime_tts.helpers.filesystem import FilesystemHelper
 from custom_components.chime_tts.helpers import helpers as helpers_module
 from custom_components.chime_tts.helpers.helpers import ChimeTTSHelper
 from homeassistant.components.media_player.const import ATTR_MEDIA_CONTENT_ID
+from pydub.generators import Square
 
 integration_module = importlib.import_module("custom_components.chime_tts.__init__")
 
@@ -34,6 +35,7 @@ EXPECTED_PCM_MD5 = {
     "pitch12": "6899ada5e1a53a3135ba7ccb8ab050b3",
     "alexa": "2c6ce06185e4b841a3c2e825191da9c6",
     "delay": "c53002b2dd22145acfb5f31e438fe469",
+    "yaml_combo": "fc46c44180390c480f9029f872a11bab",
 }
 
 
@@ -712,3 +714,73 @@ async def test_async_prepare_media_returns_say_url_payload(monkeypatch: pytest.M
         "duration": 3.25,
         "success": True,
     }
+
+
+@pytest.mark.asyncio
+async def test_yaml_combo_artifact_has_expected_audio_fingerprint(
+    filesystem_helper: FilesystemHelper,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A mixed YAML sequence should render to a stable combined audio artifact."""
+    hass = FakeHass()
+    integration_module._data[TEMP_PATH_KEY] = str(tmp_path)
+
+    async def fake_get_audio_from_path(
+        hass,
+        filepath,
+        cache=False,
+        offset=0,
+        crossfade=0,
+        audio_conversion="",
+        audio=None,
+    ):
+        del hass, cache, audio_conversion
+        if filepath == "intro":
+            segment = Square(220).to_audio_segment(duration=120).set_frame_rate(44100).set_channels(1)
+        elif filepath == "outro":
+            segment = Square(660).to_audio_segment(duration=90).set_frame_rate(44100).set_channels(1)
+        else:
+            raise AssertionError(f"Unexpected chime path: {filepath}")
+        return integration_module.helpers.combine_audio(audio, segment, offset, crossfade)
+
+    monkeypatch.setattr(integration_module, "async_get_audio_from_path", fake_get_audio_from_path)
+    monkeypatch.setattr(
+        integration_module.tts_audio_helper,
+        "async_request_tts_audio",
+        AsyncMock(return_value=Sine(440).to_audio_segment(duration=300).set_frame_rate(44100).set_channels(1)),
+    )
+
+    output = await integration_module.async_process_segments(
+        hass=hass,
+        message="""
+- chime: intro
+  repeat: 2
+- delay: 150
+- tts: "Hello there"
+  speed: 125
+  pitch: -3
+- chime: outro
+  offset: -50
+""",
+        output_audio=None,
+        params={
+            "tts_platform": "google_translate",
+            "language": "en",
+            "cache": False,
+            "tts_speed": 100,
+            "tts_pitch": 0,
+            "offset": 0,
+            "crossfade": 0,
+        },
+        options={},
+    )
+
+    artifact_path = await filesystem_helper.async_save_audio_to_folder(
+        hass, output, str(tmp_path), "yaml_combo.mp3"
+    )
+    decoded = await filesystem_helper.async_load_audio(artifact_path)
+    normalized = decoded.set_channels(1).set_frame_rate(16000).set_sample_width(2)
+
+    assert hashlib.md5(normalized.raw_data).hexdigest() == EXPECTED_PCM_MD5["yaml_combo"]
+    assert len(decoded) == 673
