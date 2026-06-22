@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+"""Test runner wrapper for Chime TTS development checks."""
 
 from __future__ import annotations
 
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 import hashlib
 
@@ -25,15 +27,109 @@ def dependency_fingerprint() -> str:
 
 
 def run(command: list[str]) -> None:
+    """Run a command in the repository root with the repo on `PYTHONPATH`."""
     env = os.environ.copy()
     env["PYTHONPATH"] = str(ROOT) if not env.get("PYTHONPATH") else f"{ROOT}{os.pathsep}{env['PYTHONPATH']}"
     subprocess.run(command, cwd=ROOT, check=True, env=env)
 
 
+def run_capture(command: list[str]) -> subprocess.CompletedProcess[str]:
+    """Run a command and capture its text output."""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(ROOT) if not env.get("PYTHONPATH") else f"{ROOT}{os.pathsep}{env['PYTHONPATH']}"
+    return subprocess.run(
+        command,
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
+def write_stdout(text: str = "") -> None:
+    """Write a line of output to stdout."""
+    sys.stdout.write(f"{text}\n")
+
+
+def write_stderr(text: str) -> None:
+    """Write a line of output to stderr."""
+    sys.stderr.write(f"{text}\n")
+
+
+def print_summary_table(results: list[dict[str, str]]) -> None:
+    """Print a simple summary table for completed checks."""
+    headers = ["Check", "Status", "Duration", "Command"]
+    rows = [[result["name"], result["status"], result["duration"], result["command"]] for result in results]
+    widths = [
+        max(len(headers[index]), *(len(row[index]) for row in rows))
+        for index in range(len(headers))
+    ]
+
+    def format_row(row: list[str]) -> str:
+        return "| " + " | ".join(value.ljust(widths[index]) for index, value in enumerate(row)) + " |"
+
+    separator = "|-" + "-|-".join("-" * width for width in widths) + "-|"
+    write_stdout(format_row(headers))
+    write_stdout(separator)
+    for row in rows:
+        write_stdout(format_row(row))
+
+
+def summarize_checks(venv_dir: Path) -> int:
+    """Run the full test suite and print a compact summary table."""
+    checks = [
+        {
+            "name": "Pytest",
+            "command": [str(venv_dir / "bin" / "pytest"), "tests", "-q"],
+        },
+        {
+            "name": "Ruff",
+            "command": [
+                str(venv_dir / "bin" / "ruff"),
+                "check",
+                "custom_components/chime_tts/helpers/helpers.py",
+                "tests",
+            ],
+        },
+    ]
+    results: list[dict[str, str]] = []
+    exit_code = 0
+
+    for check in checks:
+        start = time.perf_counter()
+        completed = run_capture(check["command"])
+        duration = f"{time.perf_counter() - start:.2f}s"
+        status = "PASS" if completed.returncode == 0 else "FAIL"
+        results.append(
+            {
+                "name": check["name"],
+                "status": status,
+                "duration": duration,
+                "command": " ".join(check["command"][1:]),
+            }
+        )
+
+        output = (completed.stdout or "").strip()
+        errors = (completed.stderr or "").strip()
+        if output:
+            write_stdout(output)
+        if errors:
+            write_stderr(errors)
+
+        if completed.returncode != 0:
+            exit_code = completed.returncode
+
+    write_stdout()
+    print_summary_table(results)
+    return exit_code
+
+
 def ensure_venv(python_bin: str, venv_dir: Path) -> None:
+    """Create and populate the test virtual environment when needed."""
     if not Path(python_bin).exists():
-        print(f"Python 3.11 not found at {python_bin}", file=sys.stderr)
-        print("Set PYTHON_BIN=/path/to/python3.11 and rerun.", file=sys.stderr)
+        write_stderr(f"Python 3.11 not found at {python_bin}")
+        write_stderr("Set PYTHON_BIN=/path/to/python3.11 and rerun.")
         raise SystemExit(1)
 
     if not (venv_dir / "bin" / "python").exists():
@@ -61,6 +157,7 @@ def ensure_venv(python_bin: str, venv_dir: Path) -> None:
 
 
 def main() -> int:
+    """Dispatch the requested wrapper action."""
     action = sys.argv[1] if len(sys.argv) > 1 else "pytest"
     extra_args = sys.argv[2:]
 
@@ -94,7 +191,10 @@ def main() -> int:
         )
         return 0
 
-    print("Usage: scripts/test [pytest|lint|all] [extra args...]", file=sys.stderr)
+    if action == "summary":
+        return summarize_checks(venv_dir)
+
+    write_stderr("Usage: scripts/test [pytest|lint|all|summary] [extra args...]")
     return 1
 
 
