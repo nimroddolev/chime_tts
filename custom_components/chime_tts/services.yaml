@@ -58,7 +58,89 @@ say:
           custom_value: true
           mode: dropdown
           multiple: false
-          options: []
+          options:
+          - &id001
+            label: Ba-Dum Tss!
+            value: ba_dum_tss
+          - &id002
+            label: Bells
+            value: bells
+          - &id003
+            label: Bells 2
+            value: bells_2
+          - &id004
+            label: Bright
+            value: bright
+          - &id005
+            label: Chirp
+            value: chirp
+          - &id006
+            label: Choir
+            value: choir
+          - &id007
+            label: Chord
+            value: chord
+          - &id008
+            label: Classical
+            value: classical
+          - &id009
+            label: Crickets
+            value: crickets
+          - &id010
+            label: Ding Dong
+            value: ding_dong
+          - &id011
+            label: Drum Roll
+            value: drumroll
+          - &id012
+            label: Dun dun DUUUN!
+            value: dun_dun_dun
+          - &id013
+            label: Error
+            value: error
+          - &id014
+            label: Fanfare
+            value: fanfare
+          - &id015
+            label: Glockenspiel
+            value: glockenspiel
+          - &id016
+            label: Hail
+            value: hail
+          - &id017
+            label: Knock
+            value: knock
+          - &id018
+            label: Marimba
+            value: marimba
+          - &id019
+            label: Mario Coin
+            value: mario_coin
+          - &id020
+            label: Microphone Tap
+            value: microphone_tap
+          - &id021
+            label: Sad Trombone
+            value: sad_trombone
+          - &id022
+            label: Soft
+            value: soft
+          - &id023
+            label: Ta-da!
+            value: tada
+          - &id024
+            label: Toast
+            value: toast
+          - &id025
+            label: Twenty Four
+            value: twenty_four
+          - &id026
+            label: Whistle
+            value: whistle
+          - &id027
+            label: '*** Add a local folder path in the configuration for your own
+              custom chimes ***'
+            value: ''
           translation_key: chime_paths
     end_chime_path:
       description: A preset or custom audio file to be played after TTS audio
@@ -70,7 +152,34 @@ say:
           custom_value: true
           mode: dropdown
           multiple: false
-          options: []
+          options:
+          - *id001
+          - *id002
+          - *id003
+          - *id004
+          - *id005
+          - *id006
+          - *id007
+          - *id008
+          - *id009
+          - *id010
+          - *id011
+          - *id012
+          - *id013
+          - *id014
+          - *id015
+          - *id016
+          - *id017
+          - *id018
+          - *id019
+          - *id020
+          - *id021
+          - *id022
+          - *id023
+          - *id024
+          - *id025
+          - *id026
+          - *id027
           translation_key: chime_paths
     offset:
       description: Adds a delay between audio segments when value > 0, or overlays
@@ -317,7 +426,34 @@ say_url:
           custom_value: true
           mode: dropdown
           multiple: false
-          options: []
+          options:
+          - *id001
+          - *id002
+          - *id003
+          - *id004
+          - *id005
+          - *id006
+          - *id007
+          - *id008
+          - *id009
+          - *id010
+          - *id011
+          - *id012
+          - *id013
+          - *id014
+          - *id015
+          - *id016
+          - *id017
+          - *id018
+          - *id019
+          - *id020
+          - *id021
+          - *id022
+          - *id023
+          - *id024
+          - *id025
+          - *id026
+          - *id027
           translation_key: chime_paths
     end_chime_path:
       description: A preset or custom audio file to be played after TTS audio
@@ -329,7 +465,34 @@ say_url:
           custom_value: true
           mode: dropdown
           multiple: false
-          options: []
+          options:
+          - *id001
+          - *id002
+          - *id003
+          - *id004
+          - *id005
+          - *id006
+          - *id007
+          - *id008
+          - *id009
+          - *id010
+          - *id011
+          - *id012
+          - *id013
+          - *id014
+          - *id015
+          - *id016
+          - *id017
+          - *id018
+          - *id019
+          - *id020
+          - *id021
+          - *id022
+          - *id023
+          - *id024
+          - *id025
+          - *id026
+          - *id027
           translation_key: chime_paths
     offset:
       description: Adds a delay between audio segments when value > 0, or overlays

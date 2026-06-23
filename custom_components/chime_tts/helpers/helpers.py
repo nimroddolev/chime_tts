@@ -351,7 +351,7 @@ class ChimeTTSHelper:
 
         # Match for installed tts platform
         if tts_platform.lower() in installed_tts_platforms:
-            selected_platform = tts_platform.lower()            
+            selected_platform = tts_platform.lower()
         elif tts_platform.find("google") != -1:
             # Return alternate Google Translate entity, eg: "tts.google_en_com"
             if tts_platform.startswith("tts."):
@@ -412,7 +412,6 @@ class ChimeTTSHelper:
 
     def get_installed_tts_platforms(self, hass: HomeAssistant) -> list[str]:
         """List of installed tts platforms."""
-        
         # Look up TTS platforms
         try:
             _LOGGER.debug("Looking up TTS platforms m(HA < 2025.8)")
@@ -437,7 +436,6 @@ class ChimeTTSHelper:
                         tts_entities.append(platform_name)
                         _LOGGER.debug("TTS entity found: %s", platform_name)
 
-            
             # Add common TTS platforms if they exist
             known_platforms = ["google_translate", "cloud", "edge_tts", "openai_tts", "piper"]
             for platform in known_platforms:
@@ -448,16 +446,16 @@ class ChimeTTSHelper:
                         if service_exists and platform not in tts_entities:
                             tts_entities.append(platform)
                             _LOGGER.debug("Common TTS platform found: %s", platform_name)
-                    except:
+                    except Exception:
                         pass
-            
+
             if tts_entities:
                 _LOGGER.debug("Returning list of TTS platforms: %s", str(tts_entities))
                 return sorted(tts_entities)
-                
+
         except Exception as e:
             _LOGGER.debug("New TTS detection method failed: %s", e)
-                
+
         # Last resort - return common platforms
         _LOGGER.warning("Could not detect TTS platforms, returning common defaults")
         return ["google_translate", "cloud", "edge_tts"]
@@ -719,22 +717,22 @@ class ChimeTTSHelper:
         """Debug log a title string."""
         if len(title) == 0:
             return
-        _LOGGER.debug(f"╔{"═"*(int(len(title) + 2))}╗")
+        _LOGGER.debug(f"╔{'═' * (int(len(title) + 2))}╗")
         _LOGGER.debug(f"║ {title} ║")
-        _LOGGER.debug(f"╚{"═"*(int(len(title) + 2))}╝")
+        _LOGGER.debug(f"╚{'═' * (int(len(title) + 2))}╝")
 
     def debug_subtitle(self, title: str = ""):
         """Debug log a subtitle string."""
         if len(title) == 0:
             return
-        _LOGGER.debug(f"╭{"─"*(int(len(title) + 2))}╮")
+        _LOGGER.debug(f"╭{'─' * (int(len(title) + 2))}╮")
         _LOGGER.debug(f"│ {title} │")
-        _LOGGER.debug(f"╰{"─"*(int(len(title) + 2))}╯")
+        _LOGGER.debug(f"╰{'─' * (int(len(title) + 2))}╯")
 
     def debug_finish(self, title: str = ""):
         """Debug log a subtitle string."""
         if len(title) == 0:
             return
-        _LOGGER.debug(f"╭{"─"*(int(len(title) + 5))}─────╮")
+        _LOGGER.debug(f"╭{'─' * (int(len(title) + 5))}─────╮")
         _LOGGER.debug(f"│──── {title} ────│")
-        _LOGGER.debug(f"╰{"─"*(int(len(title) + 5))}─────╯")
+        _LOGGER.debug(f"╰{'─' * (int(len(title) + 5))}─────╯")
