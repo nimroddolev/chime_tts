@@ -435,6 +435,7 @@ class ChimeTTSHelper:
                     if platform_name not in tts_entities:
                         tts_entities.append(platform_name)
                         _LOGGER.debug("TTS entity found: %s", platform_name)
+
             # Add common TTS platforms if they exist
             known_platforms = ["google_translate", "cloud", "edge_tts", "openai_tts", "piper"]
             for platform in known_platforms:

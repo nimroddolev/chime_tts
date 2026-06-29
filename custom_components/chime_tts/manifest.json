@@ -3,6 +3,7 @@
   "name": "Chime TTS",
   "after_dependencies": [
     "api",
+    "frontend",
     "http",
     "media_source"
   ],
