@@ -181,6 +181,33 @@ say:
           mode: slider
           step: 1
           unit_of_measurement: semitones
+    repeat:
+      description: Repeat the chime and message this many times
+      example: 2
+      name: Repeat
+      required: false
+      selector:
+        number:
+          max: 10
+          min: 1
+          mode: box
+          step: 1
+    pre_script:
+      description: A script entity to run before the audio plays (e.g. script.front_door)
+      example: script.front_door
+      name: Pre-playback Script
+      required: false
+      selector:
+        entity:
+          domain: script
+    post_script:
+      description: A script entity to run after the audio finishes (e.g. script.front_door)
+      example: script.front_door
+      name: Post-playback Script
+      required: false
+      selector:
+        entity:
+          domain: script
     volume_level:
       description: The volume to use when playing audio
       example: 0.75

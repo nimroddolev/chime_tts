@@ -337,3 +337,39 @@ def test_issue_282_conversion_is_part_of_cache_key():
     plain = get_filename_hash_from_service_data(base, {})
     assert boost != quiet
     assert boost != plain
+
+def test_issue_314_repeat_is_part_of_cache_key():
+    """Different repeat counts produce different cache keys (#314)."""
+    from custom_components.chime_tts import get_filename_hash_from_service_data
+
+    base = {"message": "hi"}
+    assert get_filename_hash_from_service_data(
+        base, {}
+    ) != get_filename_hash_from_service_data({**base, "repeat": 3}, {})
+    assert get_filename_hash_from_service_data(
+        {**base, "repeat": 2}, {}
+    ) != get_filename_hash_from_service_data({**base, "repeat": 3}, {})
+
+
+async def test_issue_310_runs_configured_script_before_after_tts():
+    """A configured pre/post script is invoked as a script service (#310)."""
+    from custom_components.chime_tts import async_run_script
+
+    calls = []
+
+    class _Services:
+        async def async_call(self, domain, service, **kwargs):
+            calls.append((domain, service))
+
+    class _Hass:
+        services = _Services()
+
+    hass = _Hass()
+    await async_run_script(hass, "script.front_door")
+    assert ("script", "front_door") in calls
+
+    # A non-script entity is ignored, and None is a no-op.
+    calls.clear()
+    await async_run_script(hass, "light.kitchen")
+    await async_run_script(hass, None)
+    assert calls == []
