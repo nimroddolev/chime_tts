@@ -4,7 +4,12 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 addopts = "-q"
+markers = [
+    "e2e: requires a live Dockerized Home Assistant instance",
+    "network: requires an external network-backed TTS provider",
+]
 # Make `custom_components.chime_tts` importable when running from the repo root.
 pythonpath = ["."]
 # pytest-homeassistant-custom-component emits known deprecation noise from HA

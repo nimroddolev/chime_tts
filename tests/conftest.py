@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 import sys
 import types
 from pathlib import Path
@@ -28,10 +29,8 @@ if OURS not in custom_components.__path__:
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(request: pytest.FixtureRequest):
     """Load chime_tts as a custom integration when the HA pytest plugin exists."""
-    try:
+    with suppress(pytest.FixtureLookupError):
         request.getfixturevalue("enable_custom_integrations")
-    except pytest.FixtureLookupError:
-        pass
     yield
 
 

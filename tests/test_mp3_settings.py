@@ -9,7 +9,7 @@ import json
 import subprocess
 from datetime import datetime
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, call
+from unittest.mock import AsyncMock
 
 import pytest
 from pydub import AudioSegment

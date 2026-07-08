@@ -9,9 +9,9 @@ services:
       TZ: ${TZ:-Asia/Jerusalem}
     volumes:
       - ./.ha/stable/config:/config
-      - ./custom_components/chime_tts:/config/custom_components/chime_tts
+      - ./.ha/stable/integration/chime_tts:/config/custom_components/chime_tts
       - ./:/workspaces/chime_tts
-      - ./.ha/shared/media:/media
+      - ./.ha/stable/media:/media
 
   homeassistant-dev:
     container_name: chime_tts_ha_dev
@@ -23,6 +23,6 @@ services:
       TZ: ${TZ:-Asia/Jerusalem}
     volumes:
       - ./.ha/dev/config:/config
-      - ./custom_components/chime_tts:/config/custom_components/chime_tts
+      - ./.ha/dev/integration/chime_tts:/config/custom_components/chime_tts
       - ./:/workspaces/chime_tts
-      - ./.ha/shared/media:/media
+      - ./.ha/dev/media:/media

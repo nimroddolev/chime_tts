@@ -187,10 +187,22 @@ def main() -> int:
         )
         return 0
 
+    if action == "e2e":
+        env = os.environ.copy()
+        env["CHIME_TTS_E2E"] = "1"
+        env["PYTHONPATH"] = str(ROOT) if not env.get("PYTHONPATH") else f"{ROOT}{os.pathsep}{env['PYTHONPATH']}"
+        subprocess.run(
+            [str(venv_dir / "bin" / "pytest"), "tests/e2e", "-m", "e2e", *extra_args],
+            cwd=ROOT,
+            check=True,
+            env=env,
+        )
+        return 0
+
     if action == "summary":
         return summarize_checks(venv_dir)
 
-    write_stderr("Usage: scripts/test [pytest|lint|all|summary] [extra args...]")
+    write_stderr("Usage: scripts/test [pytest|lint|all|e2e|summary] [extra args...]")
     return 1
 
 
