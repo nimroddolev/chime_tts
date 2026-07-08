@@ -276,3 +276,19 @@ async def test_issue_318_async_get_local_path_offloads(monkeypatch):
     result = await helper.async_get_local_path(hass, "/media/chime.mp3")
     assert result == "/media/chime.mp3"
     assert calls["n"] == 1, "get_local_path should be invoked via the executor"
+
+def test_issue_232_tts_timeout_clamped_to_leave_room_for_fallback():
+    """The per-platform TTS timeout leaves room for a fallback within the queue timeout (#232)."""
+    from custom_components.chime_tts.helpers.tts_audio_helper import (
+        _clamped_tts_timeout,
+    )
+
+    # With a pending fallback, a 30s primary under a 60s queue is capped so both fit.
+    assert _clamped_tts_timeout(30, 60, True) == 29
+    # A timeout already under the cap is unchanged.
+    assert _clamped_tts_timeout(10, 60, True) == 10
+    # Never drops below 1 second.
+    assert _clamped_tts_timeout(30, 1, True) == 1
+    # With no pending fallback, the full timeout is kept (not halved).
+    assert _clamped_tts_timeout(30, 60, False) == 30
+    assert _clamped_tts_timeout(55, 60, False) == 55

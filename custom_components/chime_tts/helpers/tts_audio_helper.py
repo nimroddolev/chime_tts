@@ -11,6 +11,8 @@ from .helpers import ChimeTTSHelper
 from ..const import (
     TTS_TIMEOUT_KEY,
     TTS_TIMEOUT_DEFAULT,
+    QUEUE_TIMEOUT_KEY,
+    QUEUE_TIMEOUT_DEFAULT,
     TTS_PLATFORM_KEY,
      FALLBACK_TTS_PLATFORM_KEY,
     AMAZON_POLLY,
@@ -36,12 +38,25 @@ filesystem_helper = FilesystemHelper()
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def _clamped_tts_timeout(tts_timeout: int, queue_timeout: int, has_pending_fallback: bool) -> int:
+    """Cap the per-platform TTS timeout so a pending fallback fits in the queue window.
+
+    The queue cancels the whole service call after queue_timeout. When a fallback
+    platform could still run, reserve room for both attempts so the fallback is
+    not cancelled (#232). With no pending fallback, the full timeout is kept.
+    """
+    if not has_pending_fallback:
+        return tts_timeout
+    max_timeout = max(1, (queue_timeout - 2) // 2)
+    return min(tts_timeout, max_timeout)
+
 class TTSAudioHelper:
     """Helper class for generating TTS Audio in Chime TTS."""
 
     _data = {}
 
-    async def async_request_tts_audio(self, hass: HomeAssistant, tts_platform: str, message: str, language: str, cache: bool, options: dict):
+    async def async_request_tts_audio(self, hass: HomeAssistant, tts_platform: str, message: str, language: str, cache: bool, options: dict, is_fallback: bool = False):
         """Send an API request for TTS audio and return the audio file's local filepath."""
         start_time = datetime.now()
 
@@ -52,7 +67,7 @@ class TTSAudioHelper:
 
         # Step 2: Generate TTS audio
         media_source_id, audio_data = await self._generate_tts_audio(
-            hass, tts_platform, message, language, cache, tts_options
+            hass, tts_platform, message, language, cache, tts_options, is_fallback
         )
 
         # Step 3: Process the audio data
@@ -141,13 +156,30 @@ class TTSAudioHelper:
         language: str | None,
         cache: bool,
         tts_options: dict | None,
+        is_fallback: bool = False,
     ) -> tuple[str | None, bytes | None]:
         media_source_id: str | None = None
         audio_data: bytes | None = None
 
-        timeout = int(self._data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT))
+        if not tts_platform.startswith("tts."):
+            tts_platform = f"tts.{tts_platform}"
 
+        timeout = int(self._data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT))
         try:
+            queue_timeout = int(self._data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
+            # Only reserve room for a fallback when one is configured and this is
+            # not already the fallback attempt.
+            has_pending_fallback = bool(self._data.get(FALLBACK_TTS_PLATFORM_KEY)) and not is_fallback
+            clamped = _clamped_tts_timeout(timeout, queue_timeout, has_pending_fallback)
+            if clamped != timeout:
+                _LOGGER.debug(
+                    "Clamping TTS generation timeout from %ss to %ss so a fallback fits within the %ss queue timeout",
+                    timeout,
+                    clamped,
+                    queue_timeout,
+                )
+                timeout = clamped
+
             # generate_media_source_id is sync; offload to thread, guard with timeout
             media_source_id = await asyncio.wait_for(
                 asyncio.to_thread(
@@ -257,6 +289,7 @@ class TTSAudioHelper:
                 language=language,
                 cache=cache,
                 options=options,
+                is_fallback=True,
             )
         _LOGGER.error("...audio_data generation failed")
         return None
