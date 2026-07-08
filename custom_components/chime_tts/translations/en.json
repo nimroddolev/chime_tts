@@ -223,7 +223,7 @@
         "step": {
             "init": {
                 "title": "Chime TTS Configuration",
-                "description": "Configurable options for the `chime_tts.say` and `chime_tts.say_url` actions.\r\n\r\nPlease review the [documentation](https://nimroddolev.github.io/chime_tts/docs/documentation/configuration/) for more details",
+                "description": "Configurable options for the `chime_tts.say` and `chime_tts.say_url` actions. See the integration documentation for more details.",
                 "data": {
                     "queue_timeout": "Service call timeout (in seconds)",
                     "tts_timeout": "TTS audio generation timeout (in seconds)",
