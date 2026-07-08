@@ -274,6 +274,19 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
 
     return True
 
+async def async_run_script(hass: HomeAssistant, script):
+    """Run a script entity before or after playback, if one is configured (#310)."""
+    if not script:
+        return
+    domain, _, name = str(script).strip().partition(".")
+    if domain != "script" or not name:
+        _LOGGER.warning("chime_tts: '%s' is not a script entity (expected script.<name>)", script)
+        return
+    try:
+        await hass.services.async_call("script", name, blocking=True)
+    except Exception as error:
+        _LOGGER.warning("chime_tts: error running script '%s': %s", script, error)
+
 async def async_prepare_media(hass: HomeAssistant, params, options, media_players_array: list[ChimeTTSMediaPlayer], is_say_url, start_time):
     """Prepare and play media."""
 
@@ -292,6 +305,9 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
 
         if is_say_url is False:
 
+            # Optional script to run before playback (#310)
+            await async_run_script(hass, params.get("pre_script"))
+
             # Play audio with service_data
             play_result = await async_play_media(
                 hass,
@@ -306,6 +322,9 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
                     params["final_delay"],
                     media_players_array,
                 )
+
+            # Optional script to run after playback (#310)
+            await async_run_script(hass, params.get("post_script"))
 
             # Remove temporary local generated mp3
             if not bool(params.get("cache", False)):
@@ -617,6 +636,14 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         except Exception as e:
             raise RuntimeError(f"An unexpected error occurred: {e}")
 
+        # Repeat the whole assembled chime + message audio (#314). Done at the
+        # audio level so the chimes repeat too, not just the message segments.
+        repeat = params.get("repeat", 1)
+        repeat = max(repeat, 1) if isinstance(repeat, int) else 1
+        if repeat > 1:
+            new_audio_segment = new_audio_segment * repeat
+            await filesystem_helper.async_export_audio(new_audio_segment, new_audio_file)
+
         duration = len(new_audio_segment) / 1000.0
         audio_dict[AUDIO_DURATION_KEY] = duration
         audio_dict[LOCAL_PATH_KEY if is_local else PUBLIC_PATH_KEY] = new_audio_file
@@ -695,6 +722,16 @@ def validate_audio_dict(hass: HomeAssistant, is_local: bool, is_public: bool, au
                 is_valid = False
     return is_valid
 
+def _should_reapply_conversion_on_cache_hit(ffmpeg_args: str, is_alexa_compatible: bool) -> bool:
+    """Whether a cached file needs re-conversion on a cache hit.
+
+    The audio conversion is part of the cache key, so a cached file was already
+    converted when generated; re-applying it compounds the effect (#282, #280).
+    The only case that still needs work is back-filling a legacy Alexa entry that
+    predates the Alexa-compatibility conversion.
+    """
+    return ffmpeg_args == FFMPEG_ARGS_ALEXA and not is_alexa_compatible
+
 async def async_verify_cached_audio(hass: HomeAssistant,
                                     filepath_hash: str,
                                     params: dict,
@@ -710,7 +747,7 @@ async def async_verify_cached_audio(hass: HomeAssistant,
 
         # Test if cached audio file exists on the filesystem
         local_exists = await hass.async_add_executor_job(filesystem_helper.path_exists, f"{audio_dict.get(LOCAL_PATH_KEY, '')}")
-        local_external_filepath = filesystem_helper.get_local_path(hass=hass, file_path=f"{audio_dict.get(PUBLIC_PATH_KEY, '')}")
+        local_external_filepath = await filesystem_helper.async_get_local_path(hass=hass, file_path=f"{audio_dict.get(PUBLIC_PATH_KEY, '')}")
         public_exists = await hass.async_add_executor_job(filesystem_helper.path_exists, local_external_filepath) or f"{audio_dict.get(PUBLIC_PATH_KEY, '')}".startswith("http://localhost")
 
         if not (public_exists or local_exists):
@@ -751,12 +788,15 @@ async def async_verify_cached_audio(hass: HomeAssistant,
                                                                                      f"{audio_dict.get(LOCAL_PATH_KEY, '')}" or
                                                                                      f"{audio_dict.get(PUBLIC_PATH_KEY, '')}")
 
-        # Apply audio conversion
-        if (local_exists or public_exists) and ffmpeg_args:
+        # A cached file already has its conversion baked in (the conversion is
+        # part of the cache key), so it is not re-applied here. Only a legacy
+        # Alexa entry needs work: back-fill the compatibility conversion (#282, #280).
+        if (local_exists or public_exists) and ffmpeg_args == FFMPEG_ARGS_ALEXA:
             for local_path in [audio_dict.get(LOCAL_PATH_KEY), local_external_filepath]:
                 if local_path and await hass.async_add_executor_job(filesystem_helper.path_exists, local_path):
-                    if not (ffmpeg_args == FFMPEG_ARGS_ALEXA and await filesystem_helper.async_is_audio_alexa_compatible(hass, local_path)):
-                        _LOGGER.debug("   Apply audio conversion")
+                    is_alexa_compatible = await filesystem_helper.async_is_audio_alexa_compatible(hass, local_path)
+                    if _should_reapply_conversion_on_cache_hit(ffmpeg_args, is_alexa_compatible):
+                        _LOGGER.debug("   Back-filling Alexa-compatible conversion for cached file")
                         await helpers.async_ffmpeg_convert_from_file(hass, local_path, ffmpeg_args)
                     elif local_path == local_external_filepath:
                         _LOGGER.debug("Cached file already Alexa Media Player compatible: '%s'", local_path)
@@ -1061,6 +1101,24 @@ async def async_play_media(
 
     return play_result
 
+def _sonos_volume_set_call(entity_id, volume_percent: int):
+    """Build an explicit volume_set call for Sonos before an announcement.
+
+    Some Sonos models ignore the announce `extra.volume`, so the volume is set
+    directly first; the snapshot/restore around the announcement returns the
+    previous level (#275, #256).
+    """
+    return {
+        "domain": "media_player",
+        "service": "volume_set",
+        "service_data": {
+            CONF_ENTITY_ID: entity_id,
+            "volume_level": round(max(0, min(100, volume_percent)) / 100, 2),
+        },
+        "blocking": True,
+        "result": True,
+    }
+
 async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
     """Prepare the media_player service calls for audio playback."""
     helpers.debug_subtitle("Chime TTS playback")
@@ -1122,12 +1180,21 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
             for entity_id in sonos_media_player_entity_ids:
                 _LOGGER.debug("     - %s", entity_id)
 
-            # If all media_players have same target volume level
-            uniform_target_volume = int(media_player_helper.get_uniform_target_volume_level(sonos_media_player_entity_ids) * 100)
-            if uniform_target_volume != -1:
+            # If all media_players have same target volume level. Check the -1
+            # "not uniform" sentinel on the raw level before scaling to a
+            # percentage, otherwise it becomes -100 and the per-player branch
+            # below never runs.
+            uniform_level = media_player_helper.get_uniform_target_volume_level(sonos_media_player_entity_ids)
+            if uniform_level != -1:
+                uniform_target_volume = int(uniform_level * 100)
                 sonos_service_data[CONF_ENTITY_ID] = sonos_media_player_entity_ids
                 if uniform_target_volume >= 0:
                     sonos_service_data["extra"] = {"volume": uniform_target_volume}
+                    # Set the volume explicitly only when the Sonos snapshot/restore
+                    # is enabled to return it afterwards; without restore the announce
+                    # volume would persist (#275, #256).
+                    if SONOS_SNAPSHOT_ENABLED:
+                        service_calls.append(_sonos_volume_set_call(sonos_media_player_entity_ids, uniform_target_volume))
                 service_calls.append({
                     "domain": "media_player",
                     "service": SERVICE_PLAY_MEDIA,
@@ -1143,6 +1210,8 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
                     individual_service_data[CONF_ENTITY_ID] = media_player.entity_id
                     if volume >= 0:
                         individual_service_data["extra"] = {"volume": volume}
+                        if SONOS_SNAPSHOT_ENABLED:
+                            service_calls.append(_sonos_volume_set_call(media_player.entity_id, volume))
                     service_calls.append({
                         "domain": "media_player",
                         "service": SERVICE_PLAY_MEDIA,
@@ -1399,7 +1468,10 @@ async def async_remove_cached_audio_data(hass: HomeAssistant,
             audio_dict[PUBLIC_PATH_KEY] = None
 
     # Remove key/value from integration storage if no paths remain
-    if audio_dict.get(LOCAL_PATH_KEY, None) is not None or (audio_dict.get(PUBLIC_PATH_KEY, None)):
+    if (
+        audio_dict.get(LOCAL_PATH_KEY, None) is None
+        and audio_dict.get(PUBLIC_PATH_KEY, None) is None
+    ):
         await async_delete_data(hass, filepath_hash)
 
 
@@ -1419,8 +1491,8 @@ async def async_add_audio_file_to_cache(hass: HomeAssistant,
         audio_cache_dict = await async_get_cached_audio_data(hass, filepath_hash)
         if not audio_cache_dict:
             audio_cache_dict = {}
-        local_audio_path = filesystem_helper.get_local_path(hass=hass, file_path=audio_path)
-        if local_audio_path.startswith((_data[WWW_PATH_KEY], "http")):
+        local_audio_path = await filesystem_helper.async_get_local_path(hass=hass, file_path=audio_path)
+        if local_audio_path and local_audio_path.startswith((_data[WWW_PATH_KEY], "http")):
             audio_cache_dict[PUBLIC_PATH_KEY] = audio_path
         else:
             audio_cache_dict[LOCAL_PATH_KEY] = audio_path
@@ -1443,12 +1515,17 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
         "language",
         "chime_path",
         "audio_conversion",
+        # The parsed conversion lives under "ffmpeg_args" in the params dict.
+        # Include it so a cache entry is unique per conversion; without this,
+        # different conversions collide on one cached file (#282, #280).
+        "ffmpeg_args",
         "end_chime_path",
         "offset",
         "crossfade",
         "tts_playback_speed",
         "tts_speed",
-        "tts_pitch"
+        "tts_pitch",
+        "repeat",
     ]
     for param in relevant_params:
         for dictionary in [params, options]:

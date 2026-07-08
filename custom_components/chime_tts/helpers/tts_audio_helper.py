@@ -11,6 +11,8 @@ from .helpers import ChimeTTSHelper
 from ..const import (
     TTS_TIMEOUT_KEY,
     TTS_TIMEOUT_DEFAULT,
+    QUEUE_TIMEOUT_KEY,
+    QUEUE_TIMEOUT_DEFAULT,
     TTS_PLATFORM_KEY,
      FALLBACK_TTS_PLATFORM_KEY,
     AMAZON_POLLY,
@@ -36,12 +38,25 @@ filesystem_helper = FilesystemHelper()
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def _clamped_tts_timeout(tts_timeout: int, queue_timeout: int, has_pending_fallback: bool) -> int:
+    """Cap the per-platform TTS timeout so a pending fallback fits in the queue window.
+
+    The queue cancels the whole service call after queue_timeout. When a fallback
+    platform could still run, reserve room for both attempts so the fallback is
+    not cancelled (#232). With no pending fallback, the full timeout is kept.
+    """
+    if not has_pending_fallback:
+        return tts_timeout
+    max_timeout = max(1, (queue_timeout - 2) // 2)
+    return min(tts_timeout, max_timeout)
+
 class TTSAudioHelper:
     """Helper class for generating TTS Audio in Chime TTS."""
 
     _data = {}
 
-    async def async_request_tts_audio(self, hass: HomeAssistant, tts_platform: str, message: str, language: str, cache: bool, options: dict):
+    async def async_request_tts_audio(self, hass: HomeAssistant, tts_platform: str, message: str, language: str, cache: bool, options: dict, is_fallback: bool = False):
         """Send an API request for TTS audio and return the audio file's local filepath."""
         start_time = datetime.now()
 
@@ -52,7 +67,7 @@ class TTSAudioHelper:
 
         # Step 2: Generate TTS audio
         media_source_id, audio_data = await self._generate_tts_audio(
-            hass, tts_platform, message, language, cache, tts_options
+            hass, tts_platform, message, language, cache, tts_options, is_fallback
         )
 
         # Step 3: Process the audio data
@@ -86,38 +101,45 @@ class TTSAudioHelper:
 
     def _adjust_language_and_voice(self, tts_platform, language, tts_options):
         voice = tts_options.get("voice", None)
-        if (
-            (language or tts_options.get("language"))
-            and tts_platform
-            in [
-                AMAZON_POLLY,
-                GOOGLE_TRANSLATE,
-                NABU_CASA_CLOUD_TTS,
-                IBM_WATSON_TTS,
-                MICROSOFT_EDGE_TTS,
-                MICROSOFT_TTS,
-            ]
-        ):
+        # Nabu Casa cloud can arrive as a full entity id (tts.home_assistant_cloud)
+        # now that platform matching keeps entity ids; map it to the constant so
+        # the language handling below still applies.
+        if tts_platform and tts_platform.lower() in ("tts.home_assistant_cloud", "tts.cloud"):
+            tts_platform = NABU_CASA_CLOUD_TTS
+        language_aware_platforms = [
+            AMAZON_POLLY,
+            GOOGLE_TRANSLATE,
+            GOOGLE_CLOUD,
+            NABU_CASA_CLOUD_TTS,
+            IBM_WATSON_TTS,
+            MICROSOFT_EDGE_TTS,
+            MICROSOFT_TTS,
+        ]
+        if (language or tts_options.get("language")) and tts_platform in language_aware_platforms:
+            if not language:
+                language = tts_options.get("language")
             if tts_platform == IBM_WATSON_TTS and voice is None:
                 tts_options["voice"] = language
                 language = None
-            if tts_platform == MICROSOFT_TTS:
-                if not language:
-                    language = tts_options.get("language")
+            elif tts_platform == MICROSOFT_TTS:
                 tts_options.pop("language", None)
                 if voice:
                     tts_options["type"] = voice
                     tts_options.pop("voice", None)
+            elif tts_platform in (NABU_CASA_CLOUD_TTS, GOOGLE_CLOUD):
+                # These take the language as a separate argument; leaving it in
+                # the options makes the engine reject the call with
+                # "Invalid options found: ['language']" (#242, #210).
+                tts_options.pop("language", None)
         else:
             language = None
 
-        if (
-            tts_platform == NABU_CASA_CLOUD_TTS
-            and voice
-            and not language
-        ):
+        if tts_platform == NABU_CASA_CLOUD_TTS and isinstance(voice, str) and voice and not language:
+            # Styled cloud voices arrive as "name||style"; match on the base name
+            # so the style suffix does not break the language lookup (#307).
+            base_voice = voice.split("||")[0]
             for key, value in nabu_voices.TTS_VOICES.items():
-                if voice in value:
+                if base_voice in value:
                     language = key
                     _LOGGER.debug(
                         " - Setting language to '%s' for Nabu Casa TTS voice: '%s'.",
@@ -134,13 +156,30 @@ class TTSAudioHelper:
         language: str | None,
         cache: bool,
         tts_options: dict | None,
+        is_fallback: bool = False,
     ) -> tuple[str | None, bytes | None]:
         media_source_id: str | None = None
         audio_data: bytes | None = None
 
-        timeout = int(self._data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT))
+        if not tts_platform.startswith("tts."):
+            tts_platform = f"tts.{tts_platform}"
 
+        timeout = int(self._data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT))
         try:
+            queue_timeout = int(self._data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
+            # Only reserve room for a fallback when one is configured and this is
+            # not already the fallback attempt.
+            has_pending_fallback = bool(self._data.get(FALLBACK_TTS_PLATFORM_KEY)) and not is_fallback
+            clamped = _clamped_tts_timeout(timeout, queue_timeout, has_pending_fallback)
+            if clamped != timeout:
+                _LOGGER.debug(
+                    "Clamping TTS generation timeout from %ss to %ss so a fallback fits within the %ss queue timeout",
+                    timeout,
+                    clamped,
+                    queue_timeout,
+                )
+                timeout = clamped
+
             # generate_media_source_id is sync; offload to thread, guard with timeout
             media_source_id = await asyncio.wait_for(
                 asyncio.to_thread(
@@ -250,6 +289,7 @@ class TTSAudioHelper:
                 language=language,
                 cache=cache,
                 options=options,
+                is_fallback=True,
             )
         _LOGGER.error("...audio_data generation failed")
         return None
@@ -263,17 +303,6 @@ class TTSAudioHelper:
                 error,
             )
 
-        if media_source_id:
-            try:
-                asyncio.run(tts.async_get_media_source_audio(
-                    hass=self.hass, media_source_id=media_source_id
-                ))
-            except Exception as error:
-                _LOGGER.error(
-                    "   - Error calling tts.async_get_media_source_audio with media_source_id = '%s': %s",
-                    str(media_source_id),
-                    str(error),
-                )
 
 def missing_tts_platform_error(tts_platform):
     """Write a TTS platform specific debug warning when the TTS platform has not been configured."""

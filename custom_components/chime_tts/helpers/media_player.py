@@ -49,8 +49,8 @@ class ChimeTTSMediaPlayer:
             for volume_level_dict in target_volume_level:
                 if entity_id in volume_level_dict:
                     self.target_volume_level = float(volume_level_dict[entity_id])
-        # From float
-        elif isinstance(target_volume_level, float):
+        # From int or float
+        elif isinstance(target_volume_level, (int, float)):
             self.target_volume_level = target_volume_level
         # Default
         else:

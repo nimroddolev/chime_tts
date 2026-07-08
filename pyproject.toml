@@ -1,0 +1,38 @@
+# Tooling config for tests, coverage, and type checking.
+# Lint config stays in .ruff.toml to match the existing CI workflow.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q"
+# Make `custom_components.chime_tts` importable when running from the repo root.
+pythonpath = ["."]
+# pytest-homeassistant-custom-component emits known deprecation noise from HA
+# internals; keep test output focused on real failures.
+filterwarnings = [
+    "ignore::DeprecationWarning:homeassistant.*",
+]
+
+[tool.coverage.run]
+source = ["custom_components/chime_tts"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+follow_imports = "silent"
+warn_unused_ignores = false
+warn_redundant_casts = true
+check_untyped_defs = true
+# The integration predates type hints; tighten incrementally rather than
+# failing the whole tree at once.
+disallow_untyped_defs = false
+exclude = ["tests/"]

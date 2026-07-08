@@ -4,6 +4,14 @@ __pycache__
 *.egg-info
 */build/*
 */dist/*
+.tox
+.mypy_cache
+.ruff_cache
+htmlcov
+
+# virtualenvs
+.venv*
+venv
 
 
 # misc
@@ -19,3 +27,4 @@ node_modules
 build
 .docusaurus
 package-lock.json
+.ha
