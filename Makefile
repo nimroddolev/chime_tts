@@ -1,5 +1,8 @@
 # chime_tts developer tasks. Run inside the test venv:
 #   python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements_test.txt
+#
+# To test against the latest Home Assistant (which needs Python 3.13/3.14), use
+# `make venv-latest` and activate .venv314. Latest HA is the primary target.
 
 PKG := custom_components/chime_tts
 HA_HOST ?=
@@ -7,7 +10,7 @@ HA_PORT ?= 22
 HA_USER ?= root
 HA_PATH ?= /config/custom_components/chime_tts
 
-.PHONY: help install lint format format-fix typecheck test test-strict cov matrix deploy-restart clean
+.PHONY: help install venv-latest lint format format-fix typecheck test test-strict cov matrix deploy-restart clean
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?# .*$$' $(MAKEFILE_LIST) | \
@@ -15,6 +18,13 @@ help:
 
 install: # install the test/lint/type stack into the active venv
 	pip install -r requirements_test.txt
+
+venv-latest: # build .venv314 (Python 3.14) with the latest Home Assistant for testing
+	# Latest HA (2026.6.x) declares requires-python >=3.14.2, so 3.14 is required
+	# here; 3.13 resolves to an older HA and would not test the current release.
+	uv venv --python 3.14 .venv314
+	. .venv314/bin/activate && uv pip install -r requirements_test.txt
+	@echo "Activate with: . .venv314/bin/activate"
 
 lint: # ruff lint
 	ruff check $(PKG) tests

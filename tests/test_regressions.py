@@ -232,12 +232,15 @@ def test_issue_307_styled_cloud_voice_resolves_language():
     from hass_nabucasa import voice as nabu_voices
 
     _lang, voices = next(iter(nabu_voices.TTS_VOICES.items()))
+    # The voice collection is a list on older HA and a dict (name -> label) on
+    # newer HA; take the first voice name either way.
+    first_voice = next(iter(voices))
     helper = TTSAudioHelper()
     styled = helper._adjust_language_and_voice(
-        NABU_CASA_CLOUD_TTS, "", {"voice": f"{voices[0]}||whispering"}
+        NABU_CASA_CLOUD_TTS, "", {"voice": f"{first_voice}||whispering"}
     )
     plain = helper._adjust_language_and_voice(
-        NABU_CASA_CLOUD_TTS, "", {"voice": voices[0]}
+        NABU_CASA_CLOUD_TTS, "", {"voice": first_voice}
     )
     assert styled is not None
     assert styled == plain
