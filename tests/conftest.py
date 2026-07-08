@@ -22,6 +22,12 @@ chime_tts_pkg = types.ModuleType("custom_components.chime_tts")
 chime_tts_pkg.__path__ = [str(ROOT / "custom_components" / "chime_tts")]
 sys.modules.setdefault("custom_components.chime_tts", chime_tts_pkg)
 
+voluptuous_module = types.ModuleType("voluptuous")
+voluptuous_module.Required = lambda value: value
+voluptuous_module.Optional = lambda value: value
+voluptuous_module.In = lambda values: (lambda value: value)
+sys.modules.setdefault("voluptuous", voluptuous_module)
+
 
 homeassistant_pkg = types.ModuleType("homeassistant")
 homeassistant_pkg.__path__ = []
@@ -32,6 +38,7 @@ homeassistant_core.HomeAssistant = type("HomeAssistant", (), {})
 homeassistant_core.State = type("State", (), {})
 homeassistant_core.ServiceResponse = dict
 homeassistant_core.SupportsResponse = type("SupportsResponse", (), {"ONLY": "only"})
+homeassistant_core.callback = lambda func: func
 sys.modules.setdefault("homeassistant.core", homeassistant_core)
 
 homeassistant_const = types.ModuleType("homeassistant.const")
@@ -63,6 +70,36 @@ sys.modules.setdefault("homeassistant.helpers.storage", homeassistant_helpers_st
 homeassistant_components = types.ModuleType("homeassistant.components")
 homeassistant_components.__path__ = []
 sys.modules.setdefault("homeassistant.components", homeassistant_components)
+
+homeassistant_components_frontend = types.ModuleType("homeassistant.components.frontend")
+homeassistant_components_frontend.add_extra_js_url = lambda hass, url: None
+sys.modules.setdefault("homeassistant.components.frontend", homeassistant_components_frontend)
+
+homeassistant_components_http = types.ModuleType("homeassistant.components.http")
+homeassistant_components_http.HomeAssistantView = type("HomeAssistantView", (), {})
+sys.modules.setdefault("homeassistant.components.http", homeassistant_components_http)
+
+homeassistant_components_panel_custom = types.ModuleType("homeassistant.components.panel_custom")
+
+async def _async_register_panel(*args, **kwargs):
+    return None
+
+
+homeassistant_components_panel_custom.async_register_panel = _async_register_panel
+sys.modules.setdefault(
+    "homeassistant.components.panel_custom",
+    homeassistant_components_panel_custom,
+)
+
+homeassistant_components_websocket_api = types.ModuleType("homeassistant.components.websocket_api")
+homeassistant_components_websocket_api.require_admin = lambda func: func
+homeassistant_components_websocket_api.async_response = lambda func: func
+homeassistant_components_websocket_api.async_register_command = lambda hass, command: None
+homeassistant_components_websocket_api.websocket_command = lambda schema: (lambda func: func)
+sys.modules.setdefault(
+    "homeassistant.components.websocket_api",
+    homeassistant_components_websocket_api,
+)
 
 homeassistant_components_tts = types.ModuleType("homeassistant.components.tts")
 homeassistant_components_tts.media_source = types.SimpleNamespace(
@@ -120,3 +157,7 @@ sys.modules.setdefault("aiofiles", aiofiles_module)
 
 aiofiles_os_module = types.ModuleType("aiofiles.os")
 sys.modules.setdefault("aiofiles.os", aiofiles_os_module)
+
+pydub_module = types.ModuleType("pydub")
+pydub_module.AudioSegment = type("AudioSegment", (), {})
+sys.modules.setdefault("pydub", pydub_module)
