@@ -695,6 +695,16 @@ def validate_audio_dict(hass: HomeAssistant, is_local: bool, is_public: bool, au
                 is_valid = False
     return is_valid
 
+def _should_reapply_conversion_on_cache_hit(ffmpeg_args: str, is_alexa_compatible: bool) -> bool:
+    """Whether a cached file needs re-conversion on a cache hit.
+
+    The audio conversion is part of the cache key, so a cached file was already
+    converted when generated; re-applying it compounds the effect (#282, #280).
+    The only case that still needs work is back-filling a legacy Alexa entry that
+    predates the Alexa-compatibility conversion.
+    """
+    return ffmpeg_args == FFMPEG_ARGS_ALEXA and not is_alexa_compatible
+
 async def async_verify_cached_audio(hass: HomeAssistant,
                                     filepath_hash: str,
                                     params: dict,
@@ -751,12 +761,15 @@ async def async_verify_cached_audio(hass: HomeAssistant,
                                                                                      f"{audio_dict.get(LOCAL_PATH_KEY, '')}" or
                                                                                      f"{audio_dict.get(PUBLIC_PATH_KEY, '')}")
 
-        # Apply audio conversion
-        if (local_exists or public_exists) and ffmpeg_args:
+        # A cached file already has its conversion baked in (the conversion is
+        # part of the cache key), so it is not re-applied here. Only a legacy
+        # Alexa entry needs work: back-fill the compatibility conversion (#282, #280).
+        if (local_exists or public_exists) and ffmpeg_args == FFMPEG_ARGS_ALEXA:
             for local_path in [audio_dict.get(LOCAL_PATH_KEY), local_external_filepath]:
                 if local_path and await hass.async_add_executor_job(filesystem_helper.path_exists, local_path):
-                    if not (ffmpeg_args == FFMPEG_ARGS_ALEXA and await filesystem_helper.async_is_audio_alexa_compatible(hass, local_path)):
-                        _LOGGER.debug("   Apply audio conversion")
+                    is_alexa_compatible = await filesystem_helper.async_is_audio_alexa_compatible(hass, local_path)
+                    if _should_reapply_conversion_on_cache_hit(ffmpeg_args, is_alexa_compatible):
+                        _LOGGER.debug("   Back-filling Alexa-compatible conversion for cached file")
                         await helpers.async_ffmpeg_convert_from_file(hass, local_path, ffmpeg_args)
                     elif local_path == local_external_filepath:
                         _LOGGER.debug("Cached file already Alexa Media Player compatible: '%s'", local_path)
@@ -1475,6 +1488,10 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
         "language",
         "chime_path",
         "audio_conversion",
+        # The parsed conversion lives under "ffmpeg_args" in the params dict.
+        # Include it so a cache entry is unique per conversion; without this,
+        # different conversions collide on one cached file (#282, #280).
+        "ffmpeg_args",
         "end_chime_path",
         "offset",
         "crossfade",

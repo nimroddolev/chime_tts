@@ -288,7 +288,6 @@ async def test_issue_318_async_get_local_path_offloads(monkeypatch):
     result = await helper.async_get_local_path(hass, "/media/chime.mp3")
     assert result == "/media/chime.mp3"
     assert calls["n"] == 1, "get_local_path should be invoked via the executor"
-
 def test_issue_232_tts_timeout_clamped_to_leave_room_for_fallback():
     """The per-platform TTS timeout leaves room for a fallback within the queue timeout (#232)."""
     from custom_components.chime_tts.helpers.tts_audio_helper import (
@@ -304,3 +303,37 @@ def test_issue_232_tts_timeout_clamped_to_leave_room_for_fallback():
     # With no pending fallback, the full timeout is kept (not halved).
     assert _clamped_tts_timeout(30, 60, False) == 30
     assert _clamped_tts_timeout(55, 60, False) == 55
+
+
+def test_issue_282_cache_hit_does_not_reapply_baked_in_filter():
+    """A cached file's conversion is not re-applied on a cache hit (#282, #280)."""
+    from custom_components.chime_tts import _should_reapply_conversion_on_cache_hit
+    from custom_components.chime_tts.const import FFMPEG_ARGS_ALEXA
+
+    # A volume-boost filter is already baked into the cached file; never re-apply.
+    assert _should_reapply_conversion_on_cache_hit("-af volume=1.5", True) is False
+    assert _should_reapply_conversion_on_cache_hit("-af volume=1.5", False) is False
+    # Alexa is the only case that back-fills, and only when not yet compatible.
+    assert _should_reapply_conversion_on_cache_hit(FFMPEG_ARGS_ALEXA, False) is True
+    assert _should_reapply_conversion_on_cache_hit(FFMPEG_ARGS_ALEXA, True) is False
+
+
+def test_issue_282_conversion_is_part_of_cache_key():
+    """Different audio conversions produce different cache keys (#282, #280).
+
+    The conversion is parsed into the params under "ffmpeg_args", so a cache
+    entry must be unique per conversion; otherwise skipping re-application on a
+    cache hit would serve the wrong conversion.
+    """
+    from custom_components.chime_tts import get_filename_hash_from_service_data
+
+    base = {"message": "hi"}
+    boost = get_filename_hash_from_service_data(
+        {**base, "ffmpeg_args": "-af volume=1.5"}, {}
+    )
+    quiet = get_filename_hash_from_service_data(
+        {**base, "ffmpeg_args": "-af volume=0.5"}, {}
+    )
+    plain = get_filename_hash_from_service_data(base, {})
+    assert boost != quiet
+    assert boost != plain
