@@ -37,7 +37,15 @@ class ChimeTTSServicesHelper:
                                     say_url_service_func,
                                     supports_response=SupportsResponse.ONLY)
 
-    async def _async_update_chime_lists(self, hass: HomeAssistant, custom_chime_options: str):
+    # Service fields whose chime dropdown options are kept in sync.
+    _CHIME_OPTION_FIELDS = (
+        (SERVICE_SAY, "chime_path"),
+        (SERVICE_SAY, "end_chime_path"),
+        (SERVICE_SAY_URL, "chime_path"),
+        (SERVICE_SAY_URL, "end_chime_path"),
+    )
+
+    async def _async_update_chime_lists(self, hass: HomeAssistant, custom_chime_options: list | None):
         """Modify the chime path drop down options."""
 
         services_yaml = await self._async_parse_services_yaml()
@@ -45,22 +53,67 @@ class ChimeTTSServicesHelper:
             return
 
         try:
-            # Chime Paths
-            final_options: list = DEFAULT_CHIME_OPTIONS + custom_chime_options
-            final_options = sorted(final_options, key=lambda x: x['label'].lower())
-            if not custom_chime_options:
-                final_options.append({"label": "*** Add a local folder path in the configuration for your own custom chimes ***", "value": ""})
-
-            # New chimes detected?
-            if final_options != services_yaml['say']['fields']['chime_path']['selector']['select']['options']:
-                # Update `say` and `say_url` chime path fields
-                services_yaml['say']['fields']['chime_path']['selector']['select']['options'] = list(final_options)
-                services_yaml['say']['fields']['end_chime_path']['selector']['select']['options'] = list(final_options)
-                services_yaml['say_url']['fields']['chime_path']['selector']['select']['options'] = list(final_options)
-                services_yaml['say_url']['fields']['end_chime_path']['selector']['select']['options'] = list(final_options)
+            final_options = self._build_chime_options(custom_chime_options)
         except Exception as e:
-            _LOGGER.error("Unexpected error updating services.yaml: %s", str(e))
-        await self._async_save_services_yaml(services_yaml)
+            _LOGGER.error("Unexpected error building chime options: %s", str(e))
+            return
+
+        # Only write when an option list actually changes, and never after an
+        # error. A previous version saved unconditionally, which re-persisted a
+        # broken services.yaml on every restart (issue #294).
+        changed = False
+        for service_name, field in self._CHIME_OPTION_FIELDS:
+            options = self._get_field_options(services_yaml, service_name, field)
+            if options is None:
+                # Unexpected structure, e.g. a stale file from an older version.
+                # Skip rather than overwrite with a half-built document.
+                _LOGGER.debug("No options list for %s.%s; skipping", service_name, field)
+                continue
+            if options != final_options:
+                self._set_field_options(services_yaml, service_name, field, list(final_options))
+                changed = True
+
+        if changed:
+            await self._async_save_services_yaml(services_yaml)
+
+    @staticmethod
+    def _build_chime_options(custom_chime_options: list | None) -> list:
+        """Return the sorted chime options with every label and value as a str.
+
+        HA's select selector requires string label/value pairs. Custom chime
+        names come from filenames and can look like numbers or booleans; without
+        coercion YAML round-trips them into ints/bools and HA rejects the file
+        (issue #294). Entries missing a label or value are dropped rather than
+        coerced to the string "None".
+        """
+        merged = list(DEFAULT_CHIME_OPTIONS) + list(custom_chime_options or [])
+        options = [
+            {"label": str(o["label"]), "value": str(o["value"])}
+            for o in merged
+            if isinstance(o, dict) and o.get("label") is not None and o.get("value") is not None
+        ]
+        options.sort(key=lambda x: x["label"].lower())
+        if not custom_chime_options:
+            options.append(
+                {
+                    "label": "*** Add a local folder path in the configuration for your own custom chimes ***",
+                    "value": "",
+                }
+            )
+        return options
+
+    @staticmethod
+    def _get_field_options(services_yaml: dict, service_name: str, field: str):
+        """Return the existing options list for a service field, or None if absent."""
+        try:
+            return services_yaml[service_name]["fields"][field]["selector"]["select"]["options"]
+        except (KeyError, TypeError):
+            return None
+
+    @staticmethod
+    def _set_field_options(services_yaml: dict, service_name: str, field: str, options: list) -> None:
+        """Write the options list for a service field."""
+        services_yaml[service_name]["fields"][field]["selector"]["select"]["options"] = options
 
     async def _async_parse_services_yaml(self):
         """Load the services.yaml file into a dictionary."""

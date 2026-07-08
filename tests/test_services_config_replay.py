@@ -52,6 +52,10 @@ class FakeServices:
         if self.error_to_raise is not None:
             raise self.error_to_raise
 
+    def has_service(self, domain: str, service: str) -> bool:
+        """Report whether a service is currently registered."""
+        return (domain, service) in self.registered
+
 
 class FakeHass:
     """Simple Home Assistant stand-in for config and service tests."""

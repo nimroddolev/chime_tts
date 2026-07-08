@@ -385,8 +385,8 @@ class FilesystemHelper:
         """
         try:
             # Validate file path
-            file_path = self.get_local_path(hass=hass, file_path=file_path)
-            if not (os.path.isfile(file_path) and await hass.async_add_executor_job(self.path_exists, file_path)):
+            file_path = await self.async_get_local_path(hass=hass, file_path=file_path)
+            if not file_path or not await hass.async_add_executor_job(os.path.isfile, file_path):
                 _LOGGER.debug("Unable to convert audio. File not found: %s", file_path)
                 return False
 
@@ -509,6 +509,15 @@ class FilesystemHelper:
                 _LOGGER.debug("Local file path for external URL is '%s'", local_file_path)
             return local_file_path
         return None
+
+    async def async_get_local_path(self, hass: HomeAssistant, file_path: str = ""):
+        """Async wrapper for get_local_path.
+
+        get_local_path runs blocking filesystem checks (path_exists, which can
+        call os.listdir, and os.path.isfile). Calling it on the event loop is a
+        blocking-call violation (#318, #258), so offload it to an executor.
+        """
+        return await hass.async_add_executor_job(self.get_local_path, hass, file_path)
 
     def get_hash_for_string(self, string):
         """Generate a has for a given string."""

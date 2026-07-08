@@ -12,7 +12,7 @@ import hashlib
 
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_PYTHON = "/opt/homebrew/bin/python3.10"
+DEFAULT_PYTHON = "/opt/homebrew/bin/python3.12"
 DEFAULT_VENV = "/tmp/chime-tts-test-venv"
 BOOTSTRAP_PIP = "24.3.1"
 
@@ -21,8 +21,7 @@ def dependency_fingerprint() -> str:
     """Hash the dependency inputs that control test environment setup."""
     digest = hashlib.sha256()
     digest.update(f"pip={BOOTSTRAP_PIP}\n".encode())
-    digest.update((ROOT / "requirements.txt").read_bytes())
-    digest.update(b"\npydub\npytest\npytest-asyncio\n")
+    digest.update((ROOT / "requirements_test.txt").read_bytes())
     return digest.hexdigest()
 
 
@@ -147,10 +146,7 @@ def ensure_venv(python_bin: str, venv_dir: Path) -> None:
             "install",
             "-q",
             "-r",
-            "requirements.txt",
-            "pydub",
-            "pytest",
-            "pytest-asyncio",
+            "requirements_test.txt",
         ]
     )
     stamp_file.write_text(fingerprint)

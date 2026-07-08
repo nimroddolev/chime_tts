@@ -534,15 +534,13 @@ def test_tts_audio_helper_adjusts_nabu_casa_language_from_voice() -> None:
 
 @pytest.mark.asyncio
 async def test_tts_audio_helper_generate_audio_retries_prefixed_engine(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Unprefixed TTS engines should be retried once with a `tts.` prefix."""
+    """TTS engines are normalized to the `tts.` entity-id form before generation."""
     helper = TTSAudioHelper()
     helper._data[TTS_TIMEOUT_KEY] = 1
     requested_engines: list[str] = []
 
     def fake_generate_media_source_id(**kwargs):
         requested_engines.append(kwargs["engine"])
-        if kwargs["engine"] == GOOGLE_TRANSLATE:
-            raise RuntimeError("try prefixed version")
         return "media-source://tts/google"
 
     monkeypatch.setattr(tts_audio_module.tts.media_source, "generate_media_source_id", fake_generate_media_source_id)
@@ -556,7 +554,7 @@ async def test_tts_audio_helper_generate_audio_retries_prefixed_engine(monkeypat
         tts_options={},
     )
 
-    assert requested_engines == [GOOGLE_TRANSLATE, f"tts.{GOOGLE_TRANSLATE}"]
+    assert requested_engines == [f"tts.{GOOGLE_TRANSLATE}"]
     assert media_source_id == "media-source://tts/google"
     assert audio_data is None
 
@@ -587,6 +585,7 @@ async def test_tts_audio_helper_retry_with_fallback_calls_async_request(monkeypa
         language="en",
         cache=True,
         options={"voice": "Jenny"},
+        is_fallback=True,
     )
 
 

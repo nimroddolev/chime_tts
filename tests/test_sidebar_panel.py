@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import importlib
 from pathlib import Path
 from types import SimpleNamespace
@@ -17,6 +18,7 @@ from custom_components.chime_tts.const import DOMAIN
 
 panel_module = importlib.import_module("custom_components.chime_tts.helpers.panel")
 settings_module = importlib.import_module("custom_components.chime_tts.settings")
+save_settings_handler = inspect.unwrap(panel_module.websocket_save_settings)
 
 
 class FakeConfigEntries:
@@ -216,7 +218,7 @@ async def test_websocket_save_settings_rejects_invalid_media_path_without_overri
     hass, _config_entry, paths = make_hass(tmp_path)
     connection = FakeConnection()
 
-    await panel_module.websocket_save_settings(
+    await save_settings_handler(
         hass,
         connection,
         {
@@ -245,7 +247,7 @@ async def test_websocket_save_settings_allows_invalid_media_path_with_override(
     connection = FakeConnection()
     overridden_path = str(paths["root_dir"] / "outside" / "audio")
 
-    await panel_module.websocket_save_settings(
+    await save_settings_handler(
         hass,
         connection,
         {

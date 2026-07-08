@@ -1,0 +1,21 @@
+# Test + lint + type-check stack. Install into a venv:
+#   python3 -m venv .venv && . .venv/bin/activate
+#   pip install -r requirements_test.txt
+#
+# pytest-homeassistant-custom-component pins one HA core version per release.
+# The pin below tracks a recent release; the tox matrix (tox.ini) installs
+# several versions to confirm the integration works across HA releases.
+# Newer HA cores require Python 3.13; on Python 3.12 pip resolves the newest
+# compatible pair (HA 2025.1.x).
+
+pytest-homeassistant-custom-component>=0.13.190
+pydub
+aiofiles
+ruff==0.8.4
+mypy
+
+# HA pulls these in as component-level requirements of the `tts` and ffmpeg
+# components, which chime_tts imports. The base homeassistant wheel does not
+# install them, so list them here for the test environment.
+mutagen
+ha-ffmpeg

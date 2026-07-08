@@ -335,8 +335,13 @@ async def test_ffmpeg_convert_skips_alexa_compatible_files(monkeypatch: pytest.M
     hass = FakeHass()
     popen = AsyncMock()
 
-    monkeypatch.setattr(helpers_module.filesystem_helper, "get_local_path", lambda hass, path: "/tmp/source.mp3")
-    monkeypatch.setattr(helpers_module.filesystem_helper, "filepath_exists_locally", lambda hass, path: True)
+    monkeypatch.setattr(
+        helpers_module.filesystem_helper,
+        "async_get_local_path",
+        AsyncMock(return_value="/tmp/source.mp3"),
+    )
+    monkeypatch.setattr(helpers_module.os.path, "isfile", lambda path: True)
+    monkeypatch.setattr(helpers_module.filesystem_helper, "path_exists", lambda path: True)
     monkeypatch.setattr(helpers_module.filesystem_helper, "async_is_audio_alexa_compatible", AsyncMock(return_value=True))
     monkeypatch.setattr(helpers_module.subprocess, "Popen", popen)
 
@@ -365,8 +370,12 @@ async def test_ffmpeg_convert_uses_requested_output_format(monkeypatch: pytest.M
             """Return an empty stderr payload."""
             return b"", b""
 
-    monkeypatch.setattr(helpers_module.filesystem_helper, "get_local_path", lambda hass, path: "/tmp/source.mp3")
-    monkeypatch.setattr(helpers_module.filesystem_helper, "filepath_exists_locally", lambda hass, path: True)
+    monkeypatch.setattr(
+        helpers_module.filesystem_helper,
+        "async_get_local_path",
+        AsyncMock(return_value="/tmp/source.mp3"),
+    )
+    monkeypatch.setattr(helpers_module.os.path, "isfile", lambda path: True)
     monkeypatch.setattr(helpers_module.filesystem_helper, "path_exists", lambda path: False)
     monkeypatch.setattr(helpers_module.subprocess, "Popen", FakePopen)
 
@@ -631,8 +640,8 @@ async def test_async_verify_cached_audio_recovers_missing_public_copy(monkeypatc
 
 
 @pytest.mark.asyncio
-async def test_async_verify_cached_audio_applies_ffmpeg_conversion(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Requested conversions should be applied to both local and public cached files."""
+async def test_async_verify_cached_audio_skips_non_alexa_reconversion(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cached audio should not be reconverted when the cache key already encodes the conversion."""
     hass = FakeHass()
     ffmpeg_convert = AsyncMock()
 
@@ -650,8 +659,8 @@ async def test_async_verify_cached_audio_applies_ffmpeg_conversion(monkeypatch: 
     monkeypatch.setattr(integration_module.filesystem_helper, "path_exists", lambda path: True)
     monkeypatch.setattr(
         integration_module.filesystem_helper,
-        "get_local_path",
-        lambda hass, file_path: "/config/www/public.mp3",
+        "async_get_local_path",
+        AsyncMock(return_value="/config/www/public.mp3"),
     )
     monkeypatch.setattr(
         integration_module.filesystem_helper,
@@ -677,10 +686,7 @@ async def test_async_verify_cached_audio_applies_ffmpeg_conversion(monkeypatch: 
 
     assert result[ATTR_MEDIA_CONTENT_ID] == "media:cached"
     assert result[PUBLIC_PATH_KEY] == "https://example.test/public.mp3"
-    assert ffmpeg_convert.await_args_list == [
-        call(hass, "/media/local.mp3", "-af volume=1.25"),
-        call(hass, "/config/www/public.mp3", "-af volume=1.25"),
-    ]
+    assert ffmpeg_convert.await_args_list == []
 
 
 @pytest.mark.asyncio
