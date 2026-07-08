@@ -41,6 +41,10 @@ lint.ignore = [
 [lint.flake8-pytest-style]
 fixture-parentheses = false
 
+[lint.per-file-ignores]
+# Test functions are self-documenting by name; docstrings are not required.
+"tests/**" = ["D100", "D101", "D102", "D103", "D104"]
+
 # [tool.ruff.pyupgrade]
 # keep-runtime-typing = true
 

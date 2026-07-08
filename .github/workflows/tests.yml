@@ -1,0 +1,82 @@
+name: "Tests"
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  test:
+    name: "pytest (${{ matrix.label }})"
+    runs-on: "ubuntu-latest"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Oldest supported pair: newest HA that still runs on Python 3.12.
+          - label: "py3.12 / HA 2025.1"
+            python-version: "3.12"
+            phccc: "pytest-homeassistant-custom-component==0.13.190"
+          # A mid HA release on 3.13.
+          - label: "py3.13 / HA mid"
+            python-version: "3.13"
+            phccc: "pytest-homeassistant-custom-component==0.13.200"
+          # Latest HA needs Python 3.14: recent pytest-homeassistant-custom-component
+          # releases declare requires-python >=3.14, so on 3.13 pip backtracks to an
+          # older release and this row would not exercise the latest HA API.
+          - label: "py3.14 / HA latest"
+            python-version: "3.14"
+            phccc: "pytest-homeassistant-custom-component"
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: "Set up Python ${{ matrix.python-version }}"
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "${{ matrix.python-version }}"
+          cache: "pip"
+
+      - name: "Install ffmpeg"
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: "Install dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install pydub aiofiles mutagen ha-ffmpeg "${{ matrix.phccc }}"
+
+      - name: "Run tests"
+        run: pytest tests/ --cov=custom_components/chime_tts --cov-report=term-missing
+
+  lint:
+    name: "Ruff + mypy"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+      - name: "Set up Python"
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.13"
+          cache: "pip"
+      - name: "Install"
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff==0.8.4 mypy pytest-homeassistant-custom-component
+      # ruff check and mypy currently report pre-existing violations in the
+      # integration source (untyped code, invalid escape sequences). They run
+      # but do not gate yet; flip continue-on-error off as that debt is paid
+      # down. Format check is already clean and gates now.
+      - name: "Ruff check"
+        run: ruff check custom_components/chime_tts tests
+        continue-on-error: true
+      # The integration source predates ruff's formatter; format-check only the
+      # new test code for now and expand coverage as source files are reformatted.
+      - name: "Ruff format"
+        run: ruff format --check tests
+      - name: "mypy"
+        run: mypy custom_components/chime_tts
+        continue-on-error: true

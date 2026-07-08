@@ -4,6 +4,14 @@ __pycache__
 *.egg-info
 */build/*
 */dist/*
+.tox
+.mypy_cache
+.ruff_cache
+htmlcov
+
+# virtualenvs
+.venv*
+venv
 
 
 # misc

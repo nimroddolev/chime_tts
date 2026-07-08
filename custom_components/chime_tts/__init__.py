@@ -710,7 +710,7 @@ async def async_verify_cached_audio(hass: HomeAssistant,
 
         # Test if cached audio file exists on the filesystem
         local_exists = await hass.async_add_executor_job(filesystem_helper.path_exists, f"{audio_dict.get(LOCAL_PATH_KEY, '')}")
-        local_external_filepath = filesystem_helper.get_local_path(hass=hass, file_path=f"{audio_dict.get(PUBLIC_PATH_KEY, '')}")
+        local_external_filepath = await filesystem_helper.async_get_local_path(hass=hass, file_path=f"{audio_dict.get(PUBLIC_PATH_KEY, '')}")
         public_exists = await hass.async_add_executor_job(filesystem_helper.path_exists, local_external_filepath) or f"{audio_dict.get(PUBLIC_PATH_KEY, '')}".startswith("http://localhost")
 
         if not (public_exists or local_exists):
@@ -1423,8 +1423,8 @@ async def async_add_audio_file_to_cache(hass: HomeAssistant,
         audio_cache_dict = await async_get_cached_audio_data(hass, filepath_hash)
         if not audio_cache_dict:
             audio_cache_dict = {}
-        local_audio_path = filesystem_helper.get_local_path(hass=hass, file_path=audio_path)
-        if local_audio_path.startswith((_data[WWW_PATH_KEY], "http")):
+        local_audio_path = await filesystem_helper.async_get_local_path(hass=hass, file_path=audio_path)
+        if local_audio_path and local_audio_path.startswith((_data[WWW_PATH_KEY], "http")):
             audio_cache_dict[PUBLIC_PATH_KEY] = audio_path
         else:
             audio_cache_dict[LOCAL_PATH_KEY] = audio_path

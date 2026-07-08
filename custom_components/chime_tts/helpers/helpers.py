@@ -526,8 +526,8 @@ class ChimeTTSHelper:
     async def async_ffmpeg_convert_from_file(self, hass: HomeAssistant, file_path: str, ffmpeg_args: str):
         """Convert audio file with FFmpeg and provided arguments."""
 
-        local_file_path = filesystem_helper.get_local_path(hass, file_path)
-        if not await hass.async_add_executor_job(filesystem_helper.filepath_exists_locally, hass, local_file_path):
+        local_file_path = await filesystem_helper.async_get_local_path(hass, file_path)
+        if not (local_file_path and await hass.async_add_executor_job(os.path.isfile, local_file_path)):
             _LOGGER.warning("Unable to perform FFmpeg conversion: source file not found on file system: %s", local_file_path)
             return False
 
@@ -719,22 +719,22 @@ class ChimeTTSHelper:
         """Debug log a title string."""
         if len(title) == 0:
             return
-        _LOGGER.debug(f"╔{"═"*(int(len(title) + 2))}╗")
+        _LOGGER.debug(f"╔{'═'*(int(len(title) + 2))}╗")
         _LOGGER.debug(f"║ {title} ║")
-        _LOGGER.debug(f"╚{"═"*(int(len(title) + 2))}╝")
+        _LOGGER.debug(f"╚{'═'*(int(len(title) + 2))}╝")
 
     def debug_subtitle(self, title: str = ""):
         """Debug log a subtitle string."""
         if len(title) == 0:
             return
-        _LOGGER.debug(f"╭{"─"*(int(len(title) + 2))}╮")
+        _LOGGER.debug(f"╭{'─'*(int(len(title) + 2))}╮")
         _LOGGER.debug(f"│ {title} │")
-        _LOGGER.debug(f"╰{"─"*(int(len(title) + 2))}╯")
+        _LOGGER.debug(f"╰{'─'*(int(len(title) + 2))}╯")
 
     def debug_finish(self, title: str = ""):
         """Debug log a subtitle string."""
         if len(title) == 0:
             return
-        _LOGGER.debug(f"╭{"─"*(int(len(title) + 5))}─────╮")
+        _LOGGER.debug(f"╭{'─'*(int(len(title) + 5))}─────╮")
         _LOGGER.debug(f"│──── {title} ────│")
-        _LOGGER.debug(f"╰{"─"*(int(len(title) + 5))}─────╯")
+        _LOGGER.debug(f"╰{'─'*(int(len(title) + 5))}─────╯")

@@ -221,7 +221,13 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             if os.path.commonpath([parent_dir]) == os.path.commonpath([parent_dir, sub_dir]):
                 temp_folder_in_media_dir = True
         if not temp_folder_in_media_dir:
-            _errors[TEMP_PATH_KEY] = TEMP_PATH_KEY
+            # Accept the default media/www roots even when not listed in
+            # media_dirs, mirroring the www-path check below, so the default
+            # temp path does not error on a standard install (#306).
+            temp_path: str = user_input.get(TEMP_PATH_KEY, "")
+            if not (temp_path.startswith(f"{root_path}/media/")
+                    or temp_path.startswith(f"{root_path}/config/www/")):
+                _errors[TEMP_PATH_KEY] = TEMP_PATH_KEY
         ###
 
         # `chime_tts.say_url` folder must be subfolder of an external directory

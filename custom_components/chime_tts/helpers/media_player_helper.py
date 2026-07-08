@@ -228,25 +228,40 @@ class MediaPlayerHelper:
         return False
 
     def get_media_content_id(self, hass: HomeAssistant, file_path: str):
-        """Create the media content id for a local media directory file."""
+        """Create the media-source content id for a file inside a media directory."""
         if not file_path:
             _LOGGER.error("Audio file path missing in call to get_media_content_id")
             return None
 
-        media_source_path = file_path
+        if hass is None or hass.config is None:
+            return None
+        media_dirs = hass.config.media_dirs or {}
 
-        media_dir_key = ""
-        for name_i, path_i in hass.config.media_dirs.items():
-            if file_path.startswith(path_i) and len(media_dir_key) < len(path_i):
-                media_dir_key = name_i
-        if self.media_dirs_dict.get(media_dir_key, None):
-            path = self.media_dirs_dict.get(media_dir_key, None)
-            media_source_path = media_source_path[len(f"/{path}") :]
-            media_source_path = f"media-source://media_source/{media_dir_key}/{media_source_path}"
-            return media_source_path
+        # Pick the media directory whose path is the longest prefix of file_path,
+        # matching only on a path boundary so a dir like /media does not also claim
+        # a sibling such as /media-other. The previous code compared the directory
+        # NAME length against the PATH length and stripped len("/" + path), which
+        # selected the wrong directory and dropped a character from the relative
+        # path (#289, #253).
+        matched_name = ""
+        matched_path = ""
+        for name, path in media_dirs.items():
+            if not path:
+                continue
+            root = path.rstrip("/")
+            if (file_path == root or file_path.startswith(root + "/")) and len(root) > len(matched_path):
+                matched_name = name
+                matched_path = root
 
-        # Media file exists outside of a media folder
-        return None
+        if not matched_path:
+            _LOGGER.debug(
+                "File %s is not inside a registered media directory; no media content id",
+                file_path,
+            )
+            return None
+
+        relative_path = file_path[len(matched_path):].lstrip("/")
+        return f"media-source://media_source/{matched_name}/{relative_path}"
 
     #### ACTIONS ####
 

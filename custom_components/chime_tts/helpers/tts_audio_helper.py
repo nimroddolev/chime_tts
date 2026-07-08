@@ -263,17 +263,6 @@ class TTSAudioHelper:
                 error,
             )
 
-        if media_source_id:
-            try:
-                asyncio.run(tts.async_get_media_source_audio(
-                    hass=self.hass, media_source_id=media_source_id
-                ))
-            except Exception as error:
-                _LOGGER.error(
-                    "   - Error calling tts.async_get_media_source_audio with media_source_id = '%s': %s",
-                    str(media_source_id),
-                    str(error),
-                )
 
 def missing_tts_platform_error(tts_platform):
     """Write a TTS platform specific debug warning when the TTS platform has not been configured."""
