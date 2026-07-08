@@ -86,38 +86,45 @@ class TTSAudioHelper:
 
     def _adjust_language_and_voice(self, tts_platform, language, tts_options):
         voice = tts_options.get("voice", None)
-        if (
-            (language or tts_options.get("language"))
-            and tts_platform
-            in [
-                AMAZON_POLLY,
-                GOOGLE_TRANSLATE,
-                NABU_CASA_CLOUD_TTS,
-                IBM_WATSON_TTS,
-                MICROSOFT_EDGE_TTS,
-                MICROSOFT_TTS,
-            ]
-        ):
+        # Nabu Casa cloud can arrive as a full entity id (tts.home_assistant_cloud)
+        # now that platform matching keeps entity ids; map it to the constant so
+        # the language handling below still applies.
+        if tts_platform and tts_platform.lower() in ("tts.home_assistant_cloud", "tts.cloud"):
+            tts_platform = NABU_CASA_CLOUD_TTS
+        language_aware_platforms = [
+            AMAZON_POLLY,
+            GOOGLE_TRANSLATE,
+            GOOGLE_CLOUD,
+            NABU_CASA_CLOUD_TTS,
+            IBM_WATSON_TTS,
+            MICROSOFT_EDGE_TTS,
+            MICROSOFT_TTS,
+        ]
+        if (language or tts_options.get("language")) and tts_platform in language_aware_platforms:
+            if not language:
+                language = tts_options.get("language")
             if tts_platform == IBM_WATSON_TTS and voice is None:
                 tts_options["voice"] = language
                 language = None
-            if tts_platform == MICROSOFT_TTS:
-                if not language:
-                    language = tts_options.get("language")
+            elif tts_platform == MICROSOFT_TTS:
                 tts_options.pop("language", None)
                 if voice:
                     tts_options["type"] = voice
                     tts_options.pop("voice", None)
+            elif tts_platform in (NABU_CASA_CLOUD_TTS, GOOGLE_CLOUD):
+                # These take the language as a separate argument; leaving it in
+                # the options makes the engine reject the call with
+                # "Invalid options found: ['language']" (#242, #210).
+                tts_options.pop("language", None)
         else:
             language = None
 
-        if (
-            tts_platform == NABU_CASA_CLOUD_TTS
-            and voice
-            and not language
-        ):
+        if tts_platform == NABU_CASA_CLOUD_TTS and isinstance(voice, str) and voice and not language:
+            # Styled cloud voices arrive as "name||style"; match on the base name
+            # so the style suffix does not break the language lookup (#307).
+            base_voice = voice.split("||")[0]
             for key, value in nabu_voices.TTS_VOICES.items():
-                if voice in value:
+                if base_voice in value:
                     language = key
                     _LOGGER.debug(
                         " - Setting language to '%s' for Nabu Casa TTS voice: '%s'.",

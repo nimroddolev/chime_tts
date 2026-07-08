@@ -6,9 +6,11 @@ unfixed code and passes after the fix.
 
 import yaml
 
+from custom_components.chime_tts.const import GOOGLE_CLOUD, NABU_CASA_CLOUD_TTS
 from custom_components.chime_tts.helpers.helpers import ChimeTTSHelper
 from custom_components.chime_tts.helpers.media_player_helper import MediaPlayerHelper
 from custom_components.chime_tts.helpers.services_helper import ChimeTTSServicesHelper
+from custom_components.chime_tts.helpers.tts_audio_helper import TTSAudioHelper
 
 
 class _FakeConfig:
@@ -196,6 +198,56 @@ def test_media_content_id_missing_path_returns_none():
     helper = MediaPlayerHelper()
     hass = _FakeMediaHass({"media": "/media"})
     assert helper.get_media_content_id(hass, "") is None
+
+
+def test_issue_210_google_cloud_language_preserved():
+    """Google Cloud keeps the requested language instead of discarding it (#210)."""
+    helper = TTSAudioHelper()
+    assert helper._adjust_language_and_voice(GOOGLE_CLOUD, "nl-BE", {}) == "nl-BE"
+
+
+def test_issue_242_cloud_language_moved_out_of_options():
+    """Cloud TTS gets language as an argument, not in options (#242)."""
+    helper = TTSAudioHelper()
+    options = {"language": "de"}
+    result = helper._adjust_language_and_voice(NABU_CASA_CLOUD_TTS, "", options)
+    assert result == "de"
+    assert "language" not in options
+
+
+def test_issue_307_styled_cloud_voice_resolves_language():
+    """A styled cloud voice (name||style) resolves the same language as the plain voice (#307)."""
+    from hass_nabucasa import voice as nabu_voices
+
+    _lang, voices = next(iter(nabu_voices.TTS_VOICES.items()))
+    helper = TTSAudioHelper()
+    styled = helper._adjust_language_and_voice(
+        NABU_CASA_CLOUD_TTS, "", {"voice": f"{voices[0]}||whispering"}
+    )
+    plain = helper._adjust_language_and_voice(
+        NABU_CASA_CLOUD_TTS, "", {"voice": voices[0]}
+    )
+    assert styled is not None
+    assert styled == plain
+
+
+def test_cloud_entity_id_form_language_handled():
+    """Nabu cloud as a full entity id still gets language moved out of options."""
+    helper = TTSAudioHelper()
+    options = {"language": "fr"}
+    result = helper._adjust_language_and_voice("tts.home_assistant_cloud", "", options)
+    assert result == "fr"
+    assert "language" not in options
+
+
+def test_non_string_voice_does_not_crash_cloud_language_lookup():
+    """A non-string voice must not raise in the cloud language lookup."""
+    helper = TTSAudioHelper()
+    # Should simply skip the lookup and return None, not raise AttributeError.
+    assert (
+        helper._adjust_language_and_voice(NABU_CASA_CLOUD_TTS, "", {"voice": 123})
+        is None
+    )
 
 
 class _ExecHass:
