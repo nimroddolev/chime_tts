@@ -194,6 +194,18 @@ def test_media_content_id_trailing_slash_media_dir():
     assert cid == "media-source://media_source/media/chime.mp3"
 
 
+def test_issue_275_sonos_explicit_volume_set_call():
+    """Sonos gets an explicit volume_set at the target level before the announce (#275, #256)."""
+    from custom_components.chime_tts import _sonos_volume_set_call
+
+    call = _sonos_volume_set_call("media_player.kitchen", 50)
+    assert call["service"] == "volume_set"
+    assert call["service_data"]["volume_level"] == 0.5
+    # out-of-range percentages are clamped to a valid 0.0-1.0 level
+    assert _sonos_volume_set_call("x", 150)["service_data"]["volume_level"] == 1.0
+    assert _sonos_volume_set_call("x", -5)["service_data"]["volume_level"] == 0.0
+
+
 def test_media_content_id_missing_path_returns_none():
     helper = MediaPlayerHelper()
     hass = _FakeMediaHass({"media": "/media"})
