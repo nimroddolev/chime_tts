@@ -1,0 +1,8 @@
+{
+  "domain": "test_support_tts",
+  "name": "Test Support TTS",
+  "version": "1.0.0",
+  "documentation": "https://example.invalid/chime-tts-e2e",
+  "dependencies": [],
+  "codeowners": []
+}

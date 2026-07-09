@@ -747,22 +747,22 @@ class ChimeTTSHelper:
         """Debug log a title string."""
         if len(title) == 0:
             return
-        _LOGGER.debug(f"╔{'═'*(int(len(title) + 2))}╗")
+        _LOGGER.debug(f"╔{'═' * (int(len(title) + 2))}╗")
         _LOGGER.debug(f"║ {title} ║")
-        _LOGGER.debug(f"╚{'═'*(int(len(title) + 2))}╝")
+        _LOGGER.debug(f"╚{'═' * (int(len(title) + 2))}╝")
 
     def debug_subtitle(self, title: str = ""):
         """Debug log a subtitle string."""
         if len(title) == 0:
             return
-        _LOGGER.debug(f"╭{'─'*(int(len(title) + 2))}╮")
+        _LOGGER.debug(f"╭{'─' * (int(len(title) + 2))}╮")
         _LOGGER.debug(f"│ {title} │")
-        _LOGGER.debug(f"╰{'─'*(int(len(title) + 2))}╯")
+        _LOGGER.debug(f"╰{'─' * (int(len(title) + 2))}╯")
 
     def debug_finish(self, title: str = ""):
         """Debug log a subtitle string."""
         if len(title) == 0:
             return
-        _LOGGER.debug(f"╭{'─'*(int(len(title) + 5))}─────╮")
+        _LOGGER.debug(f"╭{'─' * (int(len(title) + 5))}─────╮")
         _LOGGER.debug(f"│──── {title} ────│")
-        _LOGGER.debug(f"╰{'─'*(int(len(title) + 5))}─────╯")
+        _LOGGER.debug(f"╰{'─' * (int(len(title) + 5))}─────╯")

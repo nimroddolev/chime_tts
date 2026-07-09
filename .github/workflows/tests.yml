@@ -1,0 +1,86 @@
+name: "Tests"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  compatibility-matrix:
+    name: "${{ matrix.name }}"
+    runs-on: "ubuntu-latest"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Compatibility Floor"
+            python-version: "3.12"
+            toxenv: "py312-hafloor"
+          - name: "Compatibility Current"
+            python-version: "3.13"
+            toxenv: "py313-hacurrent"
+          - name: "Compatibility Latest"
+            python-version: "3.14"
+            toxenv: "py314-halatest"
+    steps:
+      - name: "Checkout the repository"
+        uses: "actions/checkout@v4"
+
+      - name: "Set up Python"
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "${{ matrix.python-version }}"
+          cache: "pip"
+
+      - name: "Install tox"
+        run: python -m pip install --upgrade pip tox
+
+      - name: "Run compatibility suite"
+        run: tox -e "${{ matrix.toxenv }}"
+
+  docker-e2e:
+    name: "Docker E2E Smoke"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout the repository"
+        uses: "actions/checkout@v4"
+
+      - name: "Set up Python"
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: "Install test requirements"
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements_test.txt
+
+      - name: "Pull Home Assistant images"
+        run: |
+          ./scripts/ha-docker stable pull
+          ./scripts/ha-docker dev pull
+
+      - name: "Run Docker-backed E2E smoke tests"
+        run: CHIME_TTS_E2E=1 pytest tests/e2e/test_live_homeassistant.py -m 'e2e and not network' -q
+
+      - name: "Capture Docker logs on failure"
+        if: failure()
+        run: docker compose -f docker-compose.homeassistant.yml logs --no-color > homeassistant-docker.log
+
+      - name: "Upload Docker logs"
+        if: failure()
+        uses: "actions/upload-artifact@v4"
+        with:
+          name: "homeassistant-docker-logs"
+          path: "homeassistant-docker.log"
+
+      - name: "Stop Home Assistant containers"
+        if: always()
+        run: docker compose -f docker-compose.homeassistant.yml down --remove-orphans

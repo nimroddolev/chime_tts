@@ -1,37 +1,40 @@
 """Shared fixtures for chime_tts tests."""
 
+from __future__ import annotations
+
+from contextlib import suppress
 import sys
+import types
 from pathlib import Path
 
 import pytest
 
-# pytest-homeassistant-custom-component pins the `custom_components` namespace
-# package to its own testing_config directory, which shadows this repo's
-# integration. Merge our directory into that namespace so
-# `custom_components.chime_tts` imports the code under test.
-_ROOT = Path(__file__).resolve().parent.parent
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
 
-import custom_components  # noqa: E402
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-_OURS = str(_ROOT / "custom_components")
-if _OURS not in custom_components.__path__:
-    custom_components.__path__.append(_OURS)
+try:
+    import custom_components  # type: ignore[import-not-found]
+except ImportError:
+    custom_components = types.ModuleType("custom_components")
+    custom_components.__path__ = []
+    sys.modules["custom_components"] = custom_components
 
-# pytest-homeassistant-custom-component ships the `hass`, `aioclient_mock`,
-# and `enable_custom_integrations` fixtures, available once it is installed.
+OURS = str(ROOT / "custom_components")
+if OURS not in custom_components.__path__:
+    custom_components.__path__.append(OURS)
 
 
 @pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations):
-    """Load chime_tts as a custom integration in every test."""
+def auto_enable_custom_integrations(request: pytest.FixtureRequest):
+    """Load chime_tts as a custom integration when the HA pytest plugin exists."""
+    with suppress(pytest.FixtureLookupError):
+        request.getfixturevalue("enable_custom_integrations")
     yield
 
 
 @pytest.fixture
-def integration_root():
+def integration_root() -> Path:
     """Return the absolute path to the chime_tts integration package."""
-    from pathlib import Path
-
-    return Path(__file__).resolve().parent.parent / "custom_components" / "chime_tts"
+    return ROOT / "custom_components" / "chime_tts"

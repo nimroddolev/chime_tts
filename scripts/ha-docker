@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+CHANNEL="${1:-stable}"
+ACTION="${2:-up}"
+
+case "${CHANNEL}" in
+    stable|dev)
+        ;;
+    *)
+        echo "Usage: scripts/ha-docker <stable|dev> <up|down|restart|logs|pull|check>"
+        exit 1
+        ;;
+esac
+
+case "${ACTION}" in
+    up|down|restart|logs|pull|check)
+        ;;
+    *)
+        echo "Usage: scripts/ha-docker <stable|dev> <up|down|restart|logs|pull|check>"
+        exit 1
+        ;;
+esac
+
+RUNTIME_ROOT="${PWD}/.ha/${CHANNEL}"
+CONFIG_DIR="${RUNTIME_ROOT}/config"
+MEDIA_DIR="${RUNTIME_ROOT}/media"
+INTEGRATION_DIR="${RUNTIME_ROOT}/integration/chime_tts"
+SERVICE="homeassistant-${CHANNEL}"
+
+mkdir -p "${CONFIG_DIR}/www" "${MEDIA_DIR}" "$(dirname "${INTEGRATION_DIR}")"
+
+sync_integration() {
+    rm -rf "${INTEGRATION_DIR}"
+    cp -R "${PWD}/custom_components/chime_tts" "${INTEGRATION_DIR}"
+}
+
+if [[ ! -f "${CONFIG_DIR}/configuration.yaml" ]]; then
+    cat > "${CONFIG_DIR}/configuration.yaml" <<'EOF'
+# Local Home Assistant runtime config for Docker-based Chime TTS testing.
+default_config:
+
+api:
+
+logger:
+  default: info
+  logs:
+    custom_components.chime_tts: debug
+
+homeassistant:
+  media_dirs:
+    local: /media
+  allowlist_external_dirs:
+    - /media
+    - /config/www
+
+media_source:
+
+ffmpeg:
+  ffmpeg_bin: /usr/bin/ffmpeg
+
+tts:
+  - platform: google_translate
+    service_name: google_say
+EOF
+fi
+
+case "${ACTION}" in
+    up)
+        sync_integration
+        docker compose -f docker-compose.homeassistant.yml up -d "${SERVICE}"
+        ;;
+    down)
+        docker compose -f docker-compose.homeassistant.yml stop "${SERVICE}"
+        ;;
+    restart)
+        sync_integration
+        docker compose -f docker-compose.homeassistant.yml restart "${SERVICE}"
+        ;;
+    logs)
+        docker compose -f docker-compose.homeassistant.yml logs -f --tail=200 "${SERVICE}"
+        ;;
+    pull)
+        docker compose -f docker-compose.homeassistant.yml pull "${SERVICE}"
+        ;;
+    check)
+        sync_integration
+        docker compose -f docker-compose.homeassistant.yml run --rm --no-deps --entrypoint python "${SERVICE}" -m homeassistant --config /config --script check_config
+        ;;
+esac

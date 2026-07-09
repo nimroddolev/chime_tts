@@ -10,7 +10,7 @@ HA_PORT ?= 22
 HA_USER ?= root
 HA_PATH ?= /config/custom_components/chime_tts
 
-.PHONY: help install venv-latest lint format format-fix typecheck test test-strict cov matrix deploy-restart clean
+.PHONY: help install venv-latest lint format format-fix typecheck test test-e2e test-strict cov matrix ha-stable-up ha-dev-up ha-stable-down ha-dev-down ha-stable-logs ha-dev-logs deploy-restart clean
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?# .*$$' $(MAKEFILE_LIST) | \
@@ -41,6 +41,9 @@ typecheck: # mypy
 test: # run tests with a coverage report
 	pytest tests/ --cov=$(PKG) --cov-report=term-missing
 
+test-e2e: # run live end-to-end tests against Dockerized Home Assistant stable and dev
+	CHIME_TTS_E2E=1 pytest tests/e2e -m e2e
+
 test-strict: # tests + 80% coverage gate (pre-PR)
 	pytest tests/ --cov=$(PKG) --cov-report=term-missing --cov-fail-under=80
 
@@ -49,6 +52,24 @@ cov: # html coverage report
 
 matrix: # run the full HA version matrix (tox)
 	tox
+
+ha-stable-up: # start the stable Home Assistant container
+	./scripts/ha-docker stable up
+
+ha-dev-up: # start the dev Home Assistant container
+	./scripts/ha-docker dev up
+
+ha-stable-down: # stop the stable Home Assistant container
+	./scripts/ha-docker stable down
+
+ha-dev-down: # stop the dev Home Assistant container
+	./scripts/ha-docker dev down
+
+ha-stable-logs: # tail logs for the stable Home Assistant container
+	./scripts/ha-docker stable logs
+
+ha-dev-logs: # tail logs for the dev Home Assistant container
+	./scripts/ha-docker dev logs
 
 deploy-restart: # rsync the integration to a live HA host and restart it
 	@test -n "$(HA_HOST)" || { echo "set HA_HOST=<ip>"; exit 1; }

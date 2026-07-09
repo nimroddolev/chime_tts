@@ -35,7 +35,7 @@ class ChimeTTSNotificationService(BaseNotificationService):
             "chime_path",
             "end_chime_path",
             "offset",
-            "crossafade",
+            "crossfade",
             "final_delay",
             "tts_platform",
             "tts_speed",
@@ -53,6 +53,12 @@ class ChimeTTSNotificationService(BaseNotificationService):
             "audio_conversion"
         ]:
             kwargs[key] = data.get(key, self._config.get(key))
+
+        if kwargs.get("crossfade") in (None, ""):
+            kwargs["crossfade"] = data.get(
+                "crossafade",
+                self._config.get("crossafade"),
+            )
 
         helpers.debug_title("Chime TTS Notify")
         for key, value in kwargs.items():

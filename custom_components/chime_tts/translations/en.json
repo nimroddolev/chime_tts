@@ -223,7 +223,7 @@
         "step": {
             "init": {
                 "title": "Chime TTS Configuration",
-                "description": "Configurable options for the `chime_tts.say` and `chime_tts.say_url` actions. See the integration documentation for more details.",
+                "description": "## Recommended\r\n\r\n### Open the [Chime TTS configuration panel](/chime-tts) for the best experience.\r\n\r\nThe configuration panel includes the richer visual settings UI and is the recommended way to manage Chime TTS settings. This native dialog is kept as a basic fallback.\r\n\r\nConfigurable options for the `chime_tts.say` and `chime_tts.say_url` actions are available below.\r\n\r\nPlease review the [documentation](https://nimroddolev.github.io/chime_tts/docs/documentation/configuration/) for more details",
                 "data": {
                     "queue_timeout": "Service call timeout (in seconds)",
                     "tts_timeout": "TTS audio generation timeout (in seconds)",
@@ -233,6 +233,7 @@
                     "default_tld_key": "Default dialect (when using the Google Translate TTS platform)",
                     "fallback_tts_platform_key": "Fallback TTS platform",
                     "offset": "Default offset value (in milliseconds) between chimes & TTS audio",
+                    "crossfade": "Default crossfade value (in milliseconds) between audio segments",
                     "fade_transition_key": "Fade transition (in milliseconds) when fading currently playing audio for `announce` and `fade_audio`",
                     "remove_temp_file_delay": "Delay (in milliseconds) before removing temporary files",
                     "custom_chimes_path": "Folder path for custom chime audio files",
@@ -250,6 +251,7 @@
         "error": {
             "timeout": "The timeout value is invalid",
             "timeout_sub": "Enter a valid timeout duration",
+            "invalid_number": "Enter a valid number",
             "tts_platform_none": "No TTS platforms were detected. Please add at least 1 TTS integration.",
             "tts_platform_select": "The TTS platform was not found. Please make sure it has been installed before selecting it.",
             "multiple": "Multiple issues detected",

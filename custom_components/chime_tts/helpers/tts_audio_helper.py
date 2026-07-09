@@ -151,6 +151,7 @@ class TTSAudioHelper:
         if preserve_original_language and original_language:
             return original_language
         return None
+
     async def _generate_tts_audio(
         self,
         hass: HomeAssistant,
@@ -180,10 +181,8 @@ class TTSAudioHelper:
                     queue_timeout,
                 )
                 timeout = clamped
-
             last_error: Exception | None = None
             last_engine = engine_candidates[0]
-
             for engine in engine_candidates:
                 last_engine = engine
                 try:

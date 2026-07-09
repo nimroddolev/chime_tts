@@ -18,10 +18,12 @@ from homeassistant.components.media_player.const import (
 from .helpers.helpers import ChimeTTSHelper
 from .helpers.media_player_helper import (MediaPlayerHelper, ChimeTTSMediaPlayer)
 from .helpers.filesystem import FilesystemHelper
+from .helpers.panel import async_setup_panel
 from .helpers.services_helper import ChimeTTSServicesHelper
 from .helpers.tts_audio_helper import TTSAudioHelper
 from .queue_manager import ChimeTTSQueueManager
 from .config_flow import ChimeTTSOptionsFlowHandler
+from .settings import get_root_path
 
 from homeassistant.const import CONF_ENTITY_ID
 from homeassistant.config_entries import ConfigEntry
@@ -100,6 +102,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     config_entry.async_on_unload(config_entry.add_update_listener(async_reload_entry))
     await async_refresh_stored_data(hass)
     await async_update_configuration(config_entry, hass)
+    await async_setup_panel(hass, config_entry)
     queue.set_timeout(_data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
     queue.start_queue_processor()
 
@@ -370,11 +373,10 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
 
 async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
     """Reload the Chime TTS config entry."""
-    _LOGGER.debug("Reloading integration")
-    await async_unload_entry(hass, config_entry)
-    await async_setup(hass, config_entry)
+    _LOGGER.debug("Refreshing Chime TTS configuration")
     await async_refresh_stored_data(hass)
     await async_update_configuration(config_entry, hass)
+    queue.set_timeout(_data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
 
 # Integration options #
 
@@ -393,7 +395,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
 
     # Prepare default paths
     if hass is not None:
-        _data[ROOT_PATH_KEY] = filesystem_helper.make_folder_path_safe(hass.config.path("").replace("/config/", ""))
+        _data[ROOT_PATH_KEY] = filesystem_helper.make_folder_path_safe(get_root_path(hass))
 
     if DEFAULT_TEMP_PATH_KEY not in _data:
         _data[DEFAULT_TEMP_PATH_KEY] = filesystem_helper.make_folder_path_safe(f"{_data[ROOT_PATH_KEY]}{TEMP_PATH_DEFAULT}")
@@ -402,7 +404,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         _data[DEFAULT_TEMP_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(f"{_data[ROOT_PATH_KEY]}{TEMP_CHIMES_PATH_DEFAULT}")
 
     if DEFAULT_WWW_PATH_KEY not in _data:
-        _data[DEFAULT_WWW_PATH_KEY] = filesystem_helper.make_folder_path_safe(f"{_data[ROOT_PATH_KEY]}/{WWW_PATH_DEFAULT}")
+        _data[DEFAULT_WWW_PATH_KEY] = filesystem_helper.make_folder_path_safe(f"{_data[ROOT_PATH_KEY]}{WWW_PATH_DEFAULT}")
 
     # Set configurable values
     options = config_entry.options
