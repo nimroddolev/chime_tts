@@ -20,7 +20,10 @@ from ..settings import (
     PATH_BROWSABLE_FIELD_KEYS,
     build_directory_browser_payload,
     build_panel_payload,
+    load_notify_profiles,
+    save_notify_profiles,
     validate_path_field,
+    validate_notify_profiles,
     validate_settings,
 )
 
@@ -307,6 +310,7 @@ def websocket_validate_path(
     {
         "type": "chime_tts/save_settings",
         vol.Required("values"): dict,
+        vol.Optional("notify_profiles"): [dict],
         vol.Optional("allow_invalid_paths"): [vol.In(PATH_BROWSABLE_FIELD_KEYS)],
     }
 )
@@ -341,6 +345,11 @@ async def websocket_save_settings(
         msg["values"],
         allow_invalid_paths=set(msg.get("allow_invalid_paths", [])),
     )
+    notify_validation = validate_notify_profiles(msg.get("notify_profiles"))
+    restart_required = validation.restart_required
+    if notify_validation.data != load_notify_profiles(hass)[0]:
+        restart_required = True
+
     if validation.errors:
         LOGGER.debug("Chime TTS panel validation errors: %s", validation.errors)
         connection.send_result(
@@ -349,10 +358,28 @@ async def websocket_save_settings(
                 hass,
                 config_entry,
                 values=validation.data,
+                notify_profiles=notify_validation.data,
+                notify_profile_errors=notify_validation.errors,
                 errors=validation.errors,
                 message="Fix the highlighted fields and try again.",
                 message_type="error",
-                restart_required=validation.restart_required,
+                restart_required=restart_required,
+            ),
+        )
+        return
+
+    if any(profile_errors for profile_errors in notify_validation.errors):
+        connection.send_result(
+            msg["id"],
+            build_panel_payload(
+                hass,
+                config_entry,
+                values=validation.data,
+                notify_profiles=notify_validation.data,
+                notify_profile_errors=notify_validation.errors,
+                message="Fix the highlighted notification profiles and try again.",
+                message_type="error",
+                restart_required=restart_required,
             ),
         )
         return
@@ -362,6 +389,7 @@ async def websocket_save_settings(
         updated = hass.config_entries.async_update_entry(
             config_entry, options=validation.data
         )
+        save_notify_profiles(hass, notify_validation.data)
         LOGGER.debug(
             "Chime TTS panel settings saved=%s options=%s",
             updated,
@@ -375,9 +403,11 @@ async def websocket_save_settings(
                 hass,
                 config_entry,
                 values=validation.data,
+                notify_profiles=notify_validation.data,
+                notify_profile_errors=notify_validation.errors,
                 message=f"Save failed: {error}",
                 message_type="error",
-                restart_required=validation.restart_required,
+                restart_required=restart_required,
             ),
         )
         return
@@ -388,12 +418,13 @@ async def websocket_save_settings(
             hass,
             config_entry,
             values=dict(config_entry.options),
+            notify_profiles=notify_validation.data,
             message=(
-                "Settings saved. Restart Home Assistant to fully apply the custom chimes folder change."
-                if validation.restart_required
+                "Settings saved. Restart Home Assistant to apply the updated notify profiles and custom chimes folder."
+                if restart_required
                 else "Settings saved."
             ),
             message_type="success",
-            restart_required=validation.restart_required,
+            restart_required=restart_required,
         ),
     )

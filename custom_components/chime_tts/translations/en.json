@@ -32,7 +32,7 @@
         },
         "replay": {
             "name": "Replay",
-            "description": "Repeat the last service call to chime_tts.say with the same parameters"
+            "description": "Repeat the last action call to chime_tts.say with the same parameters"
         },
         "say": {
             "name": "Say",
@@ -119,7 +119,7 @@
         },
         "say_url": {
             "name": "Say URL",
-            "description": "Generates an audio file with the `chime_tts.say` service and returns either an external URL or a local file path, depending on the folder set in the configuration",
+            "description": "Generates an audio file with the `chime_tts.say` action and returns either an external URL or a local file path, depending on the folder set in the configuration",
             "fields": {
                 "chime_path": {
                     "name": "Chime Path",
@@ -225,7 +225,7 @@
                 "title": "Chime TTS Configuration",
                 "description": "## Recommended\r\n\r\n### Open the [Chime TTS configuration panel](/chime-tts) for the best experience.\r\n\r\nThe configuration panel includes the richer visual settings UI and is the recommended way to manage Chime TTS settings. This native dialog is kept as a basic fallback.\r\n\r\nConfigurable options for the `chime_tts.say` and `chime_tts.say_url` actions are available below.\r\n\r\nPlease review the [documentation](https://nimroddolev.github.io/chime_tts/docs/documentation/configuration/) for more details",
                 "data": {
-                    "queue_timeout": "Service call timeout (in seconds)",
+                    "queue_timeout": "Action timeout (in seconds)",
                     "tts_timeout": "TTS audio generation timeout (in seconds)",
                     "tts_platform_key": "Default TTS platform",
                     "default_language_key": "Default language (when using default TTS platform)",

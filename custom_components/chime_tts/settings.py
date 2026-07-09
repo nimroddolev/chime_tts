@@ -7,6 +7,7 @@ import os
 from typing import Any
 
 import voluptuous as vol
+import yaml
 from homeassistant import config_entries
 from homeassistant.helpers import selector
 
@@ -91,13 +92,18 @@ CHIME_FILE_EXTENSIONS = {
     ".wma",
 }
 FIELD_EMPTY_DEFAULT_HINTS = {
-    TTS_PLATFORM_KEY: "No default provider is selected yet.",
+}
+
+FIELD_PLACEHOLDERS = {
     DEFAULT_LANGUAGE_KEY: "Blank means the selected provider chooses the language.",
     DEFAULT_VOICE_KEY: "Blank means the selected provider chooses the voice.",
     DEFAULT_TLD_KEY: "Blank means Google Translate uses its default dialect.",
-    FALLBACK_TTS_PLATFORM_KEY: "Blank means no fallback provider is configured.",
     REMOVE_TEMP_FILE_DELAY_KEY: "Blank means the integration uses its built-in cleanup timing.",
-    CUSTOM_CHIMES_PATH_KEY: "Blank means no custom chimes folder is configured.",
+    CUSTOM_CHIMES_PATH_KEY: "No custom chimes folder is configured.",
+}
+
+FIELD_EMPTY_PATH_MESSAGES = {
+    CUSTOM_CHIMES_PATH_KEY: "",
 }
 PROVIDER_HINTS_BY_FIELD = {
     TTS_PLATFORM_KEY: {
@@ -225,6 +231,157 @@ PROVIDER_HINT_ALIASES = {
 CONFIGURATION_DOCS_BASE_URL = (
     "https://nimroddolev.github.io/chime_tts/docs/documentation/configuration/"
 )
+NOTIFY_DOCS_URL = (
+    "https://nimroddolev.github.io/chime_tts/docs/documentation/notify/"
+)
+SAY_ACTION_PARAMS_DOCS_URL = (
+    "https://nimroddolev.github.io/chime_tts/docs/documentation/actions/say-action/parameters/"
+)
+
+NOTIFY_PROFILE_SCHEMA_FIELDS: tuple[dict[str, Any], ...] = (
+    {"key": "name", "label": "Service name", "type": "text", "required": True},
+    {
+        "key": "entity_id",
+        "label": "Target media players",
+        "type": "text",
+        "required": True,
+        "description": "Select one one or more media_player entities to play the notification.",
+        "placeholder": "media_player.kitchen, media_player.office",
+    },
+    {"key": "chime_path", "label": "Start chime", "type": "select"},
+    {"key": "end_chime_path", "label": "End chime", "type": "select"},
+    {"key": "tts_platform", "label": "TTS platform", "type": "select"},
+    {"key": "language", "label": "Language", "type": "text"},
+    {"key": "voice", "label": "Voice", "type": "text"},
+    {"key": "tld", "label": "Dialect", "type": "select"},
+    {
+        "key": "offset",
+        "label": "Offset",
+        "type": "range",
+        "min": -10000,
+        "max": 10000,
+        "step": 10,
+        "unit": "ms",
+    },
+    {
+        "key": "crossfade",
+        "label": "Crossfade",
+        "type": "range",
+        "min": 0,
+        "max": 10000,
+        "step": 1,
+        "unit": "ms",
+    },
+    {
+        "key": "final_delay",
+        "label": "Final delay",
+        "type": "range",
+        "min": 0,
+        "max": 10000,
+        "step": 1,
+        "unit": "ms",
+    },
+    {
+        "key": "tts_speed",
+        "label": "TTS speed",
+        "type": "range",
+        "min": 1,
+        "max": 500,
+        "step": 5,
+        "unit": "%",
+    },
+    {
+        "key": "tts_pitch",
+        "label": "TTS pitch",
+        "type": "range",
+        "min": -100,
+        "max": 100,
+        "step": 1,
+        "unit": "semitones",
+    },
+    {
+        "key": "volume_level",
+        "label": "Volume level",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "unit": "",
+    },
+    {
+        "key": "audio_conversion",
+        "label": "Audio conversion",
+        "type": "text",
+        "description": "Convert audio for Alexa playback, scale volume with FFmpeg, or provide custom FFmpeg arguments.",
+    },
+    {
+        "key": "options",
+        "label": "TTS options YAML",
+        "type": "textarea",
+        "placeholder": "voice: en-US-Wavenet-D",
+    },
+    {"key": "announce", "label": "Announce", "type": "boolean"},
+    {"key": "cache", "label": "Cache", "type": "boolean"},
+    {"key": "fade_audio", "label": "Fade audio", "type": "boolean"},
+    {"key": "join_players", "label": "Join players", "type": "boolean"},
+    {"key": "unjoin_players", "label": "Unjoin players", "type": "boolean"},
+)
+NOTIFY_REQUIRED_KEYS = {"name", "entity_id"}
+NOTIFY_BOOLEAN_KEYS = {
+    "announce",
+    "cache",
+    "fade_audio",
+    "join_players",
+    "unjoin_players",
+}
+NOTIFY_NUMERIC_KEYS = {
+    "offset",
+    "crossfade",
+    "final_delay",
+    "tts_speed",
+    "tts_pitch",
+    "volume_level",
+}
+NOTIFY_STRING_KEYS = {
+    "name",
+    "entity_id",
+    "chime_path",
+    "end_chime_path",
+    "tts_platform",
+    "language",
+    "voice",
+    "tld",
+    "audio_conversion",
+    "options",
+}
+NOTIFY_EDITABLE_KEYS = (
+    tuple(NOTIFY_STRING_KEYS)
+    + tuple(NOTIFY_NUMERIC_KEYS)
+    + tuple(NOTIFY_BOOLEAN_KEYS)
+)
+NOTIFY_PROFILE_DEFAULTS = {
+    "name": "",
+    "entity_id": "",
+    "chime_path": "",
+    "end_chime_path": "",
+    "tts_platform": "",
+    "language": "",
+    "voice": "",
+    "tld": "",
+    "offset": "",
+    "crossfade": "",
+    "final_delay": "",
+    "tts_speed": "",
+    "tts_pitch": "",
+    "volume_level": "",
+    "audio_conversion": "",
+    "options": "",
+    "announce": False,
+    "cache": False,
+    "fade_audio": False,
+    "join_players": False,
+    "unjoin_players": False,
+}
 
 FIELD_DOCUMENTATION_URLS = {
     QUEUE_TIMEOUT_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#timeout",
@@ -247,6 +404,30 @@ FIELD_DOCUMENTATION_URLS = {
     ),
     TEMP_PATH_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#temporary-mp3-folder",
     WWW_PATH_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#chime_ttssay_url-folder",
+}
+
+NOTIFY_FIELD_DOCUMENTATION_URLS = {
+    "name": NOTIFY_DOCS_URL,
+    "entity_id": NOTIFY_DOCS_URL,
+    "chime_path": f"{SAY_ACTION_PARAMS_DOCS_URL}#chime_path",
+    "end_chime_path": f"{SAY_ACTION_PARAMS_DOCS_URL}#end_chime_path",
+    "tts_platform": f"{CONFIGURATION_DOCS_BASE_URL}#default-tts-platform",
+    "language": f"{CONFIGURATION_DOCS_BASE_URL}#default-language",
+    "voice": f"{CONFIGURATION_DOCS_BASE_URL}#default-voice",
+    "tld": f"{CONFIGURATION_DOCS_BASE_URL}#default-dialect",
+    "offset": f"{CONFIGURATION_DOCS_BASE_URL}#default-offset",
+    "crossfade": f"{SAY_ACTION_PARAMS_DOCS_URL}#crossfade",
+    "final_delay": f"{SAY_ACTION_PARAMS_DOCS_URL}#final_delay",
+    "tts_speed": f"{SAY_ACTION_PARAMS_DOCS_URL}#tts_speed",
+    "tts_pitch": f"{SAY_ACTION_PARAMS_DOCS_URL}#tts_pitch",
+    "volume_level": f"{SAY_ACTION_PARAMS_DOCS_URL}#volume_level",
+    "audio_conversion": f"{SAY_ACTION_PARAMS_DOCS_URL}#audio_conversion",
+    "options": f"{SAY_ACTION_PARAMS_DOCS_URL}#options",
+    "announce": f"{SAY_ACTION_PARAMS_DOCS_URL}#announce",
+    "cache": f"{SAY_ACTION_PARAMS_DOCS_URL}#cache",
+    "fade_audio": f"{SAY_ACTION_PARAMS_DOCS_URL}#fade_audio",
+    "join_players": f"{SAY_ACTION_PARAMS_DOCS_URL}#join_players",
+    "unjoin_players": f"{SAY_ACTION_PARAMS_DOCS_URL}#unjoin_players",
 }
 
 
@@ -276,10 +457,18 @@ class ValidationResult:
     restart_required: bool
 
 
+@dataclass(frozen=True)
+class NotifyProfilesValidationResult:
+    """Result of validating submitted notify profiles."""
+
+    data: list[dict[str, Any]]
+    errors: list[dict[str, str]]
+
+
 SETTINGS_FIELDS: tuple[SettingsField, ...] = (
     SettingsField(
         key=QUEUE_TIMEOUT_KEY,
-        label="Service call timeout",
+        label="Action timeout",
         description="Maximum seconds to wait for queued Chime TTS work.",
         field_type="number",
         section="general",
@@ -532,6 +721,290 @@ def get_settings_data(
         field.key: _get_entry_value(config_entry, field.key, hass, user_input)
         for field in SETTINGS_FIELDS
     }
+
+
+def _configuration_yaml_path(hass) -> str:
+    """Return the Home Assistant configuration.yaml path."""
+    return hass.config.path("configuration.yaml")
+
+
+def _load_configuration_yaml(hass) -> dict[str, Any]:
+    """Load configuration.yaml as a dictionary."""
+    config_path = _configuration_yaml_path(hass)
+    if not os.path.exists(config_path):
+        return {}
+
+    with open(config_path, encoding="utf-8") as config_file:
+        loaded = yaml.safe_load(config_file) or {}
+
+    if not isinstance(loaded, dict):
+        raise ValueError("configuration.yaml must contain a mapping at the root level.")
+
+    return loaded
+
+
+def _load_services_yaml() -> dict[str, Any]:
+    """Load the integration services.yaml file as a dictionary."""
+    services_path = os.path.join(os.path.dirname(__file__), "services.yaml")
+    with open(services_path, encoding="utf-8") as services_file:
+        loaded = yaml.safe_load(services_file) or {}
+    if not isinstance(loaded, dict):
+        raise ValueError("services.yaml must contain a mapping at the root level.")
+    return loaded
+
+
+def get_notify_chime_options() -> list[dict[str, str]]:
+    """Return the same chime dropdown options exposed by the say actions."""
+    try:
+        services_yaml = _load_services_yaml()
+        options = (
+            services_yaml.get("say", {})
+            .get("fields", {})
+            .get("chime_path", {})
+            .get("selector", {})
+            .get("select", {})
+            .get("options", [])
+        )
+    except (OSError, ValueError, yaml.YAMLError):
+        options = []
+
+    normalized = [
+        {
+            "value": _normalize_string(option.get("value")),
+            "label": _normalize_string(option.get("label")),
+        }
+        for option in options
+        if isinstance(option, dict)
+        and option.get("label") is not None
+        and option.get("value") is not None
+        and _normalize_string(option.get("value")) != ""
+    ]
+    return [{"value": "", "label": ""}] + normalized
+
+
+def _normalize_notify_profile_number(value: Any) -> int | float | str:
+    """Normalize a notify profile numeric value."""
+    if value in (None, ""):
+        return ""
+    if isinstance(value, bool):
+        raise TypeError("invalid_number")
+
+    normalized = float(value)
+    return int(normalized) if normalized.is_integer() else normalized
+
+
+def _normalize_notify_entity_id_for_display(value: Any) -> str:
+    """Normalize YAML entity ids into the panel text format."""
+    if isinstance(value, (list, tuple)):
+        return ", ".join(
+            _normalize_string(item) for item in value if _normalize_string(item)
+        )
+    return _normalize_string(value)
+
+
+def _parse_notify_entity_id(value: str) -> str | list[str]:
+    """Normalize the panel entity id text into YAML-friendly data."""
+    entity_ids = [
+        entity_id.strip()
+        for entity_id in value.replace("\n", ",").split(",")
+        if entity_id.strip()
+    ]
+    if len(entity_ids) <= 1:
+        return entity_ids[0] if entity_ids else ""
+    return entity_ids
+
+
+def _normalize_notify_options_for_display(value: Any) -> str:
+    """Normalize notify options into YAML text for the panel."""
+    if value in (None, ""):
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+
+    dumped = yaml.safe_dump(
+        value,
+        default_flow_style=False,
+        sort_keys=False,
+    ).strip()
+    return dumped
+
+
+def _normalize_notify_profile_for_display(profile: dict[str, Any]) -> dict[str, Any]:
+    """Convert a YAML notify profile into panel-editable values."""
+    normalized = dict(NOTIFY_PROFILE_DEFAULTS)
+
+    for key in NOTIFY_STRING_KEYS:
+        if key == "entity_id":
+            normalized[key] = _normalize_notify_entity_id_for_display(profile.get(key))
+        elif key == "options":
+            normalized[key] = _normalize_notify_options_for_display(profile.get(key))
+        else:
+            normalized[key] = _normalize_string(profile.get(key))
+
+    for key in NOTIFY_NUMERIC_KEYS:
+        try:
+            normalized[key] = _normalize_notify_profile_number(profile.get(key))
+        except (TypeError, ValueError):
+            normalized[key] = ""
+
+    for key in NOTIFY_BOOLEAN_KEYS:
+        normalized[key] = _normalize_bool(profile.get(key))
+
+    if normalized["crossfade"] == "" and profile.get("crossafade") not in (None, ""):
+        try:
+            normalized["crossfade"] = _normalize_notify_profile_number(
+                profile.get("crossafade")
+            )
+        except (TypeError, ValueError):
+            normalized["crossfade"] = ""
+
+    return normalized
+
+
+def load_notify_profiles(hass) -> tuple[list[dict[str, Any]], str | None]:
+    """Load Chime TTS notify profiles from configuration.yaml."""
+    try:
+        loaded = _load_configuration_yaml(hass)
+    except (OSError, ValueError, yaml.YAMLError) as error:
+        return [], str(error)
+
+    notify_entries = loaded.get("notify") or []
+    if not isinstance(notify_entries, list):
+        return [], "The notify section in configuration.yaml must be a list."
+
+    profiles = [
+        _normalize_notify_profile_for_display(entry)
+        for entry in notify_entries
+        if isinstance(entry, dict) and entry.get("platform") == DOMAIN
+    ]
+    return profiles, None
+
+
+def validate_notify_profiles(
+    profiles: list[dict[str, Any]] | None,
+) -> NotifyProfilesValidationResult:
+    """Validate and normalize notify profiles submitted by the panel."""
+    normalized_profiles: list[dict[str, Any]] = []
+    errors: list[dict[str, str]] = []
+
+    for profile in profiles or []:
+        normalized = dict(NOTIFY_PROFILE_DEFAULTS)
+        profile_errors: dict[str, str] = {}
+
+        for key in NOTIFY_STRING_KEYS:
+            normalized[key] = _normalize_string((profile or {}).get(key))
+
+        for key in NOTIFY_BOOLEAN_KEYS:
+            normalized[key] = _normalize_bool((profile or {}).get(key))
+
+        for key in NOTIFY_NUMERIC_KEYS:
+            try:
+                normalized[key] = _normalize_notify_profile_number((profile or {}).get(key))
+            except (TypeError, ValueError):
+                normalized[key] = ""
+                profile_errors[key] = "invalid_number"
+
+        for key in NOTIFY_REQUIRED_KEYS:
+            if normalized[key] == "":
+                profile_errors[key] = "required"
+
+        if normalized["options"]:
+            try:
+                yaml.safe_load(normalized["options"])
+            except yaml.YAMLError:
+                profile_errors["options"] = "invalid_yaml"
+
+        normalized_profiles.append(normalized)
+        errors.append(profile_errors)
+
+    return NotifyProfilesValidationResult(
+        data=normalized_profiles,
+        errors=errors,
+    )
+
+
+def _serialize_notify_profile(profile: dict[str, Any]) -> dict[str, Any]:
+    """Convert a normalized panel notify profile into YAML config data."""
+    serialized: dict[str, Any] = {"platform": DOMAIN}
+
+    serialized["name"] = _normalize_string(profile.get("name"))
+    serialized["entity_id"] = _parse_notify_entity_id(
+        _normalize_string(profile.get("entity_id"))
+    )
+
+    ordered_optional_keys = (
+        "chime_path",
+        "end_chime_path",
+        "tts_platform",
+        "language",
+        "voice",
+        "tld",
+        "offset",
+        "crossfade",
+        "final_delay",
+        "tts_speed",
+        "tts_pitch",
+        "volume_level",
+        "audio_conversion",
+        "options",
+        "announce",
+        "cache",
+        "fade_audio",
+        "join_players",
+        "unjoin_players",
+    )
+
+    for key in ordered_optional_keys:
+        value = profile.get(key)
+        if key == "options":
+            if _normalize_string(value):
+                serialized[key] = yaml.safe_load(_normalize_string(value))
+            continue
+        if key in NOTIFY_BOOLEAN_KEYS:
+            if _normalize_bool(value):
+                serialized[key] = True
+            continue
+        if key in NOTIFY_NUMERIC_KEYS:
+            if value not in ("", None):
+                serialized[key] = value
+            continue
+        normalized_value = _normalize_string(value)
+        if normalized_value != "":
+            serialized[key] = normalized_value
+
+    return serialized
+
+
+def save_notify_profiles(hass, profiles: list[dict[str, Any]]) -> None:
+    """Persist Chime TTS notify profiles into configuration.yaml."""
+    loaded = _load_configuration_yaml(hass)
+    notify_entries = loaded.get("notify") or []
+    if notify_entries and not isinstance(notify_entries, list):
+        raise ValueError("The notify section in configuration.yaml must be a list.")
+
+    remaining_entries = [
+        entry
+        for entry in notify_entries
+        if not (isinstance(entry, dict) and entry.get("platform") == DOMAIN)
+    ]
+    next_entries = remaining_entries + [
+        _serialize_notify_profile(profile) for profile in profiles
+    ]
+
+    if next_entries:
+        loaded["notify"] = next_entries
+    else:
+        loaded.pop("notify", None)
+
+    config_path = _configuration_yaml_path(hass)
+    with open(config_path, "w", encoding="utf-8") as config_file:
+        yaml.safe_dump(
+            loaded,
+            config_file,
+            allow_unicode=False,
+            default_flow_style=False,
+            sort_keys=False,
+        )
 
 
 def build_options_schema(
@@ -821,8 +1294,8 @@ def validate_path_field(
     exists = bool(normalized) and os.path.isdir(normalized)
 
     if not normalized:
-        message = FIELD_EMPTY_DEFAULT_HINTS.get(field_key, "Enter a folder path.")
-        tone = "muted"
+        message = FIELD_EMPTY_PATH_MESSAGES.get(field_key, "Enter a folder path.")
+        tone = "muted" if message else ""
     elif field_key == CUSTOM_CHIMES_PATH_KEY and not os.path.isabs(normalized):
         message = "Enter an absolute folder path."
         tone = "error"
@@ -1171,6 +1644,8 @@ def build_panel_payload(
     config_entry: config_entries.ConfigEntry,
     *,
     values: dict[str, Any] | None = None,
+    notify_profiles: list[dict[str, Any]] | None = None,
+    notify_profile_errors: list[dict[str, str]] | None = None,
     errors: dict[str, str] | None = None,
     message: str | None = None,
     message_type: str | None = None,
@@ -1178,7 +1653,11 @@ def build_panel_payload(
 ) -> dict[str, Any]:
     """Build the payload used by the custom panel."""
     values = values or get_settings_data(hass, config_entry)
+    loaded_notify_profiles, notify_profiles_load_error = load_notify_profiles(hass)
+    if notify_profiles is None:
+        notify_profiles = loaded_notify_profiles
     tts_platforms = get_tts_platforms(hass)
+    chime_options = get_notify_chime_options()
     field_options = {
         TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]
         + [{"value": option, "label": option} for option in tts_platforms],
@@ -1202,6 +1681,9 @@ def build_panel_payload(
         "restart_required_field_keys": sorted(RESTART_REQUIRED_FIELD_KEYS),
         "errors": errors or {},
         "values": values,
+        "notify_profiles": notify_profiles,
+        "notify_profile_errors": notify_profile_errors or [],
+        "notify_profiles_load_error": notify_profiles_load_error,
         "sections": [
             {
                 "key": section["key"],
@@ -1222,6 +1704,7 @@ def build_panel_payload(
                         "wide": field.wide,
                         "advanced": field.advanced,
                         "empty_default_hint": FIELD_EMPTY_DEFAULT_HINTS.get(field.key),
+                        "placeholder": FIELD_PLACEHOLDERS.get(field.key),
                         "provider_hint": get_provider_hint(
                             field.key,
                             fallback_provider
@@ -1249,5 +1732,37 @@ def build_panel_payload(
                 ],
             }
             for section in SETTINGS_SECTIONS
+        ]
+        + [
+            {
+                "key": "notify_profiles",
+                "kind": "notify_profiles",
+                "title": "Notification Profiles",
+                "description": "Create and manage notify services for Chime TTS to easily send Chime TTS notifications in automations and scripts. Saving changes requires a Home Assistant restart.",
+                "docs_url": NOTIFY_DOCS_URL,
+                "profile_fields": [
+                    {
+                        **field,
+                        "docs_url": NOTIFY_FIELD_DOCUMENTATION_URLS.get(
+                            field["key"], NOTIFY_DOCS_URL
+                        ),
+                        "options": (
+                            [{"value": "", "label": "Not set"}]
+                            + [{"value": option, "label": option} for option in tts_platforms]
+                            if field["key"] == "tts_platform"
+                            else (
+                                TLD_OPTIONS
+                                if field["key"] == "tld"
+                                else (
+                                    chime_options
+                                    if field["key"] in {"chime_path", "end_chime_path"}
+                                    else []
+                                )
+                            )
+                        ),
+                    }
+                    for field in NOTIFY_PROFILE_SCHEMA_FIELDS
+                ],
+            }
         ],
     }

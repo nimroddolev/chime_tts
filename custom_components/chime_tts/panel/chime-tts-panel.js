@@ -1,4 +1,16 @@
 const PANEL_TAG = "chime-tts-settings-panel";
+const ICONS = {
+  pencil: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.33H5v-.92l9.06-9.06.92.92L5.92 19.58zM20.71 7.04a1.003 1.003 0 0 0 0-1.42L18.37 3.29a1.003 1.003 0 0 0-1.42 0l-1.13 1.13 3.75 3.75 1.14-1.13z"/>
+    </svg>
+  `,
+  trash: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6 19c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V7H6v12zm3.46-7.88 1.41-1.41L12 10.83l1.12-1.12 1.41 1.41L13.41 12l1.12 1.12-1.41 1.41L12 13.41l-1.12 1.12-1.41-1.41L10.59 12l-1.13-1.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/>
+    </svg>
+  `,
+};
 const OPTION_ICON_DATA_URLS = {
   "add_cover_art": "data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%20fill=%22none%22%3E%0A%20%20%3Crect%20x=%2214%22%20y=%2216%22%20width=%2222%22%20height=%2222%22%20rx=%226%22%20fill=%22%2303a9f4%22/%3E%0A%20%20%3Ccircle%20cx=%2225%22%20cy=%2227%22%20r=%224%22%20fill=%22%23fff%22/%3E%0A%20%20%3Cpath%20d=%22M42%2022h8M42%2030h10M42%2038h6%22%20stroke=%22%23d7edf8%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%20%20%3Cpath%20d=%22M18%2044c3-3%205-4%207-4s4%201%207%204%22%20stroke=%22%237dd3fc%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%3C/svg%3E",
   "crossfade": "data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%20fill=%22none%22%3E%0A%20%20%3Cpath%20d=%22M16%2042c3-10%206-16%209-16s6%206%209%2016%22%20stroke=%22%2303a9f4%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%20%20%3Cpath%20d=%22M30%2042c3-10%206-16%209-16s6%206%209%2016%22%20stroke=%22%237dd3fc%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%20%20%3Cpath%20d=%22M28%2023h8%22%20stroke=%22%23d7edf8%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%3C/svg%3E",
@@ -64,7 +76,7 @@ template.innerHTML = `
       padding: 0 24px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       gap: 16px;
     }
 
@@ -95,7 +107,35 @@ template.innerHTML = `
       display: flex;
       align-items: center;
       min-width: 0;
-      margin-left: 10px;
+      flex: 1 1 auto;
+      margin-left: 0;
+    }
+
+    .topbar-nav {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      flex: 0 0 auto;
+    }
+
+    .topbar-menu {
+      display: inline-flex;
+      min-height: 40px;
+      min-width: 40px;
+      padding: 0;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--primary-text-color);
+      box-shadow: none;
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+
+    .topbar-menu:hover,
+    .topbar-menu:focus-visible {
+      border-color: var(--divider-color);
+      background: color-mix(in srgb, var(--card-background-color) 88%, white 12%);
     }
 
     .topbar-actions {
@@ -103,6 +143,7 @@ template.innerHTML = `
       align-items: center;
       gap: 14px;
       flex: 0 0 auto;
+      margin-left: auto;
     }
 
     .topbar-text {
@@ -418,6 +459,28 @@ template.innerHTML = `
       min-width: 0;
     }
 
+    .field-label-row .spacer {
+      flex: 1 1 auto;
+    }
+
+    .field-reset-link {
+      color: var(--primary-color);
+      font-size: 0.84rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .field-reset-link:hover {
+      text-decoration: underline;
+    }
+
+    .field-reset-link:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--primary-color) 45%, transparent);
+      outline-offset: 2px;
+    }
+
     .field-help-link {
       width: 22px;
       height: 22px;
@@ -469,6 +532,10 @@ template.innerHTML = `
       color: var(--primary-text-color);
       padding: 12px 14px;
       font: inherit;
+    }
+
+    .control-select {
+      padding-right: 24px;
     }
 
     .control:focus,
@@ -927,12 +994,373 @@ template.innerHTML = `
       color: var(--secondary-text-color);
       line-height: 1.5;
     }
+
+    .notify-profile-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .notify-profile-card {
+      padding: 14px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--divider-color);
+      background: color-mix(in srgb, var(--secondary-background-color) 58%, transparent);
+    }
+
+    .notify-profile-card.expanded {
+      padding-bottom: 16px;
+    }
+
+    .notify-profile-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .notify-profile-card.collapsed .notify-profile-header {
+      min-height: 44px;
+    }
+
+    .notify-profile-copy h3 {
+      margin: 0;
+      font-size: 1.02rem;
+    }
+
+    .notify-profile-copy p {
+      margin: 0;
+    }
+
+    .notify-profile-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+      flex: 0 1 auto;
+    }
+
+    .notify-profile-actions button {
+      min-height: 40px;
+      padding: 10px 16px;
+    }
+
+    .notify-profile-actions.testing {
+      flex: 1 1 auto;
+      width: 100%;
+      justify-content: flex-end;
+    }
+
+    .notify-inline-test-input {
+      min-width: 0;
+      flex: 1 1 100%;
+    }
+
+    .notify-inline-test-sent {
+      width: auto;
+      padding: 0 14px;
+    }
+
+    .button-danger {
+      color: #fff;
+      background: color-mix(in srgb, var(--error-color, #d32f2f) 80%, black 20%);
+      border: 1px solid color-mix(in srgb, var(--error-color, #d32f2f) 72%, white 28%);
+      box-shadow: none;
+    }
+
+    .icon-only-button {
+      min-width: 40px;
+      padding: 0;
+    }
+
+    .icon-only-button svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      display: block;
+    }
+
+    .notify-profile-title-input {
+      width: min(100%, 320px);
+      min-height: 44px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--divider-color);
+      background: color-mix(in srgb, var(--card-background-color) 90%, white 10%);
+      color: var(--primary-text-color);
+      font: inherit;
+      font-size: 1.02rem;
+      font-weight: 700;
+    }
+
+    .notify-profile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+      margin-top: 12px;
+    }
+
+    .notify-profile-grid.compact .field,
+    .notify-profile-flags .field {
+      gap: 4px;
+      padding: 10px 12px;
+      border-radius: 14px;
+    }
+
+    .notify-profile-flags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      margin-top: 8px;
+      justify-content: flex-start;
+      align-items: flex-start;
+    }
+
+    .notify-profile-flags .field {
+      flex: 1 1 180px;
+      min-width: 160px;
+    }
+
+    .notify-flag-checkbox {
+      justify-content: flex-start;
+      min-height: 40px;
+    }
+
+    .notify-entity-chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .notify-entity-chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--primary-color) 28%, transparent);
+      background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+      color: var(--primary-text-color);
+      box-shadow: none;
+      font-weight: 600;
+    }
+
+    .notify-entity-picker {
+      display: block;
+      margin-top: 6px;
+    }
+
+    .notify-section-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .notify-section-copy {
+      min-width: 0;
+    }
+
+    .notify-section-title-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .notify-section-title-row h2 {
+      margin: 0;
+    }
+
+    .notify-section-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+      width: max-content;
+      justify-self: end;
+    }
+
+    .notify-test-panel {
+      margin-bottom: 16px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid var(--divider-color);
+      background: color-mix(in srgb, var(--card-background-color) 90%, white 10%);
+    }
+
+    .notify-test-panel-header h3 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .notify-test-panel-header {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .notify-test-panel-title {
+      grid-column: 2;
+      min-width: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-align: center;
+    }
+
+    .notify-test-panel-title p {
+      margin-top: 6px;
+    }
+
+    .notify-test-panel-actions {
+      grid-column: 3;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      justify-self: end;
+    }
+
+    .icon-button {
+      min-width: 40px;
+      min-height: 40px;
+      padding: 0;
+      border-radius: 999px;
+      border: 1px solid var(--divider-color);
+      background: color-mix(in srgb, var(--card-background-color) 88%, white 12%);
+      color: var(--primary-text-color);
+      box-shadow: none;
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    .icon-button-chevron {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 150ms ease;
+    }
+
+    .icon-button-chevron.expanded {
+      transform: rotate(180deg);
+    }
+
+    .notify-range {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 110px;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .notify-range-number {
+      width: 100%;
+      min-width: 0;
+      text-align: right;
+    }
+
+    .control-range {
+      width: 100%;
+      margin: 0;
+    }
+
+    .notify-test-grid {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .notify-test-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+
+    .control-textarea {
+      min-height: 110px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
     @media (max-width: 1100px) {
       .field-grid {
         grid-template-columns: 1fr;
       }
+
+      .notify-profile-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .notify-test-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .notify-test-panel-header {
+        grid-template-columns: 1fr;
+      }
+
+      .notify-test-panel-title,
+      .notify-test-panel-actions {
+        grid-column: auto;
+      }
+
+      .notify-test-panel-actions {
+        justify-self: end;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .notify-section-header {
+        grid-template-columns: 1fr;
+      }
+
+      .notify-section-actions {
+        align-items: flex-start;
+        justify-self: start;
+      }
+    }
+
+    :host([narrow]) .topbar-nav {
+      display: inline-flex;
+    }
+
+    :host([narrow]) .layout {
+      padding: 16px;
+    }
+
+    :host([narrow]) .topbar {
+      height: 56px;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    :host([narrow]) .topbar-notice {
+      padding: 0 16px 12px;
+    }
+
+    :host([narrow]) .section {
+      border-radius: 20px;
+      padding: 18px;
+    }
+
+    :host([narrow]) .topbar-actions {
+      gap: 8px;
+    }
+
+    :host([narrow]) .topbar-link {
+      display: none;
+    }
+
+    :host([narrow]) .input-row {
+      flex-direction: column;
+    }
+
+    :host([narrow]) .picker-overlay {
+      padding: 12px;
+    }
+
+    :host([narrow]) .picker-dialog {
+      max-height: 88vh;
     }
 
     @media (max-width: 600px) {
@@ -957,24 +1385,8 @@ template.innerHTML = `
         padding: 18px;
       }
 
-      .topbar-main {
-        gap: 12px;
-      }
-
-      .topbar-actions {
-        gap: 8px;
-      }
-
-      .input-row {
-        flex-direction: column;
-      }
-
-      .picker-overlay {
-        padding: 12px;
-      }
-
-      .picker-dialog {
-        max-height: 88vh;
+      .notify-profile-header {
+        align-items: stretch;
       }
     }
   </style>
@@ -991,8 +1403,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._topbar = this.shadowRoot.getElementById("topbar");
     this._data = null;
     this._draftValues = {};
+    this._draftNotifyProfiles = [];
     this._isDirty = false;
     this._clientErrors = {};
+    this._notifyProfileClientErrors = [];
     this._loading = true;
     this._saving = false;
     this._saveResult = null;
@@ -1003,6 +1417,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._pickerLoading = false;
     this._pickerError = null;
     this._advancedSections = {};
+    this._expandedNotifyProfiles = {};
+    this._notifyProfileTests = {};
     this._pathValidationState = {};
     this._pathValidationTimers = {};
     this._invalidPathOverrides = {};
@@ -1049,8 +1465,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     try {
       this._data = await this._hass.callWS({ type: "chime_tts/get_settings" });
       this._draftValues = { ...(this._data?.values || {}) };
+      this._draftNotifyProfiles = this._cloneNotifyProfiles(this._data?.notify_profiles || []);
       this._isDirty = false;
       this._clientErrors = {};
+      this._notifyProfileClientErrors = [];
+      this._expandedNotifyProfiles = {};
+      this._notifyProfileTests = {};
       this._pathValidationState = this._buildInitialPathValidationState();
       this._invalidPathOverrides = {};
       this._restartPending = false;
@@ -1069,8 +1489,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         restart_note: "",
       };
       this._draftValues = {};
+      this._draftNotifyProfiles = [];
       this._isDirty = false;
       this._clientErrors = {};
+      this._notifyProfileClientErrors = [];
+      this._expandedNotifyProfiles = {};
+      this._notifyProfileTests = {};
       this._pathValidationState = {};
       this._invalidPathOverrides = {};
       this._restartPending = false;
@@ -1093,12 +1517,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const sections = data.sections || [];
     const values = this._draftValues || {};
     const errors = { ...(data.errors || {}), ...(this._clientErrors || {}) };
+    const notifyProfilesLoadError = data.notify_profiles_load_error
+      ? `<div class="message error">${this._escapeHtml(data.notify_profiles_load_error)}</div>`
+      : "";
     const message = data.message && data.message_type !== "success"
       ? `<div class="message ${this._escapeAttribute(data.message_type || "success")}">${this._escapeHtml(data.message)}</div>`
       : "";
     this._renderTopbar(data);
 
     this._app.innerHTML = `
+      ${notifyProfilesLoadError}
       ${message}
       <form id="settings-form">
         ${sections.map((section) => this._renderSection(section, values, errors)).join("")}
@@ -1124,6 +1552,75 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ? "change"
         : "input";
       field.addEventListener(eventName, (event) => this._handleFieldChange(event));
+    });
+    this.shadowRoot.querySelectorAll("[data-notify-field]").forEach((field) => {
+      const eventName = field.tagName === "SELECT" || field.type === "checkbox"
+        ? "change"
+        : "input";
+      field.addEventListener(eventName, (event) => this._handleNotifyProfileFieldChange(event));
+    });
+    this._wireNotifyEntityPickers();
+    this.shadowRoot.querySelectorAll("[data-notify-range]").forEach((field) => {
+      field.addEventListener("input", (event) => this._handleNotifyRangeInput(event));
+      field.addEventListener("change", (event) => this._handleNotifyRangeCommit(event));
+    });
+    this.shadowRoot.querySelectorAll("[data-notify-range-number]").forEach((field) => {
+      field.addEventListener("input", (event) => this._handleNotifyRangeNumberInput(event));
+      field.addEventListener("change", (event) => this._handleNotifyRangeNumberCommit(event));
+    });
+    this.shadowRoot.querySelectorAll("[data-reset-notify-field]").forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        this._resetNotifyProfileField(
+          Number(event.currentTarget.dataset.notifyIndex),
+          event.currentTarget.dataset.resetNotifyField,
+        );
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-add-notify-profile]").forEach((button) => {
+      button.addEventListener("click", () => this._addNotifyProfile());
+    });
+    this.shadowRoot.querySelectorAll("[data-remove-notify-profile]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        this._removeNotifyProfile(Number(event.currentTarget.dataset.removeNotifyProfile));
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-toggle-notify-profile]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        this._toggleNotifyProfile(Number(event.currentTarget.dataset.toggleNotifyProfile));
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-remove-notify-entity]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        this._removeNotifyEntity(
+          Number(event.currentTarget.dataset.notifyIndex),
+          event.currentTarget.dataset.removeNotifyEntity,
+        );
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-open-notify-test]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        this._openNotifyProfileTest(Number(event.currentTarget.dataset.openNotifyTest));
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-close-notify-test]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        this._closeNotifyProfileTest(Number(event.currentTarget.dataset.closeNotifyTest));
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-notify-inline-test-message]").forEach((field) => {
+      field.addEventListener("input", (event) => {
+        this._updateNotifyProfileTestMessage(
+          Number(event.currentTarget.dataset.notifyIndex),
+          event.currentTarget.value,
+        );
+        this._rerenderPreservingInputState();
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-run-notify-inline-test]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        this._runNotifyProfileTest(Number(event.currentTarget.dataset.runNotifyInlineTest));
+      });
     });
     this.shadowRoot.querySelectorAll("[data-browse-field]").forEach((button) => {
       button.addEventListener("click", (event) => this._openPicker(event.currentTarget.dataset.browseField));
@@ -1176,6 +1673,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._topbar.innerHTML = `
       <div>
         <div class="topbar">
+          ${this._narrow
+            ? `
+              <div class="topbar-nav">
+                <button class="topbar-menu" type="button" data-open-ha-menu="1" aria-label="Open navigation menu" title="Open navigation menu">☰</button>
+              </div>
+            `
+            : ""
+          }
           <div class="topbar-main">
             <div class="topbar-text">
               <p class="topbar-title">
@@ -1204,12 +1709,19 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       </div>
     `;
     this.shadowRoot.getElementById("save-top")?.addEventListener("click", () => this._submit());
+    this.shadowRoot.querySelectorAll("[data-open-ha-menu]").forEach((button) => {
+      button.addEventListener("click", () => this._toggleHassMenu());
+    });
     this.shadowRoot.querySelectorAll("[data-reset-all]").forEach((button) => {
       button.addEventListener("click", () => this._resetAllChanges());
     });
   }
 
   _renderSection(section, values, errors) {
+    if (section.kind === "notify_profiles") {
+      return this._renderNotifyProfilesSection(section);
+    }
+
     const sectionFields = section.fields || [];
     const basicFields = sectionFields.filter((field) => !field.advanced);
     const advancedFields = sectionFields.filter((field) => field.advanced);
@@ -1248,6 +1760,357 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           ` : ""}
         ` : ""}
       </section>
+    `;
+  }
+
+  _renderNotifyProfilesSection(section) {
+    const profiles = this._draftNotifyProfiles || [];
+    const sectionDirty = this._isSectionDirty(section);
+    return `
+      <section class="section">
+        <div class="section-header notify-section-header">
+          <div class="section-header-copy notify-section-copy">
+            <div class="notify-section-title-row">
+              <h2>${this._escapeHtml(section.title)}</h2>
+              ${section.docs_url
+                ? `<a
+                    class="field-help-link notify-section-help"
+                    href="${this._escapeAttribute(section.docs_url)}"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Open help for notification profiles"
+                    title="Open help for notification profiles"
+                  >?</a>`
+                : ""
+              }
+            </div>
+            <p>${this._escapeHtml(section.description || "")}</p>
+          </div>
+          <div class="section-header-actions notify-section-actions">
+            ${sectionDirty ? `
+              <button
+                class="button-secondary"
+                type="button"
+                data-reset-section="${this._escapeAttribute(section.key)}"
+              >Reset Section</button>
+            ` : ""}
+            <button class="button-primary" type="button" data-add-notify-profile="1">+ Add Profile</button>
+          </div>
+        </div>
+        ${profiles.length === 0
+          ? `<p class="hint">No Chime TTS notify profiles are configured yet.</p>`
+          : `
+            <div class="notify-profile-list">
+              ${profiles.map((profile, index) => this._renderNotifyProfileCard(section, profile, index)).join("")}
+            </div>
+          `
+        }
+      </section>
+    `;
+  }
+
+  _renderNotifyProfileCard(section, profile, index) {
+    const schemaFields = section.profile_fields || [];
+    const errors = this._getNotifyProfileErrors(index);
+    const expanded = this._isNotifyProfileExpanded(index);
+    const testState = this._getNotifyProfileTestState(index);
+    const name = String(profile?.name || "").trim() || `Profile ${index + 1}`;
+    const detailFields = schemaFields.filter((field) => !["name", "entity_id"].includes(field.key));
+    const boolFields = detailFields.filter((field) => field.type === "boolean");
+    const standardFields = detailFields.filter((field) => field.type !== "boolean");
+
+    return `
+      <article class="notify-profile-card ${expanded ? "expanded" : "collapsed"}">
+        <div class="notify-profile-header">
+          <div class="notify-profile-copy">
+            ${testState.open
+              ? ""
+              : expanded
+              ? `
+                <input
+                  class="notify-profile-title-input"
+                  data-notify-field="name"
+                  data-notify-index="${this._escapeAttribute(String(index))}"
+                  type="text"
+                  value="${this._escapeAttribute(String(profile?.name ?? ""))}"
+                  placeholder="Service name"
+                />
+              `
+              : `<h3>${this._escapeHtml(name)}</h3>`
+            }
+          </div>
+          <div class="notify-profile-actions ${testState.open ? "testing" : ""}">
+            ${testState.open
+              ? `
+                <input
+                  class="control notify-inline-test-input"
+                  data-notify-inline-test-message="1"
+                  data-notify-index="${this._escapeAttribute(String(index))}"
+                  type="text"
+                  value="${this._escapeAttribute(testState.message)}"
+                  placeholder="Enter TTS text"
+                />
+                ${testState.sent
+                  ? `<span class="save-status success notify-inline-test-sent" aria-live="polite">&#10003; Sent</span>`
+                  : `
+                    <button
+                      class="button-primary"
+                      type="button"
+                      data-run-notify-inline-test="${this._escapeAttribute(String(index))}"
+                      ${testState.sending || !String(testState.message || "").trim() ? "disabled" : ""}
+                    >
+                      ${testState.sending
+                        ? '<span class="button-spinner" aria-hidden="true"></span>'
+                        : "Send"
+                      }
+                    </button>
+                  `
+                }
+                <button
+                  class="button-secondary"
+                  type="button"
+                  data-close-notify-test="${this._escapeAttribute(String(index))}"
+                  aria-label="Close test input"
+                  title="Close"
+                >X</button>
+              `
+              : `
+                <button
+                  class="button-secondary"
+                  type="button"
+                  data-open-notify-test="${this._escapeAttribute(String(index))}"
+                >Test</button>
+                <button
+                  class="button-secondary icon-only-button"
+                  type="button"
+                  data-toggle-notify-profile="${this._escapeAttribute(String(index))}"
+                  aria-label="${this._escapeAttribute(expanded ? "Done editing profile" : "Edit profile")}"
+                  title="${this._escapeAttribute(expanded ? "Done" : "Edit")}"
+                >${ICONS.pencil}</button>
+                <button
+                  class="button-danger icon-only-button"
+                  type="button"
+                  data-remove-notify-profile="${this._escapeAttribute(String(index))}"
+                  aria-label="Delete profile"
+                  title="Delete"
+                >${ICONS.trash}</button>
+              `
+            }
+          </div>
+        </div>
+        ${expanded
+          ? `
+            <div class="notify-profile-grid compact">
+              ${this._renderNotifyEntityPicker(profile, errors, index)}
+              ${standardFields.map((field) => this._renderNotifyProfileField(field, profile?.[field.key], errors?.[field.key], index)).join("")}
+            </div>
+            ${boolFields.length > 0
+              ? `
+                <div class="notify-profile-flags">
+                  ${boolFields.map((field) => this._renderNotifyProfileField(field, profile?.[field.key], errors?.[field.key], index)).join("")}
+                </div>
+              `
+              : ""
+            }
+          `
+          : ""
+        }
+      </article>
+    `;
+  }
+
+  _renderNotifyEntityPicker(profile, errors, index) {
+    const selectedEntities = this._parseNotifyEntityIds(profile?.entity_id);
+    const entityField = this._findNotifyProfileField("entity_id");
+    const helpLink = entityField?.docs_url
+      ? `<a
+          class="field-help-link"
+          href="${this._escapeAttribute(entityField.docs_url)}"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="${this._escapeAttribute(`Open help for ${entityField.label}`)}"
+          title="${this._escapeAttribute(`Open help for ${entityField.label}`)}"
+        >?</a>`
+      : "";
+    return `
+      <div class="field wide ${errors?.entity_id ? "error" : ""}">
+        <div class="field-top">
+          <div class="field-header">
+            <div class="field-copy">
+              <div class="field-label-row">
+                <p class="field-label">Target media players</p>
+                ${helpLink}
+              </div>
+              <p class="field-description">Select one one or more media_player entities to play the notification.</p>
+            </div>
+          </div>
+          <span class="required">Required</span>
+        </div>
+        ${selectedEntities.length > 0
+          ? `
+            <div class="notify-entity-chip-list">
+              ${selectedEntities.map((entityId) => `
+                <button
+                  class="notify-entity-chip"
+                  type="button"
+                  data-notify-index="${this._escapeAttribute(String(index))}"
+                  data-remove-notify-entity="${this._escapeAttribute(entityId)}"
+                >
+                  <span>${this._escapeHtml(entityId)}</span>
+                  <span aria-hidden="true">×</span>
+                </button>
+              `).join("")}
+            </div>
+          `
+          : '<p class="hint">No media players selected yet.</p>'
+        }
+        <ha-entity-picker
+          class="notify-entity-picker"
+          data-notify-entity-picker="${this._escapeAttribute(String(index))}"
+        ></ha-entity-picker>
+        <div class="error-text">${errors?.entity_id ? this._escapeHtml(this._formatError(errors.entity_id)) : ""}</div>
+      </div>
+    `;
+  }
+
+  _renderNotifyProfileField(field, value, error, index) {
+    const classes = ["field"];
+    if (field.type === "textarea" || field.key === "options") {
+      classes.push("wide");
+    }
+    if (error) {
+      classes.push("error");
+    }
+    const helpLink = field.docs_url
+      ? `<a
+          class="field-help-link"
+          href="${this._escapeAttribute(field.docs_url)}"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="${this._escapeAttribute(`Open help for ${field.label}`)}"
+          title="${this._escapeAttribute(`Open help for ${field.label}`)}"
+        >?</a>`
+      : "";
+
+    let control = "";
+    if (field.type === "boolean") {
+      control = `
+        <label class="control-checkbox notify-flag-checkbox">
+          <input
+            data-notify-field="${this._escapeAttribute(field.key)}"
+            data-notify-index="${this._escapeAttribute(String(index))}"
+            type="checkbox"
+            ${value ? "checked" : ""}
+          />
+          <span class="field-label-row">
+            <span>${this._escapeHtml(field.label)}</span>
+            ${helpLink}
+          </span>
+        </label>
+      `;
+    } else if (field.type === "select") {
+      const selectedValue = value === null || value === undefined ? "" : String(value);
+      control = `
+        <select
+          class="control-select"
+          data-notify-field="${this._escapeAttribute(field.key)}"
+          data-notify-index="${this._escapeAttribute(String(index))}"
+        >
+          ${(field.options || []).map((option) => {
+            const optionValue = String(option.value ?? "");
+            return `<option value="${this._escapeAttribute(optionValue)}" ${optionValue === selectedValue ? "selected" : ""}>${this._escapeHtml(option.label ?? optionValue)}</option>`;
+          }).join("")}
+        </select>
+      `;
+    } else if (field.type === "range") {
+      const normalizedValue = value === null || value === undefined || value === "" ? "" : String(value);
+      control = `
+        <div class="notify-range">
+          <input
+            class="control-range"
+            data-notify-range="${this._escapeAttribute(field.key)}"
+            data-notify-index="${this._escapeAttribute(String(index))}"
+            type="range"
+            min="${this._escapeAttribute(String(field.min ?? 0))}"
+            max="${this._escapeAttribute(String(field.max ?? 100))}"
+            step="${this._escapeAttribute(String(field.step ?? 1))}"
+            value="${this._escapeAttribute(normalizedValue === "" ? String(field.min ?? 0) : normalizedValue)}"
+          />
+          <input
+            class="control notify-range-number"
+            data-notify-range-number="${this._escapeAttribute(field.key)}"
+            data-notify-index="${this._escapeAttribute(String(index))}"
+            type="number"
+            min="${this._escapeAttribute(String(field.min ?? 0))}"
+            max="${this._escapeAttribute(String(field.max ?? 100))}"
+            step="${this._escapeAttribute(String(field.step ?? 1))}"
+            value="${this._escapeAttribute(normalizedValue === "" ? "" : normalizedValue)}"
+            placeholder="${this._escapeAttribute(normalizedValue === "" ? `Auto${field.unit ? ` ${field.unit}` : ""}` : "")}"
+          />
+        </div>
+      `;
+    } else if (field.type === "textarea") {
+      control = `
+        <textarea
+          class="control control-textarea"
+          data-notify-field="${this._escapeAttribute(field.key)}"
+          data-notify-index="${this._escapeAttribute(String(index))}"
+          placeholder="${this._escapeAttribute(field.placeholder || "")}"
+        >${this._escapeHtml(String(value ?? ""))}</textarea>
+      `;
+    } else {
+      control = `
+        <input
+          class="control"
+          data-notify-field="${this._escapeAttribute(field.key)}"
+          data-notify-index="${this._escapeAttribute(String(index))}"
+          type="${field.type === "number" ? "number" : "text"}"
+          value="${this._escapeAttribute(String(value ?? ""))}"
+          placeholder="${this._escapeAttribute(field.placeholder || "")}"
+          ${field.type === "number" ? 'step="any"' : ""}
+        />
+      `;
+    }
+
+    const controlMarkup = control;
+
+    return `
+      <div class="${classes.join(" ")}">
+        ${field.type !== "boolean"
+          ? `
+            <div class="field-top">
+              <div class="field-header">
+                <div class="field-copy">
+                      <div class="field-label-row">
+                        <p class="field-label">${this._escapeHtml(field.label)}</p>
+                        ${helpLink}
+                        ${this._isNotifyProfileFieldChanged(index, field.key)
+                          ? `
+                            <span class="spacer"></span>
+                            <a
+                              href="#"
+                              class="field-reset-link"
+                              data-reset-notify-field="${this._escapeAttribute(field.key)}"
+                              data-notify-index="${this._escapeAttribute(String(index))}"
+                            >Reset</a>
+                          `
+                          : ""
+                        }
+                      </div>
+                      ${field.description && field.key === "audio_conversion"
+                        ? `<p class="field-description">${this._escapeHtml(field.description)}</p>`
+                        : ""
+                      }
+                    </div>
+                  </div>
+                  ${field.required ? '<span class="required">Required</span>' : ""}
+                </div>
+              `
+          : ""
+        }
+        ${controlMarkup}
+        <div class="error-text">${error ? this._escapeHtml(this._formatError(error)) : ""}</div>
+      </div>
     `;
   }
 
@@ -1296,7 +2159,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           title="${this._escapeAttribute(`Open help for ${field.label}`)}"
         >?</a>`
       : "";
-
     return `
       <div class="${fieldClasses.join(" ")}">
         <div class="field-top">
@@ -1328,6 +2190,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const normalizedValue = value === null || value === undefined ? "" : value;
     const minAttr = field.min !== null && field.min !== undefined ? `min="${this._escapeAttribute(String(field.min))}"` : "";
     const stepAttr = type === "number" ? `step="${this._escapeAttribute(String(field.step || 1))}"` : "";
+    const placeholderAttr = field.placeholder ? `placeholder="${this._escapeAttribute(String(field.placeholder))}"` : "";
     const pathValidation = field.can_browse ? this._getPathValidationState(field) : null;
     const showInvalidIndicator = Boolean(
       field.can_browse
@@ -1345,6 +2208,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         value="${this._escapeAttribute(String(normalizedValue))}"
         ${minAttr}
         ${stepAttr}
+        ${placeholderAttr}
       />
     `;
 
@@ -1366,9 +2230,17 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
   _renderSelect(field, value) {
     const selectedValue = value === null || value === undefined ? "" : String(value);
+    const usesPlaceholder = Boolean(field.placeholder);
+    const visibleOptions = usesPlaceholder
+      ? (field.options || []).filter((option) => String(option.value ?? "") !== "")
+      : (field.options || []);
     return `
       <select class="control-select" data-field="${this._escapeAttribute(field.key)}">
-        ${(field.options || []).map((option) => {
+        ${usesPlaceholder && selectedValue === ""
+          ? `<option value="" selected disabled hidden>${this._escapeHtml(field.placeholder)}</option>`
+          : ""
+        }
+        ${visibleOptions.map((option) => {
           const optionValue = String(option.value ?? "");
           const selected = optionValue === selectedValue ? "selected" : "";
           return `<option value="${this._escapeAttribute(optionValue)}" ${selected}>${this._escapeHtml(option.label ?? optionValue)}</option>`;
@@ -1705,6 +2577,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const scrollTop = scrollElement?.scrollTop ?? window.scrollY ?? 0;
     const activeElement = this.shadowRoot.activeElement;
     const activeFieldKey = fieldKey || activeElement?.dataset?.field || null;
+    const activeNotifyFieldKey = activeElement?.dataset?.notifyField || null;
+    const activeNotifyIndex = activeElement?.dataset?.notifyIndex || null;
+    const activeNotifyInlineTest = activeElement?.dataset?.notifyInlineTestMessage
+      ? {
+          index: activeElement?.dataset?.notifyIndex || null,
+        }
+      : null;
     const selectionStart = typeof activeElement?.selectionStart === "number"
       ? activeElement.selectionStart
       : null;
@@ -1720,11 +2599,19 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         window.scrollTo(0, scrollTop);
       }
 
-      if (!activeFieldKey) {
+      if (!activeFieldKey && !activeNotifyFieldKey && !activeNotifyInlineTest) {
         return;
       }
 
-      const nextField = this.shadowRoot.querySelector(`[data-field="${CSS.escape(activeFieldKey)}"]`);
+      const nextField = activeFieldKey
+        ? this.shadowRoot.querySelector(`[data-field="${CSS.escape(activeFieldKey)}"]`)
+        : activeNotifyFieldKey
+          ? this.shadowRoot.querySelector(
+            `[data-notify-field="${CSS.escape(activeNotifyFieldKey)}"][data-notify-index="${CSS.escape(String(activeNotifyIndex))}"]`,
+          )
+          : this.shadowRoot.querySelector(
+            `[data-notify-inline-test-message="1"][data-notify-index="${CSS.escape(String(activeNotifyInlineTest.index))}"]`,
+          );
       if (!nextField) {
         return;
       }
@@ -1785,7 +2672,11 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
   _resetAllChanges() {
     this._draftValues = { ...(this._data?.values || {}) };
+    this._draftNotifyProfiles = this._cloneNotifyProfiles(this._data?.notify_profiles || []);
     this._clientErrors = {};
+    this._notifyProfileClientErrors = [];
+    this._expandedNotifyProfiles = {};
+    this._notifyProfileTests = {};
     this._isDirty = false;
     this._pathValidationState = this._buildInitialPathValidationState();
     this._invalidPathOverrides = {};
@@ -1802,6 +2693,18 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
     const section = (this._data?.sections || []).find((item) => item.key === sectionKey);
     if (!section) {
+      return;
+    }
+
+    if (section.kind === "notify_profiles") {
+      this._draftNotifyProfiles = this._cloneNotifyProfiles(this._data?.notify_profiles || []);
+      this._notifyProfileClientErrors = [];
+      this._expandedNotifyProfiles = {};
+      this._notifyProfileTests = {};
+      this._isDirty = this._hasValueChanges();
+      this._restartPending = false;
+      this._restartConfirmOpen = false;
+      this._render();
       return;
     }
 
@@ -1871,13 +2774,22 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _isSectionDirty(section) {
+    if (section.kind === "notify_profiles") {
+      return this._hasNotifyProfileChanges();
+    }
     return (section.fields || []).some((field) => this._isFieldChanged(field.key));
   }
 
   _isFieldChanged(fieldKey) {
     const savedValues = this._data?.values || {};
     const draftValues = this._draftValues || {};
-    return this._normalizeForCompare(savedValues[fieldKey]) !== this._normalizeForCompare(draftValues[fieldKey]);
+    return this._normalizeForCompare(savedValues[fieldKey], fieldKey) !== this._normalizeForCompare(draftValues[fieldKey], fieldKey);
+  }
+
+  _isNotifyProfileFieldChanged(index, fieldKey) {
+    const savedProfile = (this._data?.notify_profiles || [])[index] || {};
+    const draftProfile = (this._draftNotifyProfiles || [])[index] || {};
+    return this._normalizeForCompare(savedProfile[fieldKey]) !== this._normalizeForCompare(draftProfile[fieldKey]);
   }
 
   _getRestartRequiredChangedFields() {
@@ -1926,12 +2838,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
 
     this._clientErrors = this._validateRequiredFields();
-    if (Object.keys(this._clientErrors).length > 0) {
+    if (
+      Object.keys(this._clientErrors).length > 0
+      || this._notifyProfileClientErrors.some((profileErrors) => Object.keys(profileErrors || {}).length > 0)
+    ) {
       this._render();
       return;
     }
 
     const values = { ...this._draftValues };
+    const notifyProfiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
     this._saving = true;
     this._clearSaveResult();
     this._render();
@@ -1940,11 +2856,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._data = await this._hass.callWS({
         type: "chime_tts/save_settings",
         values,
+        notify_profiles: notifyProfiles,
         allow_invalid_paths: Object.keys(this._invalidPathOverrides || {}).filter((fieldKey) => this._invalidPathOverrides[fieldKey]),
       });
       this._draftValues = { ...(this._data?.values || {}) };
+      this._draftNotifyProfiles = this._cloneNotifyProfiles(this._data?.notify_profiles || []);
       this._isDirty = false;
       this._clientErrors = {};
+      this._notifyProfileClientErrors = [];
+      this._notifyProfileTests = {};
       this._pathValidationState = this._buildInitialPathValidationState();
       this._invalidPathOverrides = {};
       this._restartPending = Boolean(this._data?.restart_required);
@@ -1999,6 +2919,287 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._schedulePathValidation(key, nextValue);
     }
     this._rerenderPreservingInputState(key);
+  }
+
+  _handleNotifyProfileFieldChange(event) {
+    const field = event.currentTarget;
+    const key = field?.dataset?.notifyField;
+    const index = Number(field?.dataset?.notifyIndex);
+    if (!key || Number.isNaN(index)) {
+      return;
+    }
+
+    const nextValue = field.type === "checkbox" ? field.checked : field.value;
+    const nextProfiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
+    if (!nextProfiles[index]) {
+      return;
+    }
+    nextProfiles[index] = {
+      ...nextProfiles[index],
+      [key]: nextValue,
+    };
+    this._draftNotifyProfiles = nextProfiles;
+
+    if (this._notifyProfileClientErrors?.[index]?.[key]) {
+      const nextErrors = this._cloneNotifyProfileErrors(this._notifyProfileClientErrors);
+      delete nextErrors[index][key];
+      this._notifyProfileClientErrors = nextErrors;
+    }
+
+    this._isDirty = this._hasValueChanges();
+    this._rerenderPreservingInputState();
+  }
+
+  _handleNotifyRangeInput(event) {
+    const field = event.currentTarget;
+    const key = field?.dataset?.notifyRange;
+    const index = Number(field?.dataset?.notifyIndex);
+    if (!key || Number.isNaN(index)) {
+      return;
+    }
+    this._setNotifyRangeDraftValue(index, key, field.value, { rerender: false });
+    this._syncNotifyRangeRow(index, key, field.value);
+    this._renderTopbar(this._data || {});
+  }
+
+  _handleNotifyRangeCommit(event) {
+    const field = event.currentTarget;
+    const key = field?.dataset?.notifyRange;
+    const index = Number(field?.dataset?.notifyIndex);
+    if (!key || Number.isNaN(index)) {
+      return;
+    }
+    this._setNotifyRangeDraftValue(index, key, field.value, { rerender: true });
+  }
+
+  _handleNotifyRangeNumberInput(event) {
+    const field = event.currentTarget;
+    const key = field?.dataset?.notifyRangeNumber;
+    const index = Number(field?.dataset?.notifyIndex);
+    if (!key || Number.isNaN(index)) {
+      return;
+    }
+    this._setNotifyRangeDraftValue(index, key, field.value, { rerender: false, allowPartial: true });
+    this._syncNotifyRangeRow(index, key, field.value);
+    this._renderTopbar(this._data || {});
+  }
+
+  _handleNotifyRangeNumberCommit(event) {
+    const field = event.currentTarget;
+    const key = field?.dataset?.notifyRangeNumber;
+    const index = Number(field?.dataset?.notifyIndex);
+    if (!key || Number.isNaN(index)) {
+      return;
+    }
+    const normalized = this._normalizeNotifyRangeValue(index, key, field.value);
+    this._setNotifyRangeDraftValue(index, key, normalized, { rerender: true });
+  }
+
+  _setNotifyRangeDraftValue(index, key, nextValue, { rerender, allowPartial = false }) {
+    const nextProfiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
+    if (!nextProfiles[index]) {
+      return;
+    }
+    const normalizedValue = allowPartial ? nextValue : this._normalizeNotifyRangeValue(index, key, nextValue);
+    nextProfiles[index] = {
+      ...nextProfiles[index],
+      [key]: normalizedValue,
+    };
+    this._draftNotifyProfiles = nextProfiles;
+    if (this._notifyProfileClientErrors?.[index]?.[key]) {
+      const nextErrors = this._cloneNotifyProfileErrors(this._notifyProfileClientErrors);
+      delete nextErrors[index][key];
+      this._notifyProfileClientErrors = nextErrors;
+    }
+    this._isDirty = this._hasValueChanges();
+    if (rerender) {
+      this._rerenderPreservingInputState();
+    }
+  }
+
+  _normalizeNotifyRangeValue(index, key, rawValue) {
+    const field = this._findNotifyProfileField(key);
+    if (!field) {
+      return rawValue;
+    }
+    const savedValue = this._data?.notify_profiles?.[index]?.[key] ?? "";
+    if (rawValue === "" || rawValue === null || rawValue === undefined) {
+      return savedValue === "" ? "" : savedValue;
+    }
+    const numeric = Number(rawValue);
+    if (Number.isNaN(numeric)) {
+      return savedValue;
+    }
+    const min = Number(field.min ?? numeric);
+    const max = Number(field.max ?? numeric);
+    const step = Number(field.step ?? 1);
+    const clamped = Math.min(max, Math.max(min, numeric));
+    const stepped = Math.round(clamped / step) * step;
+    return Number(step < 1 ? stepped.toFixed(2) : stepped);
+  }
+
+  _syncNotifyRangeRow(index, key, rawValue) {
+    const field = this._findNotifyProfileField(key);
+    const value = rawValue === "" || rawValue === null || rawValue === undefined
+      ? ""
+      : String(rawValue);
+    const rangeInput = this.shadowRoot.querySelector(`[data-notify-range="${CSS.escape(key)}"][data-notify-index="${CSS.escape(String(index))}"]`);
+    const numberInput = this.shadowRoot.querySelector(`[data-notify-range-number="${CSS.escape(key)}"][data-notify-index="${CSS.escape(String(index))}"]`);
+    if (rangeInput && value !== "" && !Number.isNaN(Number(value))) {
+      rangeInput.value = value === "" ? String(field?.min ?? 0) : value;
+    }
+    if (numberInput && document.activeElement !== numberInput) {
+      numberInput.value = value;
+      numberInput.placeholder = value === ""
+        ? `Auto${field?.unit ? ` ${field.unit}` : ""}`
+        : "";
+    }
+  }
+
+  _resetNotifyProfileField(index, key) {
+    if (!key || Number.isNaN(index)) {
+      return;
+    }
+    const savedValue = this._data?.notify_profiles?.[index]?.[key];
+    const nextProfiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
+    if (!nextProfiles[index]) {
+      return;
+    }
+    nextProfiles[index] = {
+      ...nextProfiles[index],
+      [key]: savedValue ?? "",
+    };
+    this._draftNotifyProfiles = nextProfiles;
+    this._isDirty = this._hasValueChanges();
+    this._render();
+  }
+
+  _addNotifyProfile() {
+    const defaults = this._buildEmptyNotifyProfile();
+    const nextIndex = (this._draftNotifyProfiles || []).length;
+    this._draftNotifyProfiles = [...(this._draftNotifyProfiles || []), defaults];
+    this._notifyProfileClientErrors = [...(this._notifyProfileClientErrors || []), {}];
+    this._expandedNotifyProfiles = {
+      ...(this._expandedNotifyProfiles || {}),
+      [nextIndex]: true,
+    };
+    this._isDirty = this._hasValueChanges();
+    this._render();
+  }
+
+  _removeNotifyProfile(index) {
+    if (Number.isNaN(index)) {
+      return;
+    }
+    this._draftNotifyProfiles = (this._draftNotifyProfiles || []).filter((_, itemIndex) => itemIndex !== index);
+    this._notifyProfileClientErrors = (this._notifyProfileClientErrors || []).filter((_, itemIndex) => itemIndex !== index);
+    this._expandedNotifyProfiles = this._reindexNotifyProfileState(this._expandedNotifyProfiles, index);
+    this._notifyProfileTests = this._reindexNotifyProfileState(this._notifyProfileTests, index);
+    this._isDirty = this._hasValueChanges();
+    this._render();
+  }
+
+  _toggleNotifyProfile(index) {
+    if (Number.isNaN(index)) {
+      return;
+    }
+    this._expandedNotifyProfiles = {
+      ...(this._expandedNotifyProfiles || {}),
+      [index]: !this._isNotifyProfileExpanded(index),
+    };
+    this._render();
+  }
+
+  _isNotifyProfileExpanded(index) {
+    const explicit = this._expandedNotifyProfiles?.[index];
+    return explicit === true;
+  }
+
+  _parseNotifyEntityIds(value) {
+    return String(value || "")
+      .split(",")
+      .map((entityId) => entityId.trim())
+      .filter(Boolean);
+  }
+
+  _stringifyNotifyEntityIds(entityIds) {
+    return entityIds.join(", ");
+  }
+
+  _removeNotifyEntity(index, entityId) {
+    if (Number.isNaN(index) || !entityId) {
+      return;
+    }
+    const nextProfiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
+    const currentIds = this._parseNotifyEntityIds(nextProfiles[index]?.entity_id);
+    nextProfiles[index] = {
+      ...nextProfiles[index],
+      entity_id: this._stringifyNotifyEntityIds(currentIds.filter((item) => item !== entityId)),
+    };
+    this._draftNotifyProfiles = nextProfiles;
+    this._isDirty = this._hasValueChanges();
+    this._render();
+  }
+
+  _wireNotifyEntityPickers() {
+    this.shadowRoot.querySelectorAll("[data-notify-entity-picker]").forEach((picker) => {
+      const index = Number(picker.dataset.notifyEntityPicker);
+      const selectedValue = "";
+      picker.hass = this._hass;
+      picker.includeDomains = ["media_player"];
+      picker.value = selectedValue;
+      picker.label = "Add media player";
+      picker.helper = "Choose a media_player entity to append";
+      picker.clearable = true;
+      picker.disabled = this._saving;
+      if (picker.__notifyPickerBound) {
+        return;
+      }
+      picker.__notifyPickerBound = true;
+      picker.addEventListener("value-changed", (event) => {
+        const entityId = event.detail?.value;
+        if (!entityId) {
+          return;
+        }
+        this._addNotifyEntity(index, entityId);
+        picker.value = "";
+      });
+    });
+  }
+
+  _addNotifyEntity(index, entityId) {
+    if (Number.isNaN(index) || !entityId) {
+      return;
+    }
+    const nextProfiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
+    const currentIds = this._parseNotifyEntityIds(nextProfiles[index]?.entity_id);
+    if (!currentIds.includes(entityId)) {
+      currentIds.push(entityId);
+    }
+    nextProfiles[index] = {
+      ...nextProfiles[index],
+      entity_id: this._stringifyNotifyEntityIds(currentIds),
+    };
+    this._draftNotifyProfiles = nextProfiles;
+    if (this._notifyProfileClientErrors?.[index]?.entity_id) {
+      const nextErrors = this._cloneNotifyProfileErrors(this._notifyProfileClientErrors);
+      delete nextErrors[index].entity_id;
+      this._notifyProfileClientErrors = nextErrors;
+    }
+    this._isDirty = this._hasValueChanges();
+    this._render();
+  }
+
+  _reindexNotifyProfileState(state, removedIndex) {
+    const nextState = {};
+    for (const [key, value] of Object.entries(state || {})) {
+      const index = Number(key);
+      if (Number.isNaN(index) || index === removedIndex) {
+        continue;
+      }
+      nextState[index > removedIndex ? index - 1 : index] = value;
+    }
+    return nextState;
   }
 
   async _openPicker(fieldKey) {
@@ -2099,6 +3300,23 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     return "Select folder";
   }
 
+  _findField(fieldKey) {
+    const sections = this._data?.sections || [];
+    for (const section of sections) {
+      for (const field of section.fields || []) {
+        if (field.key === fieldKey) {
+          return field;
+        }
+      }
+    }
+    return null;
+  }
+
+  _findNotifyProfileField(fieldKey) {
+    const section = (this._data?.sections || []).find((item) => item.key === "notify_profiles");
+    return (section?.profile_fields || []).find((field) => field.key === fieldKey) || null;
+  }
+
   _isPathFieldKey(fieldKey) {
     const sections = this._data?.sections || [];
     for (const section of sections) {
@@ -2133,12 +3351,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _hasValueChanges() {
+    if (this._hasNotifyProfileChanges()) {
+      return true;
+    }
     const savedValues = this._data?.values || {};
     const draftValues = this._draftValues || {};
     const keys = new Set([...Object.keys(savedValues), ...Object.keys(draftValues)]);
 
     for (const key of keys) {
-      if (this._normalizeForCompare(savedValues[key]) !== this._normalizeForCompare(draftValues[key])) {
+      if (this._normalizeForCompare(savedValues[key], key) !== this._normalizeForCompare(draftValues[key], key)) {
         return true;
       }
     }
@@ -2146,14 +3367,26 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     return false;
   }
 
-  _normalizeForCompare(value) {
+  _normalizeForCompare(value, fieldKey = null) {
     if (value === null || value === undefined) {
       return "";
     }
     if (typeof value === "boolean") {
       return value ? "true" : "false";
     }
-    return String(value);
+    const normalized = String(value);
+    if (fieldKey && this._isPathFieldKey(fieldKey)) {
+      return this._normalizePathForCompare(normalized);
+    }
+    return normalized;
+  }
+
+  _normalizePathForCompare(value) {
+    const normalized = String(value || "");
+    if (normalized === "/") {
+      return "/";
+    }
+    return normalized.replace(/\/+$/, "");
   }
 
   _validateRequiredFields() {
@@ -2173,7 +3406,174 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         }
       }
     }
+
+    const notifyProfileErrors = this._cloneNotifyProfileErrors(this._notifyProfileClientErrors || []);
+    for (let index = 0; index < (this._draftNotifyProfiles || []).length; index += 1) {
+      const profile = this._draftNotifyProfiles[index] || {};
+      if (!String(profile.name ?? "").trim()) {
+        notifyProfileErrors[index] = { ...(notifyProfileErrors[index] || {}), name: "required" };
+      }
+      if (!String(profile.entity_id ?? "").trim()) {
+        notifyProfileErrors[index] = { ...(notifyProfileErrors[index] || {}), entity_id: "required" };
+      }
+    }
+    this._notifyProfileClientErrors = notifyProfileErrors;
     return errors;
+  }
+
+  _buildEmptyNotifyProfile() {
+    return {
+      name: "",
+      entity_id: "",
+      chime_path: "",
+      end_chime_path: "",
+      tts_platform: "",
+      language: "",
+      voice: "",
+      tld: "",
+      offset: "",
+      crossfade: "",
+      final_delay: "",
+      tts_speed: "",
+      tts_pitch: "",
+      volume_level: "",
+      audio_conversion: "",
+      options: "",
+      announce: false,
+      cache: false,
+      fade_audio: false,
+      join_players: false,
+      unjoin_players: false,
+    };
+  }
+
+  _cloneNotifyProfiles(profiles) {
+    return (profiles || []).map((profile) => ({ ...this._buildEmptyNotifyProfile(), ...(profile || {}) }));
+  }
+
+  _cloneNotifyProfileErrors(errors) {
+    return (errors || []).map((profileErrors) => ({ ...(profileErrors || {}) }));
+  }
+
+  _getNotifyProfileErrors(index) {
+    return {
+      ...((this._data?.notify_profile_errors || [])[index] || {}),
+      ...((this._notifyProfileClientErrors || [])[index] || {}),
+    };
+  }
+
+  _getNotifyProfileTestState(index) {
+    return {
+      open: false,
+      message: "",
+      sending: false,
+      sent: false,
+      ...((this._notifyProfileTests || {})[index] || {}),
+    };
+  }
+
+  _openNotifyProfileTest(index) {
+    if (Number.isNaN(index)) {
+      return;
+    }
+    this._notifyProfileTests = {
+      ...(this._notifyProfileTests || {}),
+      [index]: {
+        open: true,
+        message: "",
+        sending: false,
+        sent: false,
+      },
+    };
+    this._render();
+  }
+
+  _closeNotifyProfileTest(index) {
+    if (Number.isNaN(index)) {
+      return;
+    }
+    const nextState = { ...(this._notifyProfileTests || {}) };
+    delete nextState[index];
+    this._notifyProfileTests = nextState;
+    this._render();
+  }
+
+  _updateNotifyProfileTestMessage(index, message) {
+    if (Number.isNaN(index)) {
+      return;
+    }
+    const current = this._getNotifyProfileTestState(index);
+    this._notifyProfileTests = {
+      ...(this._notifyProfileTests || {}),
+      [index]: {
+        ...current,
+        open: true,
+        message,
+        sent: false,
+      },
+    };
+  }
+
+  async _runNotifyProfileTest(index) {
+    if (Number.isNaN(index)) {
+      return;
+    }
+    const profile = (this._draftNotifyProfiles || [])[index];
+    const service = String(profile?.name || "").trim();
+    const current = this._getNotifyProfileTestState(index);
+    const message = String(current.message || "").trim();
+    if (!service || !message || current.sending) {
+      return;
+    }
+
+    this._notifyProfileTests = {
+      ...(this._notifyProfileTests || {}),
+      [index]: {
+        ...current,
+        sending: true,
+        sent: false,
+      },
+    };
+    this._render();
+
+    try {
+      await this._hass.callService("notify", service, { message });
+      this._notifyProfileTests = {
+        ...(this._notifyProfileTests || {}),
+        [index]: {
+          ...this._getNotifyProfileTestState(index),
+          open: true,
+          message: current.message,
+          sending: false,
+          sent: true,
+        },
+      };
+    } catch (error) {
+      this._data = {
+        ...(this._data || {}),
+        message: error?.message || `Unable to send notify.${service}.`,
+        message_type: "error",
+      };
+      this._notifyProfileTests = {
+        ...(this._notifyProfileTests || {}),
+        [index]: {
+          ...this._getNotifyProfileTestState(index),
+          open: true,
+          message: current.message,
+          sending: false,
+          sent: false,
+        },
+      };
+      this._showSaveResult("error");
+    } finally {
+      this._render();
+    }
+  }
+
+  _hasNotifyProfileChanges() {
+    const savedProfiles = this._data?.notify_profiles || [];
+    const draftProfiles = this._draftNotifyProfiles || [];
+    return JSON.stringify(savedProfiles) !== JSON.stringify(draftProfiles);
   }
 
   _scheduleMessageClear() {
@@ -2212,10 +3612,48 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }, 1500);
   }
 
+  _closePanel() {
+    const fallbackPath = "/config/dashboard";
+    const sameOriginReferrer = document.referrer
+      && (() => {
+        try {
+          return new URL(document.referrer).origin === window.location.origin;
+        } catch (_error) {
+          return false;
+        }
+      })();
+
+    if (
+      sameOriginReferrer
+      && window.history.length > 1
+      && !String(window.location.pathname || "").startsWith(fallbackPath)
+    ) {
+      window.history.back();
+      window.setTimeout(() => {
+        if (String(window.location.pathname || "").includes("/chime-tts")) {
+          window.location.assign(fallbackPath);
+        }
+      }, 250);
+      return;
+    }
+
+    window.location.assign(fallbackPath);
+  }
+
+  _toggleHassMenu() {
+    this.dispatchEvent(
+      new Event("hass-toggle-menu", {
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
   _formatError(errorKey) {
     const errorMap = {
       required: "This field is required.",
       invalid_number: "Enter a valid number.",
+      invalid_yaml: "Enter valid YAML.",
       timeout: "The timeout value is invalid.",
       timeout_sub: "Enter a valid timeout duration.",
       tts_platform_none: "No TTS platforms were detected. Add at least one TTS integration first.",
