@@ -145,7 +145,11 @@ class TTSAudioHelper:
                         language,
                         voice,
                     )
-        return language or original_language
+        if language:
+            return language
+        if original_language:
+            return original_language
+        return None
     
     async def _generate_tts_audio(
         self,

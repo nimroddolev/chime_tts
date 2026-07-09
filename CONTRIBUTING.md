@@ -56,6 +56,30 @@ Home Assistant instance running and already configured with the included
 [`configuration.yaml`](./config/configuration.yaml)
 file.
 
+## Compatibility strategy
+
+Compatibility issues are one of the hardest things to reproduce locally, so the
+project now tests the integration in two complementary ways:
+
+1. `tox` compatibility matrix
+   This runs the unit/integration test suite against a representative Home
+   Assistant floor/current/latest stack so API drift shows up before release.
+
+2. Docker-backed Home Assistant smoke tests
+   These boot real `stable` and `dev` Home Assistant containers and run the live
+   end-to-end suite against the actual integration.
+
+Useful local commands:
+
+- `make matrix`
+- `make test-e2e`
+- `./scripts/ha-docker stable pull`
+- `./scripts/ha-docker dev pull`
+
+If you are investigating a user report, try to add a focused regression test to
+the regular pytest suite first, then add or extend a Docker E2E case when the
+issue depends on real Home Assistant runtime behavior.
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under its MIT License.
