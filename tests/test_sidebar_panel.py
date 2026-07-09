@@ -307,15 +307,9 @@ def test_build_panel_payload_includes_notify_profiles_from_configuration_yaml(
     }
     assert notify_section["kind"] == "notify_profiles"
     assert notify_section["docs_url"].endswith("/notify/")
-    assert notify_profile_fields["tts_platform"]["docs_url"].endswith(
-        "/documentation/configuration/#default-tts-platform"
-    )
-    assert notify_profile_fields["crossfade"]["docs_url"].endswith(
-        "/documentation/actions/say-action/parameters/#crossfade"
-    )
-    assert notify_profile_fields["announce"]["docs_url"].endswith(
-        "/documentation/actions/say-action/parameters/#announce"
-    )
+    assert {
+        key: field["docs_url"] for key, field in notify_profile_fields.items()
+    } == settings_module.NOTIFY_FIELD_DOCUMENTATION_URLS
     assert payload["notify_profiles"] == [
         {
             "name": "kitchen",
@@ -341,6 +335,75 @@ def test_build_panel_payload_includes_notify_profiles_from_configuration_yaml(
             "unjoin_players": False,
         }
     ]
+
+
+def test_build_panel_payload_exposes_docs_urls_for_all_notify_profile_fields(
+    tmp_path: Path,
+) -> None:
+    """Every notify profile field should advertise its intended documentation link."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+
+    payload = settings_module.build_panel_payload(hass, config_entry)
+
+    notify_section = next(
+        section for section in payload["sections"] if section["key"] == "notify_profiles"
+    )
+    actual_docs_urls = {
+        field["key"]: field["docs_url"] for field in notify_section["profile_fields"]
+    }
+
+    assert actual_docs_urls == settings_module.NOTIFY_FIELD_DOCUMENTATION_URLS
+    assert actual_docs_urls["tts_platform"].endswith(
+        "/documentation/configuration/#default-tts-platform"
+    )
+    assert actual_docs_urls["language"].endswith(
+        "/documentation/configuration/#default-language"
+    )
+    assert actual_docs_urls["voice"].endswith(
+        "/documentation/configuration/#default-voice"
+    )
+    assert actual_docs_urls["tld"].endswith(
+        "/documentation/configuration/#default-dialect"
+    )
+    assert actual_docs_urls["offset"].endswith(
+        "/documentation/configuration/#default-offset"
+    )
+    assert actual_docs_urls["crossfade"].endswith(
+        "/documentation/actions/say-action/parameters/#crossfade"
+    )
+    assert actual_docs_urls["final_delay"].endswith(
+        "/documentation/actions/say-action/parameters/#final_delay"
+    )
+    assert actual_docs_urls["tts_speed"].endswith(
+        "/documentation/actions/say-action/parameters/#tts_speed"
+    )
+    assert actual_docs_urls["tts_pitch"].endswith(
+        "/documentation/actions/say-action/parameters/#tts_pitch"
+    )
+    assert actual_docs_urls["volume_level"].endswith(
+        "/documentation/actions/say-action/parameters/#volume_level"
+    )
+    assert actual_docs_urls["audio_conversion"].endswith(
+        "/documentation/actions/say-action/parameters/#audio_conversion"
+    )
+    assert actual_docs_urls["options"].endswith(
+        "/documentation/actions/say-action/parameters/#options"
+    )
+    assert actual_docs_urls["announce"].endswith(
+        "/documentation/actions/say-action/parameters/#announce"
+    )
+    assert actual_docs_urls["cache"].endswith(
+        "/documentation/actions/say-action/parameters/#cache"
+    )
+    assert actual_docs_urls["fade_audio"].endswith(
+        "/documentation/actions/say-action/parameters/#fade_audio"
+    )
+    assert actual_docs_urls["join_players"].endswith(
+        "/documentation/actions/say-action/parameters/#join_players"
+    )
+    assert actual_docs_urls["unjoin_players"].endswith(
+        "/documentation/actions/say-action/parameters/#unjoin_players"
+    )
 
 
 @pytest.mark.asyncio

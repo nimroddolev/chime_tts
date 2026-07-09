@@ -570,9 +570,24 @@ async def test_panel_notify_profiles_round_trip(
     )
 
     payload = await e2e_client.ws_command({"type": "chime_tts/get_settings"})
+    notify_section = next(
+        section for section in payload["sections"] if section["key"] == "notify_profiles"
+    )
+    notify_profile_fields = {
+        field["key"]: field for field in notify_section["profile_fields"]
+    }
     assert payload["notify_profiles"][0]["name"] == "arrival"
     assert payload["notify_profiles"][0]["entity_id"] == (
         "media_player.test_speaker, media_player.group_speaker"
+    )
+    assert notify_profile_fields["tts_platform"]["docs_url"].endswith(
+        "/documentation/configuration/#default-tts-platform"
+    )
+    assert notify_profile_fields["crossfade"]["docs_url"].endswith(
+        "/documentation/actions/say-action/parameters/#crossfade"
+    )
+    assert notify_profile_fields["announce"]["docs_url"].endswith(
+        "/documentation/actions/say-action/parameters/#announce"
     )
 
     saved = await e2e_client.ws_command(
