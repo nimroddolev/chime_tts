@@ -29,6 +29,7 @@ pytestmark = pytest.mark.e2e
 ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_FILE = ROOT / "docker-compose.homeassistant.yml"
 SOURCE_INTEGRATION_DIR = ROOT / "custom_components" / "chime_tts"
+SUPPORT_COMPONENTS_DIR = ROOT / "tests" / "e2e" / "support" / "custom_components"
 CLIENT_ID = "http://localhost"
 AUTH_USER_ID = "01KX2E2EAUTHUSER000000000001"
 AUTH_TOKEN_ID = "01KX2E2EAUTHTOKEN0000000001"
@@ -64,7 +65,11 @@ media_source:
 ffmpeg:
   ffmpeg_bin: /usr/bin/ffmpeg
 
+media_player:
+  - platform: test_support_player
+
 tts:
+  - platform: test_support_tts
   - platform: google_translate
     service_name: google_say
 """
@@ -99,6 +104,10 @@ class RuntimeTarget:
     @property
     def temp_dir(self) -> Path:
         return self.media_dir / "sounds" / "temp" / "chime_tts"
+
+    @property
+    def test_support_tts_record_path(self) -> Path:
+        return self.config_dir / "test_support_tts_last_request.json"
 
 
 TARGETS = (
@@ -190,11 +199,19 @@ class HomeAssistantE2EClient:
         self.target.integration_dir.parent.mkdir(parents=True, exist_ok=True)
         (self.target.config_dir / "www").mkdir(parents=True, exist_ok=True)
         shutil.copytree(SOURCE_INTEGRATION_DIR, self.target.integration_dir)
+        self.copy_support_components()
         self.target.config_dir.joinpath("configuration.yaml").write_text(
             E2E_CONFIGURATION,
             encoding="utf-8",
         )
         self.seed_auth_storage()
+
+    def copy_support_components(self) -> None:
+        """Install test-only custom components into the runtime config."""
+        destination_root = self.target.config_dir / "custom_components"
+        destination_root.mkdir(parents=True, exist_ok=True)
+        for component_dir in SUPPORT_COMPONENTS_DIR.iterdir():
+            shutil.copytree(component_dir, destination_root / component_dir.name)
 
     def seed_auth_storage(self) -> None:
         """Seed an owner user and refresh token so tests can authenticate directly."""
@@ -404,6 +421,54 @@ class HomeAssistantE2EClient:
                 raise AssertionError(message)
             return message["result"]
 
+    def get_state(self, entity_id: str) -> dict[str, Any]:
+        """Fetch one entity state through the Home Assistant REST API."""
+        assert self.access_token is not None
+        status, payload = _http_request(
+            "GET",
+            f"{self.hass_url}/api/states/{entity_id}",
+            token=self.access_token,
+            timeout=10.0,
+        )
+        if status != 200:
+            raise RuntimeError(f"Unable to fetch state for {entity_id}: {status} {payload}")
+        return payload
+
+    def get_test_support_tts_request(self) -> dict[str, Any]:
+        """Read the last request captured by the local E2E TTS provider."""
+        return json.loads(self.target.test_support_tts_record_path.read_text(encoding="utf-8"))
+
+    async def wait_for_test_support_tts_request(
+        self, timeout: float = 15.0
+    ) -> dict[str, Any]:
+        """Poll until the support TTS provider records a request."""
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            with suppress(FileNotFoundError, json.JSONDecodeError):
+                return self.get_test_support_tts_request()
+            await asyncio.sleep(0.5)
+        raise RuntimeError(
+            f"Timed out waiting for the support TTS request record on {self.target.name}"
+        )
+
+    async def wait_for_state_attr(
+        self,
+        entity_id: str,
+        attr_name: str,
+        predicate: callable,
+        timeout: float = 30.0,
+    ) -> dict[str, Any]:
+        """Poll one entity attribute until it matches the expected condition."""
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            state = self.get_state(entity_id)
+            if predicate(state["attributes"].get(attr_name)):
+                return state
+            await asyncio.sleep(1)
+        raise RuntimeError(
+            f"Timed out waiting for {entity_id} attribute {attr_name!r} on {self.target.name}"
+        )
+
     def resolve_hass_url(self, url: str) -> str:
         """Map a returned Home Assistant URL back to the local runtime."""
         absolute_url = urljoin(f"{self.hass_url}/", url.lstrip("/"))
@@ -551,6 +616,216 @@ async def test_say_url_cache_and_clear_cache(
 
     assert not list(e2e_client.target.public_dir.rglob("*.mp3"))
     assert not list(e2e_client.target.temp_dir.rglob("*.mp3"))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("case_name", "service_data"),
+    [
+        ("start_chime", {"chime_path": "bells", "cache": False}),
+        (
+            "start_and_end_chime",
+            {"chime_path": "bells", "end_chime_path": "tada", "cache": False},
+        ),
+        (
+            "offset",
+            {
+                "chime_path": "bells",
+                "end_chime_path": "tada",
+                "offset": 250,
+                "cache": False,
+            },
+        ),
+        (
+            "crossfade",
+            {
+                "chime_path": "bells",
+                "end_chime_path": "tada",
+                "crossfade": 150,
+                "cache": False,
+            },
+        ),
+    ],
+    ids=lambda case: case,
+)
+async def test_say_url_parameter_variants(
+    e2e_client: HomeAssistantE2EClient,
+    case_name: str,
+    service_data: dict[str, Any],
+) -> None:
+    """Live say_url calls should succeed across key local-audio parameter variants."""
+    del case_name
+    result = await e2e_client.ws_command(
+        {
+            "type": "call_service",
+            "domain": "chime_tts",
+            "service": "say_url",
+            "service_data": service_data,
+            "return_response": True,
+        }
+    )
+
+    response = result["response"]
+    assert response["success"] is True
+    assert response["url"]
+    assert response["duration"] > 0
+
+    audio_url = e2e_client.resolve_hass_url(response["url"])
+    status, body = _http_request("GET", audio_url, timeout=30.0)
+    assert status == 200
+    assert isinstance(body, bytes | bytearray)
+    assert len(body) > 100
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("case_name", "service_data", "expected_language", "expected_options"),
+    [
+        (
+            "message_only",
+            {
+                "message": "Message only test",
+                "tts_platform": "test_support_tts",
+                "cache": False,
+            },
+            "en",
+            {},
+        ),
+        (
+            "language_voice_tld",
+            {
+                "message": "Language and options test",
+                "tts_platform": "test_support_tts",
+                "language": "fr",
+                "voice": "voice-fr",
+                "tld": "ca",
+                "cache": False,
+            },
+            "fr",
+            {"voice": "voice-fr", "tld": "ca"},
+        ),
+        (
+            "options_override",
+            {
+                "message": "Options override test",
+                "tts_platform": "test_support_tts",
+                "language": "en-US",
+                "voice": "voice-base",
+                "tld": "co.uk",
+                "options": "voice: override-voice\ntld: com.au",
+                "cache": False,
+            },
+            "en-US",
+            {"voice": "override-voice", "tld": "com.au"},
+        ),
+    ],
+    ids=lambda case: case,
+)
+async def test_say_url_message_parameter_variants(
+    e2e_client: HomeAssistantE2EClient,
+    case_name: str,
+    service_data: dict[str, Any],
+    expected_language: str,
+    expected_options: dict[str, Any],
+) -> None:
+    """Live say_url message requests should pass message/language/options through to TTS."""
+    del case_name
+    result = await e2e_client.ws_command(
+        {
+            "type": "call_service",
+            "domain": "chime_tts",
+            "service": "say_url",
+            "service_data": service_data,
+            "return_response": True,
+        }
+    )
+
+    response = result["response"]
+    assert response["success"] is True
+    assert response["url"]
+
+    request = await e2e_client.wait_for_test_support_tts_request()
+    assert request["message"] == service_data["message"]
+    assert request["language"] == expected_language
+    assert request["options"] == expected_options
+
+
+@pytest.mark.asyncio
+async def test_say_action_plays_media_on_target_player(
+    e2e_client: HomeAssistantE2EClient,
+) -> None:
+    """The live say action should dispatch media_player.play_media to a target entity."""
+    entity_id = "media_player.e2e_test_player"
+    result = await e2e_client.ws_command(
+        {
+            "type": "call_service",
+            "domain": "chime_tts",
+            "service": "say",
+            "service_data": {
+                "entity_id": [entity_id],
+                "chime_path": "bells",
+                "volume_level": 0.42,
+                "announce": True,
+                "cache": False,
+            },
+        }
+    )
+
+    assert result["context"]["id"]
+
+    state = await e2e_client.wait_for_state_attr(
+        entity_id,
+        "play_count",
+        lambda value: value == 1,
+    )
+    attrs = state["attributes"]
+
+    assert state["state"] == "idle"
+    assert attrs["last_announce"] is True
+    assert attrs["last_media_content_type"] == "music"
+    assert attrs["last_media_content_id"].startswith("media-source://media_source/local/")
+    assert attrs["play_count"] == 1
+    assert 0.42 in attrs["volume_history"]
+    assert abs(attrs["volume_level"] - 0.5) < 0.001
+
+
+@pytest.mark.asyncio
+async def test_say_action_message_uses_local_tts_provider(
+    e2e_client: HomeAssistantE2EClient,
+) -> None:
+    """The live say action should request TTS audio and play it on the target player."""
+    entity_id = "media_player.e2e_test_player"
+    result = await e2e_client.ws_command(
+        {
+            "type": "call_service",
+            "domain": "chime_tts",
+            "service": "say",
+            "service_data": {
+                "entity_id": [entity_id],
+                "message": "Say message live test",
+                "tts_platform": "test_support_tts",
+                "language": "fr",
+                "voice": "say-voice",
+                "cache": False,
+            },
+        }
+    )
+
+    assert result["context"]["id"]
+
+    request = await e2e_client.wait_for_test_support_tts_request()
+    assert request["message"] == "Say message live test"
+    assert request["language"] == "fr"
+    assert request["options"] == {"voice": "say-voice"}
+
+    state = await e2e_client.wait_for_state_attr(
+        entity_id,
+        "play_count",
+        lambda value: value == 1,
+    )
+    assert state["attributes"]["last_media_content_id"].startswith(
+        "media-source://media_source/local/"
+    )
 
 
 @pytest.mark.asyncio
