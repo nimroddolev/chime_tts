@@ -100,6 +100,7 @@ class TTSAudioHelper:
         return tts_platform, tts_options, language
 
     def _adjust_language_and_voice(self, tts_platform, language, tts_options):
+        original_language = language
         voice = tts_options.get("voice", None)
         # Nabu Casa cloud can arrive as a full entity id (tts.home_assistant_cloud)
         # now that platform matching keeps entity ids; map it to the constant so
@@ -131,8 +132,6 @@ class TTSAudioHelper:
                 # the options makes the engine reject the call with
                 # "Invalid options found: ['language']" (#242, #210).
                 tts_options.pop("language", None)
-        else:
-            language = None
 
         if tts_platform == NABU_CASA_CLOUD_TTS and isinstance(voice, str) and voice and not language:
             # Styled cloud voices arrive as "name||style"; match on the base name
@@ -146,7 +145,7 @@ class TTSAudioHelper:
                         language,
                         voice,
                     )
-        return language
+        return language or original_language
     
     async def _generate_tts_audio(
         self,
@@ -160,9 +159,7 @@ class TTSAudioHelper:
     ) -> tuple[str | None, bytes | None]:
         media_source_id: str | None = None
         audio_data: bytes | None = None
-
-        if not tts_platform.startswith("tts."):
-            tts_platform = f"tts.{tts_platform}"
+        engine_candidates = self._engine_candidates(hass, tts_platform)
 
         timeout = int(self._data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT))
         try:
@@ -179,59 +176,80 @@ class TTSAudioHelper:
                     queue_timeout,
                 )
                 timeout = clamped
+            last_error: Exception | None = None
+            last_engine = engine_candidates[0]
 
-            # generate_media_source_id is sync; offload to thread, guard with timeout
-            media_source_id = await asyncio.wait_for(
-                asyncio.to_thread(
-                    tts.media_source.generate_media_source_id,
-                    hass=hass,
-                    message=message,
-                    engine=tts_platform,
-                    language=language,
-                    cache=cache,
-                    options=tts_options,
-                ),
-                timeout=timeout,
-            )
-            return media_source_id, audio_data
+            for engine in engine_candidates:
+                last_engine = engine
+                try:
+                    # generate_media_source_id is sync; offload to thread, guard with timeout
+                    media_source_id = await asyncio.wait_for(
+                        asyncio.to_thread(
+                            tts.media_source.generate_media_source_id,
+                            hass=hass,
+                            message=message,
+                            engine=engine,
+                            language=language,
+                            cache=cache,
+                            options=tts_options,
+                        ),
+                        timeout=timeout,
+                    )
+                    return media_source_id, audio_data
+                except Exception as exc:  # noqa: PERF203
+                    last_error = exc
+                    if len(engine_candidates) > 1:
+                        _LOGGER.debug(
+                            "TTS audio generation with %s failed, trying next engine candidate: %s",
+                            engine,
+                            exc,
+                        )
+
+            if last_error is not None:
+                self._handle_generation_error(last_error, last_engine, media_source_id)
+            return None, None
 
         except asyncio.TimeoutError:
             _LOGGER.error(
                 "TTS audio generation with %s timed out after %ss. "
                 "Consider increasing the TTS timeout in the configuration.",
-                tts_platform, timeout,
+                engine_candidates[0], timeout,
             )
             return None, None
 
         except asyncio.CancelledError:
-            _LOGGER.warning("TTS audio generation with %s cancelled.", tts_platform)
+            _LOGGER.warning(
+                "TTS audio generation with %s cancelled.", engine_candidates[0]
+            )
             raise  # preserve cancellation
 
         except Exception as exc:
-            # If caller passed e.g. "google_translate" instead of "tts.google_translate", try once
-            if not tts_platform.startswith("tts."):
-                _LOGGER.debug(
-                    "Attempting to generate audio with tts.%s (instead of %s)",
-                    tts_platform, tts_platform,
-                )
-                try:
-                    return await self._generate_tts_audio(
-                        hass,
-                        f"tts.{tts_platform}",
-                        message,
-                        language,
-                        cache,
-                        tts_options,
-                    )
-                except Exception as prefixed_exc:
-                    self._handle_generation_error(
-                        prefixed_exc, f"tts.{tts_platform}", media_source_id
-                    )
-                    return None, None
-
-            # Already prefixed or other failure path
-            self._handle_generation_error(exc, tts_platform, media_source_id)
+            self._handle_generation_error(exc, engine_candidates[0], media_source_id)
             return None, None
+
+    def _engine_candidates(
+        self, hass: HomeAssistant, tts_platform: str
+    ) -> list[str]:
+        """Return likely engine ids for modern entity and legacy provider paths."""
+        manager = hass.data.get("tts_manager")
+        legacy_providers = set(getattr(manager, "providers", {})) if manager else set()
+        candidates: list[str] = []
+
+        def add_candidate(candidate: str) -> None:
+            if candidate and candidate not in candidates:
+                candidates.append(candidate)
+
+        if tts_platform.startswith("tts."):
+            bare_platform = tts_platform[4:]
+            add_candidate(tts_platform)
+            if bare_platform in legacy_providers:
+                add_candidate(bare_platform)
+        else:
+            if tts_platform in legacy_providers:
+                add_candidate(tts_platform)
+            add_candidate(f"tts.{tts_platform}")
+
+        return candidates
 
 
 
