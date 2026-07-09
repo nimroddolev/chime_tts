@@ -1,5 +1,10 @@
 const PANEL_TAG = "chime-tts-settings-panel";
 const ICONS = {
+  chevron: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M8.12 9.29a1 1 0 0 1 1.41 0L12 11.76l2.47-2.47a1 1 0 1 1 1.41 1.41l-3.18 3.18a1 1 0 0 1-1.41 0L8.12 10.7a1 1 0 0 1 0-1.41z"/>
+    </svg>
+  `,
   pencil: `
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.33H5v-.92l9.06-9.06.92.92L5.92 19.58zM20.71 7.04a1.003 1.003 0 0 0 0-1.42L18.37 3.29a1.003 1.003 0 0 0-1.42 0l-1.13 1.13 3.75 3.75 1.14-1.13z"/>
@@ -344,8 +349,176 @@ template.innerHTML = `
       gap: 18px;
     }
 
+    .chapter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .chapter-group + .chapter-group {
+      margin-top: 18px;
+    }
+
+    .chapter-workspace {
+      padding: 18px;
+      border-radius: 30px;
+      border: 1px solid color-mix(in srgb, var(--divider-color) 78%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 88%, black 12%);
+      box-shadow: 0 20px 44px rgba(0, 0, 0, 0.14);
+    }
+
+    .chapter-workspace.configuration-workspace {
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 92%, white 8%), color-mix(in srgb, var(--secondary-background-color) 84%, transparent));
+      border-color: color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
+    }
+
+    .chapter-workspace.notify-workspace {
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 86%, black 14%), color-mix(in srgb, var(--secondary-background-color) 92%, black 8%));
+      border-color: color-mix(in srgb, #e56b6f 18%, var(--divider-color));
+      box-shadow: 0 22px 48px rgba(0, 0, 0, 0.18);
+    }
+
+    .chapter-hero {
+      padding: 22px 24px;
+      border-radius: 24px;
+      border: 1px solid color-mix(in srgb, var(--primary-color) 14%, var(--divider-color));
+      background:
+        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 14%, transparent), transparent 42%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 94%, white 6%), color-mix(in srgb, var(--secondary-background-color) 78%, transparent));
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+    }
+
+    .chapter-hero-toggle {
+      min-width: 0;
+      display: block;
+      width: 100%;
+      cursor: pointer;
+      border-radius: 18px;
+    }
+
+    .chapter-hero-toggle:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--primary-color) 45%, transparent);
+      outline-offset: 6px;
+    }
+
+    .notify-workspace .chapter-hero {
+      border-color: color-mix(in srgb, #e56b6f 24%, var(--divider-color));
+      background:
+        radial-gradient(circle at top right, color-mix(in srgb, #e56b6f 16%, transparent), transparent 44%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 90%, black 10%), color-mix(in srgb, var(--secondary-background-color) 88%, black 12%));
+    }
+
+    .notify-workspace .chapter-hero-eyebrow {
+      color: color-mix(in srgb, #f08a8d 78%, white 22%);
+    }
+
+    .chapter-hero-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .chapter-hero-copy {
+      min-width: 0;
+    }
+
+    .chapter-hero-eyebrow {
+      margin: 0 0 10px;
+      color: color-mix(in srgb, var(--primary-color) 78%, white 22%);
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .chapter-hero-title-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .chapter-hero-title {
+      margin: 0;
+      font-size: 1.65rem;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: var(--primary-text-color);
+    }
+
+    .chapter-hero-description {
+      margin: 10px 0 0;
+      max-width: 72ch;
+      font-size: 1rem;
+      line-height: 1.6;
+      color: var(--secondary-text-color);
+    }
+
+    .chapter-hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .chapter-hero-endcap {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .chapter-chevron {
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--divider-color) 80%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 84%, white 16%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-text-color);
+      flex: 0 0 auto;
+    }
+
+    .chapter-chevron svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+      display: block;
+      transform: rotate(-90deg);
+      transition: transform 160ms ease;
+    }
+
+    .chapter-workspace.expanded .chapter-chevron svg {
+      transform: rotate(0deg);
+    }
+
+    .chapter-content {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
     .section {
       padding: 22px;
+    }
+
+    .chapter-workspace > .section {
+      border-radius: 24px;
+      border: 1px solid color-mix(in srgb, var(--divider-color) 72%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 84%, transparent);
+    }
+
+    .notify-workspace > .section {
+      background: color-mix(in srgb, var(--card-background-color) 76%, black 24%);
+      border-color: color-mix(in srgb, #e56b6f 14%, var(--divider-color));
     }
 
     .section-header {
@@ -1287,6 +1460,15 @@ template.innerHTML = `
         grid-template-columns: 1fr;
       }
 
+      .chapter-hero-inner {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .chapter-hero-actions {
+        justify-content: flex-start;
+      }
+
       .notify-profile-grid {
         grid-template-columns: 1fr;
       }
@@ -1341,6 +1523,20 @@ template.innerHTML = `
     :host([narrow]) .section {
       border-radius: 20px;
       padding: 18px;
+    }
+
+    :host([narrow]) .chapter-hero {
+      padding: 18px;
+      border-radius: 22px;
+    }
+
+    :host([narrow]) .chapter-hero-title {
+      font-size: 1.4rem;
+    }
+
+    :host([narrow]) .chapter-workspace {
+      padding: 14px;
+      border-radius: 24px;
     }
 
     :host([narrow]) .topbar-actions {
@@ -1425,6 +1621,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._restartPending = false;
     this._restartConfirmOpen = false;
     this._restarting = false;
+    this._expandedChapters = {};
   }
 
   set hass(hass) {
@@ -1476,6 +1673,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._restartPending = false;
       this._restartConfirmOpen = false;
       this._restarting = false;
+      this._expandedChapters = {};
     } catch (error) {
       this._data = {
         sections: [],
@@ -1500,6 +1698,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._restartPending = false;
       this._restartConfirmOpen = false;
       this._restarting = false;
+      this._expandedChapters = {};
     } finally {
       this._loading = false;
       this._render();
@@ -1529,7 +1728,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       ${notifyProfilesLoadError}
       ${message}
       <form id="settings-form">
-        ${sections.map((section) => this._renderSection(section, values, errors)).join("")}
+        ${this._renderSettingsContent(sections, values, errors, data)}
         <div class="footer">
         </div>
       </form>
@@ -1667,6 +1866,27 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         );
       });
     });
+    this.shadowRoot.querySelectorAll("[data-toggle-chapter]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        this._toggleChapter(event.currentTarget.dataset.toggleChapter);
+      });
+      button.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          this._toggleChapter(event.currentTarget.dataset.toggleChapter);
+        }
+      });
+    });
+    this.shadowRoot.querySelectorAll(".chapter-hero-toggle a").forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
+    });
+    this.shadowRoot.querySelectorAll(".chapter-hero-actions button").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
+    });
   }
 
   _renderTopbar(data) {
@@ -1763,49 +1983,120 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     `;
   }
 
+  _renderSettingsContent(sections, values, errors, data) {
+    const notifySection = sections.find((section) => section.kind === "notify_profiles");
+    const configSections = sections.filter((section) => section.kind !== "notify_profiles");
+    const configExpanded = this._isChapterExpanded("configuration");
+
+    return `
+      <div class="chapter-group chapter-workspace configuration-workspace ${configExpanded ? "expanded" : "collapsed"}">
+        ${this._renderChapterHero({
+          chapterKey: "configuration",
+          expanded: configExpanded,
+          eyebrow: "Settings",
+          title: "Configuration",
+          description: "Set default providers, folder paths, playback timing, and integration-wide behavior for Chime TTS.",
+          docsUrl: data.documentation_url,
+        })}
+        ${configExpanded
+          ? `
+            <div class="chapter-content">
+              ${configSections.map((section) => this._renderSection(section, values, errors)).join("")}
+            </div>
+          `
+          : ""
+        }
+      </div>
+      ${notifySection ? this._renderNotifyProfilesSection(notifySection) : ""}
+    `;
+  }
+
+  _renderChapterHero({ chapterKey, expanded, eyebrow, title, description, docsUrl, actionsMarkup = "" }) {
+    return `
+      <section
+        class="chapter-hero chapter-hero-toggle"
+        data-toggle-chapter="${this._escapeAttribute(chapterKey)}"
+        role="button"
+        tabindex="0"
+        aria-expanded="${expanded ? "true" : "false"}"
+        aria-label="${this._escapeAttribute(`${expanded ? "Collapse" : "Expand"} ${title}`)}"
+      >
+        <div class="chapter-hero-inner">
+          <div>
+            <div class="chapter-hero-copy">
+              ${eyebrow ? `<p class="chapter-hero-eyebrow">${this._escapeHtml(eyebrow)}</p>` : ""}
+              <div class="chapter-hero-title-row">
+                <h2 class="chapter-hero-title">${this._escapeHtml(title)}</h2>
+                ${docsUrl
+                  ? `<a
+                      class="field-help-link"
+                      href="${this._escapeAttribute(docsUrl)}"
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="${this._escapeAttribute(`Open help for ${title}`)}"
+                      title="${this._escapeAttribute(`Open help for ${title}`)}"
+                    >?</a>`
+                  : ""
+                }
+              </div>
+              ${description ? `<p class="chapter-hero-description">${this._escapeHtml(description)}</p>` : ""}
+            </div>
+          </div>
+          <div class="chapter-hero-endcap">
+            ${expanded && actionsMarkup
+              ? `<div class="chapter-hero-actions">${actionsMarkup}</div>`
+              : ""
+            }
+            <span class="chapter-chevron" aria-hidden="true">${ICONS.chevron}</span>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
   _renderNotifyProfilesSection(section) {
     const profiles = this._draftNotifyProfiles || [];
     const sectionDirty = this._isSectionDirty(section);
+    const notifyExpanded = this._isChapterExpanded("notify_profiles");
+    const actionsMarkup = `
+      ${sectionDirty ? `
+        <button
+          class="button-secondary"
+          type="button"
+          data-reset-section="${this._escapeAttribute(section.key)}"
+        >Reset Section</button>
+      ` : ""}
+      <button class="button-primary" type="button" data-add-notify-profile="1">+ Add Profile</button>
+    `;
     return `
-      <section class="section">
-        <div class="section-header notify-section-header">
-          <div class="section-header-copy notify-section-copy">
-            <div class="notify-section-title-row">
-              <h2>${this._escapeHtml(section.title)}</h2>
-              ${section.docs_url
-                ? `<a
-                    class="field-help-link notify-section-help"
-                    href="${this._escapeAttribute(section.docs_url)}"
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="Open help for notification profiles"
-                    title="Open help for notification profiles"
-                  >?</a>`
-                : ""
-              }
-            </div>
-            <p>${this._escapeHtml(section.description || "")}</p>
-          </div>
-          <div class="section-header-actions notify-section-actions">
-            ${sectionDirty ? `
-              <button
-                class="button-secondary"
-                type="button"
-                data-reset-section="${this._escapeAttribute(section.key)}"
-              >Reset Section</button>
-            ` : ""}
-            <button class="button-primary" type="button" data-add-notify-profile="1">+ Add Profile</button>
-          </div>
-        </div>
-        ${profiles.length === 0
-          ? `<p class="hint">No Chime TTS notify profiles are configured yet.</p>`
-          : `
-            <div class="notify-profile-list">
-              ${profiles.map((profile, index) => this._renderNotifyProfileCard(section, profile, index)).join("")}
+      <div class="chapter-group chapter-workspace notify-workspace ${notifyExpanded ? "expanded" : "collapsed"}">
+        ${this._renderChapterHero({
+          chapterKey: "notify_profiles",
+          expanded: notifyExpanded,
+          eyebrow: "Profiles",
+          title: section.title,
+          description: section.description || "",
+          docsUrl: section.docs_url,
+          actionsMarkup,
+        })}
+        ${notifyExpanded
+          ? `
+            <div class="chapter-content">
+              <section class="section">
+                ${profiles.length === 0
+                  ? `<p class="hint">No Chime TTS notify profiles are configured yet.</p>`
+                  : `
+                    <div class="notify-profile-list">
+                      ${profiles.map((profile, index) => this._renderNotifyProfileCard(section, profile, index)).join("")}
+                    </div>
+                  `
+                }
+              </section>
             </div>
           `
+          : ""
         }
-      </section>
+      </div>
     `;
   }
 
@@ -2771,6 +3062,21 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       });
     }
     return false;
+  }
+
+  _isChapterExpanded(chapterKey) {
+    return this._expandedChapters?.[chapterKey] === true;
+  }
+
+  _toggleChapter(chapterKey) {
+    if (!chapterKey) {
+      return;
+    }
+    this._expandedChapters = {
+      ...(this._expandedChapters || {}),
+      [chapterKey]: !this._isChapterExpanded(chapterKey),
+    };
+    this._render();
   }
 
   _isSectionDirty(section) {
