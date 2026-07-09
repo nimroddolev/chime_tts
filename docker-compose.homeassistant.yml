@@ -9,7 +9,7 @@ services:
       TZ: ${TZ:-Asia/Jerusalem}
     volumes:
       - ./.ha/stable/config:/config
-      - ./.ha/stable/integration/chime_tts:/config/custom_components/chime_tts
+      - ./custom_components/chime_tts:/config/custom_components/chime_tts
       - ./:/workspaces/chime_tts
       - ./.ha/stable/media:/media
 
@@ -23,6 +23,6 @@ services:
       TZ: ${TZ:-Asia/Jerusalem}
     volumes:
       - ./.ha/dev/config:/config
-      - ./.ha/dev/integration/chime_tts:/config/custom_components/chime_tts
+      - ./custom_components/chime_tts:/config/custom_components/chime_tts
       - ./:/workspaces/chime_tts
       - ./.ha/dev/media:/media

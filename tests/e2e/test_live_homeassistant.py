@@ -22,6 +22,7 @@ from urllib.request import Request, urlopen
 import aiohttp
 import pytest
 import pytest_asyncio
+import yaml
 
 
 pytestmark = pytest.mark.e2e
@@ -547,6 +548,68 @@ async def test_panel_settings_round_trip(e2e_client: HomeAssistantE2EClient) -> 
 
     refreshed = await e2e_client.ws_command({"type": "chime_tts/get_settings"})
     assert refreshed["values"]["queue_timeout"] == updated_values["queue_timeout"]
+
+
+@pytest.mark.asyncio
+async def test_panel_notify_profiles_round_trip(
+    e2e_client: HomeAssistantE2EClient,
+) -> None:
+    """The live panel websocket should load and persist Chime TTS notify profiles."""
+    e2e_client.target.config_dir.joinpath("configuration.yaml").write_text(
+        E2E_CONFIGURATION
+        + "\nnotify:\n"
+        + "  - platform: file\n"
+        + "    name: archive\n"
+        + "  - platform: chime_tts\n"
+        + "    name: arrival\n"
+        + "    entity_id:\n"
+        + "      - media_player.test_speaker\n"
+        + "      - media_player.group_speaker\n"
+        + "    crossfade: 125\n",
+        encoding="utf-8",
+    )
+
+    payload = await e2e_client.ws_command({"type": "chime_tts/get_settings"})
+    assert payload["notify_profiles"][0]["name"] == "arrival"
+    assert payload["notify_profiles"][0]["entity_id"] == (
+        "media_player.test_speaker, media_player.group_speaker"
+    )
+
+    saved = await e2e_client.ws_command(
+        {
+            "type": "chime_tts/save_settings",
+            "values": dict(payload["values"]),
+            "notify_profiles": [
+                {
+                    "name": "arrival",
+                    "entity_id": "media_player.test_speaker, media_player.group_speaker",
+                    "crossfade": 200,
+                    "volume_level": 0.5,
+                    "announce": True,
+                    "options": "voice: Jenny",
+                }
+            ],
+        }
+    )
+
+    assert saved["message_type"] == "success"
+    assert saved["restart_required"] is True
+
+    saved_yaml = yaml.safe_load(
+        e2e_client.target.config_dir.joinpath("configuration.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert saved_yaml["notify"][0] == {"platform": "file", "name": "archive"}
+    assert saved_yaml["notify"][1] == {
+        "platform": "chime_tts",
+        "name": "arrival",
+        "entity_id": ["media_player.test_speaker", "media_player.group_speaker"],
+        "crossfade": 200,
+        "volume_level": 0.5,
+        "options": {"voice": "Jenny"},
+        "announce": True,
+    }
 
 
 @pytest.mark.asyncio

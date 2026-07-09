@@ -6,6 +6,7 @@ import inspect
 import importlib
 from pathlib import Path
 from types import SimpleNamespace
+import yaml
 
 import pytest
 
@@ -146,6 +147,7 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
         "voice",
         "playback",
         "general",
+        "notify_profiles",
     ]
 
     voice_section = next(section for section in payload["sections"] if section["key"] == "voice")
@@ -268,3 +270,172 @@ async def test_websocket_save_settings_allows_invalid_media_path_with_override(
     assert payload["message_type"] == "success"
     assert payload["values"][TEMP_PATH_KEY] == overridden_path
     assert config_entry.options[TEMP_PATH_KEY] == overridden_path
+
+
+def test_build_panel_payload_includes_notify_profiles_from_configuration_yaml(
+    tmp_path: Path,
+) -> None:
+    """The sidebar payload should expose YAML-backed Chime TTS notify profiles."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    paths["config_dir"].joinpath("configuration.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "notify": [
+                    {"platform": "file", "name": "archive"},
+                    {
+                        "platform": DOMAIN,
+                        "name": "kitchen",
+                        "entity_id": ["media_player.kitchen", "media_player.office"],
+                        "crossfade": 125,
+                        "options": {"voice": "Amy"},
+                        "announce": True,
+                    },
+                ]
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    payload = settings_module.build_panel_payload(hass, config_entry)
+
+    notify_section = next(
+        section for section in payload["sections"] if section["key"] == "notify_profiles"
+    )
+    notify_profile_fields = {
+        field["key"]: field for field in notify_section["profile_fields"]
+    }
+    assert notify_section["kind"] == "notify_profiles"
+    assert notify_section["docs_url"].endswith("/notify/")
+    assert notify_profile_fields["tts_platform"]["docs_url"].endswith(
+        "/documentation/configuration/#default-tts-platform"
+    )
+    assert notify_profile_fields["crossfade"]["docs_url"].endswith(
+        "/documentation/actions/say-action/parameters/#crossfade"
+    )
+    assert notify_profile_fields["announce"]["docs_url"].endswith(
+        "/documentation/actions/say-action/parameters/#announce"
+    )
+    assert payload["notify_profiles"] == [
+        {
+            "name": "kitchen",
+            "entity_id": "media_player.kitchen, media_player.office",
+            "chime_path": "",
+            "end_chime_path": "",
+            "tts_platform": "",
+            "language": "",
+            "voice": "",
+            "tld": "",
+            "offset": "",
+            "crossfade": 125,
+            "final_delay": "",
+            "tts_speed": "",
+            "tts_pitch": "",
+            "volume_level": "",
+            "audio_conversion": "",
+            "options": "voice: Amy",
+            "announce": True,
+            "cache": False,
+            "fade_audio": False,
+            "join_players": False,
+            "unjoin_players": False,
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_websocket_save_settings_updates_notify_profiles_in_configuration_yaml(
+    tmp_path: Path,
+) -> None:
+    """Saving from the panel should rewrite only Chime TTS notify entries."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    paths["config_dir"].joinpath("configuration.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "notify": [
+                    {"platform": "file", "name": "archive"},
+                    {
+                        "platform": DOMAIN,
+                        "name": "old_profile",
+                        "entity_id": "media_player.office",
+                    },
+                ]
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    connection = FakeConnection()
+
+    await save_settings_handler(
+        hass,
+        connection,
+        {
+            "id": 3,
+            "type": "chime_tts/save_settings",
+            "values": dict(config_entry.options),
+            "notify_profiles": [
+                {
+                    "name": "arrival",
+                    "entity_id": "media_player.kitchen, media_player.office",
+                    "crossfade": "200",
+                    "volume_level": "0.65",
+                    "options": "voice: Amy\nstyle: cheerful",
+                    "announce": True,
+                    "cache": True,
+                }
+            ],
+        },
+    )
+
+    assert connection.errors == []
+    payload = connection.results[-1][1]
+    assert payload["message_type"] == "success"
+    assert payload["restart_required"] is True
+    assert payload["notify_profiles"][0]["name"] == "arrival"
+
+    saved_config = yaml.safe_load(
+        paths["config_dir"].joinpath("configuration.yaml").read_text(encoding="utf-8")
+    )
+    assert saved_config["notify"][0] == {"platform": "file", "name": "archive"}
+    assert saved_config["notify"][1] == {
+        "platform": DOMAIN,
+        "name": "arrival",
+        "entity_id": ["media_player.kitchen", "media_player.office"],
+        "crossfade": 200,
+        "volume_level": 0.65,
+        "options": {"voice": "Amy", "style": "cheerful"},
+        "announce": True,
+        "cache": True,
+    }
+
+
+@pytest.mark.asyncio
+async def test_websocket_save_settings_rejects_invalid_notify_profile_yaml(
+    tmp_path: Path,
+) -> None:
+    """Invalid notify options YAML should be surfaced in the panel payload."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+    connection = FakeConnection()
+
+    await save_settings_handler(
+        hass,
+        connection,
+        {
+            "id": 4,
+            "type": "chime_tts/save_settings",
+            "values": dict(config_entry.options),
+            "notify_profiles": [
+                {
+                    "name": "arrival",
+                    "entity_id": "media_player.kitchen",
+                    "options": "voice: [",
+                }
+            ],
+        },
+    )
+
+    assert connection.errors == []
+    payload = connection.results[-1][1]
+    assert payload["message_type"] == "error"
+    assert payload["notify_profile_errors"] == [{"options": "invalid_yaml"}]

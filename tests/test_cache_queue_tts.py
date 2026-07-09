@@ -53,6 +53,22 @@ class FakeHass:
         return func(*args)
 
 
+class RecordingHass(FakeHass):
+    """Fake Home Assistant that records executor sleep durations."""
+
+    def __init__(self) -> None:
+        """Initialise the recorder state."""
+        super().__init__()
+        self.sleep_calls: list[float] = []
+
+    async def async_add_executor_job(self, func, *args):
+        """Record sleep calls instead of blocking during tests."""
+        if getattr(func, "__name__", "") == "sleep" and args:
+            self.sleep_calls.append(args[0])
+            return None
+        return await super().async_add_executor_job(func, *args)
+
+
 @pytest.mark.asyncio
 async def test_async_get_cached_audio_data_migrates_string_path_and_backfills_duration(monkeypatch: pytest.MonkeyPatch) -> None:
     """Legacy string cache entries should become a public/local dict with computed duration."""
