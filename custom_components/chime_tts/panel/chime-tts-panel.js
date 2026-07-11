@@ -15,6 +15,16 @@ const ICONS = {
       <path d="M6 19c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V7H6v12zm3.46-7.88 1.41-1.41L12 10.83l1.12-1.12 1.41 1.41L13.41 12l1.12 1.12-1.41 1.41L12 13.41l-1.12 1.12-1.41-1.41L10.59 12l-1.13-1.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/>
     </svg>
   `,
+  check: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+    </svg>
+  `,
+  alert: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+    </svg>
+  `,
 };
 const OPTION_ICON_DATA_URLS = {
   "add_cover_art": "data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%20fill=%22none%22%3E%0A%20%20%3Crect%20x=%2214%22%20y=%2216%22%20width=%2222%22%20height=%2222%22%20rx=%226%22%20fill=%22%2303a9f4%22/%3E%0A%20%20%3Ccircle%20cx=%2225%22%20cy=%2227%22%20r=%224%22%20fill=%22%23fff%22/%3E%0A%20%20%3Cpath%20d=%22M42%2022h8M42%2030h10M42%2038h6%22%20stroke=%22%23d7edf8%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%20%20%3Cpath%20d=%22M18%2044c3-3%205-4%207-4s4%201%207%204%22%20stroke=%22%237dd3fc%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%3C/svg%3E",
@@ -362,9 +372,72 @@ template.innerHTML = `
     .chapter-workspace {
       padding: 18px;
       border-radius: 30px;
-      border: 1px solid color-mix(in srgb, var(--divider-color) 78%, transparent);
+      border: 2px solid color-mix(in srgb, var(--divider-color) 78%, transparent);
       background: color-mix(in srgb, var(--card-background-color) 88%, black 12%);
       box-shadow: 0 20px 44px rgba(0, 0, 0, 0.14);
+      overflow: hidden;
+      transition:
+        padding 250ms ease,
+        border-color 250ms ease,
+        background 250ms ease,
+        box-shadow 250ms ease;
+    }
+
+    @media (prefers-color-scheme: light) {
+      .topbar-wrap {
+        background: color-mix(in srgb, var(--card-background-color) 92%, white 8%);
+      }
+
+      .section {
+        background: color-mix(in srgb, var(--card-background-color) 97%, white 3%);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+      }
+
+      .chapter-workspace {
+        background: color-mix(in srgb, var(--card-background-color) 96%, white 4%);
+        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.07);
+      }
+
+      .chapter-workspace.configuration-workspace {
+        background:
+          linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, #eef8ff 46%, white 54%));
+      }
+
+      .chapter-workspace.notify-workspace {
+        background:
+          linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, #fff1f2 48%, white 52%));
+      }
+
+      .chapter-workspace.logs-workspace {
+        background:
+          linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, #eefcff 52%, white 48%));
+      }
+
+      .chapter-hero {
+        background:
+          radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 10%, transparent), transparent 42%),
+          linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, white 92%, #f8fbff 8%));
+      }
+
+      .notify-workspace .chapter-hero {
+        background:
+          radial-gradient(circle at top right, color-mix(in srgb, #e56b6f 12%, transparent), transparent 44%),
+          linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, white 90%, #fff5f6 10%));
+      }
+
+      .logs-workspace .chapter-hero {
+        background:
+          radial-gradient(circle at top right, color-mix(in srgb, #4dd0e1 12%, transparent), transparent 44%),
+          linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, white 90%, #f2fdff 10%));
+      }
+
+      .chapter-workspace > .section,
+      .notify-profile-card,
+      .field,
+      .log-event-row,
+      .picker-preview {
+        background: color-mix(in srgb, var(--card-background-color) 97%, white 3%);
+      }
     }
 
     .chapter-workspace.configuration-workspace {
@@ -375,19 +448,31 @@ template.innerHTML = `
 
     .chapter-workspace.notify-workspace {
       background:
-        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 86%, black 14%), color-mix(in srgb, var(--secondary-background-color) 92%, black 8%));
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 96%, #fff3f4 4%), color-mix(in srgb, var(--secondary-background-color) 92%, #fff7f8 8%));
       border-color: color-mix(in srgb, #e56b6f 18%, var(--divider-color));
+      box-shadow: 0 22px 48px rgba(0, 0, 0, 0.18);
+    }
+
+    .chapter-workspace.logs-workspace {
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 96%, #f0fbfe 4%), color-mix(in srgb, var(--secondary-background-color) 92%, #f5fdff 8%));
+      border-color: color-mix(in srgb, #49b675 24%, var(--divider-color));
       box-shadow: 0 22px 48px rgba(0, 0, 0, 0.18);
     }
 
     .chapter-hero {
       padding: 22px 24px;
       border-radius: 24px;
-      border: 1px solid color-mix(in srgb, var(--primary-color) 14%, var(--divider-color));
+      border: 2px solid color-mix(in srgb, var(--primary-color) 14%, var(--divider-color));
       background:
         radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 14%, transparent), transparent 42%),
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 94%, white 6%), color-mix(in srgb, var(--secondary-background-color) 78%, transparent));
       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+      transition:
+        border-color 250ms ease,
+        background 250ms ease,
+        box-shadow 250ms ease,
+        border-radius 250ms ease;
     }
 
     .chapter-hero-toggle {
@@ -406,12 +491,38 @@ template.innerHTML = `
     .notify-workspace .chapter-hero {
       border-color: color-mix(in srgb, #e56b6f 24%, var(--divider-color));
       background:
-        radial-gradient(circle at top right, color-mix(in srgb, #e56b6f 16%, transparent), transparent 44%),
-        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 90%, black 10%), color-mix(in srgb, var(--secondary-background-color) 88%, black 12%));
+        radial-gradient(circle at top right, color-mix(in srgb, #e56b6f 12%, transparent), transparent 44%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff4f5 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fff7f8 8%));
     }
 
     .notify-workspace .chapter-hero-eyebrow {
       color: color-mix(in srgb, #f08a8d 78%, white 22%);
+    }
+
+    .logs-workspace .chapter-hero {
+      border-color: color-mix(in srgb, #49b675 32%, var(--divider-color));
+      background:
+        radial-gradient(circle at top right, color-mix(in srgb, #49b675 12%, transparent), transparent 44%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #effaf3 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #f4fcf7 8%));
+    }
+
+    .logs-workspace .chapter-hero-eyebrow {
+      color: color-mix(in srgb, #49b675 82%, white 18%);
+    }
+
+    .chapter-workspace.collapsed,
+    .chapter-workspace.configuration-workspace.collapsed,
+    .chapter-workspace.notify-workspace.collapsed,
+    .chapter-workspace.logs-workspace.collapsed {
+      padding: 0;
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .chapter-workspace.collapsed .chapter-hero {
+      border-radius: 30px;
+      margin: 0;
     }
 
     .chapter-hero-inner {
@@ -493,7 +604,7 @@ template.innerHTML = `
       fill: currentColor;
       display: block;
       transform: rotate(-90deg);
-      transition: transform 160ms ease;
+      transition: transform 250ms ease;
     }
 
     .chapter-workspace.expanded .chapter-chevron svg {
@@ -504,6 +615,222 @@ template.innerHTML = `
       display: flex;
       flex-direction: column;
       gap: 18px;
+    }
+
+    .chapter-collapse,
+    .row-collapse {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height 250ms ease, opacity 250ms ease;
+    }
+
+    .chapter-collapse-inner,
+    .row-collapse-inner {
+      padding-top: 0;
+      transition: padding-top 250ms ease;
+    }
+
+    .chapter-collapse.expanded {
+      max-height: 5000px;
+      opacity: 1;
+    }
+
+    .row-collapse.expanded {
+      max-height: 4000px;
+      opacity: 1;
+    }
+
+    .chapter-collapse.collapsed {
+        display: none;
+    }
+
+    .chapter-collapse.expanded .chapter-collapse-inner {
+      padding-top: 18px;
+    }
+
+    .row-collapse.expanded .row-collapse-inner {
+      padding-top: 12px;
+    }
+
+    .logs-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .logs-loading {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--secondary-text-color);
+      min-height: 44px;
+    }
+
+    .logs-loading .button-spinner {
+      border-color: color-mix(in srgb, var(--primary-color) 24%, transparent);
+      border-top-color: var(--primary-color);
+    }
+
+    .logs-list-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+    }
+
+    .log-event-row {
+      padding: 16px 18px;
+      border-radius: 22px;
+      border: 2px solid color-mix(in srgb, var(--divider-color) 72%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 82%, transparent);
+      cursor: pointer;
+    }
+
+    .log-event-row.error {
+      border-color: color-mix(in srgb, var(--error-color, #d32f2f) 56%, transparent);
+      background: color-mix(in srgb, var(--error-color, #d32f2f) 12%, transparent);
+    }
+
+    .log-event-row.initiation {
+      border-color: color-mix(in srgb, #3b82f6 54%, var(--divider-color));
+    }
+
+    .log-event-row.configuration {
+      border-color: color-mix(in srgb, #f59e0b 54%, var(--divider-color));
+    }
+
+    .log-event-row.action {
+      border-color: color-mix(in srgb, #14b8a6 54%, var(--divider-color));
+    }
+
+    .log-event-row-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      min-height: 48px;
+    }
+
+    .log-event-row-main {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .log-event-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-text-color);
+      background: color-mix(in srgb, var(--card-background-color) 72%, white 28%);
+      flex: 0 0 auto;
+    }
+
+    .log-event-row.error .log-event-icon {
+      background: color-mix(in srgb, var(--error-color, #d32f2f) 72%, black 28%);
+      color: #fff;
+    }
+
+    .log-event-icon svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      display: block;
+    }
+
+    .log-event-copy {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .log-event-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--primary-text-color);
+    }
+
+    .log-event-meta {
+      margin: 6px 0 0;
+      font-size: 0.88rem;
+      color: var(--secondary-text-color);
+    }
+
+    .log-event-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .log-event-toggle {
+      min-width: 42px;
+      min-height: 42px;
+      padding: 0;
+    }
+
+    .log-event-toggle svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      display: block;
+      transform: rotate(-90deg);
+      transition: transform 250ms ease;
+    }
+
+    .log-event-toggle.expanded svg {
+      transform: rotate(180deg);
+    }
+
+    .log-event-body {
+      margin-top: 2px;
+      padding-top: 14px;
+      border-top: 1px solid color-mix(in srgb, var(--divider-color) 66%, transparent);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .copied-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .copied-label svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      display: block;
+    }
+
+    .log-event-summary {
+      margin: 0;
+      color: var(--secondary-text-color);
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .log-event-raw {
+      margin: 0;
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid color-mix(in srgb, var(--divider-color) 70%, transparent);
+      background: color-mix(in srgb, var(--secondary-background-color) 92%, black 8%);
+      color: var(--primary-text-color);
+      font-size: 0.84rem;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
     .section {
@@ -850,6 +1177,18 @@ template.innerHTML = `
       color: var(--secondary-text-color);
     }
 
+    .error-recovery {
+      min-height: calc(100vh - 220px);
+      padding: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .error-recovery .button-primary {
+      min-width: 140px;
+    }
+
     .picker-overlay {
       position: fixed;
       inset: 0;
@@ -1181,20 +1520,17 @@ template.innerHTML = `
       background: color-mix(in srgb, var(--secondary-background-color) 58%, transparent);
     }
 
-    .notify-profile-card.expanded {
-      padding-bottom: 16px;
-    }
-
     .notify-profile-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
+      min-height: 48px;
     }
 
     .notify-profile-card.collapsed .notify-profile-header {
-      min-height: 44px;
+      min-height: 48px;
     }
 
     .notify-profile-copy h3 {
@@ -1206,33 +1542,51 @@ template.innerHTML = `
       margin: 0;
     }
 
+    .notify-profile-copy {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      min-height: 40px;
+    }
+
     .notify-profile-actions {
       display: flex;
       align-items: center;
       gap: 8px;
       flex-wrap: nowrap;
       flex: 0 1 auto;
+      min-width: 0;
+    }
+
+    .notify-profile-actions:not(.testing) {
+      margin-left: auto;
     }
 
     .notify-profile-actions button {
       min-height: 40px;
       padding: 10px 16px;
+      flex: 0 0 auto;
+      white-space: nowrap;
     }
 
     .notify-profile-actions.testing {
       flex: 1 1 auto;
       width: 100%;
-      justify-content: flex-end;
+      justify-content: stretch;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
     }
 
     .notify-inline-test-input {
       min-width: 0;
-      flex: 1 1 100%;
+      width: 100%;
     }
 
     .notify-inline-test-sent {
       width: auto;
       padding: 0 14px;
+      white-space: nowrap;
     }
 
     .button-danger {
@@ -1615,6 +1969,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._advancedSections = {};
     this._expandedNotifyProfiles = {};
     this._notifyProfileTests = {};
+    this._notifyProfileTestTimers = {};
+    this._expandedLogEvents = {};
+    this._logCopyState = {};
+    this._logCopyTimers = {};
+    this._logsRefreshTimer = null;
+    this._logsRefreshInFlight = false;
+    this._logsOpeningRefresh = false;
+    this._boundVisibilityRefresh = () => this._syncLogsRefresh();
     this._pathValidationState = {};
     this._pathValidationTimers = {};
     this._invalidPathOverrides = {};
@@ -1622,6 +1984,17 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._restartConfirmOpen = false;
     this._restarting = false;
     this._expandedChapters = {};
+  }
+
+  connectedCallback() {
+    document.addEventListener("visibilitychange", this._boundVisibilityRefresh);
+  }
+
+  disconnectedCallback() {
+    document.removeEventListener("visibilitychange", this._boundVisibilityRefresh);
+    this._clearLogsRefreshTimer();
+    this._clearAllNotifyProfileTestTimers();
+    this._clearAllLogCopyTimers();
   }
 
   set hass(hass) {
@@ -1667,7 +2040,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._clientErrors = {};
       this._notifyProfileClientErrors = [];
       this._expandedNotifyProfiles = {};
+      this._clearAllNotifyProfileTestTimers();
       this._notifyProfileTests = {};
+      this._clearAllLogCopyTimers();
+      this._logCopyState = {};
+      this._expandedLogEvents = {};
+      this._logsOpeningRefresh = false;
       this._pathValidationState = this._buildInitialPathValidationState();
       this._invalidPathOverrides = {};
       this._restartPending = false;
@@ -1692,7 +2070,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._clientErrors = {};
       this._notifyProfileClientErrors = [];
       this._expandedNotifyProfiles = {};
+      this._clearAllNotifyProfileTestTimers();
       this._notifyProfileTests = {};
+      this._clearAllLogCopyTimers();
+      this._logCopyState = {};
+      this._expandedLogEvents = {};
+      this._logsOpeningRefresh = false;
       this._pathValidationState = {};
       this._invalidPathOverrides = {};
       this._restartPending = false;
@@ -1702,6 +2085,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     } finally {
       this._loading = false;
       this._render();
+      this._syncLogsRefresh();
     }
   }
 
@@ -1722,16 +2106,26 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const message = data.message && data.message_type !== "success"
       ? `<div class="message ${this._escapeAttribute(data.message_type || "success")}">${this._escapeHtml(data.message)}</div>`
       : "";
+    const isLoadFailureState = data.message_type === "error" && sections.length === 0;
     this._renderTopbar(data);
 
     this._app.innerHTML = `
       ${notifyProfilesLoadError}
       ${message}
-      <form id="settings-form">
-        ${this._renderSettingsContent(sections, values, errors, data)}
-        <div class="footer">
-        </div>
-      </form>
+      ${isLoadFailureState
+        ? `
+          <div class="error-recovery">
+            <button class="button-primary" type="button" data-reload-panel="1">Reload</button>
+          </div>
+        `
+        : `
+          <form id="settings-form">
+            ${this._renderSettingsContent(sections, values, errors, data)}
+            <div class="footer">
+            </div>
+          </form>
+        `
+      }
       ${this._renderPicker()}
       ${this._renderRestartConfirmation()}
     `;
@@ -1739,6 +2133,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this.shadowRoot.getElementById("settings-form")?.addEventListener("submit", (event) => {
       event.preventDefault();
       this._submit();
+    });
+    this.shadowRoot.querySelectorAll("[data-reload-panel]").forEach((button) => {
+      button.addEventListener("click", () => this._load());
     });
     this.shadowRoot.querySelectorAll("[data-reset-section]").forEach((button) => {
       button.addEventListener("click", (event) => this._resetSection(event.currentTarget.dataset.resetSection));
@@ -1887,6 +2284,48 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         event.stopPropagation();
       });
     });
+    this.shadowRoot.querySelectorAll("[data-toggle-log-event]").forEach((row) => {
+      row.addEventListener("click", (event) => {
+        this._toggleLogEvent(event.currentTarget.dataset.toggleLogEvent);
+      });
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          this._toggleLogEvent(event.currentTarget.dataset.toggleLogEvent);
+        }
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-copy-log-yaml]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        this._copyLogYaml(event.currentTarget.dataset.copyLogYaml);
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-copy-log-raw]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        this._copyLogRaw(event.currentTarget.dataset.copyLogRaw);
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-repeat-log-action]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        this._repeatLogAction(event.currentTarget.dataset.repeatLogAction);
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-toggle-all-logs]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        this._toggleAllLogEvents(event.currentTarget.dataset.toggleAllLogs);
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-toggle-log-arrow]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        this._toggleLogEvent(event.currentTarget.dataset.toggleLogArrow);
+      });
+    });
+    this._syncLogsRefresh();
   }
 
   _renderTopbar(data) {
@@ -1941,6 +2380,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (section.kind === "notify_profiles") {
       return this._renderNotifyProfilesSection(section);
     }
+    if (section.kind === "logs") {
+      return this._renderLogsSection(section);
+    }
 
     const sectionFields = section.fields || [];
     const basicFields = sectionFields.filter((field) => !field.advanced);
@@ -1973,11 +2415,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               ${isAdvancedOpen ? "Hide" : "Show"} Advanced
             </button>
           </div>
-          ${isAdvancedOpen ? `
-            <div class="field-grid advanced-fields">
-              ${advancedFields.map((field) => this._renderField(field, values[field.key], errors[field.key])).join("")}
+          <div class="row-collapse ${isAdvancedOpen ? "expanded" : "collapsed"}">
+            <div class="row-collapse-inner">
+              <div class="field-grid advanced-fields">
+                ${advancedFields.map((field) => this._renderField(field, values[field.key], errors[field.key])).join("")}
+              </div>
             </div>
-          ` : ""}
+          </div>
         ` : ""}
       </section>
     `;
@@ -1985,7 +2429,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
   _renderSettingsContent(sections, values, errors, data) {
     const notifySection = sections.find((section) => section.kind === "notify_profiles");
-    const configSections = sections.filter((section) => section.kind !== "notify_profiles");
+    const logsSection = sections.find((section) => section.kind === "logs");
+    const configSections = sections.filter((section) => !["notify_profiles", "logs"].includes(section.kind));
     const configExpanded = this._isChapterExpanded("configuration");
 
     return `
@@ -1998,16 +2443,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           description: "Set default providers, folder paths, playback timing, and integration-wide behavior for Chime TTS.",
           docsUrl: data.documentation_url,
         })}
-        ${configExpanded
-          ? `
+        <div class="chapter-collapse ${configExpanded ? "expanded" : "collapsed"}">
+          <div class="chapter-collapse-inner">
             <div class="chapter-content">
               ${configSections.map((section) => this._renderSection(section, values, errors)).join("")}
             </div>
-          `
-          : ""
-        }
+          </div>
+        </div>
       </div>
       ${notifySection ? this._renderNotifyProfilesSection(notifySection) : ""}
+      ${logsSection ? this._renderLogsSection(logsSection) : ""}
     `;
   }
 
@@ -2079,8 +2524,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           docsUrl: section.docs_url,
           actionsMarkup,
         })}
-        ${notifyExpanded
-          ? `
+        <div class="chapter-collapse ${notifyExpanded ? "expanded" : "collapsed"}">
+          <div class="chapter-collapse-inner">
             <div class="chapter-content">
               <section class="section">
                 ${profiles.length === 0
@@ -2093,10 +2538,134 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                 }
               </section>
             </div>
-          `
-          : ""
-        }
+          </div>
+        </div>
       </div>
+    `;
+  }
+
+  _renderLogsSection(section) {
+    const logsExpanded = this._isChapterExpanded("logs");
+    const events = this._data?.log_events || [];
+    const anyExpanded = events.some((event) => this._isLogEventExpanded(event.id));
+    return `
+      <div class="chapter-group chapter-workspace logs-workspace ${logsExpanded ? "expanded" : "collapsed"}">
+        ${this._renderChapterHero({
+          chapterKey: "logs",
+          expanded: logsExpanded,
+          eyebrow: "Session",
+          title: section.title,
+          description: section.description || "",
+          docsUrl: section.docs_url,
+        })}
+        <div class="chapter-collapse ${logsExpanded ? "expanded" : "collapsed"}">
+          <div class="chapter-collapse-inner">
+            <div class="chapter-content">
+              <section class="section">
+                ${this._logsOpeningRefresh
+                  ? `
+                    <div class="logs-loading" aria-live="polite">
+                      <span class="button-spinner" aria-hidden="true"></span>
+                      <span>Refreshing logs...</span>
+                    </div>
+                  `
+                  : ""
+                }
+                ${events.length === 0
+                  ? `<p class="hint">No Chime TTS logs have been captured in this Home Assistant session yet.</p>`
+                  : `
+                    ${events.length > 1
+                      ? `
+                        <div class="logs-list-actions">
+                          <button
+                            class="button-secondary"
+                            type="button"
+                            data-toggle-all-logs="${anyExpanded ? "collapse" : "expand"}"
+                          >${anyExpanded ? "Collapse All" : "Expand All"}</button>
+                        </div>
+                      `
+                      : ""
+                    }
+                    <div class="logs-list">
+                      ${events.map((event) => this._renderLogEventRow(event)).join("")}
+                    </div>
+                  `
+                }
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  _renderLogEventRow(event) {
+    const expanded = this._isLogEventExpanded(event.id);
+    const rowClass = event.has_error
+      ? "error"
+      : this._escapeAttribute(event.row_color || "action");
+    const rawLogs = (event.raw_logs || [])
+      .map((entry) => `[${entry.timestamp}] ${String(entry.level || "").toUpperCase()} ${entry.logger}: ${entry.message}`)
+      .join("\n");
+    const logCopyState = this._getLogCopyState(event.id);
+    const buttons = [];
+    if (event.type === "action_call" && rawLogs) {
+      buttons.push(`
+        <button class="button-secondary" type="button" data-copy-log-raw="${this._escapeAttribute(event.id)}">${logCopyState.logs ? `<span class="copied-label">${ICONS.check}<span>Copied</span></span>` : "Copy Logs"}</button>
+      `);
+    }
+    if (event.copy_yaml) {
+      buttons.push(`
+        <button class="button-secondary" type="button" data-copy-log-yaml="${this._escapeAttribute(event.id)}">${logCopyState.yaml ? `<span class="copied-label">${ICONS.check}<span>Copied</span></span>` : "Copy YAML"}</button>
+      `);
+    }
+    if (event.can_repeat) {
+      buttons.push(`
+        <button class="button-primary" type="button" data-repeat-log-action="${this._escapeAttribute(event.id)}">Repeat</button>
+      `);
+    }
+    buttons.push(`
+      <button
+        class="button-secondary log-event-toggle ${expanded ? "expanded" : "collapsed"}"
+        type="button"
+        data-toggle-log-arrow="${this._escapeAttribute(event.id)}"
+        aria-label="${this._escapeAttribute(expanded ? "Collapse log row" : "Expand log row")}"
+        title="${this._escapeAttribute(expanded ? "Collapse" : "Expand")}"
+      >${ICONS.chevron}</button>
+    `);
+    return `
+      <article
+        class="log-event-row ${rowClass}"
+        data-toggle-log-event="${this._escapeAttribute(event.id)}"
+        role="button"
+        tabindex="0"
+        aria-expanded="${expanded ? "true" : "false"}"
+      >
+        <div class="log-event-row-header">
+          <div class="log-event-row-main">
+            ${event.has_error
+              ? `<span class="log-event-icon" aria-hidden="true">${ICONS.alert}</span>`
+              : ""
+            }
+            <div class="log-event-copy">
+              <p class="log-event-title">${this._escapeHtml(event.title || "Log event")}</p>
+              <p class="log-event-meta">${this._escapeHtml(this._formatLogEventMeta(event))}</p>
+            </div>
+          </div>
+          <div class="log-event-actions">${buttons.join("")}</div>
+        </div>
+        <div class="row-collapse ${expanded ? "expanded" : "collapsed"}">
+          <div class="row-collapse-inner">
+            <div class="log-event-body">
+              ${event.summary
+                ? `<p class="log-event-summary">${this._escapeHtml(event.summary)}</p>`
+                : ""
+              }
+              <pre class="log-event-raw">${this._escapeHtml(rawLogs || "No raw logs were captured for this event.")}</pre>
+            </div>
+          </div>
+        </div>
+      </article>
     `;
   }
 
@@ -2172,25 +2741,25 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                   data-open-notify-test="${this._escapeAttribute(String(index))}"
                 >Test</button>
                 <button
-                  class="button-secondary icon-only-button"
-                  type="button"
-                  data-toggle-notify-profile="${this._escapeAttribute(String(index))}"
-                  aria-label="${this._escapeAttribute(expanded ? "Done editing profile" : "Edit profile")}"
-                  title="${this._escapeAttribute(expanded ? "Done" : "Edit")}"
-                >${ICONS.pencil}</button>
-                <button
                   class="button-danger icon-only-button"
                   type="button"
                   data-remove-notify-profile="${this._escapeAttribute(String(index))}"
                   aria-label="Delete profile"
                   title="Delete"
                 >${ICONS.trash}</button>
+                <button
+                  class="button-secondary icon-only-button log-event-toggle ${expanded ? "expanded" : "collapsed"}"
+                  type="button"
+                  data-toggle-notify-profile="${this._escapeAttribute(String(index))}"
+                  aria-label="${this._escapeAttribute(expanded ? "Collapse profile" : "Expand profile")}"
+                  title="${this._escapeAttribute(expanded ? "Collapse" : "Expand")}"
+                >${ICONS.chevron}</button>
               `
             }
           </div>
         </div>
-        ${expanded
-          ? `
+        <div class="row-collapse ${expanded ? "expanded" : "collapsed"}">
+          <div class="row-collapse-inner">
             <div class="notify-profile-grid compact">
               ${this._renderNotifyEntityPicker(profile, errors, index)}
               ${standardFields.map((field) => this._renderNotifyProfileField(field, profile?.[field.key], errors?.[field.key], index)).join("")}
@@ -2203,9 +2772,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               `
               : ""
             }
-          `
-          : ""
-        }
+          </div>
+        </div>
       </article>
     `;
   }
@@ -3072,10 +3640,259 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (!chapterKey) {
       return;
     }
+    const wasExpanded = this._isChapterExpanded(chapterKey);
     this._expandedChapters = {
       ...(this._expandedChapters || {}),
-      [chapterKey]: !this._isChapterExpanded(chapterKey),
+      [chapterKey]: !wasExpanded,
     };
+    if (chapterKey === "logs" && !wasExpanded) {
+      this._logsOpeningRefresh = true;
+      this._refreshLogs({ showOpeningSpinner: true });
+    }
+    this._render();
+    this._syncLogsRefresh();
+  }
+
+  _isLogEventExpanded(eventId) {
+    return this._expandedLogEvents?.[eventId] === true;
+  }
+
+  _toggleLogEvent(eventId) {
+    if (!eventId) {
+      return;
+    }
+    this._expandedLogEvents = {
+      ...(this._expandedLogEvents || {}),
+      [eventId]: !this._isLogEventExpanded(eventId),
+    };
+    this._render();
+  }
+
+  _toggleAllLogEvents(mode) {
+    const events = this._data?.log_events || [];
+    const nextState = {};
+    for (const event of events) {
+      nextState[event.id] = mode === "expand";
+    }
+    this._expandedLogEvents = nextState;
+    this._render();
+  }
+
+  _clearLogsRefreshTimer() {
+    if (this._logsRefreshTimer) {
+      window.clearTimeout(this._logsRefreshTimer);
+      this._logsRefreshTimer = null;
+    }
+  }
+
+  _shouldRefreshLogs() {
+    return Boolean(
+      this._hass
+      && !this._loading
+      && !this._saving
+      && this._isChapterExpanded("logs")
+      && document.visibilityState === "visible"
+    );
+  }
+
+  _syncLogsRefresh() {
+    this._clearLogsRefreshTimer();
+    if (!this._shouldRefreshLogs()) {
+      return;
+    }
+    this._logsRefreshTimer = window.setTimeout(() => {
+      this._logsRefreshTimer = null;
+      this._refreshLogs();
+    }, 2000);
+  }
+
+  async _refreshLogs({ showOpeningSpinner = false } = {}) {
+    if (this._logsRefreshInFlight || !this._shouldRefreshLogs()) {
+      if (showOpeningSpinner) {
+        this._logsOpeningRefresh = false;
+      }
+      this._syncLogsRefresh();
+      return;
+    }
+    this._logsRefreshInFlight = true;
+    try {
+      const result = await this._hass.callWS({ type: "chime_tts/get_logs" });
+      this._data = {
+        ...(this._data || {}),
+        log_events: result?.log_events || [],
+      };
+      this._logsOpeningRefresh = false;
+      this._render();
+    } catch (_error) {
+      this._logsOpeningRefresh = false;
+      this._render();
+      this._syncLogsRefresh();
+    } finally {
+      this._logsRefreshInFlight = false;
+      this._syncLogsRefresh();
+    }
+  }
+
+  _formatLogEventMeta(event) {
+    const parts = [];
+    if (event.type === "integration_initiation") {
+      parts.push("Integration initiation");
+    } else if (event.type === "configuration_update") {
+      parts.push("Configuration update");
+    } else if (event.type === "action_call") {
+      parts.push("Action call");
+    }
+    if (event.started_at) {
+      parts.push(this._formatTimestamp(event.started_at));
+    }
+    if (event.error_count) {
+      parts.push(`${event.error_count} error${event.error_count === 1 ? "" : "s"}`);
+    }
+    return parts.join(" • ");
+  }
+
+  _formatTimestamp(value) {
+    try {
+      return new Intl.DateTimeFormat(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }).format(new Date(value));
+    } catch (_error) {
+      return String(value || "");
+    }
+  }
+
+  _getLogCopyState(eventId) {
+    return {
+      logs: false,
+      yaml: false,
+      ...((this._logCopyState || {})[eventId] || {}),
+    };
+  }
+
+  _scheduleLogCopyReset(eventId, key) {
+    this._clearLogCopyTimer(eventId, key);
+    const timerKey = `${eventId}:${key}`;
+    this._logCopyTimers = {
+      ...(this._logCopyTimers || {}),
+      [timerKey]: window.setTimeout(() => {
+        this._clearLogCopyTimer(eventId, key);
+        const current = this._getLogCopyState(eventId);
+        this._logCopyState = {
+          ...(this._logCopyState || {}),
+          [eventId]: {
+            ...current,
+            [key]: false,
+          },
+        };
+        this._render();
+      }, 2000),
+    };
+  }
+
+  _clearLogCopyTimer(eventId, key) {
+    const timerKey = `${eventId}:${key}`;
+    const timer = this._logCopyTimers?.[timerKey];
+    if (!timer) {
+      return;
+    }
+    window.clearTimeout(timer);
+    const nextTimers = { ...(this._logCopyTimers || {}) };
+    delete nextTimers[timerKey];
+    this._logCopyTimers = nextTimers;
+  }
+
+  _clearAllLogCopyTimers() {
+    for (const timerKey of Object.keys(this._logCopyTimers || {})) {
+      const timer = this._logCopyTimers[timerKey];
+      if (timer) {
+        window.clearTimeout(timer);
+      }
+    }
+    this._logCopyTimers = {};
+  }
+
+  _getRawLogsText(event) {
+    return (event?.raw_logs || [])
+      .map((entry) => `[${entry.timestamp}] ${String(entry.level || "").toUpperCase()} ${entry.logger}: ${entry.message}`)
+      .join("\n");
+  }
+
+  async _copyLogRaw(eventId) {
+    const event = (this._data?.log_events || []).find((item) => item.id === eventId);
+    const rawLogs = this._getRawLogsText(event);
+    if (!rawLogs) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(rawLogs);
+      this._logCopyState = {
+        ...(this._logCopyState || {}),
+        [eventId]: {
+          ...this._getLogCopyState(eventId),
+          logs: true,
+        },
+      };
+      this._scheduleLogCopyReset(eventId, "logs");
+      this._render();
+    } catch (_error) {
+      this._data = {
+        ...(this._data || {}),
+        message: "Unable to copy logs to the clipboard.",
+        message_type: "error",
+      };
+      this._render();
+    }
+  }
+
+  async _copyLogYaml(eventId) {
+    const event = (this._data?.log_events || []).find((item) => item.id === eventId);
+    if (!event?.copy_yaml) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(event.copy_yaml);
+      this._logCopyState = {
+        ...(this._logCopyState || {}),
+        [eventId]: {
+          ...this._getLogCopyState(eventId),
+          yaml: true,
+        },
+      };
+      this._scheduleLogCopyReset(eventId, "yaml");
+      this._render();
+    } catch (_error) {
+      this._data = {
+        ...(this._data || {}),
+        message: "Unable to copy YAML to the clipboard.",
+        message_type: "error",
+      };
+    }
+    this._render();
+  }
+
+  async _repeatLogAction(eventId) {
+    if (!eventId) {
+      return;
+    }
+    try {
+      this._data = await this._hass.callWS({
+        type: "chime_tts/repeat_log_action",
+        event_id: eventId,
+      });
+      this._draftValues = { ...(this._data?.values || {}) };
+      this._draftNotifyProfiles = this._cloneNotifyProfiles(this._data?.notify_profiles || []);
+      this._isDirty = false;
+      this._clientErrors = {};
+      this._notifyProfileClientErrors = [];
+    } catch (error) {
+      this._data = {
+        ...(this._data || {}),
+        message: error?.message || "Unable to repeat this action.",
+        message_type: "error",
+      };
+    }
     this._render();
   }
 
@@ -3769,12 +4586,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _getNotifyProfileTestState(index) {
-    return {
+    const state = {
       open: false,
       message: "",
       sending: false,
-      sent: false,
+      sentAt: 0,
       ...((this._notifyProfileTests || {})[index] || {}),
+    };
+    return {
+      ...state,
+      sent: Boolean(state.sentAt && Date.now() - state.sentAt < 2000),
     };
   }
 
@@ -3782,13 +4603,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (Number.isNaN(index)) {
       return;
     }
+    this._clearNotifyProfileTestTimer(index);
     this._notifyProfileTests = {
       ...(this._notifyProfileTests || {}),
       [index]: {
         open: true,
         message: "",
         sending: false,
-        sent: false,
+        sentAt: 0,
       },
     };
     this._render();
@@ -3798,6 +4620,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (Number.isNaN(index)) {
       return;
     }
+    this._clearNotifyProfileTestTimer(index);
     const nextState = { ...(this._notifyProfileTests || {}) };
     delete nextState[index];
     this._notifyProfileTests = nextState;
@@ -3808,6 +4631,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (Number.isNaN(index)) {
       return;
     }
+    this._clearNotifyProfileTestTimer(index);
     const current = this._getNotifyProfileTestState(index);
     this._notifyProfileTests = {
       ...(this._notifyProfileTests || {}),
@@ -3815,7 +4639,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ...current,
         open: true,
         message,
-        sent: false,
+        sentAt: 0,
       },
     };
   }
@@ -3832,12 +4656,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return;
     }
 
+    this._clearNotifyProfileTestTimer(index);
     this._notifyProfileTests = {
       ...(this._notifyProfileTests || {}),
       [index]: {
         ...current,
         sending: true,
-        sent: false,
+        sentAt: 0,
       },
     };
     this._render();
@@ -3851,8 +4676,25 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           open: true,
           message: current.message,
           sending: false,
-          sent: true,
+          sentAt: Date.now(),
         },
+      };
+      this._notifyProfileTestTimers = {
+        ...(this._notifyProfileTestTimers || {}),
+        [index]: window.setTimeout(() => {
+          const nextState = this._getNotifyProfileTestState(index);
+          this._clearNotifyProfileTestTimer(index);
+          this._notifyProfileTests = {
+            ...(this._notifyProfileTests || {}),
+            [index]: {
+              ...nextState,
+              open: true,
+              sending: false,
+              sentAt: 0,
+            },
+          };
+          this._render();
+        }, 2000),
       };
     } catch (error) {
       this._data = {
@@ -3867,12 +4709,29 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           open: true,
           message: current.message,
           sending: false,
-          sent: false,
+          sentAt: 0,
         },
       };
       this._showSaveResult("error");
     } finally {
       this._render();
+    }
+  }
+
+  _clearNotifyProfileTestTimer(index) {
+    const timer = this._notifyProfileTestTimers?.[index];
+    if (!timer) {
+      return;
+    }
+    window.clearTimeout(timer);
+    const nextTimers = { ...(this._notifyProfileTestTimers || {}) };
+    delete nextTimers[index];
+    this._notifyProfileTestTimers = nextTimers;
+  }
+
+  _clearAllNotifyProfileTestTimers() {
+    for (const key of Object.keys(this._notifyProfileTestTimers || {})) {
+      this._clearNotifyProfileTestTimer(Number(key));
     }
   }
 
