@@ -65,10 +65,21 @@ template.innerHTML = `
       color: var(--primary-color);
     }
 
+    :host {
+      --panel-safe-area-top: env(safe-area-inset-top, 0px);
+      --panel-safe-area-right: env(safe-area-inset-right, 0px);
+      --panel-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+      --panel-safe-area-left: env(safe-area-inset-left, 0px);
+    }
+
     .layout {
       max-width: 1180px;
       margin: 0 auto;
-      padding: 24px;
+      padding:
+        24px
+        calc(24px + var(--panel-safe-area-right))
+        calc(24px + var(--panel-safe-area-bottom))
+        calc(24px + var(--panel-safe-area-left));
       display: flex;
       flex-direction: column;
       gap: 0;
@@ -79,6 +90,7 @@ template.innerHTML = `
       top: 0;
       z-index: 10;
       width: 100%;
+      padding-top: var(--panel-safe-area-top);
       backdrop-filter: blur(14px);
       background: color-mix(in srgb, var(--card-background-color) 72%, transparent);
       border-bottom: 1px solid color-mix(in srgb, var(--divider-color) 86%, transparent);
@@ -88,7 +100,11 @@ template.innerHTML = `
       width: 100%;
       margin: 0;
       height: 56px;
-      padding: 0 24px;
+      padding:
+        0
+        calc(24px + var(--panel-safe-area-right))
+        0
+        calc(24px + var(--panel-safe-area-left));
       display: flex;
       align-items: center;
       justify-content: flex-start;
@@ -96,7 +112,11 @@ template.innerHTML = `
     }
 
     .topbar-notice {
-      padding: 0 24px 12px;
+      padding:
+        0
+        calc(24px + var(--panel-safe-area-right))
+        12px
+        calc(24px + var(--panel-safe-area-left));
     }
 
     .topbar-notice-inner {
@@ -1861,17 +1881,29 @@ template.innerHTML = `
     }
 
     :host([narrow]) .layout {
-      padding: 16px;
+      padding:
+        16px
+        calc(16px + var(--panel-safe-area-right))
+        calc(16px + var(--panel-safe-area-bottom))
+        calc(16px + var(--panel-safe-area-left));
     }
 
     :host([narrow]) .topbar {
       height: 56px;
-      padding: 0 16px;
+      padding:
+        0
+        calc(16px + var(--panel-safe-area-right))
+        0
+        calc(16px + var(--panel-safe-area-left));
       gap: 12px;
     }
 
     :host([narrow]) .topbar-notice {
-      padding: 0 16px 12px;
+      padding:
+        0
+        calc(16px + var(--panel-safe-area-right))
+        12px
+        calc(16px + var(--panel-safe-area-left));
     }
 
     :host([narrow]) .section {
@@ -1915,16 +1947,28 @@ template.innerHTML = `
 
     @media (max-width: 600px) {
       .layout {
-        padding: 16px;
+        padding:
+          16px
+          calc(16px + var(--panel-safe-area-right))
+          calc(16px + var(--panel-safe-area-bottom))
+          calc(16px + var(--panel-safe-area-left));
       }
 
       .topbar {
         height: 56px;
-        padding: 0 16px;
+        padding:
+          0
+          calc(16px + var(--panel-safe-area-right))
+          0
+          calc(16px + var(--panel-safe-area-left));
       }
 
       .topbar-notice {
-        padding: 0 16px 12px;
+        padding:
+          0
+          calc(16px + var(--panel-safe-area-right))
+          12px
+          calc(16px + var(--panel-safe-area-left));
       }
 
       .section {
