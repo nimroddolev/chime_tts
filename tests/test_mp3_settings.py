@@ -183,6 +183,54 @@ async def test_async_parse_params_returns_none_without_media_players(helper: Chi
     assert params is None
 
 
+@pytest.mark.asyncio
+async def test_async_parse_params_tolerates_none_numeric_fields(helper: ChimeTTSHelper) -> None:
+    """Optional numeric service fields should treat null values like unset values."""
+    hass = FakeHass()
+
+    class FakeMediaPlayerHelper:
+        """Minimal media player helper for parameter parsing tests."""
+
+        def parse_entity_ids(self, data, hass):
+            del hass
+            return data["entity_id"]
+
+        async def async_initialize_media_players(
+            self,
+            hass,
+            entity_ids,
+            volume_level,
+            join_players,
+            unjoin_players,
+            announce,
+            fade_audio,
+        ):
+            del hass, entity_ids, volume_level, join_players, unjoin_players, announce, fade_audio
+            return ["media_player.kitchen"]
+
+    params = await helper.async_parse_params(
+        hass=hass,
+        data={
+            "entity_id": ["media_player.kitchen"],
+            "message": "hello",
+            "offset": None,
+            "crossfade": None,
+            "final_delay": None,
+            "tts_speed": None,
+            "tts_pitch": None,
+        },
+        is_say_url=False,
+        media_player_helper=FakeMediaPlayerHelper(),
+    )
+
+    assert params is not None
+    assert params["offset"] == 0.0
+    assert params["crossfade"] == 0
+    assert params["final_delay"] == 0.0
+    assert params["tts_speed"] == 100.0
+    assert params["tts_pitch"] == 0.0
+
+
 def test_parse_options_yaml_applies_defaults_only_for_matching_platform(helper: ChimeTTSHelper) -> None:
     """Default language, voice, and TLD should only apply when the selected platform matches."""
     defaults = {

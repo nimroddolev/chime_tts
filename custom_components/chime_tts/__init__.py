@@ -19,6 +19,12 @@ from .helpers.helpers import ChimeTTSHelper
 from .helpers.media_player_helper import (MediaPlayerHelper, ChimeTTSMediaPlayer)
 from .helpers.filesystem import FilesystemHelper
 from .helpers.panel import async_setup_panel
+from .helpers.panel_logs import (
+    async_setup_panel_log_store,
+    build_action_event_details,
+    finish_panel_log_event,
+    start_panel_log_event,
+)
 from .helpers.services_helper import ChimeTTSServicesHelper
 from .helpers.tts_audio_helper import TTSAudioHelper
 from .queue_manager import ChimeTTSQueueManager
@@ -110,16 +116,47 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
 async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool:  # noqa: C901
     """Set up the Chime TTS integration."""
+    hass.data[DOMAIN] = _data
+    async_setup_panel_log_store(hass)
+    init_event_id = start_panel_log_event(
+        hass,
+        "integration_initiation",
+        "Integration initialization",
+        row_color="configuration",
+        summary=f"Chime TTS Version {VERSION} is set up",
+    )
     helpers.debug_title(f"Chime TTS Version {VERSION} is set up")
 
     # Say Service #
 
     async def async_say(service, is_say_url = False):
         """chime_tts.say, chime_tts.say_url & chime_tts.replay entry point."""
+        replay_service = _data.get("service")
+        service_data = None if service is None else service.data
+        if service_data is None and replay_service is not None:
+            service_data = replay_service.data
+        action_name = (
+            SERVICE_SAY_URL
+            if is_say_url
+            else (SERVICE_REPLAY if service is None else SERVICE_SAY)
+        )
+        event_title = f"Action call: {DOMAIN}.{action_name}"
+        event_id = start_panel_log_event(
+            hass,
+            "action_call",
+            event_title,
+            row_color="action",
+            details=build_action_event_details(
+                DOMAIN,
+                action_name,
+                service_data,
+            ),
+        )
         if is_say_url is False:
             if service is None:
                 helpers.debug_title(f"Chime TTS Replay Called. Version {VERSION}")
                 if _data.get("service") is None:
+                    finish_panel_log_event(hass, event_id)
                     raise HomeAssistantError("You must first make a service call to chime_tts.say before you can replay it.")
             else:
                 helpers.debug_title(f"Chime TTS Say Called. Version {VERSION}")
@@ -132,12 +169,15 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
         except Exception as error:
             error_string = f"Error calling chime_tts.say{'_url' if is_say_url else ''} service: {str(error)}"
             _LOGGER.error("%s", str(error_string))
+            finish_panel_log_event(hass, event_id)
             raise
 
         if result is not False:
+            finish_panel_log_event(hass, event_id)
             return result
 
         # Service call failed
+        finish_panel_log_event(hass, event_id)
         raise HomeAssistantError("An unknown error occurred")
 
     async def async_say_execute(service, is_say_url):
@@ -206,75 +246,95 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
     hass.services.async_register(DOMAIN,
                                  SERVICE_REPLAY,
                                  async_replay)
+    _data["async_replay"] = async_replay
 
     # Clear Cache Service #
 
     async def async_clear_cache(service):
         """Clear TTS cache files."""
-        helpers.debug_title("Chime TTS Clear Cache Called")
-        clear_chimes_cache = bool(service.data.get("clear_chimes_cache", False))
-        clear_temp_tts_cache = bool(service.data.get("clear_temp_tts_cache", False))
-        clear_www_tts_cache = bool(service.data.get("clear_www_tts_cache", False))
-        clear_ha_tts_cache = bool(service.data.get("clear_ha_tts_cache", False))
+        wants_response = bool(getattr(service, "return_response", False))
+        event_id = start_panel_log_event(
+            hass,
+            "action_call",
+            f"Action call: {DOMAIN}.{SERVICE_CLEAR_CACHE}",
+            row_color="action",
+            details=build_action_event_details(DOMAIN, SERVICE_CLEAR_CACHE, service.data),
+        )
+        try:
+            helpers.debug_title("Chime TTS Clear Cache Called")
+            clear_chimes_cache = bool(service.data.get("clear_chimes_cache", False))
+            clear_temp_tts_cache = bool(service.data.get("clear_temp_tts_cache", False))
+            clear_www_tts_cache = bool(service.data.get("clear_www_tts_cache", False))
+            clear_ha_tts_cache = bool(service.data.get("clear_ha_tts_cache", False))
 
-        start_time = datetime.now()
+            start_time = datetime.now()
 
-        to_log = []
-        if clear_chimes_cache:
-            to_log.append("cached downloaded chimes")
-        if clear_temp_tts_cache is True:
-            to_log.append("cached temporary Chime TTS audio files")
-        if clear_www_tts_cache:
-            to_log.append("cached publicly accessible Chime TTS audio files")
-        if len(to_log) > 0:
-            log_message = "Clearing "
-            for i in range(len(to_log)):
-                elem = to_log[i]
-                if i == len(to_log)-1:
-                    log_message += " and "
-                elif i > 0:
-                    log_message += ", "
-                log_message += elem
-            log_message += "..."
-            _LOGGER.debug("%s", log_message)
-        else:
-            return
+            to_log = []
+            if clear_chimes_cache:
+                to_log.append("cached downloaded chimes")
+            if clear_temp_tts_cache is True:
+                to_log.append("cached temporary Chime TTS audio files")
+            if clear_www_tts_cache:
+                to_log.append("cached publicly accessible Chime TTS audio files")
+            if len(to_log) > 0:
+                log_message = "Clearing "
+                for i in range(len(to_log)):
+                    elem = to_log[i]
+                    if i == len(to_log)-1:
+                        log_message += " and "
+                    elif i > 0:
+                        log_message += ", "
+                    log_message += elem
+                log_message += "..."
+                _LOGGER.debug("%s", log_message)
+            else:
+                return {} if wants_response else None
 
+            # CLEAR CHIME TTS CACHE #
+            cached_dicts = dict(_data.get(DATA_STORAGE_KEY, None))
+            for key in cached_dicts:
+                await async_remove_cached_audio_data(hass,
+                                                     str(key),
+                                                     clear_chimes_cache,
+                                                     clear_temp_tts_cache,
+                                                     clear_www_tts_cache)
 
-        # CLEAR CHIME TTS CACHE #
-        cached_dicts = dict(_data.get(DATA_STORAGE_KEY, None))
-        for key in cached_dicts:
-            await async_remove_cached_audio_data(hass,
-                                                 str(key),
-                                                 clear_chimes_cache,
-                                                 clear_temp_tts_cache,
-                                                 clear_www_tts_cache)
+            # CLEAR HA TTS CACHE #
+            if clear_ha_tts_cache:
+                _LOGGER.debug("Clearing cached Home Assistant TTS audio files...")
+                try:
+                    await hass.services.async_call(
+                        domain="TTS",
+                        service="clear_cache",
+                        blocking=True
+                    )
+                except Exception as error:
+                    _LOGGER.error("Error when clearing TTS cache: %s", error)
 
-        # CLEAR HA TTS CACHE #
-        if clear_ha_tts_cache:
-            _LOGGER.debug("Clearing cached Home Assistant TTS audio files...")
-            try:
-                await hass.services.async_call(
-                    domain="TTS",
-                    service="clear_cache",
-                    blocking=True
-                )
-            except Exception as error:
-                _LOGGER.error("Error when clearing TTS cache: %s", error)
-
-        # Summary
-        elapsed_time = (datetime.now() - start_time).total_seconds() * 1000
-        elapsed_time = (f"{elapsed_time} s"
-                        if elapsed_time >= 1
-                        else f"{elapsed_time * 1000} ms")
-        helpers.debug_finish(f"Chime TTS Clear Cache Completed in {elapsed_time}")
-
-        return True
+            # Summary
+            elapsed_time = (datetime.now() - start_time).total_seconds() * 1000
+            elapsed_time = (f"{elapsed_time} s"
+                            if elapsed_time >= 1
+                            else f"{elapsed_time * 1000} ms")
+            helpers.debug_finish(f"Chime TTS Clear Cache Completed in {elapsed_time}")
+            if wants_response:
+                return {
+                    "success": True,
+                    "clear_chimes_cache": clear_chimes_cache,
+                    "clear_temp_tts_cache": clear_temp_tts_cache,
+                    "clear_www_tts_cache": clear_www_tts_cache,
+                    "clear_ha_tts_cache": clear_ha_tts_cache,
+                }
+        finally:
+            finish_panel_log_event(hass, event_id)
 
     hass.services.async_register(DOMAIN,
                                  SERVICE_CLEAR_CACHE,
-                                 async_clear_cache)
+                                 async_clear_cache,
+                                 supports_response=SupportsResponse.OPTIONAL)
+    _data["async_clear_cache"] = async_clear_cache
 
+    finish_panel_log_event(hass, init_event_id)
     return True
 
 async def async_run_script(hass: HomeAssistant, script):

@@ -18,8 +18,12 @@ from custom_components.chime_tts.const import WWW_PATH_KEY
 from custom_components.chime_tts.const import DOMAIN
 
 panel_module = importlib.import_module("custom_components.chime_tts.helpers.panel")
+panel_logs_module = importlib.import_module("custom_components.chime_tts.helpers.panel_logs")
 settings_module = importlib.import_module("custom_components.chime_tts.settings")
 save_settings_handler = inspect.unwrap(panel_module.websocket_save_settings)
+repeat_log_action_handler = inspect.unwrap(panel_module.websocket_repeat_log_action)
+get_logs_handler = inspect.unwrap(panel_module.websocket_get_logs)
+get_settings_handler = inspect.unwrap(panel_module.websocket_get_settings)
 
 
 class FakeConfigEntries:
@@ -84,7 +88,22 @@ def make_hass(tmp_path: Path):
     )
     hass.data = {
         "tts_manager": SimpleNamespace(providers={"google_translate": object()}),
+        DOMAIN: {},
     }
+    recorded_service_calls: list[dict[str, object]] = []
+
+    async def async_call(domain: str, service: str, *, service_data=None, blocking=False):
+        recorded_service_calls.append(
+            {
+                "domain": domain,
+                "service": service,
+                "service_data": dict(service_data or {}),
+                "blocking": blocking,
+            }
+        )
+        return None
+
+    hass.services = SimpleNamespace(async_call=async_call)
 
     config_entry = SimpleNamespace(
         entry_id="entry-1",
@@ -119,6 +138,7 @@ def make_hass(tmp_path: Path):
         "temp_audio_dir": temp_audio_dir,
         "temp_chimes_dir": temp_chimes_dir,
         "custom_chimes_dir": custom_chimes_dir,
+        "recorded_service_calls": recorded_service_calls,
     }
 
 
@@ -148,7 +168,9 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
         "playback",
         "general",
         "notify_profiles",
+        "logs",
     ]
+    assert payload["log_events"] == []
 
     voice_section = next(section for section in payload["sections"] if section["key"] == "voice")
     language_field = next(
@@ -160,12 +182,42 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
 
     assert language_field["provider_hint"]["tone"] == "info"
     assert "Google Translate" in language_field["provider_hint"]["message"]
-    assert custom_chimes_field["icon_url"].endswith(f"/option_icons/{CUSTOM_CHIMES_PATH_KEY}.svg")
+    assert custom_chimes_field["icon_url"].startswith(
+        f"/api/{DOMAIN}/option_icons/{CUSTOM_CHIMES_PATH_KEY}.svg?v="
+    )
     assert custom_chimes_field["can_browse"] is True
     assert (
         custom_chimes_field["path_validation"]["message"]
         == "Folder path is valid for this setting."
     )
+
+
+@pytest.mark.asyncio
+async def test_websocket_get_settings_skips_initial_log_backfill(tmp_path: Path) -> None:
+    """Initial panel payloads should avoid blocking on log backfill work."""
+    hass, _config_entry, _paths = make_hass(tmp_path)
+    connection = FakeConnection()
+
+    async def fail_if_called(_hass):
+        raise AssertionError("Initial settings load should not request log events")
+
+    panel_logs_module.async_setup_panel_log_store(hass)
+    original = settings_module.async_get_panel_log_events
+    settings_module.async_get_panel_log_events = fail_if_called
+    try:
+        await get_settings_handler(
+            hass,
+            connection,
+            {
+                "id": 17,
+                "type": "chime_tts/get_settings",
+            },
+        )
+    finally:
+        settings_module.async_get_panel_log_events = original
+
+    assert connection.errors == []
+    assert connection.results[-1][1]["log_events"] == []
 
 
 def test_validate_path_field_suggests_media_directories_for_invalid_media_path(tmp_path: Path) -> None:
@@ -337,6 +389,61 @@ def test_build_panel_payload_includes_notify_profiles_from_configuration_yaml(
     ]
 
 
+def test_build_panel_payload_supports_home_assistant_include_notify_yaml(
+    tmp_path: Path,
+) -> None:
+    """The sidebar payload should load notify profiles from HA-style !include YAML."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    paths["config_dir"].joinpath("configuration.yaml").write_text(
+        "notify: !include notify.yaml\n",
+        encoding="utf-8",
+    )
+    paths["config_dir"].joinpath("notify.yaml").write_text(
+        yaml.safe_dump(
+            [
+                {"platform": "file", "name": "archive"},
+                {
+                    "platform": DOMAIN,
+                    "name": "kitchen",
+                    "entity_id": ["media_player.kitchen", "media_player.office"],
+                    "options": {"voice": "Amy"},
+                },
+            ],
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    payload = settings_module.build_panel_payload(hass, config_entry)
+
+    assert payload["notify_profiles_load_error"] is None
+    assert payload["notify_profiles"] == [
+        {
+            "name": "kitchen",
+            "entity_id": "media_player.kitchen, media_player.office",
+            "chime_path": "",
+            "end_chime_path": "",
+            "tts_platform": "",
+            "language": "",
+            "voice": "",
+            "tld": "",
+            "offset": "",
+            "crossfade": "",
+            "final_delay": "",
+            "tts_speed": "",
+            "tts_pitch": "",
+            "volume_level": "",
+            "audio_conversion": "",
+            "options": "voice: Amy",
+            "announce": False,
+            "cache": False,
+            "fade_audio": False,
+            "join_players": False,
+            "unjoin_players": False,
+        }
+    ]
+
+
 def test_build_panel_payload_exposes_docs_urls_for_all_notify_profile_fields(
     tmp_path: Path,
 ) -> None:
@@ -404,6 +511,58 @@ def test_build_panel_payload_exposes_docs_urls_for_all_notify_profile_fields(
     assert actual_docs_urls["unjoin_players"].endswith(
         "/documentation/actions/say-action/parameters/#unjoin_players"
     )
+
+
+def test_build_panel_payload_includes_session_log_events(tmp_path: Path) -> None:
+    """The sidebar payload should include grouped panel log events for this HA session."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+    panel_logs_module.async_setup_panel_log_store(hass)
+    event_id = panel_logs_module.start_panel_log_event(
+        hass,
+        "action_call",
+        "Action call: chime_tts.say",
+        row_color="action",
+        details=panel_logs_module.build_action_event_details(
+            DOMAIN,
+            "say",
+            {"message": "Testing", "entity_id": ["media_player.office"]},
+        ),
+    )
+    panel_logs_module.finish_panel_log_event(hass, event_id)
+
+    payload = settings_module.build_panel_payload(hass, config_entry)
+
+    logs_section = next(section for section in payload["sections"] if section["key"] == "logs")
+    assert logs_section["kind"] == "logs"
+    assert payload["log_events"][0]["type"] == "action_call"
+    assert payload["log_events"][0]["copy_yaml"].startswith("action: chime_tts.say")
+    assert payload["log_events"][0]["can_repeat"] is True
+
+
+def test_websocket_get_logs_returns_session_log_events(tmp_path: Path) -> None:
+    """The lightweight logs websocket should return the current session log rows."""
+    hass, _config_entry, _paths = make_hass(tmp_path)
+    connection = FakeConnection()
+    panel_logs_module.async_setup_panel_log_store(hass)
+    event_id = panel_logs_module.start_panel_log_event(
+        hass,
+        "configuration_update",
+        "Configuration update completed",
+        row_color="configuration",
+    )
+    panel_logs_module.finish_panel_log_event(hass, event_id)
+
+    get_logs_handler(
+        hass,
+        connection,
+        {
+            "id": 99,
+            "type": "chime_tts/get_logs",
+        },
+    )
+
+    assert connection.errors == []
+    assert connection.results[-1][1]["log_events"][0]["title"] == "Configuration update completed"
 
 
 @pytest.mark.asyncio
@@ -502,3 +661,49 @@ async def test_websocket_save_settings_rejects_invalid_notify_profile_yaml(
     payload = connection.results[-1][1]
     assert payload["message_type"] == "error"
     assert payload["notify_profile_errors"] == [{"options": "invalid_yaml"}]
+
+
+@pytest.mark.asyncio
+async def test_websocket_repeat_log_action_replays_logged_service_call(
+    tmp_path: Path,
+) -> None:
+    """Repeating a logged action should call the original Chime TTS service again."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+    connection = FakeConnection()
+    recorded_say_calls: list[dict[str, object]] = []
+
+    async def fake_async_say(service):
+        recorded_say_calls.append(dict(service.data or {}))
+        return True
+
+    hass.data[DOMAIN]["async_say"] = fake_async_say
+    panel_logs_module.async_setup_panel_log_store(hass)
+    event_id = panel_logs_module.start_panel_log_event(
+        hass,
+        "action_call",
+        "Action call: chime_tts.say",
+        row_color="action",
+        details=panel_logs_module.build_action_event_details(
+            DOMAIN,
+            "say",
+            {"message": "Replay me", "entity_id": ["media_player.office"]},
+        ),
+    )
+    panel_logs_module.finish_panel_log_event(hass, event_id)
+
+    await repeat_log_action_handler(
+        hass,
+        connection,
+        {
+            "id": 5,
+            "type": "chime_tts/repeat_log_action",
+            "event_id": event_id,
+        },
+    )
+
+    assert connection.errors == []
+    assert recorded_say_calls == [
+        {"message": "Replay me", "entity_id": ["media_player.office"]}
+    ]
+    payload = connection.results[-1][1]
+    assert payload["message_type"] == "success"

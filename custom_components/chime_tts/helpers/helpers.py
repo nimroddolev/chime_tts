@@ -51,6 +51,26 @@ class ChimeTTSHelper:
 
     # Services.yaml
 
+    @staticmethod
+    def _coerce_float(value, default: float) -> float:
+        """Convert a nullable service value to float."""
+        if value in (None, ""):
+            return default
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    @staticmethod
+    def _coerce_int(value, default: int) -> int:
+        """Convert a nullable service value to int."""
+        if value in (None, ""):
+            return default
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
 
 
 
@@ -65,13 +85,19 @@ class ChimeTTSHelper:
         entity_ids = media_player_helper.parse_entity_ids(data, hass) if is_say_url is False else []
         chime_path =str(data.get("chime_path", ""))
         end_chime_path = str(data.get("end_chime_path", ""))
-        offset = float(data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)) or 0)
-        crossfade = int(data.get(CROSSFADE_KEY, 0))
-        final_delay = float(data.get("final_delay", 0) or 0)
+        offset = self._coerce_float(
+            data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)),
+            0,
+        )
+        crossfade = self._coerce_int(data.get(CROSSFADE_KEY, 0), 0)
+        final_delay = self._coerce_float(data.get("final_delay", 0), 0)
         message = str(data.get("message", ""))
         tts_platform = str(data.get("tts_platform", ""))
-        tts_speed = float(data.get("tts_playback_speed", data.get("tts_speed", 100)) or 100)
-        tts_pitch = data.get("tts_pitch", 0) or 0
+        tts_speed = self._coerce_float(
+            data.get("tts_playback_speed", data.get("tts_speed", 100)),
+            100,
+        )
+        tts_pitch = self._coerce_float(data.get("tts_pitch", 0), 0)
         try:
             repeat = max(int(data.get("repeat", 1) or 1), 1)
         except (ValueError, TypeError):

@@ -25,6 +25,16 @@ const ICONS = {
       <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
     </svg>
   `,
+  repeat: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M17 17H7v3l-4-4 4-4v3h8a3 3 0 0 0 0-6H9v2H7V7h8a5 5 0 1 1 0 10zm0-14 4 4-4 4V8H9a3 3 0 1 0 0 6h6v2H9a5 5 0 1 1 0-10h8V3z"/>
+    </svg>
+  `,
+  broom: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M18.16 3.47 19.58 4.89 15.12 9.35 13.7 7.93l4.46-4.46zm-5.07 5.88 2.12 2.12-5.7 5.7c-.35.36-.8.6-1.29.7l-3.37.73.73-3.37c.11-.49.35-.94.7-1.29l6.81-6.59zm-7.7 10.93h13.86v1.5H5.39z"/>
+    </svg>
+  `,
 };
 const OPTION_ICON_DATA_URLS = {
   "add_cover_art": "data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%20fill=%22none%22%3E%0A%20%20%3Crect%20x=%2214%22%20y=%2216%22%20width=%2222%22%20height=%2222%22%20rx=%226%22%20fill=%22%2303a9f4%22/%3E%0A%20%20%3Ccircle%20cx=%2225%22%20cy=%2227%22%20r=%224%22%20fill=%22%23fff%22/%3E%0A%20%20%3Cpath%20d=%22M42%2022h8M42%2030h10M42%2038h6%22%20stroke=%22%23d7edf8%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%20%20%3Cpath%20d=%22M18%2044c3-3%205-4%207-4s4%201%207%204%22%20stroke=%22%237dd3fc%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%3C/svg%3E",
@@ -390,17 +400,8 @@ template.innerHTML = `
     }
 
     .chapter-workspace {
-      padding: 18px;
-      border-radius: 30px;
-      border: 2px solid color-mix(in srgb, var(--divider-color) 78%, transparent);
-      background: color-mix(in srgb, var(--card-background-color) 88%, black 12%);
-      box-shadow: 0 20px 44px rgba(0, 0, 0, 0.14);
-      overflow: hidden;
-      transition:
-        padding 250ms ease,
-        border-color 250ms ease,
-        background 250ms ease,
-        box-shadow 250ms ease;
+      display: flex;
+      flex-direction: column;
     }
 
     @media (prefers-color-scheme: light) {
@@ -411,26 +412,6 @@ template.innerHTML = `
       .section {
         background: color-mix(in srgb, var(--card-background-color) 97%, white 3%);
         box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
-      }
-
-      .chapter-workspace {
-        background: color-mix(in srgb, var(--card-background-color) 96%, white 4%);
-        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.07);
-      }
-
-      .chapter-workspace.configuration-workspace {
-        background:
-          linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, #eef8ff 46%, white 54%));
-      }
-
-      .chapter-workspace.notify-workspace {
-        background:
-          linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, #fff1f2 48%, white 52%));
-      }
-
-      .chapter-workspace.logs-workspace {
-        background:
-          linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, #eefcff 52%, white 48%));
       }
 
       .chapter-hero {
@@ -451,33 +432,13 @@ template.innerHTML = `
           linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, white 90%, #f2fdff 10%));
       }
 
-      .chapter-workspace > .section,
+      .chapter-hero .section,
       .notify-profile-card,
       .field,
       .log-event-row,
       .picker-preview {
         background: color-mix(in srgb, var(--card-background-color) 97%, white 3%);
       }
-    }
-
-    .chapter-workspace.configuration-workspace {
-      background:
-        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 92%, white 8%), color-mix(in srgb, var(--secondary-background-color) 84%, transparent));
-      border-color: color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
-    }
-
-    .chapter-workspace.notify-workspace {
-      background:
-        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 96%, #fff3f4 4%), color-mix(in srgb, var(--secondary-background-color) 92%, #fff7f8 8%));
-      border-color: color-mix(in srgb, #e56b6f 18%, var(--divider-color));
-      box-shadow: 0 22px 48px rgba(0, 0, 0, 0.18);
-    }
-
-    .chapter-workspace.logs-workspace {
-      background:
-        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 96%, #f0fbfe 4%), color-mix(in srgb, var(--secondary-background-color) 92%, #f5fdff 8%));
-      border-color: color-mix(in srgb, #49b675 24%, var(--divider-color));
-      box-shadow: 0 22px 48px rgba(0, 0, 0, 0.18);
     }
 
     .chapter-hero {
@@ -495,12 +456,22 @@ template.innerHTML = `
         border-radius 250ms ease;
     }
 
+    .configuration-workspace .chapter-hero {
+      background:
+        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 14%, transparent), transparent 42%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 92%, white 8%), color-mix(in srgb, var(--secondary-background-color) 84%, transparent));
+      border-color: color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
+      box-shadow: 0 20px 44px rgba(0, 0, 0, 0.14);
+    }
+
     .chapter-hero-toggle {
       min-width: 0;
       display: block;
-      width: 100%;
+      width: calc(100% + 48px);
+      margin: -22px -24px;
+      padding: 22px 24px;
       cursor: pointer;
-      border-radius: 18px;
+      border-radius: 24px;
     }
 
     .chapter-hero-toggle:focus-visible {
@@ -513,6 +484,7 @@ template.innerHTML = `
       background:
         radial-gradient(circle at top right, color-mix(in srgb, #e56b6f 12%, transparent), transparent 44%),
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff4f5 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fff7f8 8%));
+      box-shadow: 0 22px 48px rgba(0, 0, 0, 0.18);
     }
 
     .notify-workspace .chapter-hero-eyebrow {
@@ -530,18 +502,7 @@ template.innerHTML = `
       color: color-mix(in srgb, #49b675 82%, white 18%);
     }
 
-    .chapter-workspace.collapsed,
-    .chapter-workspace.configuration-workspace.collapsed,
-    .chapter-workspace.notify-workspace.collapsed,
-    .chapter-workspace.logs-workspace.collapsed {
-      padding: 0;
-      border-color: transparent;
-      background: transparent;
-      box-shadow: none;
-    }
-
     .chapter-workspace.collapsed .chapter-hero {
-      border-radius: 30px;
       margin: 0;
     }
 
@@ -637,6 +598,11 @@ template.innerHTML = `
       gap: 18px;
     }
 
+    .chapter-body {
+      padding: 2px 0 0;
+      background: transparent;
+    }
+
     .chapter-collapse,
     .row-collapse {
       max-height: 0;
@@ -659,10 +625,6 @@ template.innerHTML = `
     .row-collapse.expanded {
       max-height: 4000px;
       opacity: 1;
-    }
-
-    .chapter-collapse.collapsed {
-        display: none;
     }
 
     .chapter-collapse.expanded .chapter-collapse-inner {
@@ -699,6 +661,8 @@ template.innerHTML = `
     }
 
     .log-event-row {
+      --log-row-accent: color-mix(in srgb, var(--divider-color) 72%, transparent);
+      --log-row-accent-solid: var(--primary-color);
       padding: 16px 18px;
       border-radius: 22px;
       border: 2px solid color-mix(in srgb, var(--divider-color) 72%, transparent);
@@ -707,20 +671,40 @@ template.innerHTML = `
     }
 
     .log-event-row.error {
+      --log-row-accent: color-mix(in srgb, var(--error-color, #d32f2f) 56%, transparent);
+      --log-row-accent-solid: var(--error-color, #d32f2f);
       border-color: color-mix(in srgb, var(--error-color, #d32f2f) 56%, transparent);
       background: color-mix(in srgb, var(--error-color, #d32f2f) 12%, transparent);
     }
 
     .log-event-row.initiation {
+      --log-row-accent: color-mix(in srgb, #3b82f6 54%, var(--divider-color));
+      --log-row-accent-solid: #3b82f6;
       border-color: color-mix(in srgb, #3b82f6 54%, var(--divider-color));
     }
 
     .log-event-row.configuration {
+      --log-row-accent: color-mix(in srgb, #f59e0b 54%, var(--divider-color));
+      --log-row-accent-solid: #f59e0b;
       border-color: color-mix(in srgb, #f59e0b 54%, var(--divider-color));
     }
 
     .log-event-row.action {
-      border-color: color-mix(in srgb, #14b8a6 54%, var(--divider-color));
+      --log-row-accent: color-mix(in srgb, #22c55e 54%, var(--divider-color));
+      --log-row-accent-solid: #22c55e;
+      border-color: color-mix(in srgb, #22c55e 54%, var(--divider-color));
+    }
+
+    .log-event-row.replay {
+      --log-row-accent: color-mix(in srgb, #3b82f6 54%, var(--divider-color));
+      --log-row-accent-solid: #3b82f6;
+      border-color: color-mix(in srgb, #3b82f6 54%, var(--divider-color));
+    }
+
+    .log-event-row.clear {
+      --log-row-accent: color-mix(in srgb, #a855f7 54%, var(--divider-color));
+      --log-row-accent-solid: #a855f7;
+      border-color: color-mix(in srgb, #a855f7 54%, var(--divider-color));
     }
 
     .log-event-row-header {
@@ -745,8 +729,8 @@ template.innerHTML = `
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: var(--primary-text-color);
-      background: color-mix(in srgb, var(--card-background-color) 72%, white 28%);
+      color: #fff;
+      background: var(--log-row-accent-solid);
       flex: 0 0 auto;
     }
 
@@ -790,6 +774,18 @@ template.innerHTML = `
       gap: 8px;
     }
 
+    .log-event-row .button-secondary {
+      border-color: color-mix(in srgb, var(--log-row-accent-solid) 44%, transparent);
+      background: color-mix(in srgb, var(--log-row-accent-solid) 14%, transparent);
+      color: var(--primary-text-color);
+    }
+
+    .log-event-row .button-secondary:hover,
+    .log-event-row .button-secondary:focus-visible {
+      border-color: color-mix(in srgb, var(--log-row-accent-solid) 72%, white 28%);
+      background: color-mix(in srgb, var(--log-row-accent-solid) 22%, transparent);
+    }
+
     .log-event-toggle {
       min-width: 42px;
       min-height: 42px;
@@ -806,7 +802,7 @@ template.innerHTML = `
     }
 
     .log-event-toggle.expanded svg {
-      transform: rotate(180deg);
+      transform: rotate(0deg);
     }
 
     .log-event-body {
@@ -857,15 +853,20 @@ template.innerHTML = `
       padding: 22px;
     }
 
-    .chapter-workspace > .section {
+    .chapter-hero .section {
       border-radius: 24px;
       border: 1px solid color-mix(in srgb, var(--divider-color) 72%, transparent);
       background: color-mix(in srgb, var(--card-background-color) 84%, transparent);
     }
 
-    .notify-workspace > .section {
+    .notify-workspace .chapter-hero .section {
       background: color-mix(in srgb, var(--card-background-color) 76%, black 24%);
       border-color: color-mix(in srgb, #e56b6f 14%, var(--divider-color));
+    }
+
+    .notify-workspace .chapter-body,
+    .logs-workspace .chapter-body {
+      background: transparent;
     }
 
     .section-header {
@@ -1055,7 +1056,12 @@ template.innerHTML = `
     }
 
     .control-select {
-      padding-right: 24px;
+      appearance: none;
+      padding-right: 46px;
+      background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23b8c7d1%27 stroke-width=%272.2%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M7 10l5 5 5-5%27/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: calc(100% - 15px) center;
+      background-size: 18px 18px;
     }
 
     .control:focus,
@@ -1209,28 +1215,42 @@ template.innerHTML = `
       min-width: 140px;
     }
 
-    .picker-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 30;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: rgba(0, 0, 0, 0.45);
-      backdrop-filter: blur(6px);
+    .picker-native-dialog {
+      --dialog-content-padding: 0;
+      --mdc-dialog-min-width: min(720px, calc(100vw - 32px));
+      --mdc-dialog-max-width: min(720px, calc(100vw - 32px));
+      --mdc-dialog-max-height: min(78vh, 760px);
+      --ha-dialog-border-radius: 28px;
     }
 
-    .picker-dialog {
-      width: min(860px, 100%);
-      max-height: min(80vh, 760px);
+    .picker-dialog-body {
+      padding: 20px 24px 8px;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
-      border-radius: 24px;
-      border: 1px solid var(--divider-color);
-      background: var(--card-background-color);
-      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+      gap: 18px;
+      overflow: auto;
+    }
+
+    .picker-dialog-footer {
+      margin-top: 4px;
+      padding: 8px 0 4px;
+    }
+
+    .picker-dialog-footer .button-secondary,
+    .picker-dialog-footer .button-primary {
+      min-width: 132px;
+    }
+
+    .picker-dialog-lead {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .picker-dialog-lead p {
+      margin: 0;
+      color: var(--secondary-text-color);
+      line-height: 1.5;
     }
 
     .confirm-overlay {
@@ -1278,55 +1298,21 @@ template.innerHTML = `
       flex-wrap: wrap;
     }
 
-    .picker-header,
-    .picker-footer {
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--divider-color);
-    }
-
-    .picker-footer {
-      border-bottom: 0;
-      border-top: 1px solid var(--divider-color);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .picker-title-row,
-    .picker-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .picker-title {
-      margin: 0;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--primary-text-color);
-    }
-
-    .picker-subtitle,
-    .picker-current-path,
     .picker-empty {
-      margin-top: 10px;
+      margin: 0;
       color: var(--secondary-text-color);
       line-height: 1.5;
     }
 
-    .picker-subtitle {
-      margin-top: 6px;
-    }
-
-    .picker-pathbar {
+    .picker-current-card {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
+      flex-direction: column;
       gap: 14px;
-      flex-wrap: wrap;
+      padding: 16px 18px;
+      border-radius: 20px;
+      border: 1px solid var(--divider-color);
+      background: color-mix(in srgb, var(--card-background-color) 90%, white 10%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
     }
 
     .picker-breadcrumbs {
@@ -1337,15 +1323,26 @@ template.innerHTML = `
       min-width: 0;
     }
 
+    .picker-location-label {
+      margin: 0 0 8px;
+      color: var(--secondary-text-color);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
     .picker-path-button {
-      padding: 8px 12px;
+      min-height: 32px;
+      padding: 6px 12px;
       border-radius: 999px;
-      border: 1px solid var(--divider-color);
-      background: transparent;
+      border: 1px solid color-mix(in srgb, var(--primary-color) 18%, var(--divider-color));
+      background: color-mix(in srgb, var(--primary-color) 10%, transparent);
       color: var(--primary-text-color);
       box-shadow: none;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.9rem;
+      font-weight: 600;
     }
 
     .picker-path-separator {
@@ -1353,65 +1350,70 @@ template.innerHTML = `
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
-    .picker-content {
-      padding: 18px 20px;
+    .picker-section {
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      overflow: auto;
+      gap: 10px;
+    }
+
+    .picker-section-title {
+      margin: 0;
+      color: var(--secondary-text-color);
+      font-size: 0.88rem;
+      font-weight: 700;
     }
 
     .picker-roots {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
     }
 
-    .picker-roots-label {
-      margin: 0;
-      color: var(--secondary-text-color);
-      font-weight: 700;
-    }
-
-    .picker-root,
-    .picker-close {
-      padding: 10px 14px;
-      border-radius: 999px;
-      border: 1px solid var(--divider-color);
-      background: transparent;
-      color: var(--primary-text-color);
-      box-shadow: none;
-    }
-
     .picker-root {
+      min-height: 24px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--primary-color);
+      box-shadow: none;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      font-weight: 600;
     }
 
-    .picker-close {
-      margin-left: auto;
+    .picker-root:hover,
+    .picker-root:focus-visible {
+      text-decoration: underline;
     }
 
-    .picker-list {
+    .picker-list-nav {
+      width: 100%;
+      padding: 0 2px;
+      background: transparent;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 6px;
     }
 
     .picker-item {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
       width: 100%;
-      padding: 14px 16px;
-      border-radius: 16px;
-      border: 1px solid var(--divider-color);
-      background: color-mix(in srgb, var(--secondary-background-color) 60%, transparent);
+      padding: 2px 0;
+      border: 0;
+      background: transparent;
       color: inherit;
       cursor: pointer;
       text-align: left;
+      text-decoration: none;
+    }
+
+    .picker-item:hover .picker-item-name,
+    .picker-item:focus-visible .picker-item-name {
+      text-decoration: underline;
     }
 
     .picker-item-meta {
@@ -1434,15 +1436,18 @@ template.innerHTML = `
       word-break: break-all;
     }
 
-    .picker-choose {
-      min-width: 168px;
+    .picker-item-chevron {
+      color: var(--secondary-text-color);
+      font-size: 1.1rem;
+      font-weight: 700;
+      line-height: 1;
     }
 
     .picker-common-folders {
       display: flex;
       gap: 10px;
-      flex-direction: row;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-start;
     }
 
     .advanced-toggle-row {
@@ -1469,7 +1474,7 @@ template.innerHTML = `
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
-      margin-top: 20px 0px;
+      margin: 0;
     }
 
     .picker-status-text {
@@ -1508,7 +1513,7 @@ template.innerHTML = `
 
     .picker-preview {
       padding: 14px 16px;
-      border-radius: 16px;
+      border-radius: 20px;
       border: 1px solid var(--divider-color);
       background: color-mix(in srgb, var(--secondary-background-color) 60%, transparent);
     }
@@ -1567,6 +1572,10 @@ template.innerHTML = `
       display: flex;
       align-items: center;
       min-height: 40px;
+    }
+
+    .notify-profile-copy.testing {
+      display: none;
     }
 
     .notify-profile-actions {
@@ -1937,12 +1946,18 @@ template.innerHTML = `
       flex-direction: column;
     }
 
-    :host([narrow]) .picker-overlay {
-      padding: 12px;
+    :host([narrow]) .picker-native-dialog {
+      --mdc-dialog-min-width: calc(100vw - 16px);
+      --mdc-dialog-max-width: calc(100vw - 16px);
+      --mdc-dialog-max-height: calc(100vh - 24px);
     }
 
-    :host([narrow]) .picker-dialog {
-      max-height: 88vh;
+    :host([narrow]) .picker-dialog-body {
+      padding: 16px 16px 8px;
+    }
+
+    :host([narrow]) .picker-current-card {
+      padding: 14px 14px;
     }
 
     @media (max-width: 600px) {
@@ -2020,7 +2035,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._logsRefreshTimer = null;
     this._logsRefreshInFlight = false;
     this._logsOpeningRefresh = false;
+    this._logsLoaded = false;
+    this._logsSubscription = null;
+    this._logsSubscriptionPending = false;
+    this._deferredLogEvents = [];
     this._boundVisibilityRefresh = () => this._syncLogsRefresh();
+    this._boundSelectionRefresh = () => this._syncLogsRefresh();
+    this._boundFocusRefresh = () => this._syncLogsRefresh();
     this._pathValidationState = {};
     this._pathValidationTimers = {};
     this._invalidPathOverrides = {};
@@ -2032,10 +2053,17 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
   connectedCallback() {
     document.addEventListener("visibilitychange", this._boundVisibilityRefresh);
+    document.addEventListener("selectionchange", this._boundSelectionRefresh);
+    this.shadowRoot?.addEventListener("focusin", this._boundFocusRefresh);
+    this.shadowRoot?.addEventListener("focusout", this._boundFocusRefresh);
   }
 
   disconnectedCallback() {
     document.removeEventListener("visibilitychange", this._boundVisibilityRefresh);
+    document.removeEventListener("selectionchange", this._boundSelectionRefresh);
+    this.shadowRoot?.removeEventListener("focusin", this._boundFocusRefresh);
+    this.shadowRoot?.removeEventListener("focusout", this._boundFocusRefresh);
+    this._teardownLogsSubscription();
     this._clearLogsRefreshTimer();
     this._clearAllNotifyProfileTestTimers();
     this._clearAllLogCopyTimers();
@@ -2090,12 +2118,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._logCopyState = {};
       this._expandedLogEvents = {};
       this._logsOpeningRefresh = false;
+      this._logsLoaded = false;
+      this._deferredLogEvents = [];
       this._pathValidationState = this._buildInitialPathValidationState();
       this._invalidPathOverrides = {};
       this._restartPending = false;
       this._restartConfirmOpen = false;
       this._restarting = false;
       this._expandedChapters = {};
+      await this._ensureLogsSubscription();
     } catch (error) {
       this._data = {
         sections: [],
@@ -2120,6 +2151,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._logCopyState = {};
       this._expandedLogEvents = {};
       this._logsOpeningRefresh = false;
+      this._logsLoaded = false;
+      this._deferredLogEvents = [];
       this._pathValidationState = {};
       this._invalidPathOverrides = {};
       this._restartPending = false;
@@ -2130,7 +2163,80 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._loading = false;
       this._render();
       this._syncLogsRefresh();
+      this._primeLogsLoad();
     }
+  }
+
+  async _ensureLogsSubscription() {
+    if (!this._hass?.connection || this._logsSubscription || this._logsSubscriptionPending) {
+      return;
+    }
+
+    this._logsSubscriptionPending = true;
+    try {
+      this._logsSubscription = await this._hass.connection.subscribeMessage(
+        (message) => this._handleIncomingLogEvent(message?.event?.log_event || message?.log_event),
+        { type: "chime_tts/subscribe_logs" },
+      );
+    } catch (_error) {
+      this._logsSubscription = null;
+    } finally {
+      this._logsSubscriptionPending = false;
+    }
+  }
+
+  _teardownLogsSubscription() {
+    if (typeof this._logsSubscription === "function") {
+      this._logsSubscription();
+    }
+    this._logsSubscription = null;
+    this._logsSubscriptionPending = false;
+  }
+
+  _handleIncomingLogEvent(logEvent) {
+    if (!logEvent || !logEvent.id) {
+      return;
+    }
+
+    if (this._picker || this._hasActiveTextEntryFocus()) {
+      this._deferredLogEvents = [
+        logEvent,
+        ...(this._deferredLogEvents || []).filter((event) => event?.id !== logEvent.id),
+      ];
+      return;
+    }
+
+    const existingEvents = this._data?.log_events || [];
+    this._data = {
+      ...(this._data || {}),
+      log_events: [
+        logEvent,
+        ...existingEvents.filter((event) => event?.id !== logEvent.id),
+      ],
+    };
+    this._logsLoaded = true;
+    this._render();
+  }
+
+  _flushDeferredLogEvents() {
+    const deferredEvents = this._deferredLogEvents || [];
+    if (deferredEvents.length === 0) {
+      return false;
+    }
+
+    const existingEvents = this._data?.log_events || [];
+    const deferredIds = new Set(deferredEvents.map((event) => event?.id).filter(Boolean));
+    this._data = {
+      ...(this._data || {}),
+      log_events: [
+        ...deferredEvents,
+        ...existingEvents.filter((event) => !deferredIds.has(event?.id)),
+      ],
+    };
+    this._deferredLogEvents = [];
+    this._logsLoaded = true;
+    this._render();
+    return true;
   }
 
   _render() {
@@ -2278,7 +2384,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       });
     });
     this.shadowRoot.querySelectorAll("[data-picker-open]").forEach((button) => {
-      button.addEventListener("click", (event) => this._loadPicker(event.currentTarget.dataset.pickerOpen));
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        this._loadPicker(event.currentTarget.dataset.pickerOpen);
+      });
     });
     this.shadowRoot.querySelectorAll("[data-picker-close]").forEach((button) => {
       button.addEventListener("click", () => this._closePicker());
@@ -2330,6 +2439,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     });
     this.shadowRoot.querySelectorAll("[data-toggle-log-event]").forEach((row) => {
       row.addEventListener("click", (event) => {
+        if (event.target instanceof Element && event.target.closest(".log-event-body")) {
+          return;
+        }
         this._toggleLogEvent(event.currentTarget.dataset.toggleLogEvent);
       });
       row.addEventListener("keydown", (event) => {
@@ -2434,7 +2546,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const isAdvancedOpen = this._isAdvancedOpen(section);
     const sectionDirty = this._isSectionDirty(section);
     return `
-      <section class="section">
+      <section class="section" data-section-key="${this._escapeAttribute(section.key)}">
         <div class="section-header">
           <div class="section-header-copy">
             <h2>${this._escapeHtml(section.title)}</h2>
@@ -2478,7 +2590,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const configExpanded = this._isChapterExpanded("configuration");
 
     return `
-      <div class="chapter-group chapter-workspace configuration-workspace ${configExpanded ? "expanded" : "collapsed"}">
+      <div
+        class="chapter-group chapter-workspace configuration-workspace ${configExpanded ? "expanded" : "collapsed"}"
+        data-chapter-key="configuration"
+      >
         ${this._renderChapterHero({
           chapterKey: "configuration",
           expanded: configExpanded,
@@ -2486,57 +2601,64 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           title: "Configuration",
           description: "Set default providers, folder paths, playback timing, and integration-wide behavior for Chime TTS.",
           docsUrl: data.documentation_url,
-        })}
-        <div class="chapter-collapse ${configExpanded ? "expanded" : "collapsed"}">
-          <div class="chapter-collapse-inner">
+          bodyMarkup: `
             <div class="chapter-content">
               ${configSections.map((section) => this._renderSection(section, values, errors)).join("")}
             </div>
-          </div>
-        </div>
+          `,
+        })}
       </div>
       ${notifySection ? this._renderNotifyProfilesSection(notifySection) : ""}
       ${logsSection ? this._renderLogsSection(logsSection) : ""}
     `;
   }
 
-  _renderChapterHero({ chapterKey, expanded, eyebrow, title, description, docsUrl, actionsMarkup = "" }) {
+  _renderChapterHero({ chapterKey, expanded, eyebrow, title, description, docsUrl, actionsMarkup = "", bodyMarkup = "" }) {
     return `
       <section
-        class="chapter-hero chapter-hero-toggle"
-        data-toggle-chapter="${this._escapeAttribute(chapterKey)}"
-        role="button"
-        tabindex="0"
-        aria-expanded="${expanded ? "true" : "false"}"
-        aria-label="${this._escapeAttribute(`${expanded ? "Collapse" : "Expand"} ${title}`)}"
+        class="chapter-hero"
       >
-        <div class="chapter-hero-inner">
-          <div>
-            <div class="chapter-hero-copy">
-              ${eyebrow ? `<p class="chapter-hero-eyebrow">${this._escapeHtml(eyebrow)}</p>` : ""}
-              <div class="chapter-hero-title-row">
-                <h2 class="chapter-hero-title">${this._escapeHtml(title)}</h2>
-                ${docsUrl
-                  ? `<a
-                      class="field-help-link"
-                      href="${this._escapeAttribute(docsUrl)}"
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label="${this._escapeAttribute(`Open help for ${title}`)}"
-                      title="${this._escapeAttribute(`Open help for ${title}`)}"
-                    >?</a>`
-                  : ""
-                }
+        <div
+          class="chapter-hero-toggle"
+          data-toggle-chapter="${this._escapeAttribute(chapterKey)}"
+          role="button"
+          tabindex="0"
+          aria-expanded="${expanded ? "true" : "false"}"
+          aria-label="${this._escapeAttribute(`${expanded ? "Collapse" : "Expand"} ${title}`)}"
+        >
+          <div class="chapter-hero-inner">
+            <div>
+              <div class="chapter-hero-copy">
+                ${eyebrow ? `<p class="chapter-hero-eyebrow">${this._escapeHtml(eyebrow)}</p>` : ""}
+                <div class="chapter-hero-title-row">
+                  <h2 class="chapter-hero-title">${this._escapeHtml(title)}</h2>
+                  ${docsUrl
+                    ? `<a
+                        class="field-help-link"
+                        href="${this._escapeAttribute(docsUrl)}"
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label="${this._escapeAttribute(`Open help for ${title}`)}"
+                        title="${this._escapeAttribute(`Open help for ${title}`)}"
+                      >?</a>`
+                    : ""
+                  }
+                </div>
+                ${description ? `<p class="chapter-hero-description">${this._escapeHtml(description)}</p>` : ""}
               </div>
-              ${description ? `<p class="chapter-hero-description">${this._escapeHtml(description)}</p>` : ""}
+            </div>
+            <div class="chapter-hero-endcap">
+              ${expanded && actionsMarkup
+                ? `<div class="chapter-hero-actions">${actionsMarkup}</div>`
+                : ""
+              }
+              <span class="chapter-chevron" aria-hidden="true">${ICONS.chevron}</span>
             </div>
           </div>
-          <div class="chapter-hero-endcap">
-            ${expanded && actionsMarkup
-              ? `<div class="chapter-hero-actions">${actionsMarkup}</div>`
-              : ""
-            }
-            <span class="chapter-chevron" aria-hidden="true">${ICONS.chevron}</span>
+        </div>
+        <div class="chapter-collapse ${expanded ? "expanded" : "collapsed"}">
+          <div class="chapter-collapse-inner">
+            ${bodyMarkup}
           </div>
         </div>
       </section>
@@ -2558,7 +2680,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       <button class="button-primary" type="button" data-add-notify-profile="1">+ Add Profile</button>
     `;
     return `
-      <div class="chapter-group chapter-workspace notify-workspace ${notifyExpanded ? "expanded" : "collapsed"}">
+      <div
+        class="chapter-group chapter-workspace notify-workspace ${notifyExpanded ? "expanded" : "collapsed"}"
+        data-chapter-key="notify_profiles"
+      >
         ${this._renderChapterHero({
           chapterKey: "notify_profiles",
           expanded: notifyExpanded,
@@ -2567,11 +2692,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           description: section.description || "",
           docsUrl: section.docs_url,
           actionsMarkup,
-        })}
-        <div class="chapter-collapse ${notifyExpanded ? "expanded" : "collapsed"}">
-          <div class="chapter-collapse-inner">
-            <div class="chapter-content">
-              <section class="section">
+          bodyMarkup: `
+            <div class="chapter-content chapter-body">
                 ${profiles.length === 0
                   ? `<p class="hint">No Chime TTS notify profiles are configured yet.</p>`
                   : `
@@ -2580,20 +2702,23 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                     </div>
                   `
                 }
-              </section>
             </div>
-          </div>
-        </div>
+          `,
+        })}
       </div>
     `;
   }
 
   _renderLogsSection(section) {
     const logsExpanded = this._isChapterExpanded("logs");
-    const events = this._data?.log_events || [];
+    const events = [...(this._data?.log_events || [])].reverse();
     const anyExpanded = events.some((event) => this._isLogEventExpanded(event.id));
+    const logsPending = !this._logsLoaded && (this._logsOpeningRefresh || this._logsRefreshInFlight);
     return `
-      <div class="chapter-group chapter-workspace logs-workspace ${logsExpanded ? "expanded" : "collapsed"}">
+      <div
+        class="chapter-group chapter-workspace logs-workspace ${logsExpanded ? "expanded" : "collapsed"}"
+        data-chapter-key="logs"
+      >
         ${this._renderChapterHero({
           chapterKey: "logs",
           expanded: logsExpanded,
@@ -2601,21 +2726,18 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           title: section.title,
           description: section.description || "",
           docsUrl: section.docs_url,
-        })}
-        <div class="chapter-collapse ${logsExpanded ? "expanded" : "collapsed"}">
-          <div class="chapter-collapse-inner">
-            <div class="chapter-content">
-              <section class="section">
-                ${this._logsOpeningRefresh
+          bodyMarkup: `
+            <div class="chapter-content chapter-body">
+                ${logsPending
                   ? `
                     <div class="logs-loading" aria-live="polite">
                       <span class="button-spinner" aria-hidden="true"></span>
-                      <span>Refreshing logs...</span>
+                      <span>Loading Chime TTS log events...</span>
                     </div>
                   `
                   : ""
                 }
-                ${events.length === 0
+                ${events.length === 0 && !logsPending
                   ? `<p class="hint">No Chime TTS logs have been captured in this Home Assistant session yet.</p>`
                   : `
                     ${events.length > 1
@@ -2635,10 +2757,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                     </div>
                   `
                 }
-              </section>
             </div>
-          </div>
-        </div>
+          `,
+        })}
       </div>
     `;
   }
@@ -2648,12 +2769,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const rowClass = event.has_error
       ? "error"
       : this._escapeAttribute(event.row_color || "action");
+    const eventIcon = this._getLogEventIcon(event);
     const rawLogs = (event.raw_logs || [])
       .map((entry) => `[${entry.timestamp}] ${String(entry.level || "").toUpperCase()} ${entry.logger}: ${entry.message}`)
       .join("\n");
     const logCopyState = this._getLogCopyState(event.id);
     const buttons = [];
-    if (event.type === "action_call" && rawLogs) {
+    if ((event.type === "action_call" || event.type === "integration_initiation") && rawLogs) {
       buttons.push(`
         <button class="button-secondary" type="button" data-copy-log-raw="${this._escapeAttribute(event.id)}">${logCopyState.logs ? `<span class="copied-label">${ICONS.check}<span>Copied</span></span>` : "Copy Logs"}</button>
       `);
@@ -2680,6 +2802,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     return `
       <article
         class="log-event-row ${rowClass}"
+        data-log-event-id="${this._escapeAttribute(event.id)}"
         data-toggle-log-event="${this._escapeAttribute(event.id)}"
         role="button"
         tabindex="0"
@@ -2687,10 +2810,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       >
         <div class="log-event-row-header">
           <div class="log-event-row-main">
-            ${event.has_error
-              ? `<span class="log-event-icon" aria-hidden="true">${ICONS.alert}</span>`
-              : ""
-            }
+            ${eventIcon ? `<span class="log-event-icon" aria-hidden="true">${eventIcon}</span>` : ""}
             <div class="log-event-copy">
               <p class="log-event-title">${this._escapeHtml(event.title || "Log event")}</p>
               <p class="log-event-meta">${this._escapeHtml(this._formatLogEventMeta(event))}</p>
@@ -2724,9 +2844,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const standardFields = detailFields.filter((field) => field.type !== "boolean");
 
     return `
-      <article class="notify-profile-card ${expanded ? "expanded" : "collapsed"}">
+      <article
+        class="notify-profile-card ${expanded ? "expanded" : "collapsed"}"
+        data-notify-profile-card="${this._escapeAttribute(String(index))}"
+      >
         <div class="notify-profile-header">
-          <div class="notify-profile-copy">
+          <div class="notify-profile-copy ${testState.open ? "testing" : ""}">
             ${testState.open
               ? ""
               : expanded
@@ -3252,69 +3375,90 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const currentBadges = this._renderBadges(this._picker.current_path_badges || []);
     const preview = this._renderPickerPreview();
     const statusClass = this._picker.current_path_allowed ? "valid" : "invalid";
+    const parentItem = this._picker.parent_path
+      ? `
+        <button class="picker-item" type="button" data-picker-open="${this._escapeAttribute(this._picker.parent_path)}">
+          <div class="picker-item-meta">
+            <p class="picker-item-name">..</p>
+            <p class="picker-item-path">${this._escapeHtml(this._picker.parent_path)}</p>
+          </div>
+          <span class="picker-item-chevron" aria-hidden="true">›</span>
+        </button>
+      `
+      : "";
+    const currentPath = this._picker.current_path || "";
 
     return `
-      <div class="picker-overlay">
-        <div class="picker-dialog" role="dialog" aria-modal="true" aria-label="${this._escapeAttribute(this._picker.title || "Folder picker")}">
-          <div class="picker-header">
-            <div class="picker-title-row">
-              <h3 class="picker-title">${this._escapeHtml(this._picker.title || "Select folder")}</h3>
-              <button class="picker-close" type="button" data-picker-close="1">Close</button>
-            </div>
-            <p class="picker-subtitle">Browse folders that are visible inside the Home Assistant container, then choose one to fill this field.</p>
-            <div class="picker-common-folders">
-              <p class="picker-roots-label">Common folders:</p>
-              ${roots.length > 0 ? `
-                <div class="picker-roots">
-                  ${roots.map((root) => `
-                    <a href="#" data-picker-root="${this._escapeAttribute(root.path)}">
-                      ${this._escapeHtml(root.name)}
-                    </a>
-                  `).join("")}
-                </div>
-              ` : ""
-              }
-            </div>
+      <ha-dialog
+        open
+        class="picker-native-dialog"
+        data-picker-dialog="1"
+        header-title="${this._escapeAttribute(this._picker.title || "Select folder")}"
+      >
+        <div class="picker-dialog-body">
+          <div class="picker-dialog-lead">
+            <p>Browse folders and select one to fill this setting.</p>
+            <p>Only locations visible inside the Home Assistant container are shown here.</p>
           </div>
-          <div class="picker-content">
-            ${error}
-            <div class="picker-pathbar">
+          ${error}
+          ${roots.length > 0 ? `
+            <div class="picker-common-folders">
+              <p class="picker-section-title">Common folders</p>
+              <div class="picker-roots">
+                ${roots.map((root) => `
+                  <a class="picker-root" href="#" data-picker-root="${this._escapeAttribute(root.path)}">
+                    ${this._escapeHtml(root.name)}
+                  </a>
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
+          <div class="picker-current-card">
+            <div>
+              <p class="picker-location-label">Current location</p>
               <div class="picker-breadcrumbs">
                 ${breadcrumbs}
               </div>
-              <button
-                class="button-primary picker-choose"
-                type="button"
-                data-picker-choose="${this._escapeAttribute(this._picker.current_path || "")}"
-                ${this._picker.current_path_allowed ? "" : "disabled"}
-              >Select</button>
             </div>
             <div class="picker-status">
               <span class="picker-status-text ${statusClass}">${this._escapeHtml(this._picker.current_path_validation_message || "")}</span>
               ${currentBadges ? `<div class="picker-badges">${currentBadges}</div>` : ""}
             </div>
+          </div>
+          <div class="picker-section">
+            <p class="picker-section-title">Folders</p>
             ${loading}
-            ${directories.length > 0 ? `
-              <div class="picker-list">
+            ${(parentItem || directories.length > 0) ? `
+              <div class="picker-list-nav">
+                ${parentItem}
                 ${directories.map((directory) => `
-                  <button class="picker-item" type="button" data-picker-open="${this._escapeAttribute(directory.path)}">
+                  <a class="picker-item" href="#" data-picker-open="${this._escapeAttribute(directory.path)}">
                     <div class="picker-item-meta">
                       <p class="picker-item-name">${this._escapeHtml(directory.name)}</p>
-                      <p class="picker-item-path">${this._escapeHtml(directory.path)}</p>
                       ${(directory.badges || []).length > 0
                         ? `<div class="picker-item-badges">${this._renderBadges(directory.badges)}</div>`
                         : ""
                       }
                     </div>
-                  </button>
+                    <span class="picker-item-chevron" aria-hidden="true">›</span>
+                  </a>
                 `).join("")}
               </div>
             ` : ""}
             ${empty}
             ${preview}
           </div>
+          <div class="footer picker-dialog-footer">
+            <button class="button-secondary" type="button" data-picker-close="1">Cancel</button>
+            <button
+              class="button-primary"
+              type="button"
+              data-picker-choose="${this._escapeAttribute(currentPath)}"
+              ${this._picker.current_path_allowed ? "" : "disabled"}
+            >Select folder</button>
+          </div>
         </div>
-      </div>
+      </ha-dialog>
     `;
   }
 
@@ -3323,16 +3467,19 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return "";
     }
 
+    const restartCopy = this._data?.restart_note
+      || "Your changes have been saved, but they will not take effect until Home Assistant restarts.";
+
     return `
       <div class="confirm-overlay">
         <div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="Confirm Home Assistant restart">
           <h3 class="confirm-title">Restart Home Assistant?</h3>
           <p class="confirm-copy">
-            The custom chimes folder change has been saved, but it will not take effect until Home Assistant restarts.
+            ${this._escapeHtml(restartCopy)}
           </p>
           <div class="confirm-actions">
             <button class="button-secondary" type="button" data-restart-cancel="1" ${this._restarting ? "disabled" : ""}>Cancel</button>
-            <button class="button-primary" type="button" data-restart-confirm="1" ${this._restarting ? "disabled" : ""}>
+            <button class="button-restart" type="button" data-restart-confirm="1" ${this._restarting ? "disabled" : ""}>
               ${this._restarting
                 ? '<span class="button-spinner" aria-hidden="true"></span>'
                 : "Restart Home Assistant"
@@ -3642,36 +3789,23 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (!sectionKey) {
       return;
     }
-    const section = (this._data?.sections || []).find((item) => item.key === sectionKey);
-    this._advancedSections = {
-      ...(this._advancedSections || {}),
-      [sectionKey]: !this._isAdvancedOpen(section || { key: sectionKey, fields: [] }),
-    };
-    this._render();
+    this._animateHeightTransition(
+      `[data-section-key="${this._escapeSelectorValue(sectionKey)}"]`,
+      () => {
+        const section = (this._data?.sections || []).find((item) => item.key === sectionKey);
+        this._advancedSections = {
+          ...(this._advancedSections || {}),
+          [sectionKey]: !this._isAdvancedOpen(section || { key: sectionKey, fields: [] }),
+        };
+        this._render();
+      },
+    );
   }
 
   _isAdvancedOpen(section) {
     const explicit = this._advancedSections?.[section.key];
     if (explicit !== undefined) {
       return explicit;
-    }
-    return this._shouldAutoExpandSection(section);
-  }
-
-  _shouldAutoExpandSection(section) {
-    const advancedFields = (section.fields || []).filter((field) => field.advanced);
-    if (advancedFields.some((field) => this._isFieldChanged(field.key))) {
-      return true;
-    }
-    if (section.key === "voice") {
-      const platformValue = this._draftValues?.tts_platform_key;
-      if (platformValue && String(platformValue).trim() !== "") {
-        return true;
-      }
-      return advancedFields.some((field) => {
-        const value = this._draftValues?.[field.key];
-        return value !== null && value !== undefined && String(value).trim() !== "";
-      });
     }
     return false;
   }
@@ -3684,17 +3818,22 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (!chapterKey) {
       return;
     }
-    const wasExpanded = this._isChapterExpanded(chapterKey);
-    this._expandedChapters = {
-      ...(this._expandedChapters || {}),
-      [chapterKey]: !wasExpanded,
-    };
-    if (chapterKey === "logs" && !wasExpanded) {
-      this._logsOpeningRefresh = true;
-      this._refreshLogs({ showOpeningSpinner: true });
-    }
-    this._render();
-    this._syncLogsRefresh();
+    this._animateHeightTransition(
+      `[data-chapter-key="${this._escapeSelectorValue(chapterKey)}"] .chapter-hero`,
+      () => {
+        const wasExpanded = this._isChapterExpanded(chapterKey);
+        this._expandedChapters = {
+          ...(this._expandedChapters || {}),
+          [chapterKey]: !wasExpanded,
+        };
+        if (chapterKey === "logs" && !wasExpanded) {
+          this._logsOpeningRefresh = true;
+          this._refreshLogs({ showOpeningSpinner: true });
+        }
+        this._render();
+        this._syncLogsRefresh();
+      },
+    );
   }
 
   _isLogEventExpanded(eventId) {
@@ -3705,11 +3844,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (!eventId) {
       return;
     }
-    this._expandedLogEvents = {
-      ...(this._expandedLogEvents || {}),
-      [eventId]: !this._isLogEventExpanded(eventId),
-    };
-    this._render();
+    this._animateHeightTransition(
+      `[data-log-event-id="${this._escapeSelectorValue(eventId)}"]`,
+      () => {
+        this._expandedLogEvents = {
+          ...(this._expandedLogEvents || {}),
+          [eventId]: !this._isLogEventExpanded(eventId),
+        };
+        this._render();
+      },
+    );
   }
 
   _toggleAllLogEvents(mode) {
@@ -3735,7 +3879,58 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       && !this._loading
       && !this._saving
       && this._isChapterExpanded("logs")
+      && !this._picker
+      && !this._hasActiveDropdownFocus()
+      && !this._hasActiveTextEntryFocus()
+      && !this._hasActiveLogTextSelection()
       && document.visibilityState === "visible"
+    );
+  }
+
+  _hasActiveDropdownFocus() {
+    const activeElement = this.shadowRoot?.activeElement;
+    if (!activeElement) {
+      return false;
+    }
+    return activeElement.tagName === "SELECT";
+  }
+
+  _hasActiveTextEntryFocus() {
+    const activeElement = this.shadowRoot?.activeElement;
+    if (!(activeElement instanceof HTMLElement)) {
+      return false;
+    }
+
+    if (activeElement.tagName === "TEXTAREA") {
+      return true;
+    }
+
+    if (activeElement.tagName !== "INPUT") {
+      return activeElement.isContentEditable;
+    }
+
+    const inputType = String(activeElement.getAttribute("type") || "text").toLowerCase();
+    return !["checkbox", "radio", "range", "button", "submit", "reset"].includes(inputType);
+  }
+
+  _hasActiveLogTextSelection() {
+    const selection = window.getSelection ? window.getSelection() : null;
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+      return false;
+    }
+
+    const anchorNode = selection.anchorNode;
+    const focusNode = selection.focusNode;
+    const root = this.shadowRoot;
+    if (!root || !anchorNode || !focusNode) {
+      return false;
+    }
+
+    const anchorElement = anchorNode.nodeType === Node.ELEMENT_NODE ? anchorNode : anchorNode.parentElement;
+    const focusElement = focusNode.nodeType === Node.ELEMENT_NODE ? focusNode : focusNode.parentElement;
+    return Boolean(
+      anchorElement?.closest(".log-event-body")
+      || focusElement?.closest(".log-event-body")
     );
   }
 
@@ -3750,8 +3945,23 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }, 2000);
   }
 
-  async _refreshLogs({ showOpeningSpinner = false } = {}) {
-    if (this._logsRefreshInFlight || !this._shouldRefreshLogs()) {
+  _primeLogsLoad() {
+    if (this._loading || this._logsLoaded || this._logsRefreshInFlight) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      if (this._loading || this._logsLoaded || this._logsRefreshInFlight) {
+        return;
+      }
+      this._logsOpeningRefresh = true;
+      this._render();
+      this._refreshLogs({ showOpeningSpinner: true, force: true });
+    }, 0);
+  }
+
+  async _refreshLogs({ showOpeningSpinner = false, force = false } = {}) {
+    if (this._logsRefreshInFlight || (!force && !this._shouldRefreshLogs())) {
       if (showOpeningSpinner) {
         this._logsOpeningRefresh = false;
       }
@@ -3766,6 +3976,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         log_events: result?.log_events || [],
       };
       this._logsOpeningRefresh = false;
+      this._logsLoaded = true;
       this._render();
     } catch (_error) {
       this._logsOpeningRefresh = false;
@@ -3793,6 +4004,28 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       parts.push(`${event.error_count} error${event.error_count === 1 ? "" : "s"}`);
     }
     return parts.join(" • ");
+  }
+
+  _getLogEventIcon(event) {
+    if (event.has_error) {
+      return ICONS.alert;
+    }
+    if (event.type === "integration_initiation") {
+      return ICONS.check;
+    }
+    if (event.title === "Action call: chime_tts.replay") {
+      return ICONS.repeat;
+    }
+    if (event.title === "Action call: chime_tts.clear_cache") {
+      return ICONS.trash;
+    }
+    if (
+      event.title === "Action call: chime_tts.say"
+      || event.title === "Action call: chime_tts.say_url"
+    ) {
+      return ICONS.check;
+    }
+    return ICONS.check;
   }
 
   _formatTimestamp(value) {
@@ -4035,7 +4268,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._pathValidationState = this._buildInitialPathValidationState();
       this._invalidPathOverrides = {};
       this._restartPending = Boolean(this._data?.restart_required);
-      this._restartConfirmOpen = false;
+      this._restartConfirmOpen = this._restartPending;
       if (this._restartPending) {
         this._clearSaveResult();
       } else if (this._data?.message_type === "success" && this._data?.message) {
@@ -4270,16 +4503,64 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (Number.isNaN(index)) {
       return;
     }
-    this._expandedNotifyProfiles = {
-      ...(this._expandedNotifyProfiles || {}),
-      [index]: !this._isNotifyProfileExpanded(index),
-    };
-    this._render();
+    this._animateHeightTransition(
+      `[data-notify-profile-card="${this._escapeSelectorValue(String(index))}"]`,
+      () => {
+        this._expandedNotifyProfiles = {
+          ...(this._expandedNotifyProfiles || {}),
+          [index]: !this._isNotifyProfileExpanded(index),
+        };
+        this._render();
+      },
+    );
   }
 
   _isNotifyProfileExpanded(index) {
     const explicit = this._expandedNotifyProfiles?.[index];
     return explicit === true;
+  }
+
+  _escapeSelectorValue(value) {
+    const text = String(value ?? "");
+    if (globalThis.CSS?.escape) {
+      return globalThis.CSS.escape(text);
+    }
+    return text.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  }
+
+  _animateHeightTransition(selector, mutate) {
+    const beforeElement = this.shadowRoot?.querySelector(selector);
+    const startHeight = beforeElement?.getBoundingClientRect().height ?? null;
+    mutate();
+    if (startHeight === null) {
+      return;
+    }
+    const afterElement = this.shadowRoot?.querySelector(selector);
+    if (!afterElement) {
+      return;
+    }
+    const endHeight = afterElement.getBoundingClientRect().height;
+    if (Math.abs(endHeight - startHeight) < 1) {
+      return;
+    }
+
+    afterElement.style.height = `${startHeight}px`;
+    afterElement.style.overflow = "hidden";
+    afterElement.style.transition = "height 250ms ease";
+    afterElement.getBoundingClientRect();
+
+    requestAnimationFrame(() => {
+      afterElement.style.height = `${endHeight}px`;
+    });
+
+    const cleanup = () => {
+      afterElement.style.height = "";
+      afterElement.style.overflow = "";
+      afterElement.style.transition = "";
+    };
+
+    afterElement.addEventListener("transitionend", cleanup, { once: true });
+    window.setTimeout(cleanup, 300);
   }
 
   _parseNotifyEntityIds(value) {
@@ -4384,17 +4665,20 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._pickerError = null;
     this._pickerLoading = true;
     this._render();
-    await this._loadPicker(this._draftValues?.[fieldKey] || "", fieldKey);
+    await this._loadPicker(this._draftValues?.[fieldKey] || "", fieldKey, { skipInitialRender: true });
   }
 
   _closePicker() {
     this._picker = null;
     this._pickerLoading = false;
     this._pickerError = null;
+    if (this._flushDeferredLogEvents()) {
+      return;
+    }
     this._render();
   }
 
-  async _loadPicker(path, fieldKey = null) {
+  async _loadPicker(path, fieldKey = null, { skipInitialRender = false } = {}) {
     const targetFieldKey = fieldKey || this._picker?.field_key;
     if (!targetFieldKey) {
       return;
@@ -4402,7 +4686,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
     this._pickerLoading = true;
     this._pickerError = null;
-    this._render();
+    if (!skipInitialRender) {
+      this._render();
+    }
 
     try {
       const pickerData = await this._hass.callWS({

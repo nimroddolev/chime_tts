@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 import os
 from typing import Any
@@ -9,6 +10,7 @@ from typing import Any
 import voluptuous as vol
 import yaml
 from homeassistant import config_entries
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import selector
 
 from .const import (
@@ -55,8 +57,61 @@ from .const import (
     YANDEX_TTS,
 )
 from .helpers.helpers import ChimeTTSHelper
+from .helpers.panel_logs import async_get_panel_log_events, get_panel_log_events
 
 helpers = ChimeTTSHelper()
+
+
+@dataclass
+class _TaggedYamlValue:
+    """Preserve custom YAML tags such as Home Assistant !include directives."""
+
+    tag: str
+    value: Any
+
+
+class _ChimeTTSYamlLoader(yaml.SafeLoader):
+    """YAML loader that preserves unknown tags instead of failing on them."""
+
+
+class _ChimeTTSYamlDumper(yaml.SafeDumper):
+    """YAML dumper that writes preserved tags back out."""
+
+
+def _construct_tagged_yaml_value(
+    loader: _ChimeTTSYamlLoader,
+    tag_suffix: str,
+    node: yaml.nodes.Node,
+) -> _TaggedYamlValue:
+    """Construct a YAML node while preserving its original tag."""
+    del tag_suffix
+
+    if isinstance(node, yaml.ScalarNode):
+        value = loader.construct_scalar(node)
+    elif isinstance(node, yaml.SequenceNode):
+        value = loader.construct_sequence(node, deep=True)
+    elif isinstance(node, yaml.MappingNode):
+        value = loader.construct_mapping(node, deep=True)
+    else:
+        raise TypeError(f"Unsupported YAML node type: {type(node)!r}")
+
+    return _TaggedYamlValue(node.tag, value)
+
+
+def _represent_tagged_yaml_value(
+    dumper: _ChimeTTSYamlDumper,
+    data: _TaggedYamlValue,
+) -> yaml.nodes.Node:
+    """Represent a preserved tagged YAML value with its original tag."""
+    if isinstance(data.value, dict):
+        return dumper.represent_mapping(data.tag, data.value)
+    if isinstance(data.value, list):
+        return dumper.represent_sequence(data.tag, data.value)
+    return dumper.represent_scalar(data.tag, "" if data.value is None else str(data.value))
+
+
+_ChimeTTSYamlLoader.add_multi_constructor("", _construct_tagged_yaml_value)
+_ChimeTTSYamlDumper.add_representer(_TaggedYamlValue, _represent_tagged_yaml_value)
 
 TLD_OPTIONS = [
     {"value": "", "label": "Provider default"},
@@ -735,12 +790,44 @@ def _load_configuration_yaml(hass) -> dict[str, Any]:
         return {}
 
     with open(config_path, encoding="utf-8") as config_file:
-        loaded = yaml.safe_load(config_file) or {}
+        loaded = yaml.load(config_file, Loader=_ChimeTTSYamlLoader) or {}
 
     if not isinstance(loaded, dict):
         raise ValueError("configuration.yaml must contain a mapping at the root level.")
 
     return loaded
+
+
+def _load_configuration_yaml_for_panel(hass) -> dict[str, Any]:
+    """Load configuration.yaml using Home Assistant's YAML loader when available."""
+    config_path = _configuration_yaml_path(hass)
+    if not os.path.exists(config_path):
+        return {}
+
+    try:
+        from pathlib import Path
+
+        from homeassistant.config import load_yaml_config_file
+        from homeassistant.util.yaml.loader import Secrets
+
+        return load_yaml_config_file(
+            config_path,
+            Secrets(Path(hass.config.config_dir)),
+        )
+    except ImportError:
+        return _load_configuration_yaml(hass)
+
+
+def _format_panel_configuration_error(error: Exception) -> str:
+    """Return a panel-friendly configuration.yaml load error."""
+    message = str(error).strip() or "Unable to read configuration.yaml."
+    if "could not determine a constructor for the tag" in message:
+        return (
+            "Unable to read notify profiles from configuration.yaml. "
+            "The file uses Home Assistant YAML directives that require "
+            "Home Assistant-aware parsing."
+        )
+    return message
 
 
 def _load_services_yaml() -> dict[str, Any]:
@@ -780,6 +867,11 @@ def get_notify_chime_options() -> list[dict[str, str]]:
         and _normalize_string(option.get("value")) != ""
     ]
     return [{"value": "", "label": ""}] + normalized
+
+
+async def async_get_notify_chime_options(hass) -> list[dict[str, str]]:
+    """Load notify chime options without blocking the event loop."""
+    return await hass.async_add_executor_job(get_notify_chime_options)
 
 
 def _normalize_notify_profile_number(value: Any) -> int | float | str:
@@ -864,9 +956,9 @@ def _normalize_notify_profile_for_display(profile: dict[str, Any]) -> dict[str, 
 def load_notify_profiles(hass) -> tuple[list[dict[str, Any]], str | None]:
     """Load Chime TTS notify profiles from configuration.yaml."""
     try:
-        loaded = _load_configuration_yaml(hass)
-    except (OSError, ValueError, yaml.YAMLError) as error:
-        return [], str(error)
+        loaded = _load_configuration_yaml_for_panel(hass)
+    except (HomeAssistantError, OSError, ValueError, yaml.YAMLError) as error:
+        return [], _format_panel_configuration_error(error)
 
     notify_entries = loaded.get("notify") or []
     if not isinstance(notify_entries, list):
@@ -998,13 +1090,180 @@ def save_notify_profiles(hass, profiles: list[dict[str, Any]]) -> None:
 
     config_path = _configuration_yaml_path(hass)
     with open(config_path, "w", encoding="utf-8") as config_file:
-        yaml.safe_dump(
+        yaml.dump(
             loaded,
             config_file,
+            Dumper=_ChimeTTSYamlDumper,
             allow_unicode=False,
             default_flow_style=False,
             sort_keys=False,
         )
+
+
+async def async_load_notify_profiles(
+    hass,
+) -> tuple[list[dict[str, Any]], str | None]:
+    """Load notify profiles without blocking the event loop."""
+    return await hass.async_add_executor_job(load_notify_profiles, hass)
+
+
+async def async_save_notify_profiles(
+    hass,
+    profiles: list[dict[str, Any]],
+) -> None:
+    """Save notify profiles without blocking the event loop."""
+    await hass.async_add_executor_job(save_notify_profiles, hass, profiles)
+
+
+async def async_build_panel_payload(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    **kwargs: Any,
+) -> dict[str, Any]:
+    """Build the panel payload without blocking the event loop."""
+    values = kwargs.get("values") or get_settings_data(hass, config_entry)
+    include_log_events = kwargs.get("include_log_events", True)
+    notify_profiles = kwargs.get("notify_profiles")
+    notify_profile_errors = kwargs.get("notify_profile_errors")
+    errors = kwargs.get("errors")
+    message = kwargs.get("message")
+    message_type = kwargs.get("message_type")
+    restart_required = kwargs.get("restart_required", False)
+
+    async_jobs = [
+        async_load_notify_profiles(hass),
+        async_get_notify_chime_options(hass),
+    ]
+    if include_log_events:
+        async_jobs.append(async_get_panel_log_events(hass))
+
+    async_results = await asyncio.gather(*async_jobs)
+    loaded_notify_profiles, notify_profiles_load_error = async_results[0]
+    chime_options = async_results[1]
+    log_events = async_results[2] if include_log_events else []
+
+    if notify_profiles is None:
+        notify_profiles = loaded_notify_profiles
+
+    tts_platforms = get_tts_platforms(hass)
+    field_options = {
+        TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]
+        + [{"value": option, "label": option} for option in tts_platforms],
+        FALLBACK_TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]
+        + [{"value": option, "label": option} for option in tts_platforms],
+        DEFAULT_TLD_KEY: TLD_OPTIONS,
+    }
+    default_provider = _normalize_string(values.get(TTS_PLATFORM_KEY))
+    fallback_provider = _normalize_string(values.get(FALLBACK_TTS_PLATFORM_KEY))
+
+    return {
+        "version": VERSION,
+        "icon_url": f"/api/{DOMAIN}/icon.svg?v={VERSION.lstrip('v') or VERSION}",
+        "documentation_url": CONFIGURATION_DOCS_BASE_URL,
+        "logs_url": f"/config/logs?filter={DOMAIN}",
+        "fallback_note": "The standard Configure dialog still works and remains available as a fallback.",
+        "restart_note": "Changing the custom chimes folder or its contents requires a Home Assistant restart.",
+        "message": message,
+        "message_type": message_type,
+        "restart_required": restart_required,
+        "restart_required_field_keys": sorted(RESTART_REQUIRED_FIELD_KEYS),
+        "errors": errors or {},
+        "values": values,
+        "notify_profiles": notify_profiles,
+        "notify_profile_errors": notify_profile_errors or [],
+        "notify_profiles_load_error": notify_profiles_load_error,
+        "log_events": log_events,
+        "sections": [
+            {
+                "key": section["key"],
+                "title": section["title"],
+                "description": section["description"],
+                "fields": [
+                    {
+                        "key": field.key,
+                        "label": field.label,
+                        "description": field.description,
+                        "docs_url": FIELD_DOCUMENTATION_URLS.get(field.key),
+                        "icon_url": f"/api/{DOMAIN}/option_icons/{field.key}.svg?v={VERSION.lstrip('v') or VERSION}",
+                        "type": field.field_type,
+                        "required": field.required,
+                        "allow_custom_value": field.allow_custom_value,
+                        "min": field.min_value,
+                        "step": field.step,
+                        "wide": field.wide,
+                        "advanced": field.advanced,
+                        "empty_default_hint": FIELD_EMPTY_DEFAULT_HINTS.get(field.key),
+                        "placeholder": FIELD_PLACEHOLDERS.get(field.key),
+                        "provider_hint": get_provider_hint(
+                            field.key,
+                            fallback_provider
+                            if field.key == FALLBACK_TTS_PLATFORM_KEY
+                            else default_provider,
+                        ),
+                        "provider_hints": PROVIDER_HINTS_BY_FIELD.get(field.key, {}),
+                        "can_browse": field.key in PATH_BROWSABLE_FIELD_KEYS,
+                        "path_validation": (
+                            validate_path_field(
+                                hass,
+                                config_entry,
+                                field.key,
+                                _normalize_string(values.get(field.key)),
+                                values,
+                            )
+                            if field.key in PATH_BROWSABLE_FIELD_KEYS
+                            else None
+                        ),
+                        "options": field_options.get(field.key, []),
+                    }
+                    for field in (
+                        SETTINGS_FIELD_MAP[field_key] for field_key in section["fields"]
+                    )
+                ],
+            }
+            for section in SETTINGS_SECTIONS
+        ]
+        + [
+            {
+                "key": "notify_profiles",
+                "kind": "notify_profiles",
+                "title": "Notification Profiles",
+                "description": "Create and manage notify services for Chime TTS to easily send Chime TTS notifications in automations and scripts. Saving changes requires a Home Assistant restart.",
+                "docs_url": NOTIFY_DOCS_URL,
+                "profile_fields": [
+                    {
+                        **field,
+                        "docs_url": NOTIFY_FIELD_DOCUMENTATION_URLS.get(
+                            field["key"], NOTIFY_DOCS_URL
+                        ),
+                        "options": (
+                            [{"value": "", "label": "Not set"}]
+                            + [{"value": option, "label": option} for option in tts_platforms]
+                            if field["key"] == "tts_platform"
+                            else (
+                                TLD_OPTIONS
+                                if field["key"] == "tld"
+                                else (
+                                    chime_options
+                                    if field["key"] in {"chime_path", "end_chime_path"}
+                                    else []
+                                )
+                            )
+                        ),
+                    }
+                    for field in NOTIFY_PROFILE_SCHEMA_FIELDS
+                ],
+            },
+            {
+                "key": "logs",
+                "kind": "logs",
+                "title": "Logs",
+                "description": "Review Chime TTS events captured during this Home Assistant session, including actions, generated media, and raw log output.",
+                "docs_url": CONFIGURATION_DOCS_BASE_URL,
+            },
+        ],
+        "notify_profile_template": dict(NOTIFY_PROFILE_DEFAULTS),
+        "notify_chime_options": chime_options,
+    }
 
 
 def build_options_schema(
@@ -1684,6 +1943,7 @@ def build_panel_payload(
         "notify_profiles": notify_profiles,
         "notify_profile_errors": notify_profile_errors or [],
         "notify_profiles_load_error": notify_profiles_load_error,
+        "log_events": get_panel_log_events(hass),
         "sections": [
             {
                 "key": section["key"],
@@ -1763,6 +2023,15 @@ def build_panel_payload(
                     }
                     for field in NOTIFY_PROFILE_SCHEMA_FIELDS
                 ],
-            }
+            },
+            {
+                "key": "logs",
+                "kind": "logs",
+                "title": "Logs",
+                "description": "Review Chime TTS events captured during this Home Assistant session, including actions, generated media, and raw log output.",
+                "docs_url": CONFIGURATION_DOCS_BASE_URL,
+            },
         ],
+        "notify_profile_template": dict(NOTIFY_PROFILE_DEFAULTS),
+        "notify_chime_options": chime_options,
     }

@@ -7,21 +7,32 @@ from typing import Any
 
 import voluptuous as vol
 from aiohttp import web
-from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.frontend import (
+    add_extra_js_url,
+    async_register_built_in_panel,
+    async_remove_panel,
+)
 from homeassistant.components import websocket_api
 from homeassistant.components.http import HomeAssistantView
-from homeassistant.components.panel_custom import async_register_panel
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 import logging
 
 from ..const import DOMAIN, NAME, VERSION
+from ..const import SERVICE_CLEAR_CACHE, SERVICE_REPLAY, SERVICE_SAY, SERVICE_SAY_URL
+from .panel_logs import (
+    async_get_panel_log_events,
+    async_setup_panel_log_store,
+    get_panel_log_event,
+    subscribe_panel_log_events,
+)
 from ..settings import (
+    async_build_panel_payload,
+    async_load_notify_profiles,
+    async_save_notify_profiles,
     PATH_BROWSABLE_FIELD_KEYS,
     build_directory_browser_payload,
-    build_panel_payload,
-    load_notify_profiles,
-    save_notify_profiles,
     validate_path_field,
     validate_notify_profiles,
     validate_settings,
@@ -54,6 +65,11 @@ def _build_asset_resource_url(base_url: str, asset_path: Path) -> str:
     return f"{base_url}?v={asset_version}"
 
 
+def _set_cache_headers(response: web.StreamResponse) -> None:
+    """Cache versioned panel assets aggressively."""
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+
+
 class ChimeTTSPanelView(HomeAssistantView):
     """Serve the Chime TTS panel JavaScript module."""
 
@@ -68,7 +84,7 @@ class ChimeTTSPanelView(HomeAssistantView):
     async def get(self, request) -> web.FileResponse:
         """Return the panel JavaScript module."""
         response = web.FileResponse(self._panel_path / "chime-tts-panel.js")
-        response.headers["Cache-Control"] = "no-store"
+        _set_cache_headers(response)
         return response
 
 
@@ -86,7 +102,7 @@ class ChimeTTSPanelIconView(HomeAssistantView):
     async def get(self, request) -> web.FileResponse:
         """Return the Chime TTS icon."""
         response = web.FileResponse(self._integration_path / "panel" / "chime-icon.svg")
-        response.headers["Cache-Control"] = "no-store"
+        _set_cache_headers(response)
         return response
 
 
@@ -104,7 +120,7 @@ class ChimeTTSPanelIconsetView(HomeAssistantView):
     async def get(self, request) -> web.FileResponse:
         """Return the Chime TTS iconset JavaScript."""
         response = web.FileResponse(self._panel_path / "iconset.js")
-        response.headers["Cache-Control"] = "no-store"
+        _set_cache_headers(response)
         return response
 
 
@@ -133,7 +149,7 @@ class ChimeTTSPanelOptionIconView(HomeAssistantView):
             raise web.HTTPNotFound()
 
         response = web.FileResponse(resolved_icon_path)
-        response.headers["Cache-Control"] = "no-store"
+        _set_cache_headers(response)
         return response
 
 
@@ -160,25 +176,33 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
         )
 
     if not hass.data.get(WS_DATA_KEY):
+        async_setup_panel_log_store(hass)
         websocket_api.async_register_command(hass, websocket_get_settings)
         websocket_api.async_register_command(hass, websocket_browse_path)
         websocket_api.async_register_command(hass, websocket_validate_path)
+        websocket_api.async_register_command(hass, websocket_get_logs)
+        websocket_api.async_register_command(hass, websocket_subscribe_logs)
+        websocket_api.async_register_command(hass, websocket_repeat_log_action)
         websocket_api.async_register_command(hass, websocket_save_settings)
         hass.data[WS_DATA_KEY] = True
         LOGGER.debug("Registered Chime TTS panel websocket commands")
 
-    try:
-        await async_register_panel(
-            hass,
-            frontend_url_path=PANEL_URL_PATH,
-            webcomponent_name=PANEL_COMPONENT_NAME,
-            sidebar_title=NAME,
-            sidebar_icon="chime:chime",
-            module_url=panel_module_resource_url,
-            require_admin=True,
-        )
-    except ValueError as error:
-        LOGGER.debug("Chime TTS sidebar panel already registered: %s", error)
+    async_remove_panel(hass, PANEL_URL_PATH, warn_if_unknown=False)
+    async_register_built_in_panel(
+        hass=hass,
+        component_name="custom",
+        sidebar_title=NAME,
+        sidebar_icon="chime:chime",
+        frontend_url_path=PANEL_URL_PATH,
+        require_admin=True,
+        config_panel_domain=DOMAIN,
+        config={
+            "_panel_custom": {
+                "name": PANEL_COMPONENT_NAME,
+                "module_url": panel_module_resource_url,
+            }
+        },
+    )
     LOGGER.debug("Registered Chime TTS sidebar panel at /%s", PANEL_URL_PATH)
 
     hass.data[ENTRY_DATA_KEY] = config_entry.entry_id
@@ -196,15 +220,22 @@ def _get_config_entry(hass: HomeAssistant) -> ConfigEntry | None:
     return entries[0] if entries else None
 
 
-@callback
 @websocket_api.websocket_command({"type": "chime_tts/get_settings"})
-@websocket_api.require_admin
-def websocket_get_settings(
+@websocket_api.async_response
+async def websocket_get_settings(
     hass: HomeAssistant,
     connection,
     msg: dict[str, Any],
 ) -> None:
     """Return current settings for the Chime TTS panel."""
+    if connection.user is None or not connection.user.is_admin:
+        connection.send_error(
+            msg["id"],
+            "unauthorized",
+            "Administrator access is required to view Chime TTS settings.",
+        )
+        return
+
     config_entry = _get_config_entry(hass)
     if config_entry is None:
         connection.send_error(
@@ -214,7 +245,10 @@ def websocket_get_settings(
         )
         return
 
-    connection.send_result(msg["id"], build_panel_payload(hass, config_entry))
+    connection.send_result(
+        msg["id"],
+        await async_build_panel_payload(hass, config_entry, include_log_events=False),
+    )
 
 
 @callback
@@ -306,6 +340,183 @@ def websocket_validate_path(
     )
 
 
+@websocket_api.websocket_command({"type": "chime_tts/get_logs"})
+@websocket_api.async_response
+async def websocket_get_logs(
+    hass: HomeAssistant,
+    connection,
+    msg: dict[str, Any],
+) -> None:
+    """Return current session log rows for the panel."""
+    if connection.user is None or not connection.user.is_admin:
+        connection.send_error(
+            msg["id"],
+            "unauthorized",
+            "Administrator access is required to view Chime TTS logs.",
+        )
+        return
+
+    async_setup_panel_log_store(hass)
+    connection.send_result(
+        msg["id"],
+        {
+            "log_events": await async_get_panel_log_events(hass),
+        },
+    )
+
+
+@callback
+@websocket_api.websocket_command({"type": "chime_tts/subscribe_logs"})
+@websocket_api.require_admin
+def websocket_subscribe_logs(
+    hass: HomeAssistant,
+    connection,
+    msg: dict[str, Any],
+) -> None:
+    """Subscribe the panel to newly completed log events."""
+    async_setup_panel_log_store(hass)
+
+    def forward_log_event(log_event: dict) -> None:
+        connection.send_message(
+            websocket_api.event_message(
+                msg["id"],
+                {"log_event": log_event},
+            )
+        )
+
+    connection.subscriptions[msg["id"]] = subscribe_panel_log_events(
+        hass,
+        forward_log_event,
+    )
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        "type": "chime_tts/repeat_log_action",
+        vol.Required("event_id"): str,
+    }
+)
+@websocket_api.async_response
+async def websocket_repeat_log_action(
+    hass: HomeAssistant,
+    connection,
+    msg: dict[str, Any],
+) -> None:
+    """Repeat a previously logged Chime TTS action."""
+    if connection.user is None or not connection.user.is_admin:
+        connection.send_error(
+            msg["id"],
+            "unauthorized",
+            "Administrator access is required to repeat Chime TTS actions.",
+        )
+        return
+
+    event = get_panel_log_event(hass, msg["event_id"])
+    if event is None:
+        connection.send_error(
+            msg["id"],
+            "not_found",
+            "That log event no longer exists.",
+        )
+        return
+
+    repeat_service = event.get("_repeat_service")
+    repeat_data = event.get("_repeat_data")
+    if not repeat_service:
+        connection.send_error(
+            msg["id"],
+            "not_repeatable",
+            "This log event cannot be repeated.",
+        )
+        return
+
+    integration_data = hass.data.get(DOMAIN, {})
+    service_func_map = {
+        SERVICE_SAY: integration_data.get("async_say"),
+        SERVICE_SAY_URL: integration_data.get("async_say_url"),
+        SERVICE_REPLAY: integration_data.get("async_replay"),
+        SERVICE_CLEAR_CACHE: integration_data.get("async_clear_cache"),
+    }
+    service_func = service_func_map.get(repeat_service)
+    if service_func is None:
+        connection.send_error(
+            msg["id"],
+            "unavailable",
+            "The requested Chime TTS service is not available right now.",
+        )
+        return
+
+    service_call = type("PanelLogServiceCall", (), {"data": repeat_data or {}})()
+    config_entry = _get_config_entry(hass)
+    try:
+        await service_func(service_call)
+    except HomeAssistantError as error:
+        if config_entry is None:
+            connection.send_result(
+                msg["id"],
+                {
+                    "message": str(error),
+                    "message_type": "error",
+                    "log_events": await async_get_panel_log_events(hass),
+                },
+            )
+            return
+        connection.send_result(
+            msg["id"],
+            await async_build_panel_payload(
+                hass,
+                config_entry,
+                message=str(error),
+                message_type="error",
+            ),
+        )
+        return
+    except Exception as error:
+        LOGGER.exception("Failed to repeat log action %s", msg["event_id"])
+        if config_entry is None:
+            connection.send_result(
+                msg["id"],
+                {
+                    "message": f"Unable to repeat action: {error}",
+                    "message_type": "error",
+                    "log_events": await async_get_panel_log_events(hass),
+                },
+            )
+            return
+        connection.send_result(
+            msg["id"],
+            await async_build_panel_payload(
+                hass,
+                config_entry,
+                message=f"Unable to repeat action: {error}",
+                message_type="error",
+            ),
+        )
+        return
+
+    if config_entry is None:
+        connection.send_result(
+            msg["id"],
+            {
+                "message": "Action repeated.",
+                "message_type": "success",
+                "log_events": await async_get_panel_log_events(hass),
+            },
+        )
+        return
+
+    connection.send_result(
+        msg["id"],
+        await async_build_panel_payload(
+            hass,
+            config_entry,
+            message="Action repeated.",
+            message_type="success",
+        ),
+    )
+
+
 @websocket_api.websocket_command(
     {
         "type": "chime_tts/save_settings",
@@ -347,14 +558,15 @@ async def websocket_save_settings(
     )
     notify_validation = validate_notify_profiles(msg.get("notify_profiles"))
     restart_required = validation.restart_required
-    if notify_validation.data != load_notify_profiles(hass)[0]:
+    loaded_notify_profiles, _ = await async_load_notify_profiles(hass)
+    if notify_validation.data != loaded_notify_profiles:
         restart_required = True
 
     if validation.errors:
         LOGGER.debug("Chime TTS panel validation errors: %s", validation.errors)
         connection.send_result(
             msg["id"],
-            build_panel_payload(
+            await async_build_panel_payload(
                 hass,
                 config_entry,
                 values=validation.data,
@@ -371,7 +583,7 @@ async def websocket_save_settings(
     if any(profile_errors for profile_errors in notify_validation.errors):
         connection.send_result(
             msg["id"],
-            build_panel_payload(
+            await async_build_panel_payload(
                 hass,
                 config_entry,
                 values=validation.data,
@@ -389,7 +601,7 @@ async def websocket_save_settings(
         updated = hass.config_entries.async_update_entry(
             config_entry, options=validation.data
         )
-        save_notify_profiles(hass, notify_validation.data)
+        await async_save_notify_profiles(hass, notify_validation.data)
         LOGGER.debug(
             "Chime TTS panel settings saved=%s options=%s",
             updated,
@@ -399,7 +611,7 @@ async def websocket_save_settings(
         LOGGER.exception("Failed to save Chime TTS panel settings")
         connection.send_result(
             msg["id"],
-            build_panel_payload(
+            await async_build_panel_payload(
                 hass,
                 config_entry,
                 values=validation.data,
@@ -414,7 +626,7 @@ async def websocket_save_settings(
 
     connection.send_result(
         msg["id"],
-        build_panel_payload(
+        await async_build_panel_payload(
             hass,
             config_entry,
             values=dict(config_entry.options),
