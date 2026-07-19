@@ -293,6 +293,51 @@ NOTIFY_DOCS_URL = (
 SAY_ACTION_PARAMS_DOCS_URL = (
     "https://nimroddolev.github.io/chime_tts/docs/documentation/actions/say-action/parameters/"
 )
+PROJECT_HOME_URL = "https://nimroddolev.github.io/chime_tts"
+QUICK_START_URL = "https://nimroddolev.github.io/chime_tts/docs/quick-start/installing-chime-tts"
+SUPPORT_DISCUSSION_URL = (
+    "https://community.home-assistant.io/t/chime-tts-play-audio-before-after-tts-audio-lag-free/578430"
+)
+BUY_ME_A_COFFEE_URL = "https://www.buymeacoffee.com/nimroddolev"
+ISSUE_TRACKER_URL = "https://github.com/nimroddolev/chime_tts/issues"
+
+ABOUT_ITEMS: tuple[dict[str, Any], ...] = (
+    {
+        "key": "documentation",
+        "title": "Documentation",
+        "description": "Read the official documentation for setup, configuration, actions, and examples.",
+        "url": PROJECT_HOME_URL,
+        "link_label": "Open Docs",
+    },
+    {
+        "key": "bugs",
+        "title": "Report Bugs",
+        "description": "Found a bug or regression? Open an issue with reproduction steps and logs.",
+        "url": ISSUE_TRACKER_URL,
+        "link_label": "Open Issue Tracker",
+    },
+    {
+        "key": "feature_requests",
+        "title": "Feature Requests",
+        "description": "Share improvement ideas and requested features through the GitHub issue tracker.",
+        "url": ISSUE_TRACKER_URL,
+        "link_label": "Request a Feature",
+    },
+    {
+        "key": "support",
+        "title": "Support & Discussion",
+        "description": "Ask questions, share use cases, and get help from the Home Assistant community.",
+        "url": SUPPORT_DISCUSSION_URL,
+        "link_label": "Open Community Thread",
+    },
+    {
+        "key": "coffee",
+        "title": "Buy Me a Coffee",
+        "description": "If Chime TTS has been useful, you can support ongoing maintenance and development.",
+        "url": BUY_ME_A_COFFEE_URL,
+        "link_label": "Support the Project",
+    },
+)
 
 NOTIFY_PROFILE_SCHEMA_FIELDS: tuple[dict[str, Any], ...] = (
     {"key": "name", "label": "Service name", "type": "text", "required": True},
@@ -1278,6 +1323,15 @@ async def async_build_panel_payload(
                 "description": "Review Chime TTS events captured during this Home Assistant session, including actions, generated media, and raw log output.",
                 "docs_url": CONFIGURATION_DOCS_BASE_URL,
             },
+            {
+                "key": "about",
+                "kind": "about",
+                "title": "About",
+                "description": "Find documentation, support, bug reporting, feature request, and project support links for Chime TTS.",
+                "docs_url": PROJECT_HOME_URL,
+                "version": VERSION,
+                "about_items": [dict(item) for item in ABOUT_ITEMS],
+            },
         ],
         "notify_profile_template": dict(NOTIFY_PROFILE_DEFAULTS),
         "notify_chime_options": chime_options,
@@ -2048,6 +2102,15 @@ def build_panel_payload(
                 "title": "Logs",
                 "description": "Review Chime TTS events captured during this Home Assistant session, including actions, generated media, and raw log output.",
                 "docs_url": CONFIGURATION_DOCS_BASE_URL,
+            },
+            {
+                "key": "about",
+                "kind": "about",
+                "title": "About",
+                "description": "Find documentation, support, bug reporting, feature request, and project support links for Chime TTS.",
+                "docs_url": PROJECT_HOME_URL,
+                "version": VERSION,
+                "about_items": [dict(item) for item in ABOUT_ITEMS],
             },
         ],
         "notify_profile_template": dict(NOTIFY_PROFILE_DEFAULTS),

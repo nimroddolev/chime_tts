@@ -208,14 +208,6 @@ template.innerHTML = `
       flex-wrap: wrap;
     }
 
-    .topbar-version {
-      font-size: 0.875rem;
-      font-weight: 600;
-      line-height: 1;
-      color: var(--secondary-text-color);
-      letter-spacing: 0;
-    }
-
     .section {
       border: 1px solid var(--divider-color);
       border-radius: 24px;
@@ -502,6 +494,17 @@ template.innerHTML = `
       color: color-mix(in srgb, #49b675 82%, white 18%);
     }
 
+    .about-workspace .chapter-hero {
+      border-color: color-mix(in srgb, #f5c542 34%, var(--divider-color));
+      background:
+        radial-gradient(circle at top right, color-mix(in srgb, #f5c542 15%, transparent), transparent 44%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff8de 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fffaf0 8%));
+    }
+
+    .about-workspace .chapter-hero-eyebrow {
+      color: color-mix(in srgb, #d4a514 86%, white 14%);
+    }
+
     .chapter-workspace.collapsed .chapter-hero {
       margin: 0;
     }
@@ -643,6 +646,95 @@ template.innerHTML = `
       display: flex;
       flex-direction: column;
       gap: 12px;
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .about-version-line {
+      margin: 16px 0 0;
+      text-align: center;
+      color: var(--secondary-text-color);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .about-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 100%;
+      padding: 16px 18px;
+      border-radius: 20px;
+      border: 1px solid color-mix(in srgb, #f5c542 34%, var(--divider-color));
+      background: color-mix(in srgb, #f5c542 10%, var(--card-background-color) 90%);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .about-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .about-card-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--primary-text-color);
+    }
+
+    .about-card-value {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, #f5c542 42%, var(--divider-color));
+      background: color-mix(in srgb, #fff5c2 72%, white 28%);
+      color: color-mix(in srgb, #7a5b00 88%, black 12%);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .about-card-description {
+      margin: 0;
+      color: var(--secondary-text-color);
+      line-height: 1.55;
+    }
+
+    .about-card-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      align-self: flex-start;
+      min-height: 40px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, #d4a514 36%, transparent);
+      background: color-mix(in srgb, #f5c542 18%, transparent);
+      color: var(--primary-text-color);
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 150ms ease, border-color 150ms ease;
+    }
+
+    .about-card-link:hover {
+      background: color-mix(in srgb, #f5c542 26%, transparent);
+      border-color: color-mix(in srgb, #d4a514 52%, transparent);
+      text-decoration: none;
+    }
+
+    .about-card-link:focus-visible {
+      outline: 2px solid color-mix(in srgb, #d4a514 55%, transparent);
+      outline-offset: 4px;
     }
 
     .logs-loading {
@@ -2521,7 +2613,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             <div class="topbar-text">
               <p class="topbar-title">
                 <span>Chime TTS</span>
-                <span class="topbar-version">${this._escapeHtml(String(data.version || ""))}</span>
               </p>
             </div>
           </div>
@@ -2559,6 +2650,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
     if (section.kind === "logs") {
       return this._renderLogsSection(section);
+    }
+    if (section.kind === "about") {
+      return this._renderAboutSection(section);
     }
 
     const sectionFields = section.fields || [];
@@ -2607,7 +2701,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _renderSettingsContent(sections, values, errors, data) {
     const notifySection = sections.find((section) => section.kind === "notify_profiles");
     const logsSection = sections.find((section) => section.kind === "logs");
-    const configSections = sections.filter((section) => !["notify_profiles", "logs"].includes(section.kind));
+    const aboutSection = sections.find((section) => section.kind === "about");
+    const configSections = sections.filter((section) => !["notify_profiles", "logs", "about"].includes(section.kind));
     const configExpanded = this._isChapterExpanded("configuration");
 
     return `
@@ -2631,6 +2726,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       </div>
       ${notifySection ? this._renderNotifyProfilesSection(notifySection) : ""}
       ${logsSection ? this._renderLogsSection(logsSection) : ""}
+      ${aboutSection ? this._renderAboutSection(aboutSection) : ""}
     `;
   }
 
@@ -2781,6 +2877,65 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           `,
         })}
       </div>
+    `;
+  }
+
+  _renderAboutSection(section) {
+    const aboutExpanded = this._isChapterExpanded("about");
+    const items = section.about_items || [];
+    const version = section.version || this._data?.version || "";
+    return `
+      <div
+        class="chapter-group chapter-workspace about-workspace ${aboutExpanded ? "expanded" : "collapsed"}"
+        data-chapter-key="about"
+      >
+        ${this._renderChapterHero({
+          chapterKey: "about",
+          expanded: aboutExpanded,
+          eyebrow: "Project",
+          title: section.title,
+          description: section.description || "",
+          docsUrl: section.docs_url,
+          bodyMarkup: `
+            <div class="chapter-content chapter-body">
+              <div class="about-grid">
+                ${items.map((item) => this._renderAboutCard(item)).join("")}
+              </div>
+              ${version
+                ? `<p class="about-version-line">${this._escapeHtml(`Version ${String(version)}`)}</p>`
+                : ""
+              }
+            </div>
+          `,
+        })}
+      </div>
+    `;
+  }
+
+  _renderAboutCard(item) {
+    return `
+      <article class="about-card">
+        <div class="about-card-header">
+          <h3 class="about-card-title">${this._escapeHtml(item.title || "")}</h3>
+          ${item.value
+            ? `<span class="about-card-value">${this._escapeHtml(String(item.value))}</span>`
+            : ""
+          }
+        </div>
+        ${item.description
+          ? `<p class="about-card-description">${this._escapeHtml(item.description)}</p>`
+          : ""
+        }
+        ${item.url
+          ? `<a
+              class="about-card-link"
+              href="${this._escapeAttribute(item.url)}"
+              target="_blank"
+              rel="noreferrer"
+            >${this._escapeHtml(item.link_label || "Open")}</a>`
+          : ""
+        }
+      </article>
     `;
   }
 

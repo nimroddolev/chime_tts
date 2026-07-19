@@ -177,6 +177,7 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
         "general",
         "notify_profiles",
         "logs",
+        "about",
     ]
     assert payload["log_events"] == []
 
@@ -198,6 +199,11 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
         custom_chimes_field["path_validation"]["message"]
         == "Folder path is valid for this setting."
     )
+    about_section = next(section for section in payload["sections"] if section["key"] == "about")
+    assert about_section["kind"] == "about"
+    assert about_section["version"] == payload["version"]
+    assert all(item["title"] != "Version" for item in about_section["about_items"])
+    assert any(item["title"] == "Buy Me a Coffee" for item in about_section["about_items"])
 
 
 @pytest.mark.asyncio
