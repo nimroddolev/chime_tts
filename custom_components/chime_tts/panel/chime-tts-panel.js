@@ -2334,8 +2334,29 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         this._removeNotifyProfile(Number(event.currentTarget.dataset.removeNotifyProfile));
       });
     });
+    this.shadowRoot.querySelectorAll("[data-notify-profile-card]").forEach((card) => {
+      card.addEventListener("click", (event) => {
+        if (this._shouldIgnoreNotifyProfileCardToggle(event)) {
+          return;
+        }
+        event.stopPropagation();
+        this._toggleNotifyProfile(Number(event.currentTarget.dataset.notifyProfileCard));
+      });
+      card.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") {
+          return;
+        }
+        if (this._shouldIgnoreNotifyProfileCardToggle(event)) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        this._toggleNotifyProfile(Number(event.currentTarget.dataset.notifyProfileCard));
+      });
+    });
     this.shadowRoot.querySelectorAll("[data-toggle-notify-profile]").forEach((button) => {
       button.addEventListener("click", (event) => {
+        event.stopPropagation();
         this._toggleNotifyProfile(Number(event.currentTarget.dataset.toggleNotifyProfile));
       });
     });
@@ -2850,6 +2871,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       <article
         class="notify-profile-card ${expanded ? "expanded" : "collapsed"}"
         data-notify-profile-card="${this._escapeAttribute(String(index))}"
+        role="button"
+        tabindex="0"
+        aria-expanded="${expanded ? "true" : "false"}"
       >
         <div class="notify-profile-header">
           <div class="notify-profile-copy ${testState.open ? "testing" : ""}">
@@ -4518,6 +4542,34 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         };
         this._render();
       },
+    );
+  }
+
+  _shouldIgnoreNotifyProfileCardToggle(event) {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return false;
+    }
+
+    if (event.type === "click" && window.getSelection && !window.getSelection().isCollapsed) {
+      return true;
+    }
+
+    return Boolean(
+      target.closest(
+        [
+          "a",
+          "button",
+          "input",
+          "select",
+          "textarea",
+          "label",
+          "ha-entity-picker",
+          ".notify-profile-actions",
+          ".row-collapse",
+          ".notify-entity-chip-list",
+        ].join(", "),
+      ),
     );
   }
 
