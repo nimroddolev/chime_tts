@@ -510,11 +510,14 @@ template.innerHTML = `
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 18px;
-      align-items: center;
+      align-items: end;
     }
 
     .chapter-hero-copy {
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
     }
 
     .chapter-hero-eyebrow {
@@ -560,10 +563,11 @@ template.innerHTML = `
 
     .chapter-hero-endcap {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       justify-content: flex-end;
       gap: 12px;
       min-width: 0;
+      align-self: end;
     }
 
     .chapter-chevron {
@@ -1538,6 +1542,13 @@ template.innerHTML = `
       gap: 12px;
     }
 
+    .notify-profile-list-actions {
+      display: flex;
+      justify-content: flex-start;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
     .notify-profile-card {
       padding: 14px 16px;
       border-radius: 20px;
@@ -1843,15 +1854,6 @@ template.innerHTML = `
         grid-template-columns: 1fr;
       }
 
-      .chapter-hero-inner {
-        grid-template-columns: 1fr;
-        align-items: start;
-      }
-
-      .chapter-hero-actions {
-        justify-content: flex-start;
-      }
-
       .notify-profile-grid {
         grid-template-columns: 1fr;
       }
@@ -1927,11 +1929,6 @@ template.innerHTML = `
 
     :host([narrow]) .chapter-hero-title {
       font-size: 1.4rem;
-    }
-
-    :host([narrow]) .chapter-workspace {
-      padding: 14px;
-      border-radius: 24px;
     }
 
     :host([narrow]) .topbar-actions {
@@ -2693,16 +2690,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const profiles = this._draftNotifyProfiles || [];
     const sectionDirty = this._isSectionDirty(section);
     const notifyExpanded = this._isChapterExpanded("notify_profiles");
-    const actionsMarkup = `
-      ${sectionDirty ? `
-        <button
-          class="button-secondary"
-          type="button"
-          data-reset-section="${this._escapeAttribute(section.key)}"
-        >Reset Section</button>
-      ` : ""}
-      <button class="button-primary" type="button" data-add-notify-profile="1">+ Add Profile</button>
-    `;
     return `
       <div
         class="chapter-group chapter-workspace notify-workspace ${notifyExpanded ? "expanded" : "collapsed"}"
@@ -2715,9 +2702,18 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           title: section.title,
           description: section.description || "",
           docsUrl: section.docs_url,
-          actionsMarkup,
           bodyMarkup: `
             <div class="chapter-content chapter-body">
+                <div class="notify-profile-list-actions">
+                  <button class="button-primary" type="button" data-add-notify-profile="1">+ Add Profile</button>
+                  ${sectionDirty ? `
+                    <button
+                      class="button-secondary"
+                      type="button"
+                      data-reset-section="${this._escapeAttribute(section.key)}"
+                    >Reset Section</button>
+                  ` : ""}
+                </div>
                 ${profiles.length === 0
                   ? `<p class="hint">No Chime TTS notify profiles are configured yet.</p>`
                   : `
@@ -4506,13 +4502,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
   _addNotifyProfile() {
     const defaults = this._buildEmptyNotifyProfile();
-    const nextIndex = (this._draftNotifyProfiles || []).length;
-    this._draftNotifyProfiles = [...(this._draftNotifyProfiles || []), defaults];
-    this._notifyProfileClientErrors = [...(this._notifyProfileClientErrors || []), {}];
+    this._draftNotifyProfiles = [defaults, ...(this._draftNotifyProfiles || [])];
+    this._notifyProfileClientErrors = [{}, ...(this._notifyProfileClientErrors || [])];
     this._expandedNotifyProfiles = {
-      ...(this._expandedNotifyProfiles || {}),
-      [nextIndex]: true,
+      ...this._offsetNotifyProfileState(this._expandedNotifyProfiles, 1),
+      0: true,
     };
+    this._notifyProfileTests = this._offsetNotifyProfileState(this._notifyProfileTests, 1);
     this._isDirty = this._hasValueChanges();
     this._render();
   }
@@ -4704,6 +4700,18 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         continue;
       }
       nextState[index > removedIndex ? index - 1 : index] = value;
+    }
+    return nextState;
+  }
+
+  _offsetNotifyProfileState(state, offset) {
+    const nextState = {};
+    for (const [key, value] of Object.entries(state || {})) {
+      const index = Number(key);
+      if (Number.isNaN(index)) {
+        continue;
+      }
+      nextState[index + offset] = value;
     }
     return nextState;
   }

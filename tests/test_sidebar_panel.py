@@ -894,6 +894,77 @@ async def test_websocket_save_settings_updates_notify_profiles_in_configuration_
 
 
 @pytest.mark.asyncio
+async def test_websocket_save_settings_preserves_notify_profile_order_across_reload(
+    tmp_path: Path,
+) -> None:
+    """Saved notify profile order should match the panel order after reloads."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    paths["config_dir"].joinpath("configuration.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "notify": [
+                    {"platform": "file", "name": "archive"},
+                    {
+                        "platform": DOMAIN,
+                        "name": "kitchen",
+                        "entity_id": "media_player.kitchen",
+                    },
+                    {
+                        "platform": DOMAIN,
+                        "name": "office",
+                        "entity_id": "media_player.office",
+                    },
+                ]
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    connection = FakeConnection()
+
+    await save_settings_handler(
+        hass,
+        connection,
+        {
+            "id": 30,
+            "type": "chime_tts/save_settings",
+            "values": dict(config_entry.options),
+            "notify_profiles": [
+                {
+                    "name": "arrival",
+                    "entity_id": "media_player.hallway",
+                },
+                {
+                    "name": "kitchen",
+                    "entity_id": "media_player.kitchen",
+                },
+                {
+                    "name": "office",
+                    "entity_id": "media_player.office",
+                },
+            ],
+        },
+    )
+
+    assert connection.errors == []
+    payload = connection.results[-1][1]
+    assert [profile["name"] for profile in payload["notify_profiles"]] == [
+        "arrival",
+        "kitchen",
+        "office",
+    ]
+
+    reloaded_profiles, load_error = settings_module.load_notify_profiles(hass)
+
+    assert load_error is None
+    assert [profile["name"] for profile in reloaded_profiles] == [
+        "arrival",
+        "kitchen",
+        "office",
+    ]
+
+
+@pytest.mark.asyncio
 async def test_websocket_save_settings_rejects_invalid_notify_profile_yaml(
     tmp_path: Path,
 ) -> None:
