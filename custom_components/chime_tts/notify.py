@@ -6,6 +6,16 @@ from .const import (
     SERVICE_SAY
 )
 from .helpers.helpers import ChimeTTSHelper
+from .helpers.panel_logs import (
+    build_notification_event_details,
+    finish_panel_log_event,
+    start_panel_log_event,
+)
+from . import (
+    ACTIVE_NOTIFY_LOG_EVENT_ID,
+    INTERNAL_NOTIFY_LOG_EVENT_ID,
+    INTERNAL_NOTIFY_ORIGIN,
+)
 from homeassistant.components.notify import BaseNotificationService
 from homeassistant.core import HomeAssistant
 
@@ -28,7 +38,18 @@ class ChimeTTSNotificationService(BaseNotificationService):
     async def async_send_message(self, message="", **kwargs):
         """Send a notification with the Chime TTS Notify Service."""
         kwargs["message"] = message
+        original_kwargs = dict(kwargs)
         data = kwargs.get("data", {}) or {}
+        notify_name = str(self._config.get("name") or "profile")
+        notify_event_id = start_panel_log_event(
+            self.hass,
+            "notification_call",
+            "Notification profile call",
+            row_color="action",
+            details=build_notification_event_details(notify_name, original_kwargs),
+            summary=f"notify.{notify_name}",
+        )
+        self.hass.data[DOMAIN][ACTIVE_NOTIFY_LOG_EVENT_ID] = notify_event_id
 
         for key in [
             "entity_id",
@@ -65,10 +86,18 @@ class ChimeTTSNotificationService(BaseNotificationService):
             _LOGGER.debug(f" - {key} = '{value}'" if isinstance(value, str) else f" - {key} = {value}")
 
         try:
+            service_data = {
+                **kwargs,
+                INTERNAL_NOTIFY_ORIGIN: True,
+                INTERNAL_NOTIFY_LOG_EVENT_ID: notify_event_id,
+            }
             await self.hass.services.async_call(
                 domain=DOMAIN,
                 service=SERVICE_SAY,
-                service_data=kwargs,
+                service_data=service_data,
                 blocking=True)
         except Exception as error:
             _LOGGER.error("Service `chime_tts.say` error: %s", error)
+        finally:
+            self.hass.data[DOMAIN].pop(ACTIVE_NOTIFY_LOG_EVENT_ID, None)
+            finish_panel_log_event(self.hass, notify_event_id)

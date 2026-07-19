@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from custom_components.chime_tts.const import DOMAIN
 from custom_components.chime_tts.notify import ChimeTTSNotificationService
 
 
@@ -25,7 +26,10 @@ async def test_notify_service_forwards_crossfade_and_legacy_crossafade() -> None
             }
         )
 
-    hass = SimpleNamespace(services=SimpleNamespace(async_call=async_call))
+    hass = SimpleNamespace(
+        services=SimpleNamespace(async_call=async_call),
+        data={DOMAIN: {}},
+    )
 
     service = ChimeTTSNotificationService(
         hass,

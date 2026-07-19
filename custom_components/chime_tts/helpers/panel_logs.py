@@ -24,6 +24,7 @@ MAX_BACKFILL_LOG_LINES = 20000
 RELATED_LOG_WINDOW_MS = 1000
 LOGGER_NAMESPACE = f"custom_components.{DOMAIN}"
 PANEL_LOGGER = logging.getLogger(LOGGER_NAMESPACE)
+NOTIFY_EVENT_TITLE = "Notification profile call"
 BACKFILLED_EVENT_KEY = "_backfilled_event_key"
 BACKFILLED_EVENT_TIME_KEY = "_backfilled_event_time_key"
 LOG_LINE_PATTERN = re.compile(
@@ -114,6 +115,15 @@ def _timepoint_key(value: str | None) -> str:
     return parsed.isoformat(timespec="milliseconds")
 
 
+def _log_key(log_entry: Mapping) -> tuple[str, str, str]:
+    """Return the normalized identity for a raw log line."""
+    return (
+        _timepoint_key(log_entry.get("timestamp")),
+        str(log_entry.get("logger", "")),
+        str(log_entry.get("message", "")),
+    )
+
+
 def _timestamps_within_window(
     first_value: str | None,
     second_value: str | None,
@@ -142,6 +152,11 @@ def _is_initialization_related_log(log_entry: Mapping) -> bool:
         return True
 
     return "chime tts" in message_lower
+
+
+def _is_initialization_completion_log(message: str) -> bool:
+    """Return whether a message marks the end of initialization logging."""
+    return "Registered Chime TTS sidebar panel at /" in message
 
 
 @dataclass(slots=True)
@@ -250,6 +265,20 @@ def _has_initialization_event(store: PanelLogStore) -> bool:
     return any(event.get("type") == "integration_initiation" for event in store.events)
 
 
+def _has_complete_initialization_event(store: PanelLogStore) -> bool:
+    """Return whether the store contains a fully backfilled initialization row."""
+    for event in store.events:
+        if event.get("type") != "integration_initiation":
+            continue
+        raw_logs = event.get("raw_logs") or []
+        if any(
+            _is_initialization_completion_log(str(log.get("message", "")))
+            for log in raw_logs
+        ):
+            return True
+    return False
+
+
 def get_panel_log_events(hass) -> list[dict]:
     """Return a deep-copied list of panel log events."""
     store = async_setup_panel_log_store(hass)
@@ -260,7 +289,11 @@ def get_panel_log_events(hass) -> list[dict]:
 async def async_get_panel_log_events(hass) -> list[dict]:
     """Return panel log events and complete file backfill before responding."""
     store = async_setup_panel_log_store(hass)
-    needs_backfill = not store.backfill_loaded or not _has_initialization_event(store)
+    needs_backfill = (
+        not store.backfill_loaded
+        or not _has_initialization_event(store)
+        or not _has_complete_initialization_event(store)
+    )
     if needs_backfill:
         if store.backfill_loading:
             return [deepcopy(event) for event in _dedupe_events(store.events)]
@@ -372,13 +405,15 @@ def _merge_backfilled_events(store: PanelLogStore, events: list[dict]) -> None:
             _finalize_backfilled_event(store, event)
             continue
 
-        if _matches_existing_event(
+        matching_event = _find_matching_event(
             store,
             {
-                "title": event.get("title", ""),
+                **event,
                 BACKFILLED_EVENT_TIME_KEY: _timepoint_key(event.get("started_at")),
             },
-        ):
+        )
+        if matching_event is not None:
+            _merge_event_details(matching_event, event)
             continue
 
         _append_event(store, deepcopy(event))
@@ -421,6 +456,10 @@ def _build_backfilled_event(log_entry: dict) -> dict | None:
         event_type = "action_call"
         row_color = _row_color_for_service("say")
         copy_yaml = "action: chime_tts.say"
+    elif message == "Chime TTS Notify":
+        title = NOTIFY_EVENT_TITLE
+        event_type = "notification_call"
+        row_color = "action"
     elif "Chime TTS Say URL Called." in message:
         title = f"Action call: {DOMAIN}.say_url"
         event_type = "action_call"
@@ -466,6 +505,8 @@ def _find_matching_event(store: PanelLogStore, candidate: dict) -> dict | None:
     candidate_time_key = candidate.get(BACKFILLED_EVENT_TIME_KEY, "")
     candidate_started_at = candidate.get("started_at")
     candidate_type = candidate.get("type")
+    candidate_logs = candidate.get("raw_logs") or []
+    candidate_log_keys = {_log_key(log_entry) for log_entry in candidate_logs}
 
     for existing in store.events:
         if existing.get("title", "") != candidate_title:
@@ -481,6 +522,25 @@ def _find_matching_event(store: PanelLogStore, candidate: dict) -> dict | None:
                 return existing
             continue
         if _timepoint_key(existing.get("started_at")) == candidate_time_key:
+            return existing
+        if not candidate_log_keys:
+            continue
+        if not (
+            _timestamps_within_window(
+                existing.get("started_at"),
+                candidate_started_at,
+            )
+            or _timestamps_within_window(
+                existing.get("ended_at"),
+                candidate.get("ended_at"),
+            )
+        ):
+            continue
+        existing_log_keys = {
+            _log_key(log_entry)
+            for log_entry in existing.get("raw_logs") or []
+        }
+        if candidate_log_keys & existing_log_keys:
             return existing
     return None
 
@@ -499,13 +559,6 @@ def _merge_event_details(existing: dict, incoming: dict) -> None:
 
     incoming_logs = list(incoming.get("raw_logs") or [])
     existing_logs = list(existing.get("raw_logs") or [])
-
-    def _log_key(log_entry: Mapping) -> tuple[str, str, str]:
-        return (
-            str(log_entry.get("timestamp", "")),
-            str(log_entry.get("logger", "")),
-            str(log_entry.get("message", "")),
-        )
 
     incoming_counts = Counter(_log_key(log_entry) for log_entry in incoming_logs)
     existing_counts = Counter(_log_key(log_entry) for log_entry in existing_logs)
@@ -527,37 +580,51 @@ def _merge_event_details(existing: dict, incoming: dict) -> None:
     existing["raw_logs"] = combined_logs[-MAX_RAW_LOG_LINES:]
 
 
+def _find_active_parent_notification_event(
+    store: PanelLogStore,
+    event_id: str,
+    event: dict,
+) -> dict | None:
+    """Return an active notification event that should absorb a nested say call."""
+    if event.get("type") != "action_call":
+        return None
+    if event.get("title") != f"Action call: {DOMAIN}.say":
+        return None
+
+    for candidate_id, candidate in store.active_events.items():
+        if candidate_id == event_id:
+            continue
+        if candidate.get("type") != "notification_call":
+            continue
+        if _timestamps_within_window(
+            candidate.get("started_at"),
+            event.get("started_at"),
+            window_ms=5000,
+        ) or _timestamps_within_window(
+            candidate.get("ended_at"),
+            event.get("ended_at"),
+            window_ms=5000,
+        ):
+            return candidate
+    return None
+
+
 def _dedupe_events(events: list[dict]) -> list[dict]:
     """Remove duplicate rows using title + normalized start time."""
     deduped: list[dict] = []
-    seen_keys: set[tuple[str, str]] = set()
 
     for event in events:
-        if event.get("type") == "integration_initiation":
-            existing_match = next(
-                (
-                    existing
-                    for existing in deduped
-                    if existing.get("title") == event.get("title")
-                    and existing.get("type") == "integration_initiation"
-                    and _timestamps_within_window(
-                        existing.get("started_at"),
-                        event.get("started_at"),
-                    )
-                ),
-                None,
-            )
-            if existing_match is not None:
-                if len(event.get("raw_logs") or []) > len(existing_match.get("raw_logs") or []):
-                    _merge_event_details(existing_match, event)
-                continue
-        key = (
-            str(event.get("title", "")),
-            _timepoint_key(event.get("started_at")),
+        existing_match = _find_matching_event(
+            PanelLogStore(events=deduped),
+            {
+                **event,
+                BACKFILLED_EVENT_TIME_KEY: _timepoint_key(event.get("started_at")),
+            },
         )
-        if key in seen_keys:
+        if existing_match is not None:
+            if len(event.get("raw_logs") or []) > len(existing_match.get("raw_logs") or []):
+                _merge_event_details(existing_match, event)
             continue
-        seen_keys.add(key)
         deduped.append(event)
 
     return deduped
@@ -582,6 +649,9 @@ def _is_relevant_to_open_event(current_event: dict, log_entry: dict) -> bool:
             )
         return False
 
+    if title == NOTIFY_EVENT_TITLE:
+        return logger.startswith(LOGGER_NAMESPACE)
+
     if title.startswith(f"Action call: {DOMAIN}."):
         return logger.startswith(LOGGER_NAMESPACE)
 
@@ -594,7 +664,13 @@ def _is_event_complete(current_event: dict, log_entry: dict) -> bool:
     message = log_entry["message"]
 
     if title == "Integration initialization":
-        return "Registered Chime TTS sidebar panel at /chime-tts" in message
+        return _is_initialization_completion_log(message)
+    if title == NOTIFY_EVENT_TITLE:
+        return (
+            "Chime TTS Say Completed" in message
+            or "Error calling chime_tts.say service:" in message
+            or "Service `chime_tts.say` error:" in message
+        )
     if title == f"Action call: {DOMAIN}.say":
         return "Chime TTS Say Completed" in message or "Error calling chime_tts.say service:" in message
     if title == f"Action call: {DOMAIN}.say_url":
@@ -633,7 +709,7 @@ def _prepend_same_timepoint_prefix(
 
 def _maybe_backfill_grouped_events_from_log_file(hass, store: PanelLogStore) -> None:
     """Import grouped panel events from Home Assistant's existing log file."""
-    if store.backfill_loaded:
+    if store.backfill_loaded and _has_complete_initialization_event(store):
         return
 
     try:
@@ -670,6 +746,13 @@ def _build_backfilled_grouped_events(entries: list[dict]) -> list[dict]:
     for index, log_entry in enumerate(entries):
         next_event = _build_backfilled_event(log_entry)
         if next_event is not None:
+            if (
+                current_event is not None
+                and current_event.get("title") == NOTIFY_EVENT_TITLE
+                and next_event.get("title") == f"Action call: {DOMAIN}.say"
+            ):
+                _append_grouped_log(current_event, log_entry)
+                continue
             if (
                 current_event is not None
                 and current_event.get("title") == next_event.get("title")
@@ -711,6 +794,21 @@ def build_action_event_details(domain: str, service: str, service_data: Mapping 
         "repeat_service": service,
         "repeat_data": normalized_data,
         "row_color": _row_color_for_service(service),
+    }
+
+
+def build_notification_event_details(service: str, service_data: Mapping | None) -> dict:
+    """Build reusable metadata for a notify profile log event."""
+    normalized_data = _normalize_service_data(dict(service_data or {}))
+    payload = {
+        "action": f"notify.{service}",
+        "data": normalized_data,
+    }
+    summary = normalized_data.get("message") or service
+    return {
+        "summary": str(summary),
+        "copy_yaml": yaml.safe_dump(payload, sort_keys=False, allow_unicode=False).strip(),
+        "row_color": "action",
     }
 
 
@@ -762,6 +860,16 @@ def finish_panel_log_event(hass, event_id: str) -> dict | None:
             event["ended_at"] = last_log.get("timestamp", event.get("ended_at"))
         else:
             event["ended_at"] = _utc_now()
+
+        parent_notification_event = _find_active_parent_notification_event(
+            store,
+            event_id,
+            event,
+        )
+        if parent_notification_event is not None:
+            _merge_event_details(parent_notification_event, event)
+            return None
+
         _append_event(store, event)
         _notify_panel_log_subscribers(store, event)
         return deepcopy(event)

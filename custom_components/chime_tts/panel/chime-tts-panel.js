@@ -2036,6 +2036,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._logsRefreshInFlight = false;
     this._logsOpeningRefresh = false;
     this._logsLoaded = false;
+    this._logsHydrated = false;
     this._logsSubscription = null;
     this._logsSubscriptionPending = false;
     this._deferredLogEvents = [];
@@ -2119,6 +2120,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._expandedLogEvents = {};
       this._logsOpeningRefresh = false;
       this._logsLoaded = false;
+      this._logsHydrated = false;
       this._deferredLogEvents = [];
       this._pathValidationState = this._buildInitialPathValidationState();
       this._invalidPathOverrides = {};
@@ -2152,6 +2154,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._expandedLogEvents = {};
       this._logsOpeningRefresh = false;
       this._logsLoaded = false;
+      this._logsHydrated = false;
       this._deferredLogEvents = [];
       this._pathValidationState = {};
       this._invalidPathOverrides = {};
@@ -2214,7 +2217,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ...existingEvents.filter((event) => event?.id !== logEvent.id),
       ],
     };
-    this._logsLoaded = true;
+    this._logsLoaded = this._logsHydrated;
     this._render();
   }
 
@@ -2234,7 +2237,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       ],
     };
     this._deferredLogEvents = [];
-    this._logsLoaded = true;
+    this._logsLoaded = this._logsHydrated;
     this._render();
     return true;
   }
@@ -2713,7 +2716,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const logsExpanded = this._isChapterExpanded("logs");
     const events = [...(this._data?.log_events || [])].reverse();
     const anyExpanded = events.some((event) => this._isLogEventExpanded(event.id));
-    const logsPending = !this._logsLoaded && (this._logsOpeningRefresh || this._logsRefreshInFlight);
+    const logsPending = !this._logsHydrated && (this._logsOpeningRefresh || this._logsRefreshInFlight);
     return `
       <div
         class="chapter-group chapter-workspace logs-workspace ${logsExpanded ? "expanded" : "collapsed"}"
@@ -2775,7 +2778,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       .join("\n");
     const logCopyState = this._getLogCopyState(event.id);
     const buttons = [];
-    if ((event.type === "action_call" || event.type === "integration_initiation") && rawLogs) {
+    if ((event.type === "action_call" || event.type === "integration_initiation" || event.type === "notification_call") && rawLogs) {
       buttons.push(`
         <button class="button-secondary" type="button" data-copy-log-raw="${this._escapeAttribute(event.id)}">${logCopyState.logs ? `<span class="copied-label">${ICONS.check}<span>Copied</span></span>` : "Copy Logs"}</button>
       `);
@@ -3946,12 +3949,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _primeLogsLoad() {
-    if (this._loading || this._logsLoaded || this._logsRefreshInFlight) {
+    if (this._loading || this._logsHydrated || this._logsRefreshInFlight) {
       return;
     }
 
     window.setTimeout(() => {
-      if (this._loading || this._logsLoaded || this._logsRefreshInFlight) {
+      if (this._loading || this._logsHydrated || this._logsRefreshInFlight) {
         return;
       }
       this._logsOpeningRefresh = true;
@@ -3976,6 +3979,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         log_events: result?.log_events || [],
       };
       this._logsOpeningRefresh = false;
+      this._logsHydrated = true;
       this._logsLoaded = true;
       this._render();
     } catch (_error) {
@@ -3992,6 +3996,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const parts = [];
     if (event.type === "integration_initiation") {
       parts.push("Integration initiation");
+    } else if (event.type === "notification_call") {
+      parts.push("Notification");
     } else if (event.type === "configuration_update") {
       parts.push("Configuration update");
     } else if (event.type === "action_call") {

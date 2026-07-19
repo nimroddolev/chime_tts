@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Mapping
 from dataclasses import dataclass
 import os
 from typing import Any
@@ -913,8 +914,25 @@ def _normalize_notify_options_for_display(value: Any) -> str:
     if isinstance(value, str):
         return value.strip()
 
+    def _to_yaml_safe(item: Any) -> Any:
+        if isinstance(item, Mapping):
+            return {str(key): _to_yaml_safe(val) for key, val in item.items()}
+        if isinstance(item, list):
+            return [_to_yaml_safe(entry) for entry in item]
+        if isinstance(item, tuple):
+            return [_to_yaml_safe(entry) for entry in item]
+        if isinstance(item, str):
+            return str(item)
+        if isinstance(item, bool):
+            return bool(item)
+        if isinstance(item, int):
+            return int(item)
+        if isinstance(item, float):
+            return float(item)
+        return item
+
     dumped = yaml.safe_dump(
-        value,
+        _to_yaml_safe(value),
         default_flow_style=False,
         sort_keys=False,
     ).strip()

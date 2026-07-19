@@ -94,6 +94,11 @@ from .config import SONOS_SNAPSHOT_ENABLED
 
 _LOGGER = logging.getLogger(__name__)
 _data = {}
+ACTIVE_INIT_LOG_EVENT_ID = "_active_init_log_event_id"
+ACTIVE_NOTIFY_LOG_EVENT_ID = "_active_notify_log_event_id"
+ACTIVE_NOTIFY_LOG_EVENT_SUMMARY = "_active_notify_log_event_summary"
+INTERNAL_NOTIFY_LOG_EVENT_ID = "_chime_tts_notify_log_event_id"
+INTERNAL_NOTIFY_ORIGIN = "_chime_tts_notify_origin"
 
 helpers = ChimeTTSHelper()
 tts_audio_helper = TTSAudioHelper()
@@ -111,6 +116,9 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     await async_setup_panel(hass, config_entry)
     queue.set_timeout(_data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
     queue.start_queue_processor()
+    init_event_id = _data.pop(ACTIVE_INIT_LOG_EVENT_ID, None)
+    if init_event_id:
+        finish_panel_log_event(hass, init_event_id)
 
     return True
 
@@ -125,6 +133,7 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
         row_color="configuration",
         summary=f"Chime TTS Version {VERSION} is set up",
     )
+    _data[ACTIVE_INIT_LOG_EVENT_ID] = init_event_id
     helpers.debug_title(f"Chime TTS Version {VERSION} is set up")
 
     # Say Service #
@@ -135,28 +144,42 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
         service_data = None if service is None else service.data
         if service_data is None and replay_service is not None:
             service_data = replay_service.data
+        existing_event_id = service_data.get(INTERNAL_NOTIFY_LOG_EVENT_ID) if service_data else None
         action_name = (
             SERVICE_SAY_URL
             if is_say_url
             else (SERVICE_REPLAY if service is None else SERVICE_SAY)
         )
+        if (
+            action_name == SERVICE_SAY
+            and not is_say_url
+            and service is not None
+            and not existing_event_id
+            and _data.get(ACTIVE_NOTIFY_LOG_EVENT_ID)
+        ):
+            existing_event_id = _data.get(ACTIVE_NOTIFY_LOG_EVENT_ID)
         event_title = f"Action call: {DOMAIN}.{action_name}"
-        event_id = start_panel_log_event(
-            hass,
-            "action_call",
-            event_title,
-            row_color="action",
-            details=build_action_event_details(
-                DOMAIN,
-                action_name,
-                service_data,
-            ),
-        )
+        event_id = existing_event_id
+        created_event = False
+        if not event_id:
+            event_id = start_panel_log_event(
+                hass,
+                "action_call",
+                event_title,
+                row_color="action",
+                details=build_action_event_details(
+                    DOMAIN,
+                    action_name,
+                    service_data,
+                ),
+            )
+            created_event = True
         if is_say_url is False:
             if service is None:
                 helpers.debug_title(f"Chime TTS Replay Called. Version {VERSION}")
                 if _data.get("service") is None:
-                    finish_panel_log_event(hass, event_id)
+                    if created_event:
+                        finish_panel_log_event(hass, event_id)
                     raise HomeAssistantError("You must first make a service call to chime_tts.say before you can replay it.")
             else:
                 helpers.debug_title(f"Chime TTS Say Called. Version {VERSION}")
@@ -169,15 +192,18 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
         except Exception as error:
             error_string = f"Error calling chime_tts.say{'_url' if is_say_url else ''} service: {str(error)}"
             _LOGGER.error("%s", str(error_string))
-            finish_panel_log_event(hass, event_id)
+            if created_event:
+                finish_panel_log_event(hass, event_id)
             raise
 
         if result is not False:
-            finish_panel_log_event(hass, event_id)
+            if created_event:
+                finish_panel_log_event(hass, event_id)
             return result
 
         # Service call failed
-        finish_panel_log_event(hass, event_id)
+        if created_event:
+            finish_panel_log_event(hass, event_id)
         raise HomeAssistantError("An unknown error occurred")
 
     async def async_say_execute(service, is_say_url):
@@ -334,7 +360,6 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
                                  supports_response=SupportsResponse.OPTIONAL)
     _data["async_clear_cache"] = async_clear_cache
 
-    finish_panel_log_event(hass, init_event_id)
     return True
 
 async def async_run_script(hass: HomeAssistant, script):

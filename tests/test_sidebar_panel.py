@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import inspect
 import importlib
+import logging
 from pathlib import Path
+import time
 from types import SimpleNamespace
 import yaml
 
@@ -82,6 +84,7 @@ def make_hass(tmp_path: Path):
 
     hass = SimpleNamespace()
     hass.config = SimpleNamespace(
+        config_dir=str(config_dir),
         path=lambda *parts: str(config_dir.joinpath(*parts)),
         media_dirs={"media": str(media_dir)},
         allowlist_external_dirs=[str(www_dir), str(media_dir)],
@@ -104,6 +107,11 @@ def make_hass(tmp_path: Path):
         return None
 
     hass.services = SimpleNamespace(async_call=async_call)
+
+    async def async_add_executor_job(func, *args):
+        return func(*args)
+
+    hass.async_add_executor_job = async_add_executor_job
 
     config_entry = SimpleNamespace(
         entry_id="entry-1",
@@ -183,7 +191,7 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
     assert language_field["provider_hint"]["tone"] == "info"
     assert "Google Translate" in language_field["provider_hint"]["message"]
     assert custom_chimes_field["icon_url"].startswith(
-        f"/api/{DOMAIN}/option_icons/{CUSTOM_CHIMES_PATH_KEY}.svg?v="
+        f"/api/{DOMAIN}/option_icons/{CUSTOM_CHIMES_PATH_KEY}.svg"
     )
     assert custom_chimes_field["can_browse"] is True
     assert (
@@ -539,7 +547,8 @@ def test_build_panel_payload_includes_session_log_events(tmp_path: Path) -> None
     assert payload["log_events"][0]["can_repeat"] is True
 
 
-def test_websocket_get_logs_returns_session_log_events(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_websocket_get_logs_returns_session_log_events(tmp_path: Path) -> None:
     """The lightweight logs websocket should return the current session log rows."""
     hass, _config_entry, _paths = make_hass(tmp_path)
     connection = FakeConnection()
@@ -552,7 +561,7 @@ def test_websocket_get_logs_returns_session_log_events(tmp_path: Path) -> None:
     )
     panel_logs_module.finish_panel_log_event(hass, event_id)
 
-    get_logs_handler(
+    await get_logs_handler(
         hass,
         connection,
         {
@@ -563,6 +572,258 @@ def test_websocket_get_logs_returns_session_log_events(tmp_path: Path) -> None:
 
     assert connection.errors == []
     assert connection.results[-1][1]["log_events"][0]["title"] == "Configuration update completed"
+
+
+def test_build_backfilled_grouped_events_keeps_notification_and_nested_say_logs_together() -> None:
+    """Backfill should keep notify and nested say log lines in one notification row."""
+    events = panel_logs_module._build_backfilled_grouped_events(  # noqa: SLF001
+        [
+            {
+                "timestamp": "2026-07-19 10:00:00.000",
+                "level": "debug",
+                "logger": "custom_components.chime_tts.notify",
+                "message": "Chime TTS Notify",
+            },
+            {
+                "timestamp": "2026-07-19 10:00:00.010",
+                "level": "debug",
+                "logger": "custom_components.chime_tts.notify",
+                "message": " - message = 'Doorbell'",
+            },
+            {
+                "timestamp": "2026-07-19 10:00:00.020",
+                "level": "debug",
+                "logger": "custom_components.chime_tts",
+                "message": "Chime TTS Say Called. Version test",
+            },
+            {
+                "timestamp": "2026-07-19 10:00:00.030",
+                "level": "debug",
+                "logger": "custom_components.chime_tts",
+                "message": "Chime TTS Say Completed in 120 ms",
+            },
+        ]
+    )
+
+    assert len(events) == 1
+    assert events[0]["type"] == "notification_call"
+    assert events[0]["title"] == "Notification profile call"
+    assert [log["message"] for log in events[0]["raw_logs"]] == [
+        "Chime TTS Notify",
+        " - message = 'Doorbell'",
+        "Chime TTS Say Called. Version test",
+        "Chime TTS Say Completed in 120 ms",
+    ]
+
+
+def test_finish_panel_log_event_merges_nested_say_row_into_active_notification_row(
+    tmp_path: Path,
+) -> None:
+    """Live log grouping should not leave a separate say row under a notify event."""
+    hass, _config_entry, _paths = make_hass(tmp_path)
+    store = panel_logs_module.async_setup_panel_log_store(hass)
+    handler = hass.data[panel_logs_module.PANEL_LOG_HANDLER_KEY]
+
+    now = time.time()
+
+    def emit(logger_name: str, message: str, *, created: float) -> None:
+        record = logging.LogRecord(
+            logger_name,
+            logging.DEBUG,
+            __file__,
+            1,
+            message,
+            (),
+            None,
+        )
+        record.created = created
+        handler.emit(record)
+
+    notify_event_id = panel_logs_module.start_panel_log_event(
+        hass,
+        "notification_call",
+        "Notification profile call",
+        row_color="action",
+        details=panel_logs_module.build_notification_event_details(
+            "doorbell",
+            {"message": "Doorbell"},
+        ),
+    )
+    emit("custom_components.chime_tts.notify", "Chime TTS Notify", created=now)
+    emit("custom_components.chime_tts.notify", " - message = 'Doorbell'", created=now + 0.01)
+
+    say_event_id = panel_logs_module.start_panel_log_event(
+        hass,
+        "action_call",
+        "Action call: chime_tts.say",
+        row_color="action",
+        details=panel_logs_module.build_action_event_details(
+            DOMAIN,
+            "say",
+            {"message": "Doorbell"},
+        ),
+    )
+    emit("custom_components.chime_tts", "Chime TTS Say Called. Version test", created=now + 0.02)
+    emit("custom_components.chime_tts", "Chime TTS Say Completed in 120 ms", created=now + 0.03)
+
+    assert panel_logs_module.finish_panel_log_event(hass, say_event_id) is None
+
+    finished_notification = panel_logs_module.finish_panel_log_event(hass, notify_event_id)
+
+    assert finished_notification is not None
+    assert len(store.events) == 1
+    assert store.events[0]["title"] == "Notification profile call"
+    assert [log["message"] for log in store.events[0]["raw_logs"]] == [
+        "Chime TTS Notify",
+        " - message = 'Doorbell'",
+        "Chime TTS Say Called. Version test",
+        "Chime TTS Say Completed in 120 ms",
+    ]
+
+
+def test_merge_backfilled_events_merges_live_action_row_with_millisecond_offset() -> None:
+    """A live row and backfilled row for the same action should merge despite minor timestamp drift."""
+    store = panel_logs_module.PanelLogStore()
+    store.events.append(
+        {
+            "id": "live-1",
+            "type": "action_call",
+            "title": "Action call: chime_tts.say_url",
+            "summary": "say_url",
+            "started_at": "2026-07-19T09:07:01.993000+00:00",
+            "ended_at": "2026-07-19T09:07:02.500000+00:00",
+            "row_color": "action",
+            "has_error": False,
+            "error_count": 0,
+            "raw_logs": [
+                {
+                    "timestamp": "2026-07-19T09:07:01.994000+00:00",
+                    "level": "debug",
+                    "logger": "custom_components.chime_tts.helpers.helpers",
+                    "message": "Chime TTS Say URL Called. Version v1.2.3",
+                },
+                {
+                    "timestamp": "2026-07-19T09:07:02.500000+00:00",
+                    "level": "debug",
+                    "logger": "custom_components.chime_tts.helpers.helpers",
+                    "message": "Chime TTS Say URL Completed in 500 ms",
+                },
+            ],
+            "copy_yaml": "action: chime_tts.say_url",
+            "can_repeat": True,
+        }
+    )
+
+    panel_logs_module._merge_backfilled_events(  # noqa: SLF001
+        store,
+        panel_logs_module._build_backfilled_grouped_events(  # noqa: SLF001
+            [
+                {
+                    "timestamp": "2026-07-19 12:07:01.994",
+                    "level": "debug",
+                    "logger": "custom_components.chime_tts.helpers.helpers",
+                    "message": "Chime TTS Say URL Called. Version v1.2.3",
+                },
+                {
+                    "timestamp": "2026-07-19 12:07:02.500",
+                    "level": "debug",
+                    "logger": "custom_components.chime_tts.helpers.helpers",
+                    "message": "Chime TTS Say URL Completed in 500 ms",
+                },
+            ]
+        ),
+    )
+
+    events = panel_logs_module._dedupe_events(store.events)  # noqa: SLF001
+    assert len(events) == 1
+    assert events[0]["title"] == "Action call: chime_tts.say_url"
+
+
+def test_get_panel_log_events_merges_live_initialization_row_with_backfilled_setup_logs(
+    tmp_path: Path,
+) -> None:
+    """A live initialization row should be enriched with earlier and later setup log lines from backfill."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    store = panel_logs_module.async_setup_panel_log_store(hass)
+    store.events.append(
+        {
+            "id": "live-init",
+            "type": "integration_initiation",
+            "title": "Integration initialization",
+            "summary": "Chime TTS Version v1.2.3 is set up",
+            "started_at": "2026-07-19T09:36:08.827000+00:00",
+            "ended_at": "2026-07-19T09:36:08.827000+00:00",
+            "row_color": "configuration",
+            "has_error": False,
+            "error_count": 0,
+            "raw_logs": [
+                {
+                    "timestamp": "2026-07-19T09:36:08.827000+00:00",
+                    "level": "debug",
+                    "logger": "custom_components.chime_tts.helpers.helpers",
+                    "message": "Chime TTS Version v1.2.3 is set up",
+                }
+            ],
+            "copy_yaml": "",
+            "can_repeat": False,
+        }
+    )
+
+    (paths["config_dir"] / "home-assistant.log").write_text(
+        "\n".join(
+            [
+                "2026-07-19 12:36:08.826 DEBUG (MainThread) [homeassistant.setup] Setting up chime_tts",
+                "2026-07-19 12:36:08.827 DEBUG (MainThread) [custom_components.chime_tts.helpers.helpers] Chime TTS Version v1.2.3 is set up",
+                "2026-07-19 12:36:08.850 DEBUG (MainThread) [custom_components.chime_tts.helpers.panel] Registered Chime TTS panel module view at /api/chime_tts/panel.js?v=1",
+                "2026-07-19 12:36:08.860 DEBUG (MainThread) [custom_components.chime_tts.helpers.panel] Registered Chime TTS panel websocket commands",
+                "2026-07-19 12:36:08.873 DEBUG (MainThread) [custom_components.chime_tts.helpers.panel] Registered Chime TTS sidebar panel at /chime-tts",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    events = panel_logs_module.get_panel_log_events(hass)
+
+    assert len(events) == 1
+    assert [log["message"] for log in events[0]["raw_logs"]] == [
+        "Setting up chime_tts",
+        "Chime TTS Version v1.2.3 is set up",
+        "Registered Chime TTS panel module view at /api/chime_tts/panel.js?v=1",
+        "Registered Chime TTS panel websocket commands",
+        "Registered Chime TTS sidebar panel at /chime-tts",
+    ]
+
+
+def test_get_panel_log_events_backfills_complete_initialization_row(tmp_path: Path) -> None:
+    """Initialization rows should include the full setup sequence from the HA log."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    log_path = paths["config_dir"] / "home-assistant.log"
+    log_path.write_text(
+        "\n".join(
+            [
+                "2026-07-19 10:00:00.000 DEBUG (MainThread) [homeassistant.setup] Setting up chime_tts",
+                "2026-07-19 10:00:00.010 DEBUG (MainThread) [custom_components.chime_tts] Chime TTS Version v1.2.3 is set up",
+                "2026-07-19 10:00:00.020 DEBUG (MainThread) [custom_components.chime_tts.helpers.panel] Registered Chime TTS panel module view at /api/chime_tts/panel.js?v=1",
+                "2026-07-19 10:00:00.030 DEBUG (MainThread) [custom_components.chime_tts.helpers.panel] Registered Chime TTS panel websocket commands",
+                "2026-07-19 10:00:00.040 DEBUG (MainThread) [custom_components.chime_tts.helpers.panel] Registered Chime TTS sidebar panel at /chime-tts",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    events = panel_logs_module.get_panel_log_events(hass)
+
+    assert len(events) == 1
+    assert events[0]["type"] == "integration_initiation"
+    assert [log["message"] for log in events[0]["raw_logs"]] == [
+        "Setting up chime_tts",
+        "Chime TTS Version v1.2.3 is set up",
+        "Registered Chime TTS panel module view at /api/chime_tts/panel.js?v=1",
+        "Registered Chime TTS panel websocket commands",
+        "Registered Chime TTS sidebar panel at /chime-tts",
+    ]
 
 
 @pytest.mark.asyncio
