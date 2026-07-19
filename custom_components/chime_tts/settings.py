@@ -1200,6 +1200,8 @@ async def async_build_panel_payload(
     """Build the panel payload without blocking the event loop."""
     values = kwargs.get("values") or get_settings_data(hass, config_entry)
     include_log_events = kwargs.get("include_log_events", True)
+    include_notify_profiles = kwargs.get("include_notify_profiles", True)
+    include_path_validations = kwargs.get("include_path_validations", True)
     notify_profiles = kwargs.get("notify_profiles")
     notify_profile_errors = kwargs.get("notify_profile_errors")
     errors = kwargs.get("errors")
@@ -1207,20 +1209,26 @@ async def async_build_panel_payload(
     message_type = kwargs.get("message_type")
     restart_required = kwargs.get("restart_required", False)
 
-    async_jobs = [
-        async_load_notify_profiles(hass),
-        async_get_notify_chime_options(hass),
-    ]
+    async_jobs = [async_get_notify_chime_options(hass)]
+    if include_notify_profiles:
+        async_jobs.insert(0, async_load_notify_profiles(hass))
     if include_log_events:
         async_jobs.append(async_get_panel_log_events(hass))
 
     async_results = await asyncio.gather(*async_jobs)
-    loaded_notify_profiles, notify_profiles_load_error = async_results[0]
-    chime_options = async_results[1]
-    log_events = async_results[2] if include_log_events else []
+    result_index = 0
+    if include_notify_profiles:
+        loaded_notify_profiles, notify_profiles_load_error = async_results[result_index]
+        result_index += 1
+    else:
+        loaded_notify_profiles, notify_profiles_load_error = [], None
+
+    chime_options = async_results[result_index]
+    result_index += 1
+    log_events = async_results[result_index] if include_log_events else []
 
     if notify_profiles is None:
-        notify_profiles = loaded_notify_profiles
+        notify_profiles = loaded_notify_profiles if include_notify_profiles else []
 
     tts_platforms = get_tts_platforms(hass)
     field_options = {
@@ -1248,6 +1256,7 @@ async def async_build_panel_payload(
         "errors": errors or {},
         "values": values,
         "notify_profiles": notify_profiles,
+        "notify_profiles_hydrated": include_notify_profiles,
         "notify_profile_errors": notify_profile_errors or [],
         "notify_profiles_load_error": notify_profiles_load_error,
         "log_events": log_events,
@@ -1288,7 +1297,8 @@ async def async_build_panel_payload(
                                 _normalize_string(values.get(field.key)),
                                 values,
                             )
-                            if field.key in PATH_BROWSABLE_FIELD_KEYS
+                            if include_path_validations
+                            and field.key in PATH_BROWSABLE_FIELD_KEYS
                             else None
                         ),
                         "options": field_options.get(field.key, []),
@@ -1627,7 +1637,7 @@ def validate_path_field(
     normalized = _normalize_string(path)
     normalized_with_slash = ensure_trailing_slash(normalized)
     current_values = {
-        **get_settings_data(hass, config_entry),
+        **(values if values is not None else get_settings_data(hass, config_entry)),
         **(values or {}),
         field_key: normalized,
     }

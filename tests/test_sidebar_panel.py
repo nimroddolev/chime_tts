@@ -26,6 +26,7 @@ save_settings_handler = inspect.unwrap(panel_module.websocket_save_settings)
 repeat_log_action_handler = inspect.unwrap(panel_module.websocket_repeat_log_action)
 get_logs_handler = inspect.unwrap(panel_module.websocket_get_logs)
 get_settings_handler = inspect.unwrap(panel_module.websocket_get_settings)
+get_notify_profiles_handler = inspect.unwrap(panel_module.websocket_get_notify_profiles)
 
 
 class FakeConfigEntries:
@@ -232,6 +233,66 @@ async def test_websocket_get_settings_skips_initial_log_backfill(tmp_path: Path)
 
     assert connection.errors == []
     assert connection.results[-1][1]["log_events"] == []
+
+
+@pytest.mark.asyncio
+async def test_websocket_get_settings_defers_notify_profile_loading(tmp_path: Path) -> None:
+    """Initial panel payloads should avoid blocking on notify profile hydration."""
+    hass, _config_entry, _paths = make_hass(tmp_path)
+    connection = FakeConnection()
+
+    async def fail_if_called(_hass):
+        raise AssertionError("Initial settings load should not request notify profiles")
+
+    original = settings_module.async_load_notify_profiles
+    settings_module.async_load_notify_profiles = fail_if_called
+    try:
+        await get_settings_handler(
+            hass,
+            connection,
+            {
+                "id": 18,
+                "type": "chime_tts/get_settings",
+            },
+        )
+    finally:
+        settings_module.async_load_notify_profiles = original
+
+    assert connection.errors == []
+    payload = connection.results[-1][1]
+    assert payload["notify_profiles"] == []
+    assert payload["notify_profiles_hydrated"] is False
+
+
+@pytest.mark.asyncio
+async def test_websocket_get_notify_profiles_returns_hydrated_profiles(tmp_path: Path) -> None:
+    """Deferred notify profile hydration should return the parsed YAML profiles."""
+    hass, _config_entry, _paths = make_hass(tmp_path)
+    connection = FakeConnection()
+
+    async def fake_load_notify_profiles(_hass):
+        return ([{"name": "Front Door", "entity_id": "media_player.kitchen"}], None)
+
+    original = panel_module.async_load_notify_profiles
+    panel_module.async_load_notify_profiles = fake_load_notify_profiles
+    try:
+        await get_notify_profiles_handler(
+            hass,
+            connection,
+            {
+                "id": 19,
+                "type": "chime_tts/get_notify_profiles",
+            },
+        )
+    finally:
+        panel_module.async_load_notify_profiles = original
+
+    assert connection.errors == []
+    assert connection.results[-1][1] == {
+        "notify_profiles": [{"name": "Front Door", "entity_id": "media_player.kitchen"}],
+        "notify_profiles_hydrated": True,
+        "notify_profiles_load_error": None,
+    }
 
 
 def test_validate_path_field_suggests_media_directories_for_invalid_media_path(tmp_path: Path) -> None:

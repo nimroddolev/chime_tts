@@ -202,6 +202,7 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
     if not hass.data.get(WS_DATA_KEY):
         async_setup_panel_log_store(hass)
         websocket_api.async_register_command(hass, websocket_get_settings)
+        websocket_api.async_register_command(hass, websocket_get_notify_profiles)
         websocket_api.async_register_command(hass, websocket_browse_path)
         websocket_api.async_register_command(hass, websocket_validate_path)
         websocket_api.async_register_command(hass, websocket_get_logs)
@@ -271,7 +272,56 @@ async def websocket_get_settings(
 
     connection.send_result(
         msg["id"],
-        await async_build_panel_payload(hass, config_entry, include_log_events=False),
+        await async_build_panel_payload(
+            hass,
+            config_entry,
+            include_log_events=False,
+            include_notify_profiles=False,
+            include_path_validations=False,
+        ),
+    )
+
+
+@websocket_api.websocket_command({"type": "chime_tts/get_notify_profiles"})
+@websocket_api.async_response
+async def websocket_get_notify_profiles(
+    hass: HomeAssistant,
+    connection,
+    msg: dict[str, Any],
+) -> None:
+    """Return notification profiles after the main panel payload has loaded."""
+    if connection.user is None or not connection.user.is_admin:
+        connection.send_error(
+            msg["id"],
+            "unauthorized",
+            "Administrator access is required to view Chime TTS settings.",
+        )
+        return
+
+    config_entry = _get_config_entry(hass)
+    if config_entry is None:
+        connection.send_error(
+            msg["id"],
+            "not_configured",
+            "Chime TTS is not configured yet.",
+        )
+        return
+
+    notify_profiles_load_error = None
+    try:
+        notify_profiles, notify_profiles_load_error = await async_load_notify_profiles(hass)
+    except Exception as error:
+        LOGGER.exception("Failed to load notify profiles for panel hydration")
+        notify_profiles = []
+        notify_profiles_load_error = f"Unable to load notify profiles: {error}"
+
+    connection.send_result(
+        msg["id"],
+        {
+            "notify_profiles": notify_profiles,
+            "notify_profiles_hydrated": True,
+            "notify_profiles_load_error": notify_profiles_load_error,
+        },
     )
 
 
