@@ -887,6 +887,16 @@ template.innerHTML = `
       color: #fff;
     }
 
+    .log-event-icon.warning {
+      background: color-mix(in srgb, var(--warning-color, #f59e0b) 78%, black 22%);
+      color: #fff7ed;
+    }
+
+    .log-event-icon.error {
+      background: color-mix(in srgb, var(--error-color, #d32f2f) 72%, black 28%);
+      color: #fff;
+    }
+
     .log-event-icon svg {
       width: 18px;
       height: 18px;
@@ -920,6 +930,16 @@ template.innerHTML = `
       align-items: center;
       justify-content: flex-end;
       gap: 8px;
+    }
+
+    :host([narrow]) .log-event-row-header {
+      grid-template-columns: minmax(0, 1fr);
+      align-items: start;
+    }
+
+    :host([narrow]) .log-event-actions {
+      justify-content: flex-end;
+      width: 100%;
     }
 
     .log-event-row .button-secondary {
@@ -1118,9 +1138,11 @@ template.innerHTML = `
     }
 
     .configuration-workspace .field {
-      border: 1px solid color-mix(in srgb, #3b82f6 34%, var(--divider-color));
-      background: color-mix(in srgb, #3b82f6 10%, var(--card-background-color) 90%);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+      border: 1px solid color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
+      background:
+        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 14%, transparent), transparent 42%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 92%, white 8%), color-mix(in srgb, var(--secondary-background-color) 84%, transparent));
+      box-shadow: none;
     }
 
     .field.wide {
@@ -1138,17 +1160,46 @@ template.innerHTML = `
     }
 
     .field-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: flex-start;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 12px;
+      row-gap: 0px;
+      align-items: start;
     }
 
     .field-header {
       display: flex;
       gap: 14px;
-      align-items: center;
+      align-items: flex-start;
       min-width: 0;
+    }
+
+    .field-top.with-icon {
+      grid-template-columns: 56px minmax(0, 1fr) auto;
+    }
+
+    .field-top.with-icon .field-icon {
+      grid-column: 1;
+      grid-row: 1 / span 2;
+      align-self: center;
+    }
+
+    .field-top.with-icon .field-header {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: start;
+    }
+
+    .field-top.with-icon .required {
+      grid-column: 3;
+      grid-row: 1;
+      align-self: start;
+    }
+
+    .field-top.with-icon .field-description-row {
+      grid-column: 2 / 4;
+      grid-row: 2;
+      align-self: start;
     }
 
     .field-icon {
@@ -1161,6 +1212,12 @@ template.innerHTML = `
 
     .field-copy {
       min-width: 0;
+    }
+
+    .field-description-row {
+      grid-column: 1 / -1;
+      min-width: 0;
+      align-self: start;
     }
 
     .field-label {
@@ -1182,10 +1239,21 @@ template.innerHTML = `
 
     .field-label-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       min-width: 0;
+    }
+
+    .field-label-row > .field-label {
+      min-width: 0;
+      flex: 0 1 auto;
+    }
+
+    .field-label-row > .field-help-link,
+    .field-label-row > .field-changed-pill,
+    .field-label-row > .field-reset-link {
+      flex: 0 0 auto;
     }
 
     .field-label-row .spacer {
@@ -1238,7 +1306,7 @@ template.innerHTML = `
     }
 
     .field-description {
-      margin: 4px 0 0;
+      margin: 0;
       font-size: 0.92rem;
       color: var(--secondary-text-color);
     }
@@ -1301,26 +1369,20 @@ template.innerHTML = `
     }
 
     .configuration-workspace .field .browse-button {
-      border-color: color-mix(in srgb, #3b82f6 44%, var(--divider-color));
+      border-color: color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
       background:
-        linear-gradient(
-          180deg,
-          color-mix(in srgb, #3b82f6 22%, var(--card-background-color) 78%),
-          color-mix(in srgb, #3b82f6 14%, var(--card-background-color) 86%)
-        );
-      color: color-mix(in srgb, #dbeafe 72%, var(--primary-text-color) 28%);
-      box-shadow: inset 0 1px 0 color-mix(in srgb, #93c5fd 28%, transparent);
+        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 14%, transparent), transparent 42%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 92%, white 8%), color-mix(in srgb, var(--secondary-background-color) 84%, transparent));
+      color: var(--primary-text-color);
+      box-shadow: none;
     }
 
     .configuration-workspace .field .browse-button:hover,
     .configuration-workspace .field .browse-button:focus-visible {
-      border-color: color-mix(in srgb, #3b82f6 62%, var(--divider-color));
+      border-color: color-mix(in srgb, var(--primary-color) 22%, var(--divider-color));
       background:
-        linear-gradient(
-          180deg,
-          color-mix(in srgb, #3b82f6 30%, var(--card-background-color) 70%),
-          color-mix(in srgb, #3b82f6 20%, var(--card-background-color) 80%)
-        );
+        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 18%, transparent), transparent 42%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 94%, white 6%), color-mix(in srgb, var(--secondary-background-color) 86%, transparent));
     }
 
     .browse-button:disabled {
@@ -1421,11 +1483,11 @@ template.innerHTML = `
 
     .footer {
       display: flex;
-      justify-content: flex-end;
+      justify-content: center;
       align-items: center;
       gap: 16px;
       flex-wrap: wrap;
-      padding: 8px 2px 4px;
+      padding: 20px 2px 8px;
     }
 
     .loading {
@@ -1894,6 +1956,27 @@ template.innerHTML = `
       height: 20px;
       display: block;
       fill: none;
+    }
+
+    @media (prefers-color-scheme: light) {
+      .notify-profile-actions [data-open-notify-test] {
+        color: #14532d;
+        background: linear-gradient(180deg, rgba(134, 239, 172, 0.88), rgba(74, 222, 128, 0.62));
+        border-color: rgba(22, 163, 74, 0.72);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.72),
+          0 0 0 1px rgba(34, 197, 94, 0.14);
+      }
+
+      .notify-profile-actions [data-open-notify-test]:hover,
+      .notify-profile-actions [data-open-notify-test]:focus-visible {
+        background: linear-gradient(180deg, rgba(110, 231, 183, 0.96), rgba(34, 197, 94, 0.74));
+        border-color: rgba(21, 128, 61, 0.84);
+      }
+
+      .notify-profile-actions [data-open-notify-test] svg {
+        filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.45));
+      }
     }
 
     .notify-profile-actions [data-remove-notify-profile] {
@@ -2643,6 +2726,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           <form id="settings-form">
             ${this._renderSettingsContent(sections, values, errors, data)}
             <div class="footer">
+              ${this._renderPageFooter(data)}
             </div>
           </form>
         `
@@ -2774,11 +2858,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     });
     this.shadowRoot.querySelectorAll("[data-notify-inline-test-message]").forEach((field) => {
       field.addEventListener("input", (event) => {
-        this._updateNotifyProfileTestMessage(
-          Number(event.currentTarget.dataset.notifyIndex),
-          event.currentTarget.value,
-        );
-        this._rerenderPreservingInputState();
+        this._handleNotifyProfileTestMessageInput(event);
       });
     });
     this.shadowRoot.querySelectorAll("[data-run-notify-inline-test]").forEach((button) => {
@@ -3217,8 +3297,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _renderAboutSection(section) {
     const aboutExpanded = this._isChapterExpanded("about");
     const items = section.about_items || [];
-    const version = section.version || this._data?.version || "";
-    const iconUrl = section.footer_logo_url || this._data?.footer_logo_url || "";
     return `
       <div
         class="chapter-group chapter-workspace about-workspace ${aboutExpanded ? "expanded" : "collapsed"}"
@@ -3236,19 +3314,29 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               <div class="about-grid">
                 ${items.map((item) => this._renderAboutCard(item)).join("")}
               </div>
-              <div class="about-footer">
-                ${iconUrl
-                  ? `<img class="about-logo" src="${this._escapeAttribute(iconUrl)}" alt="Chime TTS logo" loading="lazy" />`
-                  : ""
-                }
-                ${version
-                  ? `<p class="about-version-line">${this._escapeHtml(`Version ${String(version)}`)}</p>`
-                  : ""
-                }                
-              </div>
             </div>
           `,
         })}
+      </div>
+    `;
+  }
+
+  _renderPageFooter(data) {
+    const version = data?.version || this._data?.version || "";
+    const iconUrl = data?.footer_logo_url || this._data?.footer_logo_url || "";
+    if (!version && !iconUrl) {
+      return "";
+    }
+    return `
+      <div class="about-footer">
+        ${iconUrl
+          ? `<img class="about-logo" src="${this._escapeAttribute(iconUrl)}" alt="Chime TTS logo" loading="lazy" />`
+          : ""
+        }
+        ${version
+          ? `<p class="about-version-line">${this._escapeHtml(`Version ${String(version)}`)}</p>`
+          : ""
+        }
       </div>
     `;
   }
@@ -3286,6 +3374,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       ? "error"
       : this._escapeAttribute(event.row_color || "action");
     const eventIcon = this._getLogEventIcon(event);
+    const eventIconClass = this._getLogEventIconClass(event);
     const rawLogs = (event.raw_logs || [])
       .map((entry) => `[${entry.timestamp}] ${String(entry.level || "").toUpperCase()} ${entry.logger}: ${entry.message}`)
       .join("\n");
@@ -3326,7 +3415,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       >
         <div class="log-event-row-header">
           <div class="log-event-row-main">
-            ${eventIcon ? `<span class="log-event-icon" aria-hidden="true">${eventIcon}</span>` : ""}
+            ${eventIcon ? `<span class="log-event-icon ${this._escapeAttribute(eventIconClass)}" aria-hidden="true">${eventIcon}</span>` : ""}
             <div class="log-event-copy">
               <p class="log-event-title">${this._escapeHtml(event.title || "Log event")}</p>
               <p class="log-event-meta">${this._escapeHtml(this._formatLogEventMeta(event))}</p>
@@ -3491,10 +3580,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                 <p class="field-label">Target media players</p>
                 ${helpLink}
               </div>
-              <p class="field-description">Select one one or more media_player entities to play the notification.</p>
             </div>
           </div>
           <span class="required">Required</span>
+          <div class="field-description-row">
+            <p class="field-description">Select one one or more media_player entities to play the notification.</p>
+          </div>
         </div>
         ${selectedEntities.length > 0
           ? `
@@ -3631,30 +3722,34 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             <div class="field-top">
               <div class="field-header">
                 <div class="field-copy">
-                      <div class="field-label-row">
-                        <p class="field-label">${this._escapeHtml(field.label)}</p>
-                        ${helpLink}
-                        ${this._isNotifyProfileFieldChanged(index, field.key)
-                          ? `
-                            <span class="spacer"></span>
-                            <a
-                              href="#"
-                              class="field-reset-link"
-                              data-reset-notify-field="${this._escapeAttribute(field.key)}"
-                              data-notify-index="${this._escapeAttribute(String(index))}"
-                            >Reset</a>
-                          `
-                          : ""
-                        }
-                      </div>
-                      ${field.description && field.key === "audio_conversion"
-                        ? `<p class="field-description">${this._escapeHtml(field.description)}</p>`
-                        : ""
-                      }
-                    </div>
+                  <div class="field-label-row">
+                    <p class="field-label">${this._escapeHtml(field.label)}</p>
+                    ${helpLink}
+                    ${this._isNotifyProfileFieldChanged(index, field.key)
+                      ? `
+                        <span class="spacer"></span>
+                        <a
+                          href="#"
+                          class="field-reset-link"
+                          data-reset-notify-field="${this._escapeAttribute(field.key)}"
+                          data-notify-index="${this._escapeAttribute(String(index))}"
+                        >Reset</a>
+                      `
+                      : ""
+                    }
                   </div>
-                  ${field.required ? '<span class="required">Required</span>' : ""}
                 </div>
+              </div>
+              ${field.required ? '<span class="required">Required</span>' : ""}
+              ${field.description && field.key === "audio_conversion"
+                ? `
+                  <div class="field-description-row">
+                    <p class="field-description">${this._escapeHtml(field.description)}</p>
+                  </div>
+                `
+                : ""
+              }
+            </div>
               `
           : ""
         }
@@ -3711,19 +3806,21 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       : "";
     return `
       <div class="${fieldClasses.join(" ")}">
-        <div class="field-top">
+        <div class="field-top with-icon">
+          <img class="field-icon" src="${this._escapeAttribute(normalizedFieldIconUrl)}" alt="" loading="lazy" />
           <div class="field-header">
-            <img class="field-icon" src="${this._escapeAttribute(normalizedFieldIconUrl)}" alt="" loading="lazy" />
             <div class="field-copy">
               <div class="field-label-row">
                 <p class="field-label">${this._escapeHtml(field.label)}</p>
                 ${isChanged ? '<span class="field-changed-pill">Changed</span>' : ""}
                 ${helpLink}
               </div>
-              <p class="field-description">${this._escapeHtml(field.description || "")}</p>
             </div>
           </div>
           ${field.required ? '<span class="required">Required</span>' : ""}
+          <div class="field-description-row">
+            <p class="field-description">${this._escapeHtml(field.description || "")}</p>
+          </div>
         </div>
         ${control}
         ${providerHint}
@@ -4651,7 +4748,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _getLogEventIcon(event) {
-    if (event.has_error) {
+    if (this._getLogEventIconClass(event) !== "normal") {
       return ICONS.alert;
     }
     if (event.type === "integration_initiation") {
@@ -4670,6 +4767,33 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return ICONS.check;
     }
     return ICONS.check;
+  }
+
+  _getLogEventIconClass(event) {
+    if (!event) {
+      return "normal";
+    }
+
+    const isSayAction = event.title === "Action call: chime_tts.say"
+      || event.title === "Action call: chime_tts.say_url";
+    if (!isSayAction) {
+      return event.has_error ? "error" : "normal";
+    }
+
+    if (event.has_error || this._eventHasLogLevel(event, ["error", "critical", "fatal"])) {
+      return "error";
+    }
+
+    if (this._eventHasLogLevel(event, ["warning", "warn"])) {
+      return "warning";
+    }
+
+    return "normal";
+  }
+
+  _eventHasLogLevel(event, levels) {
+    const allowedLevels = new Set((levels || []).map((level) => String(level || "").toLowerCase()));
+    return (event?.raw_logs || []).some((entry) => allowedLevels.has(String(entry?.level || "").toLowerCase()));
   }
 
   _formatTimestamp(value) {
@@ -5747,6 +5871,23 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         sentAt: 0,
       },
     };
+  }
+
+  _handleNotifyProfileTestMessageInput(event) {
+    const field = event.currentTarget;
+    const index = Number(field?.dataset?.notifyIndex);
+    if (Number.isNaN(index)) {
+      return;
+    }
+
+    this._updateNotifyProfileTestMessage(index, field.value);
+
+    const row = field.closest(".notify-profile-actions.testing");
+    const sendButton = row?.querySelector(`[data-run-notify-inline-test="${this._escapeSelectorValue(String(index))}"]`);
+    if (sendButton) {
+      const state = this._getNotifyProfileTestState(index);
+      sendButton.disabled = state.sending || !String(state.message || "").trim();
+    }
   }
 
   async _runNotifyProfileTest(index) {

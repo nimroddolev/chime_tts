@@ -1351,7 +1351,7 @@ async def async_build_panel_payload(
             {
                 "key": "about",
                 "kind": "about",
-                "title": "About",
+                "title": "Support & Info",
                 "description": "Find documentation, support, bug reporting, feature request, and project support links for Chime TTS.",
                 "docs_url": PROJECT_HOME_URL,
                 "version": VERSION,
@@ -2133,7 +2133,7 @@ def build_panel_payload(
             {
                 "key": "about",
                 "kind": "about",
-                "title": "About",
+                "title": "Support & Info",
                 "description": "Find documentation, support, bug reporting, feature request, and project support links for Chime TTS.",
                 "docs_url": PROJECT_HOME_URL,
                 "version": VERSION,
