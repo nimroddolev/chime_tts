@@ -211,7 +211,7 @@ template.innerHTML = `
     .section {
       border: 1px solid var(--divider-color);
       border-radius: 24px;
-      background: color-mix(in srgb, var(--card-background-color) 92%, white 8%);
+      // background: color-mix(in srgb, var(--card-background-color) 92%, white 8%);
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
     }
 
@@ -398,7 +398,7 @@ template.innerHTML = `
 
     @media (prefers-color-scheme: light) {
       .topbar-wrap {
-        background: color-mix(in srgb, var(--card-background-color) 92%, white 8%);
+        // background: color-mix(in srgb, var(--card-background-color) 92%, white 8%);
       }
 
       .section {
@@ -966,12 +966,19 @@ template.innerHTML = `
     }
 
     .section-header {
-      margin-bottom: 18px;
       display: flex;
       justify-content: space-between;
       gap: 16px;
       align-items: flex-start;
       flex-wrap: wrap;
+    }
+
+    .config-section-card {
+      cursor: pointer;
+    }
+
+    .config-section-card.collapsed .section-header {
+      margin-bottom: 0;
     }
 
     .section-header-copy {
@@ -989,6 +996,35 @@ template.innerHTML = `
       margin: 0 0 6px;
       font-size: 1.25rem;
       letter-spacing: -0.02em;
+    }
+
+    .config-section-toggle {
+      min-width: 42px;
+      min-height: 42px;
+      padding: 0;
+      flex: 0 0 auto;
+    }
+
+    .config-section-toggle svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      display: block;
+      transform: rotate(-90deg);
+      transition: transform 250ms ease;
+    }
+
+    .config-section-toggle.expanded svg {
+      transform: rotate(0deg);
+    }
+
+    .config-section-body {
+      margin-top: 2px;
+      padding-top: 14px;
+      border-top: 1px solid color-mix(in srgb, var(--divider-color) 66%, transparent);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
     .field-grid {
@@ -1009,6 +1045,12 @@ template.innerHTML = `
       border-radius: 18px;
       background: color-mix(in srgb, var(--secondary-background-color) 64%, transparent);
       border: 1px solid transparent;
+    }
+
+    .configuration-workspace .field {
+      border: 1px solid color-mix(in srgb, #3b82f6 34%, var(--divider-color));
+      background: color-mix(in srgb, #3b82f6 10%, var(--card-background-color) 90%);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
     }
 
     .field.wide {
@@ -1183,9 +1225,32 @@ template.innerHTML = `
       padding: 12px 16px;
       border-radius: 14px;
       border: 1px solid var(--divider-color);
-      background: color-mix(in srgb, var(--card-background-color) 92%, white 8%);
+      // background: color-mix(in srgb, var(--card-background-color) 92%, white 8%);
       color: var(--primary-text-color);
       box-shadow: none;
+    }
+
+    .configuration-workspace .field .browse-button {
+      border-color: color-mix(in srgb, #3b82f6 44%, var(--divider-color));
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, #3b82f6 22%, var(--card-background-color) 78%),
+          color-mix(in srgb, #3b82f6 14%, var(--card-background-color) 86%)
+        );
+      color: color-mix(in srgb, #dbeafe 72%, var(--primary-text-color) 28%);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, #93c5fd 28%, transparent);
+    }
+
+    .configuration-workspace .field .browse-button:hover,
+    .configuration-workspace .field .browse-button:focus-visible {
+      border-color: color-mix(in srgb, #3b82f6 62%, var(--divider-color));
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, #3b82f6 30%, var(--card-background-color) 70%),
+          color-mix(in srgb, #3b82f6 20%, var(--card-background-color) 80%)
+        );
     }
 
     .browse-button:disabled {
@@ -2115,6 +2180,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._pickerLoading = false;
     this._pickerError = null;
     this._advancedSections = {};
+    this._expandedConfigSections = {};
     this._expandedNotifyProfiles = {};
     this._notifyProfileTests = {};
     this._notifyProfileTestTimers = {};
@@ -2201,6 +2267,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._isDirty = false;
       this._clientErrors = {};
       this._notifyProfileClientErrors = [];
+      this._expandedConfigSections = {};
       this._expandedNotifyProfiles = {};
       this._clearAllNotifyProfileTestTimers();
       this._notifyProfileTests = {};
@@ -2235,6 +2302,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._isDirty = false;
       this._clientErrors = {};
       this._notifyProfileClientErrors = [];
+      this._expandedConfigSections = {};
       this._expandedNotifyProfiles = {};
       this._clearAllNotifyProfileTestTimers();
       this._notifyProfileTests = {};
@@ -2381,6 +2449,32 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     });
     this.shadowRoot.querySelectorAll("[data-reset-section]").forEach((button) => {
       button.addEventListener("click", (event) => this._resetSection(event.currentTarget.dataset.resetSection));
+    });
+    this.shadowRoot.querySelectorAll("[data-config-section-card]").forEach((card) => {
+      card.addEventListener("click", (event) => {
+        if (this._shouldIgnoreConfigSectionCardToggle(event)) {
+          return;
+        }
+        event.stopPropagation();
+        this._toggleConfigSection(event.currentTarget.dataset.configSectionCard);
+      });
+      card.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") {
+          return;
+        }
+        if (this._shouldIgnoreConfigSectionCardToggle(event)) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        this._toggleConfigSection(event.currentTarget.dataset.configSectionCard);
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-toggle-config-section]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        this._toggleConfigSection(event.currentTarget.dataset.toggleConfigSection);
+      });
     });
     this.shadowRoot.querySelectorAll("[data-toggle-advanced]").forEach((button) => {
       button.addEventListener("click", (event) => this._toggleAdvanced(event.currentTarget.dataset.toggleAdvanced));
@@ -2660,40 +2754,61 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const advancedFields = sectionFields.filter((field) => field.advanced);
     const isAdvancedOpen = this._isAdvancedOpen(section);
     const sectionDirty = this._isSectionDirty(section);
+    const expanded = this._isConfigSectionExpanded(section.key);
     return `
-      <section class="section" data-section-key="${this._escapeAttribute(section.key)}">
+      <section
+        class="section config-section-card ${expanded ? "expanded" : "collapsed"}"
+        data-section-key="${this._escapeAttribute(section.key)}"
+        data-config-section-card="${this._escapeAttribute(section.key)}"
+        role="button"
+        tabindex="0"
+        aria-expanded="${expanded ? "true" : "false"}"
+      >
         <div class="section-header">
           <div class="section-header-copy">
             <h2>${this._escapeHtml(section.title)}</h2>
             <p>${this._escapeHtml(section.description || "")}</p>
           </div>
-          ${sectionDirty ? `
-            <div class="section-header-actions">
+          <div class="section-header-actions">
+            ${sectionDirty ? `
               <button
                 class="button-secondary"
                 type="button"
                 data-reset-section="${this._escapeAttribute(section.key)}"
               >Reset Section</button>
-            </div>
-          ` : ""}
-        </div>
-        <div class="field-grid">
-          ${basicFields.map((field) => this._renderField(field, values[field.key], errors[field.key])).join("")}
-        </div>
-        ${advancedFields.length > 0 ? `
-          <div class="advanced-toggle-row">
-            <button class="advanced-toggle" type="button" data-toggle-advanced="${this._escapeAttribute(section.key)}">
-              ${isAdvancedOpen ? "Hide" : "Show"} Advanced
-            </button>
+            ` : ""}
+            <button
+              class="button-secondary icon-only-button config-section-toggle ${expanded ? "expanded" : "collapsed"}"
+              type="button"
+              data-toggle-config-section="${this._escapeAttribute(section.key)}"
+              aria-label="${this._escapeAttribute(expanded ? "Collapse section" : "Expand section")}"
+              title="${this._escapeAttribute(expanded ? "Collapse" : "Expand")}"
+            >${ICONS.chevron}</button>
           </div>
-          <div class="row-collapse ${isAdvancedOpen ? "expanded" : "collapsed"}">
-            <div class="row-collapse-inner">
-              <div class="field-grid advanced-fields">
-                ${advancedFields.map((field) => this._renderField(field, values[field.key], errors[field.key])).join("")}
+        </div>
+        <div class="row-collapse ${expanded ? "expanded" : "collapsed"}">
+          <div class="row-collapse-inner">
+            <div class="config-section-body">
+              <div class="field-grid">
+                ${basicFields.map((field) => this._renderField(field, values[field.key], errors[field.key])).join("")}
               </div>
+              ${advancedFields.length > 0 ? `
+                <div class="advanced-toggle-row">
+                  <button class="advanced-toggle" type="button" data-toggle-advanced="${this._escapeAttribute(section.key)}">
+                    ${isAdvancedOpen ? "Hide" : "Show"} Advanced
+                  </button>
+                </div>
+                <div class="row-collapse ${isAdvancedOpen ? "expanded" : "collapsed"}">
+                  <div class="row-collapse-inner">
+                    <div class="field-grid advanced-fields">
+                      ${advancedFields.map((field) => this._renderField(field, values[field.key], errors[field.key])).join("")}
+                    </div>
+                  </div>
+                </div>
+              ` : ""}
             </div>
           </div>
-        ` : ""}
+        </div>
       </section>
     `;
   }
@@ -3986,6 +4101,53 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return explicit;
     }
     return false;
+  }
+
+  _isConfigSectionExpanded(sectionKey) {
+    return this._expandedConfigSections?.[sectionKey] === true;
+  }
+
+  _toggleConfigSection(sectionKey) {
+    if (!sectionKey) {
+      return;
+    }
+    this._animateHeightTransition(
+      `[data-config-section-card="${this._escapeSelectorValue(sectionKey)}"]`,
+      () => {
+        this._expandedConfigSections = {
+          ...(this._expandedConfigSections || {}),
+          [sectionKey]: !this._isConfigSectionExpanded(sectionKey),
+        };
+        this._render();
+      },
+    );
+  }
+
+  _shouldIgnoreConfigSectionCardToggle(event) {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return false;
+    }
+
+    if (event.type === "click" && window.getSelection && !window.getSelection().isCollapsed) {
+      return true;
+    }
+
+    return Boolean(
+      target.closest(
+        [
+          "a",
+          "button",
+          "input",
+          "select",
+          "textarea",
+          "label",
+          ".row-collapse",
+          ".field-grid",
+          ".advanced-toggle-row",
+        ].join(", "),
+      ),
+    );
   }
 
   _isChapterExpanded(chapterKey) {

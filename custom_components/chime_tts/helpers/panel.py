@@ -70,6 +70,11 @@ def _set_cache_headers(response: web.StreamResponse) -> None:
     response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
 
 
+def _set_panel_module_headers(response: web.StreamResponse) -> None:
+    """Serve the panel module with reload-friendly cache headers."""
+    response.headers["Cache-Control"] = "no-cache"
+
+
 class ChimeTTSPanelView(HomeAssistantView):
     """Serve the Chime TTS panel JavaScript module."""
 
@@ -84,7 +89,7 @@ class ChimeTTSPanelView(HomeAssistantView):
     async def get(self, request) -> web.FileResponse:
         """Return the panel JavaScript module."""
         response = web.FileResponse(self._panel_path / "chime-tts-panel.js")
-        _set_cache_headers(response)
+        _set_panel_module_headers(response)
         return response
 
 
@@ -157,9 +162,7 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
     """Register the custom settings panel and its backend APIs."""
     integration_path = Path(__file__).resolve().parent.parent
     panel_path = integration_path / "panel"
-    panel_module_resource_url = _build_asset_resource_url(
-        PANEL_MODULE_URL, panel_path / "chime-tts-panel.js"
-    )
+    panel_module_resource_url = PANEL_MODULE_URL
     panel_iconset_resource_url = _build_asset_resource_url(
         PANEL_ICONSET_URL, panel_path / "iconset.js"
     )
