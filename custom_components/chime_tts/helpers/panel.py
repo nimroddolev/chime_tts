@@ -44,10 +44,12 @@ PANEL_COMPONENT_NAME = "chime-tts-settings-panel"
 PANEL_URL_PATH = "chime-tts"
 PANEL_MODULE_URL = f"/api/{DOMAIN}/panel.js"
 PANEL_ICON_URL = f"/api/{DOMAIN}/icon.svg"
+PANEL_FOOTER_LOGO_URL = f"/api/{DOMAIN}/footer_logo.png"
 PANEL_ICONSET_URL = f"/api/{DOMAIN}/iconset.js"
 PANEL_OPTION_ICON_URL = f"/api/{DOMAIN}/option_icons/{{icon_name}}"
 PANEL_VIEW_NAME = f"api:{DOMAIN}:panel"
 PANEL_ICON_VIEW_NAME = f"api:{DOMAIN}:icon"
+PANEL_FOOTER_LOGO_VIEW_NAME = f"api:{DOMAIN}:footer_logo"
 PANEL_ICONSET_VIEW_NAME = f"api:{DOMAIN}:iconset"
 PANEL_OPTION_ICON_VIEW_NAME = f"api:{DOMAIN}:option_icon"
 PANEL_DATA_KEY = f"{DOMAIN}_panel_view_registered"
@@ -111,6 +113,24 @@ class ChimeTTSPanelIconView(HomeAssistantView):
         return response
 
 
+class ChimeTTSPanelFooterLogoView(HomeAssistantView):
+    """Serve the Chime TTS footer logo image."""
+
+    url = PANEL_FOOTER_LOGO_URL
+    name = PANEL_FOOTER_LOGO_VIEW_NAME
+    requires_auth = False
+
+    def __init__(self, integration_path: Path) -> None:
+        """Initialize the footer logo view."""
+        self._integration_path = integration_path
+
+    async def get(self, request) -> web.FileResponse:
+        """Return the Chime TTS footer logo image."""
+        response = web.FileResponse(self._integration_path / "panel" / "footer-logo.png")
+        _set_cache_headers(response)
+        return response
+
+
 class ChimeTTSPanelIconsetView(HomeAssistantView):
     """Serve the Chime TTS custom iconset."""
 
@@ -170,6 +190,7 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
     if not hass.data.get(PANEL_DATA_KEY):
         hass.http.register_view(ChimeTTSPanelView(panel_path))
         hass.http.register_view(ChimeTTSPanelIconView(integration_path))
+        hass.http.register_view(ChimeTTSPanelFooterLogoView(integration_path))
         hass.http.register_view(ChimeTTSPanelIconsetView(panel_path))
         hass.http.register_view(ChimeTTSPanelOptionIconView(panel_path))
         add_extra_js_url(hass, panel_iconset_resource_url)

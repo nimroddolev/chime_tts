@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import Mapping
 from dataclasses import dataclass
 import os
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
@@ -61,6 +62,19 @@ from .helpers.helpers import ChimeTTSHelper
 from .helpers.panel_logs import async_get_panel_log_events, get_panel_log_events
 
 helpers = ChimeTTSHelper()
+
+_INTEGRATION_ROOT = Path(__file__).resolve().parent
+_FOOTER_LOGO_PATH = _INTEGRATION_ROOT / "panel" / "footer-logo.png"
+
+
+def _footer_logo_url() -> str:
+    """Return the cache-busted footer logo URL."""
+    fallback_version = VERSION.lstrip("v") or VERSION
+    try:
+        asset_version = str(_FOOTER_LOGO_PATH.stat().st_mtime_ns)
+    except OSError:
+        asset_version = fallback_version
+    return f"/api/{DOMAIN}/footer_logo.png?v={asset_version}"
 
 
 @dataclass
@@ -1222,6 +1236,7 @@ async def async_build_panel_payload(
     return {
         "version": VERSION,
         "icon_url": f"/api/{DOMAIN}/icon.svg?v={VERSION.lstrip('v') or VERSION}",
+        "footer_logo_url": _footer_logo_url(),
         "documentation_url": CONFIGURATION_DOCS_BASE_URL,
         "logs_url": f"/config/logs?filter={DOMAIN}",
         "fallback_note": "The standard Configure dialog still works and remains available as a fallback.",
@@ -1330,6 +1345,7 @@ async def async_build_panel_payload(
                 "description": "Find documentation, support, bug reporting, feature request, and project support links for Chime TTS.",
                 "docs_url": PROJECT_HOME_URL,
                 "version": VERSION,
+                "footer_logo_url": _footer_logo_url(),
                 "about_items": [dict(item) for item in ABOUT_ITEMS],
             },
         ],
@@ -2002,6 +2018,7 @@ def build_panel_payload(
     return {
         "version": VERSION,
         "icon_url": f"/api/{DOMAIN}/icon.svg?v={VERSION.lstrip('v') or VERSION}",
+        "footer_logo_url": _footer_logo_url(),
         "documentation_url": CONFIGURATION_DOCS_BASE_URL,
         "logs_url": f"/config/logs?filter={DOMAIN}",
         "fallback_note": "The standard Configure dialog still works and remains available as a fallback.",
@@ -2110,6 +2127,7 @@ def build_panel_payload(
                 "description": "Find documentation, support, bug reporting, feature request, and project support links for Chime TTS.",
                 "docs_url": PROJECT_HOME_URL,
                 "version": VERSION,
+                "footer_logo_url": _footer_logo_url(),
                 "about_items": [dict(item) for item in ABOUT_ITEMS],
             },
         ],

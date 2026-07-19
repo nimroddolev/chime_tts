@@ -35,6 +35,25 @@ const ICONS = {
       <path d="M18.16 3.47 19.58 4.89 15.12 9.35 13.7 7.93l4.46-4.46zm-5.07 5.88 2.12 2.12-5.7 5.7c-.35.36-.8.6-1.29.7l-3.37.73.73-3.37c.11-.49.35-.94.7-1.29l6.81-6.59zm-7.7 10.93h13.86v1.5H5.39z"/>
     </svg>
   `,
+  beaker: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M9 3h6v2l-1.2 1.9v3.15l4.53 7.18A2.3 2.3 0 0 1 16.39 21H7.61a2.3 2.3 0 0 1-1.94-3.77l4.53-7.18V6.9L9 5V3Z"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.7"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M8.15 15.2c1.1-.6 2.13-.4 3.1 0 .98.4 1.9.8 3.1.2.72-.34 1.28-.32 1.82-.1l1.27 2a.92.92 0 0 1-.78 1.4H7.32a.92.92 0 0 1-.78-1.4l1.61-2.56Z"
+        fill="#22c55e"
+        opacity="0.95"
+      />
+      <circle cx="10" cy="12.2" r="0.95" fill="#bbf7d0"/>
+      <circle cx="12.8" cy="13.2" r="0.72" fill="#dcfce7"/>
+      <circle cx="14.9" cy="11.45" r="0.58" fill="#bbf7d0"/>
+    </svg>
+  `,
 };
 const OPTION_ICON_DATA_URLS = {
   "add_cover_art": "data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%20fill=%22none%22%3E%0A%20%20%3Crect%20x=%2214%22%20y=%2216%22%20width=%2222%22%20height=%2222%22%20rx=%226%22%20fill=%22%2303a9f4%22/%3E%0A%20%20%3Ccircle%20cx=%2225%22%20cy=%2227%22%20r=%224%22%20fill=%22%23fff%22/%3E%0A%20%20%3Cpath%20d=%22M42%2022h8M42%2030h10M42%2038h6%22%20stroke=%22%23d7edf8%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%20%20%3Cpath%20d=%22M18%2044c3-3%205-4%207-4s4%201%207%204%22%20stroke=%22%237dd3fc%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%3C/svg%3E",
@@ -283,7 +302,7 @@ template.innerHTML = `
     }
 
     .button-primary:disabled {
-      background: color-mix(in srgb, var(--disabled-color, #9aa0a6) 78%, black 22%);
+      background: transparent;
       color: color-mix(in srgb, var(--primary-text-color) 88%, transparent);
     }
 
@@ -586,6 +605,22 @@ template.innerHTML = `
       flex: 0 0 auto;
     }
 
+    .configuration-workspace .chapter-chevron {
+      background: color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
+    }
+
+    .notify-workspace .chapter-chevron {
+      background: color-mix(in srgb, #e56b6f 14%, var(--divider-color));
+    }
+
+    .logs-workspace .chapter-chevron {
+      background: color-mix(in srgb, #22c55e 14%, var(--divider-color));
+    }
+
+    .about-workspace .chapter-chevron {
+      background: color-mix(in srgb, #f5c542 34%, var(--divider-color));
+    }
+
     .chapter-chevron svg {
       width: 20px;
       height: 20px;
@@ -654,13 +689,30 @@ template.innerHTML = `
       gap: 12px;
     }
 
+    .about-footer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
     .about-version-line {
-      margin: 16px 0 0;
+      margin: 2px 0 0;
       text-align: center;
       color: var(--secondary-text-color);
       font-size: 0.95rem;
       font-weight: 700;
       letter-spacing: 0.01em;
+    }
+
+    .about-logo {
+      display: block;
+      width: 72px;
+      height: 72px;
+      margin: 18px auto 0;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.18));
     }
 
     .about-card {
@@ -955,6 +1007,13 @@ template.innerHTML = `
       background: color-mix(in srgb, var(--card-background-color) 84%, transparent);
     }
 
+    .configuration-workspace .chapter-hero .section {
+      border-color: color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
+      background:
+        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 14%, transparent), transparent 42%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 92%, white 8%), color-mix(in srgb, var(--secondary-background-color) 84%, transparent));
+    }
+
     .notify-workspace .chapter-hero .section {
       background: color-mix(in srgb, var(--card-background-color) 76%, black 24%);
       border-color: color-mix(in srgb, #e56b6f 14%, var(--divider-color));
@@ -966,11 +1025,10 @@ template.innerHTML = `
     }
 
     .section-header {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 16px;
-      align-items: flex-start;
-      flex-wrap: wrap;
+      align-items: start;
     }
 
     .config-section-card {
@@ -983,13 +1041,24 @@ template.innerHTML = `
 
     .section-header-copy {
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
     }
 
     .section-header-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: flex-end;
       flex: 0 0 auto;
+    }
+
+    .section-header-copy-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .section-header h2 {
@@ -1003,6 +1072,7 @@ template.innerHTML = `
       min-height: 42px;
       padding: 0;
       flex: 0 0 auto;
+      background: color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
     }
 
     .config-section-toggle svg {
@@ -1724,6 +1794,7 @@ template.innerHTML = `
 
     .notify-profile-card.collapsed .notify-profile-header {
       min-height: 48px;
+      flex-wrap: nowrap;
     }
 
     .notify-profile-copy h3 {
@@ -1740,6 +1811,14 @@ template.innerHTML = `
       display: flex;
       align-items: center;
       min-height: 40px;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+
+    .notify-profile-card.collapsed .notify-profile-copy h3 {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .notify-profile-copy.testing {
@@ -1757,6 +1836,7 @@ template.innerHTML = `
 
     .notify-profile-actions:not(.testing) {
       margin-left: auto;
+      flex: 0 0 auto;
     }
 
     .notify-profile-actions button {
@@ -1764,6 +1844,46 @@ template.innerHTML = `
       padding: 10px 16px;
       flex: 0 0 auto;
       white-space: nowrap;
+    }
+
+    .notify-profile-actions [data-toggle-notify-profile] {
+      width: 42px;
+      min-width: 42px;
+      min-height: 42px;
+      padding: 0;
+      border-radius: 999px;
+    }
+
+    .notify-profile-actions [data-open-notify-test] {
+      width: 42px;
+      min-width: 42px;
+      min-height: 42px;
+      padding: 0;
+      border-radius: 999px;
+      color: #dcfce7;
+      background: linear-gradient(180deg, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.18));
+      border-color: rgba(34, 197, 94, 0.5);
+    }
+
+    .notify-profile-actions [data-open-notify-test]:hover,
+    .notify-profile-actions [data-open-notify-test]:focus-visible {
+      background: linear-gradient(180deg, rgba(34, 197, 94, 0.38), rgba(22, 163, 74, 0.26));
+      border-color: rgba(74, 222, 128, 0.7);
+    }
+
+    .notify-profile-actions [data-open-notify-test] svg {
+      width: 20px;
+      height: 20px;
+      display: block;
+      fill: none;
+    }
+
+    .notify-profile-actions [data-remove-notify-profile] {
+      width: 42px;
+      min-width: 42px;
+      min-height: 42px;
+      padding: 0;
+      border-radius: 999px;
     }
 
     .notify-profile-actions.testing {
@@ -2714,7 +2834,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             <a class="topbar-link" href="${this._escapeAttribute(data.documentation_url || "#")}" title="Open the documentation" target="_blank" rel="noreferrer">Help</a>
             <a class="topbar-link" href="${this._escapeAttribute(data.logs_url || "/config/logs?filter=chime_tts")}" title="Open the Chime TTS log messages">Logs</a>
             ${this._isDirty
-              ? '<button class="button-secondary" type="button" data-reset-all="1">Reset Changes</button>'
+              ? '<button class="button-secondary" type="button" data-reset-all="1">Reset</button>'
               : ""
             }
             <div class="save-slot">
@@ -2766,17 +2886,21 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       >
         <div class="section-header">
           <div class="section-header-copy">
-            <h2>${this._escapeHtml(section.title)}</h2>
-            <p>${this._escapeHtml(section.description || "")}</p>
+            <div>
+              <h2>${this._escapeHtml(section.title)}</h2>
+              <p>${this._escapeHtml(section.description || "")}</p>
+            </div>
+            ${sectionDirty ? `
+              <div class="section-header-copy-actions">
+                <button
+                  class="button-secondary"
+                  type="button"
+                  data-reset-section="${this._escapeAttribute(section.key)}"
+                >Reset Section</button>
+              </div>
+            ` : ""}
           </div>
           <div class="section-header-actions">
-            ${sectionDirty ? `
-              <button
-                class="button-secondary"
-                type="button"
-                data-reset-section="${this._escapeAttribute(section.key)}"
-              >Reset Section</button>
-            ` : ""}
             <button
               class="button-secondary icon-only-button config-section-toggle ${expanded ? "expanded" : "collapsed"}"
               type="button"
@@ -2999,6 +3123,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const aboutExpanded = this._isChapterExpanded("about");
     const items = section.about_items || [];
     const version = section.version || this._data?.version || "";
+    const iconUrl = section.footer_logo_url || this._data?.footer_logo_url || "";
     return `
       <div
         class="chapter-group chapter-workspace about-workspace ${aboutExpanded ? "expanded" : "collapsed"}"
@@ -3016,10 +3141,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               <div class="about-grid">
                 ${items.map((item) => this._renderAboutCard(item)).join("")}
               </div>
-              ${version
-                ? `<p class="about-version-line">${this._escapeHtml(`Version ${String(version)}`)}</p>`
-                : ""
-              }
+              <div class="about-footer">
+                ${iconUrl
+                  ? `<img class="about-logo" src="${this._escapeAttribute(iconUrl)}" alt="Chime TTS logo" loading="lazy" />`
+                  : ""
+                }
+                ${version
+                  ? `<p class="about-version-line">${this._escapeHtml(`Version ${String(version)}`)}</p>`
+                  : ""
+                }                
+              </div>
             </div>
           `,
         })}
@@ -3199,7 +3330,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                   class="button-secondary"
                   type="button"
                   data-open-notify-test="${this._escapeAttribute(String(index))}"
-                >Test</button>
+                  aria-label="Test profile"
+                  title="Test"
+                >${ICONS.beaker}</button>
                 <button
                   class="button-danger icon-only-button"
                   type="button"
