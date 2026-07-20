@@ -5,9 +5,12 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime
 import os
 from pathlib import Path
+import shutil
 from typing import Any
+from urllib.parse import quote
 
 import voluptuous as vol
 import yaml
@@ -1607,8 +1610,18 @@ def get_provider_hint(
     return PROVIDER_HINTS_BY_FIELD.get(field_key, {}).get(normalized_provider)
 
 
-def _list_matching_chime_files(path: str, limit: int = 5) -> list[str]:
-    """Return a few matching chime-like files from a folder."""
+def _is_browser_audio_file_name(file_name: str) -> bool:
+    """Return whether a file name has a supported audio extension."""
+    return os.path.splitext(file_name or "")[1].lower() in CHIME_FILE_EXTENSIONS
+
+
+def _browser_audio_preview_url(field_key: str, path: str) -> str:
+    """Return an authenticated browser-audio preview URL."""
+    return f"/api/{DOMAIN}/browser/audio?field_key={quote(field_key)}&path={quote(path)}"
+
+
+def _list_matching_chime_files(path: str) -> list[str]:
+    """Return matching chime-like files from a folder."""
     current_dir = ensure_trailing_slash(path).rstrip("/") or "/"
     if not os.path.isdir(current_dir):
         return []
@@ -1618,12 +1631,244 @@ def _list_matching_chime_files(path: str, limit: int = 5) -> list[str]:
         for entry in entries:
             if not entry.is_file():
                 continue
-            if os.path.splitext(entry.name)[1].lower() not in CHIME_FILE_EXTENSIONS:
+            if not _is_browser_audio_file_name(entry.name):
                 continue
             files.append(entry.name)
 
     files.sort(key=str.lower)
-    return files[:limit]
+    return files
+
+
+def _format_browser_entry_size(size: int | None) -> str:
+    """Return a human-friendly byte count."""
+    if size in (None, "", 0):
+        return "0 B" if size == 0 else ""
+
+    units = ["B", "KB", "MB", "GB", "TB"]
+    numeric = float(size)
+    unit_index = 0
+    while numeric >= 1024 and unit_index < len(units) - 1:
+        numeric /= 1024
+        unit_index += 1
+    if unit_index == 0:
+        return f"{int(numeric)} {units[unit_index]}"
+    return f"{numeric:.1f} {units[unit_index]}"
+
+
+def _browser_relative_label(path: str, root: str) -> str:
+    """Return the path relative to a browser root."""
+    normalized_path = ensure_trailing_slash(path).rstrip("/") or "/"
+    normalized_root = ensure_trailing_slash(root).rstrip("/") or "/"
+    if normalized_root == "/":
+        return normalized_path
+    if normalized_path == normalized_root:
+        return "/"
+    if normalized_path.startswith(f"{normalized_root}/"):
+        return normalized_path[len(normalized_root) :] or "/"
+    return normalized_path
+
+
+def _browser_breadcrumbs(path: str) -> list[dict[str, str]]:
+    """Return breadcrumb segments for a path."""
+    normalized = ensure_trailing_slash(path).rstrip("/") or "/"
+    if normalized == "/":
+        return [{"label": "/", "path": "/"}]
+
+    breadcrumbs = [{"label": "/", "path": "/"}]
+    parts = normalized.split("/")[1:]
+    current = ""
+    for part in parts:
+        current += f"/{part}"
+        breadcrumbs.append({"label": part, "path": ensure_trailing_slash(current)})
+    return breadcrumbs
+
+
+def _browser_entry_payload(
+    hass,
+    field_key: str,
+    entry: os.DirEntry[str],
+) -> dict[str, Any]:
+    """Serialize a filesystem entry for browser UI consumption."""
+    stat_result = entry.stat(follow_symlinks=False)
+    is_dir = entry.is_dir(follow_symlinks=False)
+    entry_path = ensure_trailing_slash(entry.path) if is_dir else str(entry.path)
+    is_audio = not is_dir and _is_browser_audio_file_name(entry.name)
+    try:
+        modified_at = datetime.fromtimestamp(stat_result.st_mtime).isoformat()
+    except Exception:
+        modified_at = ""
+
+    return {
+        "name": entry.name,
+        "path": entry_path,
+        "is_dir": is_dir,
+        "kind": "folder" if is_dir else "file",
+        "size": stat_result.st_size if not is_dir else None,
+        "size_label": "" if is_dir else _format_browser_entry_size(stat_result.st_size),
+        "modified_at": modified_at,
+        "badges": _path_badges(hass, entry_path) if is_dir else [],
+        "extension": "" if is_dir else os.path.splitext(entry.name)[1].lower(),
+        "is_audio": is_audio,
+        "audio_preview_url": (
+            _browser_audio_preview_url(field_key, entry_path) if is_audio else ""
+        ),
+    }
+
+
+def _normalize_browser_target_path(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    field_key: str,
+    path: str | None,
+    values: dict[str, Any] | None = None,
+    *,
+    require_exists: bool = True,
+    require_navigable: bool = True,
+) -> str:
+    """Normalize and validate a browser target path."""
+    current_values = values or get_settings_data(hass, config_entry)
+    candidate = ensure_trailing_slash(path or _normalize_string(current_values.get(field_key)))
+
+    if not candidate:
+        candidate = ensure_trailing_slash("/")
+
+    if require_navigable and not is_path_navigable_for_field(
+        hass, config_entry, field_key, candidate, current_values
+    ):
+        raise PermissionError(candidate)
+
+    normalized_path = candidate.rstrip("/") or "/"
+    if require_exists and not os.path.exists(normalized_path):
+        raise FileNotFoundError(normalized_path)
+
+    return candidate if os.path.isdir(normalized_path) else normalized_path
+
+
+def _is_path_within_browser_roots(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    field_key: str,
+    path: str,
+    values: dict[str, Any] | None = None,
+) -> bool:
+    """Return whether a filesystem path stays inside the allowed browser roots."""
+    normalized_path = str(path or "").rstrip("/") or "/"
+    if field_key == CUSTOM_CHIMES_PATH_KEY:
+        return os.path.isabs(normalized_path)
+
+    for root in get_browse_roots(hass, config_entry, field_key, values):
+        if _is_subdirectory(root.rstrip("/"), normalized_path):
+            return True
+    return False
+
+
+def resolve_browser_audio_file_path(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    field_key: str,
+    path: str,
+    values: dict[str, Any] | None = None,
+) -> str:
+    """Resolve and validate a browser audio file path."""
+    if field_key not in PATH_BROWSABLE_FIELD_KEYS:
+        raise ValueError("unsupported_field")
+
+    normalized_path = str(path or "").strip()
+    if not normalized_path:
+        raise ValueError("missing_path")
+    if not _is_browser_audio_file_name(normalized_path):
+        raise ValueError("unsupported_file_type")
+    if not os.path.isabs(normalized_path):
+        raise PermissionError(normalized_path)
+    if not _is_path_within_browser_roots(
+        hass, config_entry, field_key, normalized_path, values
+    ):
+        raise PermissionError(normalized_path)
+    if not os.path.isfile(normalized_path):
+        raise FileNotFoundError(normalized_path)
+
+    return normalized_path
+
+
+def _safe_browser_child_path(parent_path: str, child_name: str) -> str:
+    """Return a safe child path within a browser directory."""
+    sanitized_name = str(child_name or "").strip()
+    if not sanitized_name or sanitized_name in {".", ".."}:
+        raise ValueError("invalid_name")
+    if "/" in sanitized_name or "\\" in sanitized_name:
+        raise ValueError("invalid_name")
+    return os.path.join(parent_path.rstrip("/") or "/", sanitized_name)
+
+
+def _browser_upload_relative_parts(filename: str) -> list[str]:
+    """Return sanitized relative path components for an upload."""
+    return [
+        part
+        for part in str(filename or "").replace("\\", "/").split("/")
+        if part and part not in {".", ".."}
+    ]
+
+
+def resolve_browser_upload_target_path(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    field_key: str,
+    destination_path: str,
+    filename: str,
+    *,
+    values: dict[str, Any] | None = None,
+) -> tuple[str, str]:
+    """Return the final upload path and display-relative path."""
+    current_values = values or get_settings_data(hass, config_entry)
+    target_dir = _normalize_browser_target_path(
+        hass,
+        config_entry,
+        field_key,
+        destination_path,
+        current_values,
+    ).rstrip("/") or "/"
+
+    relative_parts = _browser_upload_relative_parts(filename)
+    if not relative_parts:
+        raise ValueError("invalid_name")
+
+    target_path = target_dir
+    for part in relative_parts[:-1]:
+        target_path = _safe_browser_child_path(target_path, part)
+
+    final_path = _safe_browser_child_path(target_path, relative_parts[-1])
+    return final_path, "/".join(relative_parts)
+
+
+def inspect_browser_upload_conflicts(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    field_key: str,
+    destination_path: str,
+    filenames: list[str],
+    *,
+    values: dict[str, Any] | None = None,
+) -> list[dict[str, str]]:
+    """Return uploads that would overwrite existing files."""
+    conflicts: list[dict[str, str]] = []
+    for filename in filenames:
+        final_path, relative_path = resolve_browser_upload_target_path(
+            hass,
+            config_entry,
+            field_key,
+            destination_path,
+            filename,
+            values=values,
+        )
+        if os.path.isfile(final_path):
+            conflicts.append(
+                {
+                    "filename": filename,
+                    "relative_path": relative_path,
+                    "existing_path": final_path,
+                }
+            )
+    return conflicts
 
 
 def validate_path_field(
@@ -1802,25 +2047,24 @@ def build_directory_browser_payload(
     if not os.path.isdir(current_dir):
         raise FileNotFoundError(current_dir)
 
-    directories: list[dict[str, str]] = []
+    entries_payload: list[dict[str, Any]] = []
     with os.scandir(current_dir) as entries:
         for entry in entries:
-            if not entry.is_dir():
-                continue
-            entry_path = ensure_trailing_slash(entry.path)
-            if not is_path_navigable_for_field(
+            is_dir = entry.is_dir(follow_symlinks=False)
+            entry_path = ensure_trailing_slash(entry.path) if is_dir else str(entry.path)
+            if is_dir and not is_path_navigable_for_field(
                 hass, config_entry, field_key, entry_path, current_values
             ):
                 continue
-            directories.append(
-                {
-                    "name": entry.name,
-                    "path": entry_path,
-                    "badges": _path_badges(hass, entry_path),
-                }
-            )
+            if not is_dir and not _is_browser_audio_file_name(entry.name):
+                continue
+            entries_payload.append(_browser_entry_payload(hass, field_key, entry))
 
-    directories.sort(key=lambda item: item["name"].lower())
+    entries_payload.sort(
+        key=lambda item: (0 if item["is_dir"] else 1, item["name"].lower())
+    )
+    directories = [item for item in entries_payload if item["is_dir"]]
+    files = [item for item in entries_payload if not item["is_dir"]]
 
     parent_dir = os.path.dirname(current_dir.rstrip("/")) or "/"
     parent_path = ensure_trailing_slash(parent_dir)
@@ -1843,22 +2087,184 @@ def build_directory_browser_payload(
         "title": field.label,
         "current_path": current_path,
         "parent_path": parent_path,
+        "breadcrumbs": _browser_breadcrumbs(current_path),
         "current_path_allowed": current_path_allowed,
         "current_path_validation_message": _path_validation_message(
             field_key, current_path_allowed
         ),
         "current_path_badges": _path_badges(hass, current_path),
         "preview_files": current_preview_files,
+        "items": entries_payload,
+        "directories": directories,
+        "files": files,
         "roots": [
             {
                 "name": root.rstrip("/").split("/")[-1] or "/",
                 "path": root,
                 "badges": _path_badges(hass, root),
+                "relative_label": _browser_relative_label(current_path, root),
             }
             for root in allowed_roots
         ],
-        "directories": directories,
+        "capabilities": {
+            "can_select": current_path_allowed,
+            "can_create_folder": True,
+            "can_upload": True,
+            "can_rename": current_dir != "/",
+            "can_delete": current_dir != "/",
+        },
     }
+
+
+def create_browser_directory(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    field_key: str,
+    parent_path: str,
+    name: str,
+    *,
+    values: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Create a folder and return refreshed browser payload."""
+    target_parent = _normalize_browser_target_path(
+        hass,
+        config_entry,
+        field_key,
+        parent_path,
+        values,
+    )
+    target_path = _safe_browser_child_path(target_parent, name)
+    if os.path.exists(target_path):
+        raise FileExistsError(target_path)
+    os.makedirs(target_path, exist_ok=False)
+    return build_directory_browser_payload(
+        hass,
+        config_entry,
+        field_key,
+        target_parent,
+        values=values,
+    )
+
+
+def rename_browser_entry(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    field_key: str,
+    path: str,
+    new_name: str,
+    *,
+    values: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Rename a file or folder and return refreshed browser payload."""
+    current_values = values or get_settings_data(hass, config_entry)
+    normalized_path = _normalize_browser_target_path(
+        hass,
+        config_entry,
+        field_key,
+        path,
+        current_values,
+        require_exists=True,
+        require_navigable=os.path.isdir(str(path or "").rstrip("/")),
+    )
+    source_path = normalized_path.rstrip("/") or "/"
+    if source_path == "/":
+        raise ValueError("cannot_rename_root")
+    if not _is_path_within_browser_roots(
+        hass,
+        config_entry,
+        field_key,
+        source_path,
+        current_values,
+    ):
+        raise PermissionError(source_path)
+    parent_path = os.path.dirname(source_path) or "/"
+    target_path = _safe_browser_child_path(parent_path, new_name)
+    if not _is_path_within_browser_roots(
+        hass,
+        config_entry,
+        field_key,
+        target_path,
+        current_values,
+    ):
+        raise PermissionError(target_path)
+    if os.path.exists(target_path):
+        raise FileExistsError(target_path)
+    os.rename(source_path, target_path)
+    return build_directory_browser_payload(
+        hass,
+        config_entry,
+        field_key,
+        ensure_trailing_slash(parent_path),
+        values=current_values,
+    )
+
+
+def delete_browser_entry(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    field_key: str,
+    path: str,
+    *,
+    values: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Delete a file or folder and return refreshed browser payload."""
+    current_values = values or get_settings_data(hass, config_entry)
+    normalized_path = _normalize_browser_target_path(
+        hass,
+        config_entry,
+        field_key,
+        path,
+        current_values,
+        require_exists=True,
+        require_navigable=os.path.isdir(str(path or "").rstrip("/")),
+    )
+    source_path = normalized_path.rstrip("/") or "/"
+    if source_path == "/":
+        raise ValueError("cannot_delete_root")
+    if not _is_path_within_browser_roots(
+        hass,
+        config_entry,
+        field_key,
+        source_path,
+        current_values,
+    ):
+        raise PermissionError(source_path)
+    parent_path = ensure_trailing_slash(os.path.dirname(source_path) or "/")
+    if os.path.isdir(source_path):
+        shutil.rmtree(source_path)
+    else:
+        os.remove(source_path)
+    return build_directory_browser_payload(
+        hass,
+        config_entry,
+        field_key,
+        parent_path,
+        values=current_values,
+    )
+
+
+def save_browser_upload(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    field_key: str,
+    destination_path: str,
+    filename: str,
+    content: bytes,
+    *,
+    values: dict[str, Any] | None = None,
+) -> None:
+    """Persist an uploaded file inside the allowed browser roots."""
+    final_path, _relative_path = resolve_browser_upload_target_path(
+        hass,
+        config_entry,
+        field_key,
+        destination_path,
+        filename,
+        values=values,
+    )
+    os.makedirs(os.path.dirname(final_path), exist_ok=True)
+    with open(final_path, "wb") as upload_file:
+        upload_file.write(content)
 
 
 def validate_settings(

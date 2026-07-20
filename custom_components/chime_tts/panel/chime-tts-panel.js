@@ -54,6 +54,63 @@ const ICONS = {
       <circle cx="14.9" cy="11.45" r="0.58" fill="#bbf7d0"/>
     </svg>
   `,
+  folder: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M10 4l2 2h8a2 2 0 0 1 2 2v8.5A3.5 3.5 0 0 1 18.5 20h-13A3.5 3.5 0 0 1 2 16.5V7a3 3 0 0 1 3-3h5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    </svg>
+  `,
+  file: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M14 3v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    </svg>
+  `,
+  upload: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 16V5M8 9l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M5 19h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+    </svg>
+  `,
+  plus: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+    </svg>
+  `,
+  refresh: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M20 11a8 8 0 1 0 2.1 5.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  `,
+  more: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="6" cy="12" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="18" cy="12" r="1.8" />
+    </svg>
+  `,
+  moreVertical: `
+    <svg preserveAspectRatio="xMidYMid meet" focusable="false" role="img" aria-hidden="true" viewBox="0 0 24 24">
+      <g>
+        <path class="primary-path" d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"></path>
+      </g>
+    </svg>
+  `,
+  close: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+    </svg>
+  `,
+  play: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M8 6.5v11l9-5.5-9-5.5z" fill="currentColor"/>
+    </svg>
+  `,
+  pause: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M8 6h3v12H8zm5 0h3v12h-3z" fill="currentColor"/>
+    </svg>
+  `,
 };
 const OPTION_ICON_DATA_URLS = {
   "add_cover_art": "data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%20fill=%22none%22%3E%0A%20%20%3Crect%20x=%2214%22%20y=%2216%22%20width=%2222%22%20height=%2222%22%20rx=%226%22%20fill=%22%2303a9f4%22/%3E%0A%20%20%3Ccircle%20cx=%2225%22%20cy=%2227%22%20r=%224%22%20fill=%22%23fff%22/%3E%0A%20%20%3Cpath%20d=%22M42%2022h8M42%2030h10M42%2038h6%22%20stroke=%22%23d7edf8%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%20%20%3Cpath%20d=%22M18%2044c3-3%205-4%207-4s4%201%207%204%22%20stroke=%22%237dd3fc%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%3C/svg%3E",
@@ -152,6 +209,7 @@ template.innerHTML = `
       display: inline-flex;
       align-items: center;
       gap: 10px;
+      flex-wrap: wrap;
       min-height: 32px;
       padding: 8px 12px;
       border-radius: 999px;
@@ -192,8 +250,14 @@ template.innerHTML = `
       background: transparent;
       color: var(--primary-text-color);
       box-shadow: none;
-      font-size: 1.5rem;
       line-height: 1;
+    }
+
+    .topbar-menu svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+      display: block;
     }
 
     .topbar-menu:hover,
@@ -258,8 +322,30 @@ template.innerHTML = `
       gap: 8px;
     }
 
+    a.button-secondary,
+    a.button-primary {
+      appearance: none;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 120ms ease, opacity 120ms ease, box-shadow 120ms ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
     button:hover {
       transform: translateY(-1px);
+    }
+
+    a.button-secondary:hover,
+    a.button-primary:hover {
+      transform: translateY(-1px);
+      text-decoration: none;
     }
 
     button:disabled {
@@ -532,7 +618,7 @@ template.innerHTML = `
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 18px;
-      align-items: end;
+      align-items: center;
     }
 
     .chapter-hero-copy {
@@ -585,11 +671,11 @@ template.innerHTML = `
 
     .chapter-hero-endcap {
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       justify-content: flex-end;
       gap: 12px;
       min-width: 0;
-      align-self: end;
+      align-self: center;
     }
 
     .chapter-chevron {
@@ -601,24 +687,28 @@ template.innerHTML = `
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: var(--primary-text-color);
+      color: color-mix(in srgb, var(--primary-color) 42%, black 58%);
       flex: 0 0 auto;
     }
 
     .configuration-workspace .chapter-chevron {
       background: color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
+      color: color-mix(in srgb, var(--primary-color) 42%, black 58%);
     }
 
     .notify-workspace .chapter-chevron {
       background: color-mix(in srgb, #e56b6f 14%, var(--divider-color));
+      color: color-mix(in srgb, #8f2832 82%, black 18%);
     }
 
     .logs-workspace .chapter-chevron {
       background: color-mix(in srgb, #22c55e 14%, var(--divider-color));
+      color: color-mix(in srgb, #166534 86%, black 14%);
     }
 
     .about-workspace .chapter-chevron {
       background: color-mix(in srgb, #f5c542 34%, var(--divider-color));
+      color: color-mix(in srgb, #8a5a00 84%, black 16%);
     }
 
     .chapter-chevron svg {
@@ -804,8 +894,17 @@ template.innerHTML = `
 
     .logs-list-actions {
       display: flex;
-      justify-content: flex-end;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
       margin-bottom: 12px;
+    }
+
+    .logs-list-actions-right {
+      display: flex;
+      justify-content: flex-end;
+      margin-left: auto;
     }
 
     .log-event-row {
@@ -863,8 +962,18 @@ template.innerHTML = `
       min-height: 48px;
     }
 
+    .log-event-row-content {
+      min-width: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 16px;
+      justify-content: flex-start;
+    }
+
     .log-event-row-main {
       min-width: 0;
+      flex: 1 1 180px;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -906,6 +1015,7 @@ template.innerHTML = `
 
     .log-event-copy {
       min-width: 0;
+      flex: 1 1 auto;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -930,16 +1040,36 @@ template.innerHTML = `
       align-items: center;
       justify-content: flex-end;
       gap: 8px;
+      flex: 0 1 auto;
+      margin-left: auto;
+      min-width: 0;
+    }
+
+    .log-event-row.actions-wrapped .log-event-actions {
+      flex: 0 0 100%;
+      width: 100%;
+      margin-left: 0;
+      justify-content: center;
+    }
+
+    .log-event-toggle-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      align-self: center;
     }
 
     :host([narrow]) .log-event-row-header {
-      grid-template-columns: minmax(0, 1fr);
-      align-items: start;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
     }
 
     :host([narrow]) .log-event-actions {
       justify-content: flex-end;
-      width: 100%;
+    }
+
+    :host([narrow]) .log-event-row.actions-wrapped .log-event-actions {
+      justify-content: center;
     }
 
     .log-event-row .button-secondary {
@@ -1048,7 +1178,7 @@ template.innerHTML = `
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 16px;
-      align-items: start;
+      align-items: center;
     }
 
     .config-section-card {
@@ -1208,6 +1338,13 @@ template.innerHTML = `
       flex: 0 0 56px;
       display: block;
       object-fit: cover;
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.42));
+    }
+
+    @media (prefers-color-scheme: light) {
+      .field-icon {
+        filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.22));
+      }
     }
 
     .field-copy {
@@ -1487,7 +1624,7 @@ template.innerHTML = `
       align-items: center;
       gap: 16px;
       flex-wrap: wrap;
-      padding: 20px 2px 8px;
+      padding: 0px 2px 8px;
     }
 
     .loading {
@@ -1508,30 +1645,93 @@ template.innerHTML = `
       min-width: 140px;
     }
 
-    .picker-native-dialog {
-      --dialog-content-padding: 0;
-      --mdc-dialog-min-width: min(720px, calc(100vw - 32px));
-      --mdc-dialog-max-width: min(720px, calc(100vw - 32px));
-      --mdc-dialog-max-height: min(78vh, 760px);
-      --ha-dialog-border-radius: 28px;
+    .picker-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(9, 14, 20, 0.56);
+      backdrop-filter: blur(10px);
+    }
+
+    .picker-modal {
+      width: min(980px, calc(100vw - 32px));
+      height: min(86vh, 820px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 20px;
+      border: 1px solid color-mix(in srgb, var(--divider-color) 82%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 98%, black 2%);
+      box-shadow: 0 28px 68px rgba(0, 0, 0, 0.34);
+    }
+
+    .picker-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 60px;
+      padding: 12px 14px;
+      border-bottom: 1px solid color-mix(in srgb, var(--divider-color) 82%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 96%, white 4%);
+    }
+
+    .picker-modal-title {
+      margin: 0;
+      min-width: 0;
+      color: var(--primary-text-color);
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .picker-modal-close {
+      min-width: 38px;
+      min-height: 38px;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border-radius: 999px;
+      border-color: color-mix(in srgb, var(--divider-color) 82%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 88%, white 12%);
+      flex: 0 0 38px;
     }
 
     .picker-dialog-body {
-      padding: 20px 24px 8px;
+      min-height: 0;
       display: flex;
+      flex: 1 1 auto;
       flex-direction: column;
-      gap: 18px;
-      overflow: auto;
+      gap: 0;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--card-background-color) 98%, black 2%);
+    }
+
+    .picker-error-banner {
+      margin: 14px 14px 0;
     }
 
     .picker-dialog-footer {
-      margin-top: 4px;
-      padding: 8px 0 4px;
+      margin-top: 0;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: nowrap;
+      border-top: 1px solid color-mix(in srgb, var(--divider-color) 82%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 96%, white 4%);
     }
 
     .picker-dialog-footer .button-secondary,
     .picker-dialog-footer .button-primary {
       min-width: 132px;
+      min-height: 40px;
+      border-radius: 10px;
     }
 
     .picker-dialog-lead {
@@ -1597,25 +1797,6 @@ template.innerHTML = `
       line-height: 1.5;
     }
 
-    .picker-current-card {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      padding: 16px 18px;
-      border-radius: 20px;
-      border: 1px solid var(--divider-color);
-      background: color-mix(in srgb, var(--card-background-color) 90%, white 10%);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
-    }
-
-    .picker-breadcrumbs {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      min-width: 0;
-    }
-
     .picker-location-label {
       margin: 0 0 8px;
       color: var(--secondary-text-color);
@@ -1623,124 +1804,6 @@ template.innerHTML = `
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-    }
-
-    .picker-path-button {
-      min-height: 32px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1px solid color-mix(in srgb, var(--primary-color) 18%, var(--divider-color));
-      background: color-mix(in srgb, var(--primary-color) 10%, transparent);
-      color: var(--primary-text-color);
-      box-shadow: none;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
-
-    .picker-path-separator {
-      color: var(--secondary-text-color);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    }
-
-    .picker-section {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .picker-section-title {
-      margin: 0;
-      color: var(--secondary-text-color);
-      font-size: 0.88rem;
-      font-weight: 700;
-    }
-
-    .picker-roots {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .picker-root {
-      min-height: 24px;
-      padding: 0;
-      border: 0;
-      background: transparent;
-      color: var(--primary-color);
-      box-shadow: none;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-    }
-
-    .picker-root:hover,
-    .picker-root:focus-visible {
-      text-decoration: underline;
-    }
-
-    .picker-list-nav {
-      width: 100%;
-      padding: 0 2px;
-      background: transparent;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .picker-item {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      width: 100%;
-      padding: 2px 0;
-      border: 0;
-      background: transparent;
-      color: inherit;
-      cursor: pointer;
-      text-align: left;
-      text-decoration: none;
-    }
-
-    .picker-item:hover .picker-item-name,
-    .picker-item:focus-visible .picker-item-name {
-      text-decoration: underline;
-    }
-
-    .picker-item-meta {
-      min-width: 0;
-      flex: 1 1 auto;
-    }
-
-    .picker-item-name {
-      margin: 0;
-      color: var(--primary-text-color);
-      font-weight: 700;
-      word-break: break-word;
-    }
-
-    .picker-item-path {
-      margin-top: 4px;
-      font-size: 0.9rem;
-      color: var(--secondary-text-color);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      word-break: break-all;
-    }
-
-    .picker-item-chevron {
-      color: var(--secondary-text-color);
-      font-size: 1.1rem;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .picker-common-folders {
-      display: flex;
-      gap: 10px;
-      flex-direction: column;
-      align-items: flex-start;
     }
 
     .advanced-toggle-row {
@@ -1762,67 +1825,584 @@ template.innerHTML = `
       margin-top: 16px;
     }
 
-    .picker-status {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin: 0;
-    }
-
-    .picker-status-text {
-      font-size: 0.9rem;
-      color: var(--secondary-text-color);
-    }
-
-    .picker-status-text.valid {
-      color: var(--success-color, #2e7d32);
-    }
-
-    .picker-status-text.invalid {
-      color: var(--error-color, #d32f2f);
-    }
-
-    .picker-badges,
-    .picker-item-badges {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .picker-badge {
-      display: inline-flex;
-      align-items: center;
-      min-height: 24px;
-      padding: 2px 10px;
-      border-radius: 999px;
-      background: color-mix(in srgb, var(--primary-color) 12%, transparent);
-      color: var(--primary-color);
-      font-size: 0.78rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
     .picker-preview {
-      padding: 14px 16px;
-      border-radius: 20px;
-      border: 1px solid var(--divider-color);
-      background: color-mix(in srgb, var(--secondary-background-color) 60%, transparent);
+      padding: 10px 12px;
+      border-top: 1px solid color-mix(in srgb, var(--divider-color) 72%, transparent);
+      background: color-mix(in srgb, var(--secondary-background-color) 52%, transparent);
     }
 
     .picker-preview-title {
-      margin: 0 0 8px;
+      margin: 0 0 6px;
       color: var(--primary-text-color);
-      font-size: 0.94rem;
+      font-size: 0.82rem;
       font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .picker-preview-title.centered {
+      margin-bottom: 0;
+      text-align: center;
     }
 
     .picker-preview-list {
       margin: 0;
-      padding-left: 18px;
+      padding-left: 16px;
       color: var(--secondary-text-color);
-      line-height: 1.5;
+      line-height: 1.45;
+      font-size: 0.9rem;
+    }
+
+    .picker-browser-shell {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 0;
+      flex: 1 1 auto;
+      height: 100%;
+      min-height: 560px;
+      background: color-mix(in srgb, var(--card-background-color) 98%, black 2%);
+    }
+
+    .picker-browser-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px;
+      border-right: 1px solid color-mix(in srgb, var(--divider-color) 82%, transparent);
+      background: color-mix(in srgb, var(--secondary-background-color) 72%, var(--card-background-color) 28%);
+    }
+
+    .picker-sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 2px 2px 0;
+    }
+
+    .picker-sidebar-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .picker-root {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 2px;
+      cursor: pointer;
+      transition: background 140ms ease, border-color 140ms ease;
+    }
+
+    .picker-root:hover,
+    .picker-root:focus-visible {
+      text-decoration: none;
+      border-color: color-mix(in srgb, var(--divider-color) 82%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 78%, transparent);
+    }
+
+    .picker-root.active {
+      text-decoration: none;
+      border-color: color-mix(in srgb, var(--primary-color) 26%, var(--divider-color));
+      background: color-mix(in srgb, var(--primary-color) 11%, var(--card-background-color) 89%);
+    }
+
+    .picker-root-title {
+      color: var(--primary-text-color);
+      font-size: 0.93rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .picker-root-path {
+      display: block;
+      min-width: 0;
+      overflow: hidden;
+      color: var(--secondary-text-color);
+      font-size: 0.76rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      line-height: 1.35;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .picker-browser-main {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      background: color-mix(in srgb, var(--card-background-color) 97%, black 3%);
+    }
+
+    .picker-browser-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      padding: 12px 14px;
+      border-bottom: 1px solid color-mix(in srgb, var(--divider-color) 82%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 96%, white 4%);
+    }
+
+    .picker-browser-toolbar-left,
+    .picker-browser-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .picker-browser-toolbar-left {
+      min-width: 0;
+    }
+
+    .picker-browser-toolbar-right {
+      justify-self: end;
+      position: relative;
+    }
+
+    .picker-toolbar-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .picker-toolbar-button svg,
+    .picker-file-kind svg,
+    .picker-breadcrumb-home svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      display: block;
+    }
+
+    .picker-search {
+      width: 100%;
+      min-width: 0;
+      min-height: 40px;
+      border-radius: 10px;
+      border-color: color-mix(in srgb, var(--divider-color) 86%, transparent);
+      background: color-mix(in srgb, var(--secondary-background-color) 46%, var(--card-background-color) 54%);
+      box-shadow: none;
+    }
+
+    .picker-pathbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+      padding: 10px 14px;
+      border-bottom: 1px solid color-mix(in srgb, var(--divider-color) 74%, transparent);
+      background: color-mix(in srgb, var(--secondary-background-color) 36%, transparent);
+    }
+
+    .picker-pathbar-main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .picker-pathbar-label {
+      margin: 0;
+      color: var(--secondary-text-color);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .picker-breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .picker-breadcrumb-home {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--divider-color) 78%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 84%, white 16%);
+      color: var(--secondary-text-color);
+      box-shadow: none;
+      padding: 0;
+    }
+
+    .picker-path-button {
+      min-height: 28px;
+      padding: 3px 6px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--primary-text-color);
+      box-shadow: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    .picker-path-button:hover,
+    .picker-path-button:focus-visible {
+      background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+      border-color: color-mix(in srgb, var(--primary-color) 20%, transparent);
+    }
+
+    .picker-path-separator {
+      color: var(--secondary-text-color);
+      font-size: 0.8rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .picker-filebrowser-table-wrap {
+      min-width: 0;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      background: color-mix(in srgb, var(--card-background-color) 99%, black 1%);
+    }
+
+    .picker-filebrowser-table-wrap.empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .picker-filebrowser-table-wrap.has-empty-message {
+      position: relative;
+    }
+
+    .picker-empty {
+      margin: 0;
+      padding: 18px 14px;
+      color: var(--secondary-text-color);
+      font-size: 0.92rem;
+      text-align: center;
+    }
+
+    .picker-empty.picker-empty-overlay {
+      position: absolute;
+      inset: 50% 14px auto;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .picker-filebrowser-table {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .picker-file-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(110px, 0.72fr) minmax(74px, 0.46fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 11px 14px;
+      min-width: 0;
+      border-top: 1px solid color-mix(in srgb, var(--divider-color) 68%, transparent);
+      transition: background 140ms ease, box-shadow 140ms ease;
+    }
+
+    .picker-file-row:first-child {
+      border-top: 0;
+    }
+
+    .picker-file-row.selected {
+      background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+      box-shadow: inset 2px 0 0 color-mix(in srgb, var(--primary-color) 74%, transparent);
+    }
+
+    .picker-file-row.parent {
+      background: color-mix(in srgb, var(--secondary-background-color) 46%, transparent);
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .picker-file-row.folder:hover,
+    .picker-file-row.folder:focus-within,
+    .picker-file-row.parent:hover,
+    .picker-file-row.parent:focus-within {
+      background: color-mix(in srgb, var(--primary-color) 7%, transparent);
+    }
+
+    .picker-file-name {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      color: var(--primary-text-color);
+      line-height: 1.35;
+    }
+
+    .picker-file-kind {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      color: color-mix(in srgb, var(--primary-color) 72%, var(--secondary-text-color));
+    }
+
+    .picker-file-open {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      box-shadow: none;
+      font: inherit;
+      font-weight: inherit;
+      text-align: left;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+      border-radius: 0;
+    }
+
+    .picker-file-open:hover,
+    .picker-file-open:focus-visible {
+      text-decoration: underline;
+    }
+
+    .picker-file-meta,
+    .picker-file-size {
+      color: var(--secondary-text-color);
+      font-size: 0.84rem;
+      min-width: 0;
+      white-space: nowrap;
+    }
+
+    .picker-file-size {
+      text-align: right;
+    }
+
+    .picker-file-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .picker-overflow-toggle {
+      min-width: 38px;
+      min-height: 38px;
+      border-radius: 10px;
+      border-color: color-mix(in srgb, var(--divider-color) 82%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 88%, white 12%);
+    }
+
+    .picker-overflow-toggle svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      display: block;
+    }
+
+    .picker-overflow-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      z-index: 4;
+      min-width: 210px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      border-radius: 12px;
+      border: 1px solid color-mix(in srgb, var(--divider-color) 86%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 98%, black 2%);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22);
+    }
+
+    .picker-overflow-item {
+      width: 100%;
+      min-height: 38px;
+      gap: 8px;
+      justify-content: flex-start;
+      text-align: left;
+      border-radius: 8px;
+      box-shadow: none;
+      border-color: transparent;
+      background: transparent;
+    }
+
+    .picker-overflow-item svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      display: block;
+      overflow: visible;
+    }
+
+    .picker-overflow-item:hover,
+    .picker-overflow-item:focus-visible {
+      background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+      border-color: color-mix(in srgb, var(--primary-color) 18%, transparent);
+    }
+
+    .picker-file-row {
+      cursor: pointer;
+    }
+
+    .picker-file-row-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(110px, 0.72fr) minmax(74px, 0.46fr);
+      grid-column: 1 / 4;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .picker-file-row:focus-visible .picker-file-name-text,
+    .picker-file-row:hover .picker-file-name-text {
+      text-decoration: underline;
+    }
+
+    .picker-file-name-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .picker-file-actions .icon-only-button {
+      min-width: 38px;
+      min-height: 38px;
+    }
+
+    .picker-action-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 45;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(5, 9, 18, 0.5);
+      backdrop-filter: blur(8px);
+    }
+
+    .picker-action-dialog {
+      position: relative;
+      width: min(460px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 22px;
+      border-radius: 24px;
+      border: 1px solid color-mix(in srgb, var(--divider-color) 85%, transparent);
+      background: color-mix(in srgb, var(--card-background-color) 96%, black 4%);
+      box-shadow: 0 24px 54px rgba(0, 0, 0, 0.32);
+    }
+
+    .picker-action-header {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .picker-action-header-bar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .picker-action-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      min-width: 38px;
+      min-height: 38px;
+      border-radius: 999px;
+      flex: 0 0 auto;
+    }
+
+    .picker-action-dialog.conflicts .picker-action-header-bar {
+      display: block;
+    }
+
+    .picker-action-title {
+      margin: 0;
+      color: var(--primary-text-color);
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .picker-action-copy {
+      margin: 0;
+      color: var(--secondary-text-color);
+      line-height: 1.55;
+    }
+
+    .picker-action-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .picker-action-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .picker-action-field label {
+      color: var(--secondary-text-color);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .picker-action-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .picker-action-dialog.conflicts .picker-action-header,
+    .picker-action-dialog.conflicts .picker-action-form,
+    .picker-action-dialog.conflicts .picker-action-actions {
+      align-items: center;
+      text-align: center;
+    }
+
+    .picker-action-dialog.conflicts .picker-action-actions {
+      justify-content: center;
+    }
+
+    .picker-action-dialog.upload-folder .picker-action-header,
+    .picker-action-dialog.upload-folder .picker-action-form,
+    .picker-action-dialog.upload-folder .picker-action-actions {
+      align-items: center;
+      text-align: center;
+    }
+
+    .picker-action-dialog.upload-folder .picker-action-actions {
+      justify-content: center;
     }
 
     .notify-profile-list {
@@ -2321,18 +2901,55 @@ template.innerHTML = `
       flex-direction: column;
     }
 
-    :host([narrow]) .picker-native-dialog {
-      --mdc-dialog-min-width: calc(100vw - 16px);
-      --mdc-dialog-max-width: calc(100vw - 16px);
-      --mdc-dialog-max-height: calc(100vh - 24px);
+    :host([narrow]) .picker-modal-backdrop {
+      padding: 8px;
     }
 
-    :host([narrow]) .picker-dialog-body {
-      padding: 16px 16px 8px;
+    :host([narrow]) .picker-modal {
+      width: calc(100vw - 16px);
+      height: calc(100vh - 16px);
+      border-radius: 16px;
     }
 
-    :host([narrow]) .picker-current-card {
-      padding: 14px 14px;
+    :host([narrow]) .picker-browser-shell {
+      grid-template-columns: minmax(0, 1fr);
+      min-height: calc(100vh - 170px);
+    }
+
+    :host([narrow]) .picker-browser-sidebar {
+      display: none;
+    }
+
+    :host([narrow]) .picker-root {
+      align-items: flex-start;
+      text-align: left;
+    }
+
+    :host([narrow]) .picker-browser-toolbar {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
+
+    :host([narrow]) .picker-pathbar {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    :host([narrow]) .picker-file-row,
+    :host([narrow]) .picker-file-row.parent {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    :host([narrow]) .picker-file-row .picker-file-meta,
+    :host([narrow]) .picker-file-row .picker-file-size,
+    :host([narrow]) .picker-file-row.parent .picker-file-meta,
+    :host([narrow]) .picker-file-row.parent .picker-file-size {
+      display: none;
+    }
+
+    :host([narrow]) .picker-file-row-main {
+      grid-template-columns: minmax(0, 1fr);
+      grid-column: 1 / 2;
     }
 
     @media (max-width: 600px) {
@@ -2372,6 +2989,15 @@ template.innerHTML = `
       .notify-profile-header {
         align-items: stretch;
       }
+
+      .picker-dialog-footer {
+        justify-content: space-between;
+      }
+
+      .picker-dialog-footer .button-secondary,
+      .picker-dialog-footer .button-primary {
+        flex: 0 1 auto;
+      }
     }
   </style>
   <div class="topbar-wrap" id="topbar"></div>
@@ -2399,7 +3025,22 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._saveResultTimeout = null;
     this._picker = null;
     this._pickerLoading = false;
+    this._pickerLoadingVisible = false;
+    this._pickerLoadingDelayTimer = null;
+    this._pickerLoadingToken = 0;
     this._pickerError = null;
+    this._pickerBusy = false;
+    this._pickerFilter = "";
+    this._pickerSelectedPath = "";
+    this._pickerAction = null;
+    this._pickerMenuOpen = false;
+    this._pickerFocusState = null;
+    this._pickerScrollState = null;
+    this._pickerAudio = null;
+    this._pickerAudioObjectUrl = "";
+    this._pickerAudioLoadToken = 0;
+    this._pickerAudioLoadingPath = "";
+    this._pickerPlayingPath = "";
     this._advancedSections = {};
     this._expandedConfigSections = {};
     this._expandedNotifyProfiles = {};
@@ -2419,6 +3060,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._boundVisibilityRefresh = () => this._syncLogsRefresh();
     this._boundSelectionRefresh = () => this._syncLogsRefresh();
     this._boundFocusRefresh = () => this._syncLogsRefresh();
+    this._boundResizeRefresh = () => this._syncLogEventActionWrapping();
     this._pathValidationState = {};
     this._pathValidationTimers = {};
     this._invalidPathOverrides = {};
@@ -2435,6 +3077,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     document.addEventListener("selectionchange", this._boundSelectionRefresh);
     this.shadowRoot?.addEventListener("focusin", this._boundFocusRefresh);
     this.shadowRoot?.addEventListener("focusout", this._boundFocusRefresh);
+    window.addEventListener("resize", this._boundResizeRefresh);
   }
 
   disconnectedCallback() {
@@ -2442,6 +3085,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     document.removeEventListener("selectionchange", this._boundSelectionRefresh);
     this.shadowRoot?.removeEventListener("focusin", this._boundFocusRefresh);
     this.shadowRoot?.removeEventListener("focusout", this._boundFocusRefresh);
+    window.removeEventListener("resize", this._boundResizeRefresh);
     this._teardownLogsSubscription();
     this._clearLogsRefreshTimer();
     this._clearAllNotifyProfileTestTimers();
@@ -2700,6 +3344,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return;
     }
 
+    const shouldPreservePickerScroll = Boolean(
+      this._picker && this.shadowRoot?.querySelector(".picker-filebrowser-table-wrap"),
+    );
+    if (shouldPreservePickerScroll && !this._pickerScrollState) {
+      this._pickerScrollState = this._capturePickerScrollState();
+    }
+
     const data = this._data || {};
     const sections = data.sections || [];
     const values = this._draftValues || {};
@@ -2878,20 +3529,172 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-picker-root]").forEach((button) => {
       button.addEventListener("click", (event) => {
         event.preventDefault();
+        this._pickerMenuOpen = false;
         this._loadPicker(event.currentTarget.dataset.pickerRoot);
       });
     });
     this.shadowRoot.querySelectorAll("[data-picker-open]").forEach((button) => {
       button.addEventListener("click", (event) => {
         event.preventDefault();
+        this._pickerMenuOpen = false;
         this._loadPicker(event.currentTarget.dataset.pickerOpen);
       });
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-select]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        if (event.target instanceof Element && event.target.closest("[data-picker-open], [data-picker-rename], [data-picker-delete], [data-picker-audio-toggle]")) {
+          return;
+        }
+        event.preventDefault();
+        const path = event.currentTarget.dataset.pickerSelect;
+        const kind = event.currentTarget.dataset.pickerSelectKind || "directory";
+        if (kind === "directory" && event.currentTarget.classList.contains("folder")) {
+          this._pickerMenuOpen = false;
+          this._loadPicker(path);
+          return;
+        }
+        this._selectPickerPath(path, kind);
+      });
+      button.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") {
+          return;
+        }
+        if (event.target instanceof Element && event.target.closest("[data-picker-open], [data-picker-rename], [data-picker-delete], [data-picker-audio-toggle]")) {
+          return;
+        }
+        event.preventDefault();
+        const path = event.currentTarget.dataset.pickerSelect;
+        const kind = event.currentTarget.dataset.pickerSelectKind || "directory";
+        if (kind === "directory" && event.currentTarget.classList.contains("folder")) {
+          this._pickerMenuOpen = false;
+          this._loadPicker(path);
+          return;
+        }
+        this._selectPickerPath(path, kind);
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-refresh]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this._pickerMenuOpen = false;
+        this._loadPicker(this._picker?.current_path || "");
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-audio-toggle]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this._togglePickerAudio(
+          event.currentTarget.dataset.pickerAudioToggle,
+          event.currentTarget.dataset.pickerAudioUrl,
+        );
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-filter]").forEach((field) => {
+      field.addEventListener("input", (event) => {
+        this._pickerFilter = event.currentTarget.value || "";
+        this._pickerFocusState = {
+          target: "picker-filter",
+          start: typeof event.currentTarget.selectionStart === "number" ? event.currentTarget.selectionStart : null,
+          end: typeof event.currentTarget.selectionEnd === "number" ? event.currentTarget.selectionEnd : null,
+        };
+        this._renderPreservingPickerScroll();
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-menu-toggle]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this._pickerMenuOpen = !this._pickerMenuOpen;
+        this._render();
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-new-folder]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this._pickerMenuOpen = false;
+        this._createPickerFolder();
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-rename]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this._renamePickerEntry(
+          event.currentTarget.dataset.pickerRename,
+          event.currentTarget.dataset.pickerName || "",
+        );
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-delete]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this._deletePickerEntry(
+          event.currentTarget.dataset.pickerDelete,
+          event.currentTarget.dataset.pickerName || "",
+        );
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-upload-files]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this._pickerMenuOpen = false;
+        this.shadowRoot.querySelector("[data-picker-file-input]")?.click();
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-upload-folder]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this._pickerMenuOpen = false;
+        this.shadowRoot.querySelector("[data-picker-folder-input]")?.click();
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-file-input]").forEach((input) => {
+      input.addEventListener("change", (event) => this._handlePickerUploadSelection(event, { directory: false }));
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-folder-input]").forEach((input) => {
+      input.addEventListener("change", (event) => this._handlePickerUploadSelection(event, { directory: true }));
     });
     this.shadowRoot.querySelectorAll("[data-picker-close]").forEach((button) => {
       button.addEventListener("click", () => this._closePicker());
     });
+    this.shadowRoot.querySelectorAll("[data-picker-overlay]").forEach((overlay) => {
+      overlay.addEventListener("click", (event) => {
+        if (event.target === event.currentTarget) {
+          this._closePicker();
+        }
+      });
+    });
     this.shadowRoot.querySelectorAll("[data-picker-choose]").forEach((button) => {
       button.addEventListener("click", (event) => this._choosePickerPath(event.currentTarget.dataset.pickerChoose));
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-action-cancel]").forEach((button) => {
+      button.addEventListener("click", () => this._closePickerAction());
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-action-secondary]").forEach((button) => {
+      button.addEventListener("click", () => this._runPickerActionSecondary());
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-action-input]").forEach((input) => {
+      input.addEventListener("input", (event) => {
+        if (!this._pickerAction) {
+          return;
+        }
+        this._pickerAction = {
+          ...this._pickerAction,
+          value: event.currentTarget.value || "",
+          error: "",
+        };
+      });
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          this._submitPickerAction();
+        }
+      });
+      window.setTimeout(() => input.focus(), 0);
+      if (typeof input.select === "function") {
+        window.setTimeout(() => input.select(), 0);
+      }
+    });
+    this.shadowRoot.querySelectorAll("[data-picker-action-submit]").forEach((button) => {
+      button.addEventListener("click", () => this._submitPickerAction());
     });
     this.shadowRoot.querySelectorAll("[data-restart-open]").forEach((button) => {
       button.addEventListener("click", () => this._openRestartConfirmation());
@@ -2979,7 +3782,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         this._toggleLogEvent(event.currentTarget.dataset.toggleLogArrow);
       });
     });
+    this._syncLogEventActionWrapping();
+    window.requestAnimationFrame(() => this._syncLogEventActionWrapping());
     this._syncLogsRefresh();
+    if (shouldPreservePickerScroll) {
+      this._restorePickerScrollState();
+    }
+    this._restoreTransientFocus();
   }
 
   _renderTopbar(data) {
@@ -2989,7 +3798,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           ${this._narrow
             ? `
               <div class="topbar-nav">
-                <button class="topbar-menu" type="button" data-open-ha-menu="1" aria-label="Open navigation menu" title="Open navigation menu">☰</button>
+                <button class="topbar-menu" type="button" data-open-ha-menu="1" aria-label="Open navigation menu" title="Open navigation menu">${ICONS.moreVertical}</button>
               </div>
             `
             : ""
@@ -3002,20 +3811,30 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             </div>
           </div>
           <div class="topbar-actions">
-            <a class="topbar-link" href="${this._escapeAttribute(data.documentation_url || "#")}" title="Open the documentation" target="_blank" rel="noreferrer">Help</a>
-            <a class="topbar-link" href="${this._escapeAttribute(data.logs_url || "/config/logs?filter=chime_tts")}" title="Open the Chime TTS log messages">Logs</a>
             ${this._isDirty
               ? '<button class="button-secondary" type="button" data-reset-all="1">Reset</button>'
               : ""
             }
-            <div class="save-slot">
-              ${this._saveResult
-                ? `<span class="save-status ${this._escapeAttribute(this._saveResult)}" aria-live="polite">${this._saveResult === "success" ? "&#10003;" : "X"}</span>`
-                : this._restartPending && !this._isDirty
-                  ? `<button class="button-restart" type="button" data-restart-open="1" ${this._restarting ? "disabled" : ""}>Restart</button>`
-                : `<button class="button-primary" id="save-top" type="button" ${this._saving || !this._isDirty || this._hasInvalidPathChanges() ? "disabled" : ""}>Save</button>`
-              }
-            </div>
+            ${this._saveResult
+              ? `
+                <div class="save-slot">
+                  <span class="save-status ${this._escapeAttribute(this._saveResult)}" aria-live="polite">${this._saveResult === "success" ? "&#10003;" : "X"}</span>
+                </div>
+              `
+              : this._restartPending && !this._isDirty
+                ? `
+                  <div class="save-slot">
+                    <button class="button-restart" type="button" data-restart-open="1" ${this._restarting ? "disabled" : ""}>Restart</button>
+                  </div>
+                `
+                : this._isDirty
+                  ? `
+                    <div class="save-slot">
+                      <button class="button-primary" id="save-top" type="button" ${this._saving || this._hasInvalidPathChanges() ? "disabled" : ""}>Save</button>
+                    </div>
+                  `
+                  : ""
+            }
           </div>
         </div>
       </div>
@@ -3027,6 +3846,146 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-reset-all]").forEach((button) => {
       button.addEventListener("click", () => this._resetAllChanges());
     });
+  }
+
+  _restoreTransientFocus() {
+    const focusState = this._pickerFocusState;
+    if (!focusState?.target || !this.shadowRoot) {
+      return;
+    }
+
+    if (focusState.target === "picker-filter") {
+      const field = this.shadowRoot.querySelector("[data-picker-filter]");
+      if (!(field instanceof HTMLInputElement)) {
+        return;
+      }
+
+      field.focus();
+      if (typeof focusState.start === "number" && typeof focusState.end === "number") {
+        field.setSelectionRange(focusState.start, focusState.end);
+      }
+    }
+
+    this._pickerFocusState = null;
+  }
+
+  _syncLogEventActionWrapping() {
+    if (!this.shadowRoot) {
+      return;
+    }
+
+    const logRows = Array.from(this.shadowRoot.querySelectorAll(".log-event-row"));
+    for (const row of logRows) {
+      if (!(row instanceof HTMLElement)) {
+        continue;
+      }
+      const main = row.querySelector(".log-event-row-main");
+      const actions = row.querySelector(".log-event-actions");
+      if (!(main instanceof HTMLElement) || !(actions instanceof HTMLElement)) {
+        row.classList.remove("actions-wrapped");
+        continue;
+      }
+
+      const wrapped = actions.offsetTop > main.offsetTop + 2;
+      row.classList.toggle("actions-wrapped", wrapped);
+    }
+  }
+
+  _capturePickerScrollState() {
+    if (!this.shadowRoot || !this._picker) {
+      return null;
+    }
+
+    const scrollHost = this.shadowRoot.querySelector(".picker-filebrowser-table-wrap");
+    if (!(scrollHost instanceof HTMLElement)) {
+      return null;
+    }
+
+    const anchorCandidates = [];
+    const rowElements = Array.from(scrollHost.querySelectorAll("[data-picker-row-path]"));
+    for (const row of rowElements) {
+      if (!(row instanceof HTMLElement)) {
+        continue;
+      }
+      if (row.offsetTop + row.offsetHeight > scrollHost.scrollTop) {
+        anchorCandidates.push({
+          path: row.dataset.pickerRowPath || "",
+          rowIndex: Number(row.dataset.pickerRowIndex || anchorCandidates.length),
+          relativeTop: row.offsetTop - scrollHost.scrollTop,
+        });
+        if (anchorCandidates.length >= 3) {
+          break;
+        }
+      }
+    }
+
+    return {
+      top: scrollHost.scrollTop,
+      left: scrollHost.scrollLeft,
+      anchorCandidates,
+    };
+  }
+
+  _applyPickerScrollStateToHost(scrollHost, scrollState) {
+    if (!(scrollHost instanceof HTMLElement) || !scrollState) {
+      return;
+    }
+
+    const candidates = Array.isArray(scrollState.anchorCandidates)
+      ? scrollState.anchorCandidates
+      : [];
+
+    for (const candidate of candidates) {
+      let anchorRow = null;
+      if (candidate?.path) {
+        anchorRow = scrollHost.querySelector(
+          `[data-picker-row-path="${this._escapeSelectorValue(candidate.path)}"]`,
+        );
+      }
+      if (!(anchorRow instanceof HTMLElement) && Number.isInteger(candidate?.rowIndex)) {
+        const rowElements = Array.from(scrollHost.querySelectorAll("[data-picker-row-path]"));
+        anchorRow = rowElements[Math.min(
+          Math.max(0, candidate.rowIndex),
+          Math.max(0, rowElements.length - 1),
+        )];
+      }
+      if (anchorRow instanceof HTMLElement) {
+        scrollHost.scrollTop = Math.max(0, anchorRow.offsetTop - candidate.relativeTop);
+        scrollHost.scrollLeft = scrollState.left;
+        return;
+      }
+    }
+
+    scrollHost.scrollTop = scrollState.top;
+    scrollHost.scrollLeft = scrollState.left;
+  }
+
+  _restorePickerScrollState() {
+    const scrollState = this._pickerScrollState;
+    if (!scrollState || !this.shadowRoot || !this._picker) {
+      return;
+    }
+
+    const scrollHost = this.shadowRoot.querySelector(".picker-filebrowser-table-wrap");
+    if (scrollHost instanceof HTMLElement) {
+      this._applyPickerScrollStateToHost(scrollHost, scrollState);
+      window.requestAnimationFrame(() => {
+        if (!this._picker || !this.shadowRoot) {
+          return;
+        }
+        const nextScrollHost = this.shadowRoot.querySelector(".picker-filebrowser-table-wrap");
+        if (nextScrollHost instanceof HTMLElement) {
+          this._applyPickerScrollStateToHost(nextScrollHost, scrollState);
+        }
+      });
+    }
+    this._pickerScrollState = null;
+  }
+
+  _renderPreservingPickerScroll() {
+    this._pickerScrollState = this._capturePickerScrollState();
+    this._render();
+    this._restorePickerScrollState();
   }
 
   _renderSection(section, values, errors) {
@@ -3270,18 +4229,25 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                 ${events.length === 0 && !logsPending
                   ? `<p class="hint">No Chime TTS logs have been captured in this Home Assistant session yet.</p>`
                   : `
-                    ${events.length > 1
-                      ? `
-                        <div class="logs-list-actions">
-                          <button
-                            class="button-secondary"
-                            type="button"
-                            data-toggle-all-logs="${anyExpanded ? "collapse" : "expand"}"
-                          >${anyExpanded ? "Collapse All" : "Expand All"}</button>
-                        </div>
-                      `
-                      : ""
-                    }
+                    <div class="logs-list-actions">
+                      <a
+                        class="button-secondary"
+                        href="${this._escapeAttribute(this._data?.logs_url || "/config/logs?filter=chime_tts")}"
+                        title="Open the raw Home Assistant logs filtered to Chime TTS"
+                      >Raw Logs</a>
+                      ${events.length > 1
+                        ? `
+                          <div class="logs-list-actions-right">
+                            <button
+                              class="button-secondary"
+                              type="button"
+                              data-toggle-all-logs="${anyExpanded ? "collapse" : "expand"}"
+                            >${anyExpanded ? "Collapse All" : "Expand All"}</button>
+                          </div>
+                        `
+                        : ""
+                      }
+                    </div>
                     <div class="logs-list">
                       ${events.map((event) => this._renderLogEventRow(event)).join("")}
                     </div>
@@ -3379,6 +4345,17 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       .map((entry) => `[${entry.timestamp}] ${String(entry.level || "").toUpperCase()} ${entry.logger}: ${entry.message}`)
       .join("\n");
     const logCopyState = this._getLogCopyState(event.id);
+    const logEventBody = expanded
+      ? `
+        <div class="log-event-body">
+          ${event.summary
+            ? `<p class="log-event-summary">${this._escapeHtml(event.summary)}</p>`
+            : ""
+          }
+          <pre class="log-event-raw">${this._escapeHtml(rawLogs || "No raw logs were captured for this event.")}</pre>
+        </div>
+      `
+      : "";
     const buttons = [];
     if ((event.type === "action_call" || event.type === "integration_initiation" || event.type === "notification_call") && rawLogs) {
       buttons.push(`
@@ -3395,15 +4372,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         <button class="button-primary" type="button" data-repeat-log-action="${this._escapeAttribute(event.id)}">Repeat</button>
       `);
     }
-    buttons.push(`
-      <button
-        class="button-secondary log-event-toggle ${expanded ? "expanded" : "collapsed"}"
-        type="button"
-        data-toggle-log-arrow="${this._escapeAttribute(event.id)}"
-        aria-label="${this._escapeAttribute(expanded ? "Collapse log row" : "Expand log row")}"
-        title="${this._escapeAttribute(expanded ? "Collapse" : "Expand")}"
-      >${ICONS.chevron}</button>
-    `);
     return `
       <article
         class="log-event-row ${rowClass}"
@@ -3414,24 +4382,29 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         aria-expanded="${expanded ? "true" : "false"}"
       >
         <div class="log-event-row-header">
-          <div class="log-event-row-main">
-            ${eventIcon ? `<span class="log-event-icon ${this._escapeAttribute(eventIconClass)}" aria-hidden="true">${eventIcon}</span>` : ""}
-            <div class="log-event-copy">
-              <p class="log-event-title">${this._escapeHtml(event.title || "Log event")}</p>
-              <p class="log-event-meta">${this._escapeHtml(this._formatLogEventMeta(event))}</p>
+          <div class="log-event-row-content">
+            <div class="log-event-row-main">
+              ${eventIcon ? `<span class="log-event-icon ${this._escapeAttribute(eventIconClass)}" aria-hidden="true">${eventIcon}</span>` : ""}
+              <div class="log-event-copy">
+                <p class="log-event-title">${this._escapeHtml(event.title || "Log event")}</p>
+                <p class="log-event-meta">${this._escapeHtml(this._formatLogEventMeta(event))}</p>
+              </div>
             </div>
+            ${buttons.length > 0 ? `<div class="log-event-actions">${buttons.join("")}</div>` : ""}
           </div>
-          <div class="log-event-actions">${buttons.join("")}</div>
+          <div class="log-event-toggle-wrap">
+            <button
+              class="button-secondary log-event-toggle ${expanded ? "expanded" : "collapsed"}"
+              type="button"
+              data-toggle-log-arrow="${this._escapeAttribute(event.id)}"
+              aria-label="${this._escapeAttribute(expanded ? "Collapse log row" : "Expand log row")}"
+              title="${this._escapeAttribute(expanded ? "Collapse" : "Expand")}"
+            >${ICONS.chevron}</button>
+          </div>
         </div>
         <div class="row-collapse ${expanded ? "expanded" : "collapsed"}">
           <div class="row-collapse-inner">
-            <div class="log-event-body">
-              ${event.summary
-                ? `<p class="log-event-summary">${this._escapeHtml(event.summary)}</p>`
-                : ""
-              }
-              <pre class="log-event-raw">${this._escapeHtml(rawLogs || "No raw logs were captured for this event.")}</pre>
-            </div>
+            ${logEventBody}
           </div>
         </div>
       </article>
@@ -3447,6 +4420,22 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const detailFields = schemaFields.filter((field) => !["name", "entity_id"].includes(field.key));
     const boolFields = detailFields.filter((field) => field.type === "boolean");
     const standardFields = detailFields.filter((field) => field.type !== "boolean");
+    const notifyProfileBody = expanded
+      ? `
+        <div class="notify-profile-grid compact">
+          ${this._renderNotifyEntityPicker(profile, errors, index)}
+          ${standardFields.map((field) => this._renderNotifyProfileField(field, profile?.[field.key], errors?.[field.key], index)).join("")}
+        </div>
+        ${boolFields.length > 0
+          ? `
+            <div class="notify-profile-flags">
+              ${boolFields.map((field) => this._renderNotifyProfileField(field, profile?.[field.key], errors?.[field.key], index)).join("")}
+            </div>
+          `
+          : ""
+        }
+      `
+      : "";
 
     return `
       <article
@@ -3540,18 +4529,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         </div>
         <div class="row-collapse ${expanded ? "expanded" : "collapsed"}">
           <div class="row-collapse-inner">
-            <div class="notify-profile-grid compact">
-              ${this._renderNotifyEntityPicker(profile, errors, index)}
-              ${standardFields.map((field) => this._renderNotifyProfileField(field, profile?.[field.key], errors?.[field.key], index)).join("")}
-            </div>
-            ${boolFields.length > 0
-              ? `
-                <div class="notify-profile-flags">
-                  ${boolFields.map((field) => this._renderNotifyProfileField(field, profile?.[field.key], errors?.[field.key], index)).join("")}
-                </div>
-              `
-              : ""
-            }
+            ${notifyProfileBody}
           </div>
         </div>
       </article>
@@ -3981,105 +4959,157 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return "";
     }
 
-    const directories = this._picker.directories || [];
+    const items = this._getVisiblePickerItems();
+    const hasParentRow = Boolean(this._picker.parent_path);
     const roots = this._picker.roots || [];
-    const loading = this._pickerLoading
-      ? `<p class="picker-empty">Loading folders...</p>`
+    const capabilities = this._picker.capabilities || {};
+    const loading = this._pickerLoadingVisible
+      ? `<p class="picker-empty">Loading items...</p>`
       : "";
     const error = this._pickerError
-      ? `<div class="message error">${this._escapeHtml(this._pickerError)}</div>`
+      ? `<div class="message error picker-error-banner">${this._escapeHtml(this._pickerError)}</div>`
       : "";
-    const empty = !this._pickerLoading && directories.length === 0
-      ? `<p class="picker-empty">No subfolders were found in this location.</p>`
+    const isEmpty = !this._pickerLoading && items.length === 0;
+    const empty = isEmpty
+      ? `<p class="picker-empty">No files or folders match this location.</p>`
       : "";
-    const breadcrumbs = this._renderBreadcrumbs(this._picker.current_path || "");
-    const currentBadges = this._renderBadges(this._picker.current_path_badges || []);
-    const preview = this._renderPickerPreview();
-    const statusClass = this._picker.current_path_allowed ? "valid" : "invalid";
-    const parentItem = this._picker.parent_path
-      ? `
-        <button class="picker-item" type="button" data-picker-open="${this._escapeAttribute(this._picker.parent_path)}">
-          <div class="picker-item-meta">
-            <p class="picker-item-name">..</p>
-            <p class="picker-item-path">${this._escapeHtml(this._picker.parent_path)}</p>
-          </div>
-          <span class="picker-item-chevron" aria-hidden="true">›</span>
-        </button>
-      `
-      : "";
+    const breadcrumbs = (this._picker.breadcrumbs || []).map((segment, index) => {
+      if (index === 0) {
+        return `<button class="picker-breadcrumb-home" type="button" data-picker-path="${this._escapeAttribute(segment.path)}" aria-label="Open ${this._escapeAttribute(segment.label)}">${ICONS.folder}</button>`;
+      }
+      return `
+        <span class="picker-path-separator">/</span>
+        <button class="picker-path-button" type="button" data-picker-path="${this._escapeAttribute(segment.path)}">${this._escapeHtml(segment.label)}</button>
+      `;
+    }).join("");
     const currentPath = this._picker.current_path || "";
+    const selectedPath = this._pickerSelectedPath || currentPath;
+    const canSelect = Boolean(selectedPath && this._isPickerPathSelectable(selectedPath));
+    const pickerTitle = this._picker.title || "Select folder";
+    const menuOpen = Boolean(this._pickerMenuOpen);
+    const preview = empty ? "" : this._renderPickerPreview();
+    const rootList = roots.map((root) => `
+      <button
+        class="picker-root ${root.path === currentPath ? "active" : ""}"
+        type="button"
+        data-picker-root="${this._escapeAttribute(root.path)}"
+      >
+        <span class="picker-root-title">${this._escapeHtml(root.name)}</span>
+        <span class="picker-root-path">${this._escapeHtml(root.path)}</span>
+      </button>
+    `).join("");
 
     return `
-      <ha-dialog
-        open
-        class="picker-native-dialog"
-        data-picker-dialog="1"
-        header-title="${this._escapeAttribute(this._picker.title || "Select folder")}"
-      >
-        <div class="picker-dialog-body">
-          <div class="picker-dialog-lead">
-            <p>Browse folders and select one to fill this setting.</p>
-            <p>Only locations visible inside the Home Assistant container are shown here.</p>
+      <div class="picker-modal-backdrop" data-picker-overlay="1">
+        <div
+          class="picker-modal"
+          data-picker-dialog="1"
+          role="dialog"
+          aria-modal="true"
+          aria-label="${this._escapeAttribute(pickerTitle)}"
+        >
+          <div class="picker-modal-header">
+            <h2 class="picker-modal-title">${this._escapeHtml(pickerTitle)}</h2>
+            <button
+              class="button-secondary icon-only-button picker-modal-close"
+              type="button"
+              data-picker-close="1"
+              aria-label="Close folder browser"
+              title="Close folder browser"
+            >${ICONS.close}</button>
           </div>
+          <div class="picker-dialog-body">
+          <input data-picker-file-input type="file" multiple hidden />
+          <input data-picker-folder-input type="file" webkitdirectory directory multiple hidden />
           ${error}
-          ${roots.length > 0 ? `
-            <div class="picker-common-folders">
-              <p class="picker-section-title">Common folders</p>
-              <div class="picker-roots">
-                ${roots.map((root) => `
-                  <a class="picker-root" href="#" data-picker-root="${this._escapeAttribute(root.path)}">
-                    ${this._escapeHtml(root.name)}
-                  </a>
-                `).join("")}
+          <div class="picker-browser-shell">
+            <aside class="picker-browser-sidebar">
+              <div class="picker-sidebar-header">
+                <p class="picker-location-label">Locations</p>
               </div>
-            </div>
-          ` : ""}
-          <div class="picker-current-card">
-            <div>
-              <p class="picker-location-label">Current location</p>
-              <div class="picker-breadcrumbs">
-                ${breadcrumbs}
+              <div class="picker-sidebar-list">
+                ${rootList}
               </div>
-            </div>
-            <div class="picker-status">
-              <span class="picker-status-text ${statusClass}">${this._escapeHtml(this._picker.current_path_validation_message || "")}</span>
-              ${currentBadges ? `<div class="picker-badges">${currentBadges}</div>` : ""}
-            </div>
+            </aside>
+            <section class="picker-browser-main">
+              <div class="picker-browser-toolbar">
+                <div class="picker-browser-toolbar-left">
+                  <input
+                    class="control picker-search"
+                    data-picker-filter="1"
+                    type="search"
+                    value="${this._escapeAttribute(this._pickerFilter || "")}"
+                    placeholder="Search current folder"
+                  />
+                </div>
+                <div class="picker-browser-toolbar-right">
+                  <button
+                    class="button-secondary icon-only-button picker-overflow-toggle"
+                    type="button"
+                    data-picker-menu-toggle="1"
+                    aria-expanded="${menuOpen ? "true" : "false"}"
+                    aria-label="More actions"
+                    title="More actions"
+                  >${ICONS.more}</button>
+                  ${menuOpen
+                    ? `
+                      <div class="picker-overflow-menu">
+                        <button class="button-secondary picker-overflow-item" type="button" data-picker-refresh="1">${ICONS.refresh}<span>Refresh</span></button>
+                        <button class="button-secondary picker-overflow-item" type="button" data-picker-new-folder="1" ${capabilities.can_create_folder ? "" : "disabled"}>${ICONS.plus}<span>New Folder</span></button>
+                        <button class="button-secondary picker-overflow-item" type="button" data-picker-upload-files="1" ${capabilities.can_upload ? "" : "disabled"}>${ICONS.upload}<span>Upload Files</span></button>
+                        <button class="button-secondary picker-overflow-item" type="button" data-picker-upload-folder="1" ${capabilities.can_upload ? "" : "disabled"}>${ICONS.folder}<span>Upload Folder</span></button>
+                      </div>
+                    `
+                    : ""
+                  }
+                </div>
+              </div>
+              <div class="picker-pathbar">
+                <div class="picker-pathbar-main">
+                  <p class="picker-pathbar-label">Current folder</p>
+                  <div class="picker-breadcrumbs">
+                    ${breadcrumbs}
+                  </div>
+                </div>
+              </div>
+              <div class="picker-filebrowser-table-wrap ${isEmpty && !hasParentRow ? "empty" : ""} ${isEmpty && hasParentRow ? "has-empty-message" : ""}">
+                ${loading || (!hasParentRow && empty) || `
+                  <div class="picker-filebrowser-table">
+                    ${hasParentRow ? `
+                      <div class="picker-file-row folder " role="button" tabindex="0" data-picker-row-path="${this._escapeAttribute(`parent:${this._picker.parent_path}`)}" data-picker-row-index="0" data-picker-open="${this._escapeAttribute(this._picker.parent_path)}" data-picker-select-kind="file">
+                        <div class="picker-file-row-main">
+                          <span class="picker-file-name">
+                            <span class="picker-file-kind" aria-hidden="true">${ICONS.folder}</span>
+                            <span>..</span>
+                          </span>
+                          <span class="picker-file-meta"></span>
+                          <span class="picker-file-size"></span>
+                          <span class="picker-file-actions"></span>
+                        </div>
+                      </div>
+                    ` :
+                    ''}
+                    ${items.map((item, index) => this._renderPickerItemRow(item, index + (this._picker.parent_path ? 1 : 0))).join("")}
+                  </div>
+                  ${hasParentRow && isEmpty ? '<p class="picker-empty picker-empty-overlay">No files or folders match this location.</p>' : ""}
+                `}
+              </div>
+              ${preview}
+            </section>
           </div>
-          <div class="picker-section">
-            <p class="picker-section-title">Folders</p>
-            ${loading}
-            ${(parentItem || directories.length > 0) ? `
-              <div class="picker-list-nav">
-                ${parentItem}
-                ${directories.map((directory) => `
-                  <a class="picker-item" href="#" data-picker-open="${this._escapeAttribute(directory.path)}">
-                    <div class="picker-item-meta">
-                      <p class="picker-item-name">${this._escapeHtml(directory.name)}</p>
-                      ${(directory.badges || []).length > 0
-                        ? `<div class="picker-item-badges">${this._renderBadges(directory.badges)}</div>`
-                        : ""
-                      }
-                    </div>
-                    <span class="picker-item-chevron" aria-hidden="true">›</span>
-                  </a>
-                `).join("")}
-              </div>
-            ` : ""}
-            ${empty}
-            ${preview}
-          </div>
-          <div class="footer picker-dialog-footer">
+          ${this._renderPickerActionDialog()}
+          <div class="picker-dialog-footer">
             <button class="button-secondary" type="button" data-picker-close="1">Cancel</button>
             <button
               class="button-primary"
               type="button"
-              data-picker-choose="${this._escapeAttribute(currentPath)}"
-              ${this._picker.current_path_allowed ? "" : "disabled"}
+              data-picker-choose="${this._escapeAttribute(selectedPath)}"
+              ${canSelect ? "" : "disabled"}
             >Select folder</button>
           </div>
         </div>
-      </ha-dialog>
+        </div>
+      </div>
     `;
   }
 
@@ -4112,10 +5142,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     `;
   }
 
-  _renderBadges(badges) {
-    return (badges || []).map((badge) => `<span class="picker-badge">${this._escapeHtml(badge)}</span>`).join("");
-  }
-
   _renderPickerPreview() {
     if (this._picker?.field_key !== "custom_chimes_path") {
       return "";
@@ -4125,53 +5151,190 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     return `
       <div class="picker-preview">
         ${previewFiles.length > 0 ? `
-          <p class="picker-preview-title">
-            ${previewFiles.length} Audio file${previewFiles.length > 1 ? "s" : ""} found:
-          </p>
-          <ul class="picker-preview-list">
-            ${previewFiles.map((fileName) => `
-            <li>
-              ${this._escapeHtml(fileName)}
-            </li>`).join("")}
-          </ul>` :
+          <p class="picker-preview-title centered">
+            ${previewFiles.length} Audio file${previewFiles.length > 1 ? "s" : ""} found
+          </p>` :
 
-          `<p class="picker-empty">
+          `<p class="picker-preview-title centered">
             No audio files were found in this folder.
           </p>`
         }
       </div>`;
   }
 
-  _renderBreadcrumbs(path) {
-    const segments = this._buildPathSegments(path);
-    return segments.map((segment, index) => {
-      const separator = index === 0
-        ? ""
-        : '<span class="picker-path-separator">/</span>';
-      return `${separator}<button class="picker-path-button" type="button" data-picker-path="${this._escapeAttribute(segment.path)}">${this._escapeHtml(segment.label)}</button>`;
-    }).join("");
+  _getVisiblePickerItems() {
+    const filter = String(this._pickerFilter || "").trim().toLowerCase();
+    const items = this._picker?.items || [];
+    if (!filter) {
+      return items;
+    }
+    return items.filter((item) => {
+      const haystack = [
+        item?.name || "",
+        item?.path || "",
+        item?.extension || "",
+      ].join(" ").toLowerCase();
+      return haystack.includes(filter);
+    });
   }
 
-  _buildPathSegments(path) {
-    const normalized = String(path || "").trim();
-    if (!normalized) {
-      return [];
+  _renderPickerItemRow(item, rowIndex = 0) {
+    const canOpen = Boolean(item?.is_dir);
+    const isSelected = (item?.path || "") === (this._pickerSelectedPath || "");
+    const canRename = Boolean(item?.path && this._picker?.capabilities?.can_rename);
+    const canDelete = Boolean(item?.path && this._picker?.capabilities?.can_delete);
+    const canPreviewAudio = Boolean(item?.is_audio && item?.audio_preview_url);
+    const isPlaying = canPreviewAudio && (item?.path || "") === this._pickerPlayingPath;
+    const isLoadingAudio = canPreviewAudio && (item?.path || "") === this._pickerAudioLoadingPath;
+    return `
+      <div
+        class="picker-file-row ${item?.is_dir ? "folder" : "file"} ${isSelected ? "selected" : ""}"
+        role="button"
+        tabindex="0"
+        data-picker-row-path="${this._escapeAttribute(item?.path || "")}"
+        data-picker-row-index="${this._escapeAttribute(String(rowIndex))}"
+        data-picker-select="${this._escapeAttribute(item?.path || "")}"
+        data-picker-select-kind="${item?.is_dir ? "directory" : "file"}"
+      >
+        <div class="picker-file-row-main">
+          <span class="picker-file-name">
+            <span class="picker-file-kind" aria-hidden="true">${item?.is_dir ? ICONS.folder : ICONS.file}</span>
+            ${canOpen
+              ? `<button class="picker-file-open" type="button" data-picker-open="${this._escapeAttribute(item.path)}">${this._escapeHtml(item?.name || "")}</button>`
+              : `<span class="picker-file-name-text">${this._escapeHtml(item?.name || "")}</span>`
+            }
+          </span>
+          <span class="picker-file-meta">${this._escapeHtml(this._formatPickerModifiedAt(item?.modified_at))}</span>
+          <span class="picker-file-size">${this._escapeHtml(item?.size_label || "")}</span>
+        </div>
+        <span class="picker-file-actions">
+          ${canPreviewAudio
+            ? `<button
+                class="button-secondary icon-only-button"
+                type="button"
+                data-picker-audio-toggle="${this._escapeAttribute(item?.path || "")}"
+                data-picker-audio-url="${this._escapeAttribute(item?.audio_preview_url || "")}"
+                aria-label="${isPlaying ? "Pause" : "Play"} ${this._escapeAttribute(item?.name || "audio file")}"
+                title="${isPlaying ? "Pause preview" : isLoadingAudio ? "Loading preview" : "Play preview"}"
+              >${isLoadingAudio ? '<span class="button-spinner" aria-hidden="true"></span>' : isPlaying ? ICONS.pause : ICONS.play}</button>`
+            : ""
+          }
+          <button
+            class="button-secondary icon-only-button"
+            type="button"
+            data-picker-rename="${this._escapeAttribute(item?.path || "")}"
+            data-picker-name="${this._escapeAttribute(item?.name || "")}"
+            aria-label="Rename ${this._escapeAttribute(item?.name || "item")}"
+            title="Rename"
+            ${canRename ? "" : "disabled"}
+          >${ICONS.pencil}</button>
+          <button
+            class="button-danger icon-only-button"
+            type="button"
+            data-picker-delete="${this._escapeAttribute(item?.path || "")}"
+            data-picker-name="${this._escapeAttribute(item?.name || "")}"
+            aria-label="Delete ${this._escapeAttribute(item?.name || "item")}"
+            title="Delete"
+            ${canDelete ? "" : "disabled"}
+          >${ICONS.trash}</button>
+        </span>
+      </div>
+    `;
+  }
+
+  _renderPickerActionDialog() {
+    if (!this._pickerAction) {
+      return "";
     }
 
-    const clean = normalized.endsWith("/") && normalized !== "/" ? normalized.slice(0, -1) : normalized;
-    const parts = clean.split("/").filter(Boolean);
-    const segments = [{ label: "root", path: "/" }];
-    let current = "";
+    const isDelete = this._pickerAction.mode === "delete";
+    const isUpload = this._pickerAction.mode === "upload";
+    const isUploadConflicts = this._pickerAction.mode === "upload_conflicts";
+    const isUploadFolder = isUpload && Boolean(this._pickerAction.directory);
+    const actionLabel = isDelete
+      ? "Delete"
+      : isUploadConflicts
+        ? "Overwrite Existing"
+      : isUpload
+        ? "Upload"
+      : this._pickerAction.mode === "rename"
+        ? "Rename"
+        : "Create Folder";
+    const secondaryLabel = isUploadConflicts && this._pickerAction.nonExistingCount > 0
+      ? `Upload ${this._pickerAction.nonExistingCount} Non-Existing`
+      : "";
+    const error = this._pickerAction.error
+      ? `<div class="message error">${this._escapeHtml(this._pickerAction.error)}</div>`
+      : "";
+    const inputMarkup = isDelete || isUpload || isUploadConflicts
+      ? ""
+      : `
+        <div class="picker-action-field">
+          <label for="picker-action-input">${this._pickerAction.mode === "rename" ? "New name" : "Folder name"}</label>
+          <input
+            id="picker-action-input"
+            class="control"
+            data-picker-action-input="1"
+            type="text"
+            value="${this._escapeAttribute(this._pickerAction.value || "")}"
+            placeholder="${this._escapeAttribute(this._pickerAction.placeholder || "")}"
+          />
+        </div>
+      `;
 
-    for (const part of parts) {
-      current += `/${part}`;
-      segments.push({
-        label: part,
-        path: `${current}/`,
-      });
+    return `
+      <div class="picker-action-overlay" role="presentation">
+        <div class="picker-action-dialog ${isUploadConflicts ? "conflicts" : ""} ${isUploadFolder ? "upload-folder" : ""}" role="dialog" aria-modal="true" aria-label="${this._escapeAttribute(this._pickerAction.title || actionLabel)}">
+          <div class="picker-action-header">
+            <div class="picker-action-header-bar">
+              <h3 class="picker-action-title">${this._escapeHtml(this._pickerAction.title || actionLabel)}</h3>
+              ${isUploadConflicts
+                ? `<button class="button-secondary icon-only-button picker-action-close" type="button" data-picker-action-cancel="1" aria-label="Close overwrite dialog" title="Close">${ICONS.close}</button>`
+                : ""
+              }
+            </div>
+            <p class="picker-action-copy">${this._escapeHtml(this._pickerAction.copy || "")}</p>
+          </div>
+          <div class="picker-action-form">
+            ${error}
+            ${inputMarkup}
+            <div class="picker-action-actions">
+              ${isUploadConflicts
+                ? ""
+                : `<button class="button-secondary" type="button" data-picker-action-cancel="1">Cancel</button>`
+              }
+              ${secondaryLabel
+                ? `<button class="button-secondary" type="button" data-picker-action-secondary="1">${this._escapeHtml(secondaryLabel)}</button>`
+                : ""
+              }
+              <button
+                class="${isDelete ? "button-danger" : "button-primary"}"
+                type="button"
+                data-picker-action-submit="1"
+                ${this._pickerBusy ? "disabled" : ""}
+              >${this._escapeHtml(actionLabel)}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  _formatPickerModifiedAt(value) {
+    if (!value) {
+      return "";
     }
-
-    return segments;
+    try {
+      return new Intl.DateTimeFormat(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(value));
+    } catch (_error) {
+      return String(value);
+    }
   }
 
   _buildInitialPathValidationState() {
@@ -4468,16 +5631,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           ...(this._expandedConfigSections || {}),
           [sectionKey]: expanded,
         };
-        this._applyExpandableState(
-          this.shadowRoot?.querySelector(
-            `[data-config-section-card="${this._escapeSelectorValue(sectionKey)}"]`,
-          ),
-          expanded,
-          {
-            buttonSelector: `[data-toggle-config-section="${this._escapeSelectorValue(sectionKey)}"]`,
-            labelType: "section",
-          },
-        );
+        this._render();
       },
     );
   }
@@ -4526,7 +5680,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           ...(this._expandedChapters || {}),
           [chapterKey]: expanded,
         };
-        this._applyChapterState(chapterKey, expanded);
+        this._render();
         if (chapterKey === "logs" && !wasExpanded) {
           this._refreshLogs({ force: true });
         }
@@ -4551,14 +5705,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           ...(this._expandedLogEvents || {}),
           [eventId]: expanded,
         };
-        this._applyExpandableState(
-          this.shadowRoot?.querySelector(`[data-log-event-id="${this._escapeSelectorValue(eventId)}"]`),
-          expanded,
-          {
-            buttonSelector: `[data-toggle-log-arrow="${this._escapeSelectorValue(eventId)}"]`,
-            labelType: "log row",
-          },
-        );
+        this._render();
       },
     );
   }
@@ -5279,16 +6426,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           ...(this._expandedNotifyProfiles || {}),
           [index]: expanded,
         };
-        this._applyExpandableState(
-          this.shadowRoot?.querySelector(
-            `[data-notify-profile-card="${this._escapeSelectorValue(String(index))}"]`,
-          ),
-          expanded,
-          {
-            buttonSelector: `[data-toggle-notify-profile="${this._escapeSelectorValue(String(index))}"]`,
-            labelType: "profile",
-          },
-        );
+        this._render();
       },
     );
   }
@@ -5553,24 +6691,38 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (!fieldKey || this._pickerLoading) {
       return;
     }
+    this._pickerFilter = "";
+    this._pickerBusy = false;
+    this._pickerAction = null;
+    this._pickerMenuOpen = false;
     this._picker = {
       field_key: fieldKey,
       title: this._findFieldLabel(fieldKey),
       current_path: this._draftValues?.[fieldKey] || "",
       parent_path: null,
+      items: [],
       roots: [],
       directories: [],
     };
+    this._pickerSelectedPath = this._draftValues?.[fieldKey] || "";
     this._pickerError = null;
     this._pickerLoading = true;
+    this._beginPickerLoadingDelay();
     this._render();
     await this._loadPicker(this._draftValues?.[fieldKey] || "", fieldKey, { skipInitialRender: true });
   }
 
   _closePicker() {
+    this._stopPickerAudio();
+    this._endPickerLoadingDelay();
     this._picker = null;
     this._pickerLoading = false;
     this._pickerError = null;
+    this._pickerBusy = false;
+    this._pickerFilter = "";
+    this._pickerSelectedPath = "";
+    this._pickerAction = null;
+    this._pickerMenuOpen = false;
     if (this._flushDeferredLogEvents()) {
       return;
     }
@@ -5583,8 +6735,11 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return;
     }
 
+    this._stopPickerAudio();
     this._pickerLoading = true;
+    this._beginPickerLoadingDelay();
     this._pickerError = null;
+    this._pickerMenuOpen = false;
     if (!skipInitialRender) {
       this._render();
     }
@@ -5595,18 +6750,503 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         field_key: targetFieldKey,
         path,
       });
-      this._picker = pickerData;
+      this._picker = {
+        ...(this._picker || {}),
+        ...pickerData,
+      };
+      this._pickerSelectedPath = this._isPickerPathSelectable(this._pickerSelectedPath)
+        ? this._pickerSelectedPath
+        : this._picker.current_path || "";
     } catch (error) {
       this._pickerError = error?.message || "Unable to browse folders.";
     } finally {
       this._pickerLoading = false;
+      this._endPickerLoadingDelay();
       this._render();
     }
   }
 
-  _choosePickerPath(path) {
+  _beginPickerLoadingDelay() {
+    this._pickerLoadingToken += 1;
+    const token = this._pickerLoadingToken;
+    if (this._pickerLoadingDelayTimer) {
+      window.clearTimeout(this._pickerLoadingDelayTimer);
+    }
+    this._pickerLoadingVisible = false;
+    this._pickerLoadingDelayTimer = window.setTimeout(() => {
+      this._pickerLoadingDelayTimer = null;
+      if (!this._pickerLoading || token !== this._pickerLoadingToken) {
+        return;
+      }
+      this._pickerLoadingVisible = true;
+      this._render();
+    }, 1000);
+  }
+
+  _endPickerLoadingDelay() {
+    if (this._pickerLoadingDelayTimer) {
+      window.clearTimeout(this._pickerLoadingDelayTimer);
+      this._pickerLoadingDelayTimer = null;
+    }
+    this._pickerLoadingVisible = false;
+  }
+
+  _stopPickerAudio({ preserveElement = false } = {}) {
+    this._pickerAudioLoadToken += 1;
+    this._pickerAudioLoadingPath = "";
+    if (this._pickerAudio) {
+      try {
+        this._pickerAudio.pause();
+      } catch (_error) {
+        // Ignore pause failures from browser media state transitions.
+      }
+      if (!preserveElement) {
+        this._pickerAudio.src = "";
+        this._pickerAudio = null;
+      }
+    }
+    if (this._pickerAudioObjectUrl) {
+      URL.revokeObjectURL(this._pickerAudioObjectUrl);
+      this._pickerAudioObjectUrl = "";
+    }
+    if (this._pickerPlayingPath) {
+      this._pickerPlayingPath = "";
+    }
+  }
+
+  async _togglePickerAudio(path, url) {
+    if (!path || !url) {
+      return;
+    }
+
+    if (this._pickerPlayingPath === path && this._pickerAudio) {
+      this._stopPickerAudio({ preserveElement: true });
+      this._renderPreservingPickerScroll();
+      return;
+    }
+
+    this._stopPickerAudio();
+    this._pickerAudioLoadingPath = path;
+    this._pickerError = null;
+    this._renderPreservingPickerScroll();
+
+    const loadToken = this._pickerAudioLoadToken;
+    let objectUrl = "";
+    try {
+      objectUrl = await this._fetchPickerAudioObjectUrl(url);
+    } catch (_error) {
+      if (loadToken === this._pickerAudioLoadToken) {
+        this._pickerAudioLoadingPath = "";
+        this._pickerError = "Unable to play this audio preview.";
+        this._renderPreservingPickerScroll();
+      }
+      return;
+    }
+
+    if (loadToken !== this._pickerAudioLoadToken) {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+      return;
+    }
+
+    const audio = new Audio(objectUrl);
+    audio.addEventListener("ended", () => {
+      if (this._pickerAudio === audio) {
+        this._stopPickerAudio();
+        this._renderPreservingPickerScroll();
+      }
+    });
+    audio.addEventListener("pause", () => {
+      if (this._pickerAudio === audio && audio.ended) {
+        return;
+      }
+      if (this._pickerAudio === audio && this._pickerPlayingPath) {
+        this._pickerPlayingPath = "";
+        this._renderPreservingPickerScroll();
+      }
+    });
+    audio.addEventListener("play", () => {
+      if (this._pickerAudio === audio) {
+        this._pickerAudioLoadingPath = "";
+        this._pickerPlayingPath = path;
+        this._renderPreservingPickerScroll();
+      }
+    });
+    this._pickerAudio = audio;
+    this._pickerAudioObjectUrl = objectUrl;
+    this._pickerPlayingPath = path;
+    const playAttempt = audio.play();
+    if (playAttempt && typeof playAttempt.catch === "function") {
+      playAttempt.catch(() => {
+        if (this._pickerAudio === audio) {
+          this._stopPickerAudio();
+          this._pickerError = "Unable to play this audio preview.";
+          this._renderPreservingPickerScroll();
+        }
+      });
+    }
+    this._renderPreservingPickerScroll();
+  }
+
+  async _fetchPickerAudioObjectUrl(url) {
+    const response = await fetch(url, {
+      credentials: "same-origin",
+      headers: this._buildPickerAuthHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error(`Audio preview request failed with status ${response.status}`);
+    }
+
+    const audioBlob = await response.blob();
+    return URL.createObjectURL(audioBlob);
+  }
+
+  _buildPickerAuthHeaders() {
+    const headers = {};
+    const accessToken = this._hass?.auth?.data?.access_token
+      || this._hass?.auth?.accessToken
+      || this._hass?.auth?.access_token;
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return headers;
+  }
+
+  async _runPickerBrowserCommand(command) {
+    if (!this._picker?.field_key) {
+      return false;
+    }
+    this._pickerBusy = true;
+    this._pickerError = null;
+    this._renderPreservingPickerScroll();
+    try {
+      const pickerData = await this._hass.callWS(command);
+      this._picker = {
+        ...(this._picker || {}),
+        ...pickerData,
+      };
+      this._pickerAction = null;
+      this._pickerSelectedPath = this._isPickerPathSelectable(this._pickerSelectedPath)
+        ? this._pickerSelectedPath
+        : this._picker.current_path || "";
+      return true;
+    } catch (error) {
+      this._pickerError = error?.message || "Unable to complete that browser action.";
+      return false;
+    } finally {
+      this._pickerBusy = false;
+      this._renderPreservingPickerScroll();
+    }
+  }
+
+  async _createPickerFolder() {
+    if (!this._picker?.field_key || this._pickerBusy) {
+      return;
+    }
+    this._pickerAction = {
+      mode: "create",
+      title: "Create folder",
+      copy: `Add a new folder inside ${this._picker.current_path || "/"}.`,
+      value: "",
+      placeholder: "New folder name",
+      error: "",
+    };
+    this._render();
+  }
+
+  async _renamePickerEntry(path, currentName) {
+    if (!this._picker?.field_key || !path || this._pickerBusy) {
+      return;
+    }
+    this._pickerAction = {
+      mode: "rename",
+      title: "Rename item",
+      copy: `Choose a new name for ${currentName || "this item"}.`,
+      path,
+      value: currentName || "",
+      placeholder: currentName || "New name",
+      error: "",
+    };
+    this._render();
+  }
+
+  async _deletePickerEntry(path, name) {
+    if (!this._picker?.field_key || !path || this._pickerBusy) {
+      return;
+    }
+    this._pickerAction = {
+      mode: "delete",
+      title: "Delete item",
+      copy: `Delete ${name || path}? This action cannot be undone.`,
+      path,
+      value: "",
+      error: "",
+    };
+    this._render();
+  }
+
+  async _handlePickerUploadSelection(event, { directory }) {
+    const input = event.currentTarget;
+    const files = Array.from(input?.files || []);
+    if (!this._picker?.field_key || files.length === 0 || this._pickerBusy) {
+      if (input) {
+        input.value = "";
+      }
+      return;
+    }
+
+    if (input) {
+      input.value = "";
+    }
+
+    if (directory) {
+      const sourceFolderName = this._getPickerUploadSourceFolderName(files);
+      const destinationFolderName = this._getPickerFolderLabel(this._picker.current_path || "/");
+      this._pickerAction = {
+        mode: "upload",
+        title: "Upload Folder",
+        copy: `Upload ${files.length} file${files.length === 1 ? "" : "s"} from ${sourceFolderName} into the folder ${destinationFolderName}?`,
+        files,
+        directory: true,
+        error: "",
+      };
+      this._render();
+      return;
+    }
+
+    await this._performPickerUpload(files, { directory: false });
+  }
+
+  _getPickerUploadSourceFolderName(files) {
+    const firstRelativePath = files?.[0]?.webkitRelativePath || "";
+    const firstSegment = String(firstRelativePath).replace(/\\/g, "/").split("/").filter(Boolean)[0];
+    return firstSegment || "selected folder";
+  }
+
+  _getPickerFolderLabel(path) {
+    const normalized = String(path || "").replace(/\/+$/, "");
+    if (!normalized || normalized === "/") {
+      return "/";
+    }
+    const parts = normalized.split("/").filter(Boolean);
+    return parts[parts.length - 1] || normalized;
+  }
+
+  _getPickerUploadRelativeName(file, { directory }) {
+    const normalizedRelativePath = String(file?.webkitRelativePath || "").replace(/\\/g, "/");
+    if (directory && normalizedRelativePath) {
+      const parts = normalizedRelativePath.split("/").filter(Boolean);
+      if (parts.length > 1) {
+        return parts.slice(1).join("/");
+      }
+    }
+    return file?.name || "";
+  }
+
+  async _performPickerUpload(files, { directory, overwriteMode = "prompt" } = {}) {
+    if (!this._picker?.field_key || !Array.isArray(files) || files.length === 0) {
+      return;
+    }
+
+    this._pickerBusy = true;
+    this._pickerError = null;
+    this._renderPreservingPickerScroll();
+    try {
+      const formData = new FormData();
+      formData.append("field_key", this._picker.field_key);
+      formData.append("destination_path", this._picker.current_path || "/");
+      formData.append("overwrite_mode", overwriteMode);
+      for (const file of files) {
+        const relativeName = this._getPickerUploadRelativeName(file, { directory });
+        formData.append("files", file, relativeName);
+      }
+      const response = await fetch("/api/chime_tts/browser/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin",
+        headers: this._buildPickerAuthHeaders(),
+      });
+      if (response.status === 409) {
+        const conflictPayload = await response.json().catch(() => null);
+        if (conflictPayload?.error === "upload_conflicts") {
+          const conflictCount = Number(conflictPayload.conflict_count || 0);
+          const nonExistingCount = Math.max(0, files.length - conflictCount);
+          const destinationFolderName = this._getPickerFolderLabel(this._picker.current_path || "/");
+          const conflictCopy = nonExistingCount === 0
+            ? `${conflictCount === 1 ? "That file already exists" : "Those files already exist"} in the folder "${destinationFolderName}".`
+            : `${conflictCount} file${conflictCount === 1 ? "" : "s"} already ${conflictCount === 1 ? "exists" : "exist"} in the folder "${destinationFolderName}".`;
+          this._pickerAction = {
+            mode: "upload_conflicts",
+            title: "Overwrite Existing Files?",
+            copy: conflictCopy,
+            files,
+            directory,
+            conflicts: conflictPayload.conflicts || [],
+            nonExistingCount,
+            error: "",
+          };
+          return;
+        }
+      }
+      if (!response.ok) {
+        throw new Error(await response.text() || "Unable to upload selected files.");
+      }
+      const pickerData = await response.json();
+      this._picker = {
+        ...(this._picker || {}),
+        ...pickerData,
+      };
+      this._pickerAction = null;
+      this._pickerSelectedPath = this._isPickerPathSelectable(this._pickerSelectedPath)
+        ? this._pickerSelectedPath
+        : this._picker.current_path || "";
+    } catch (error) {
+      if (this._pickerAction?.mode === "upload") {
+        this._pickerAction = {
+          ...this._pickerAction,
+          error: error?.message || "Unable to upload the selected files.",
+        };
+      } else {
+        this._pickerError = error?.message || "Unable to upload the selected files.";
+      }
+    } finally {
+      this._pickerBusy = false;
+      this._renderPreservingPickerScroll();
+    }
+  }
+
+  _selectPickerPath(path, kind = "directory") {
+    if (!path || kind !== "directory") {
+      return;
+    }
+    this._pickerSelectedPath = path;
+    this._render();
+  }
+
+  _isPickerPathSelectable(path) {
+    if (!path || !this._picker) {
+      return false;
+    }
+    if (path === this._picker.current_path) {
+      return Boolean(this._picker.current_path_allowed);
+    }
+    return Boolean((this._picker.items || []).some(
+      (item) => item?.is_dir && item?.path === path,
+    ));
+  }
+
+  _closePickerAction() {
+    this._pickerAction = null;
+    this._render();
+  }
+
+  _runPickerActionSecondary() {
+    if (this._pickerAction?.mode === "upload_conflicts" && this._pickerAction.nonExistingCount > 0) {
+      this._performPickerUpload(this._pickerAction.files || [], {
+        directory: Boolean(this._pickerAction.directory),
+        overwriteMode: "skip",
+      });
+    }
+  }
+
+  async _submitPickerAction() {
+    if (!this._pickerAction || this._pickerBusy || !this._picker?.field_key) {
+      return;
+    }
+
+    const value = String(this._pickerAction.value || "").trim();
+    let command = null;
+
+    if (this._pickerAction.mode === "create") {
+      if (!value) {
+        this._pickerAction = { ...this._pickerAction, error: "Enter a folder name." };
+        this._render();
+        return;
+      }
+      command = {
+        type: "chime_tts/browser_create_folder",
+        field_key: this._picker.field_key,
+        path: this._picker.current_path || "/",
+        name: value,
+      };
+    } else if (this._pickerAction.mode === "rename") {
+      if (!value) {
+        this._pickerAction = { ...this._pickerAction, error: "Enter a new name." };
+        this._render();
+        return;
+      }
+      command = {
+        type: "chime_tts/browser_rename_entry",
+        field_key: this._picker.field_key,
+        path: this._pickerAction.path,
+        new_name: value,
+      };
+    } else if (this._pickerAction.mode === "delete") {
+      command = {
+        type: "chime_tts/browser_delete_entry",
+        field_key: this._picker.field_key,
+        path: this._pickerAction.path,
+      };
+    } else if (this._pickerAction.mode === "upload") {
+      await this._performPickerUpload(this._pickerAction.files || [], {
+        directory: Boolean(this._pickerAction.directory),
+      });
+      return;
+    } else if (this._pickerAction.mode === "upload_conflicts") {
+      await this._performPickerUpload(this._pickerAction.files || [], {
+        directory: Boolean(this._pickerAction.directory),
+        overwriteMode: "overwrite",
+      });
+      return;
+    }
+
+    if (!command) {
+      return;
+    }
+
+    await this._runPickerBrowserCommand(command);
+  }
+
+  async _choosePickerPath(path) {
     const fieldKey = this._picker?.field_key;
     if (!fieldKey || !path) {
+      return;
+    }
+
+    const currentPath = this._picker?.current_path || "";
+    let validation = {
+      field_key: fieldKey,
+      path,
+      valid: Boolean(this._picker?.current_path_allowed && path === currentPath),
+      exists: true,
+      tone: this._picker?.current_path_allowed && path === currentPath ? "success" : "error",
+      message: this._picker?.current_path_validation_message || "",
+      badges: this._picker?.current_path_badges || [],
+    };
+    if (path !== currentPath) {
+      try {
+        validation = await this._hass.callWS({
+          type: "chime_tts/validate_path",
+          field_key: fieldKey,
+          path,
+        });
+      } catch (error) {
+        validation = {
+          field_key: fieldKey,
+          path,
+          valid: false,
+          exists: false,
+          tone: "error",
+          message: error?.message || "Unable to validate this folder path right now.",
+          badges: [],
+        };
+      }
+    }
+
+    if (!validation.valid) {
+      this._pickerError = validation.message || "That folder cannot be selected for this field.";
+      this._render();
       return;
     }
 
@@ -5621,15 +7261,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
     this._pathValidationState = {
       ...(this._pathValidationState || {}),
-      [fieldKey]: {
-        field_key: fieldKey,
-        path,
-        valid: Boolean(this._picker?.current_path_allowed),
-        exists: true,
-        tone: this._picker?.current_path_allowed ? "success" : "error",
-        message: this._picker?.current_path_validation_message || "",
-        badges: this._picker?.current_path_badges || [],
-      },
+      [fieldKey]: validation,
     };
     if (this._clientErrors[fieldKey]) {
       const nextErrors = { ...(this._clientErrors || {}) };

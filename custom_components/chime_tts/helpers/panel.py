@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import mimetypes
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +34,12 @@ from ..settings import (
     async_save_notify_profiles,
     PATH_BROWSABLE_FIELD_KEYS,
     build_directory_browser_payload,
+    create_browser_directory,
+    delete_browser_entry,
+    inspect_browser_upload_conflicts,
+    rename_browser_entry,
+    resolve_browser_audio_file_path,
+    save_browser_upload,
     validate_path_field,
     validate_notify_profiles,
     validate_settings,
@@ -47,11 +54,15 @@ PANEL_ICON_URL = f"/api/{DOMAIN}/icon.svg"
 PANEL_FOOTER_LOGO_URL = f"/api/{DOMAIN}/footer_logo.png"
 PANEL_ICONSET_URL = f"/api/{DOMAIN}/iconset.js"
 PANEL_OPTION_ICON_URL = f"/api/{DOMAIN}/option_icons/{{icon_name}}"
+PANEL_BROWSER_AUDIO_URL = f"/api/{DOMAIN}/browser/audio"
+PANEL_BROWSER_UPLOAD_URL = f"/api/{DOMAIN}/browser/upload"
 PANEL_VIEW_NAME = f"api:{DOMAIN}:panel"
 PANEL_ICON_VIEW_NAME = f"api:{DOMAIN}:icon"
 PANEL_FOOTER_LOGO_VIEW_NAME = f"api:{DOMAIN}:footer_logo"
 PANEL_ICONSET_VIEW_NAME = f"api:{DOMAIN}:iconset"
 PANEL_OPTION_ICON_VIEW_NAME = f"api:{DOMAIN}:option_icon"
+PANEL_BROWSER_AUDIO_VIEW_NAME = f"api:{DOMAIN}:browser_audio"
+PANEL_BROWSER_UPLOAD_VIEW_NAME = f"api:{DOMAIN}:browser_upload"
 PANEL_DATA_KEY = f"{DOMAIN}_panel_view_registered"
 WS_DATA_KEY = f"{DOMAIN}_panel_ws_registered"
 ENTRY_DATA_KEY = f"{DOMAIN}_panel_entry_id"
@@ -178,6 +189,156 @@ class ChimeTTSPanelOptionIconView(HomeAssistantView):
         return response
 
 
+class ChimeTTSPanelBrowserUploadView(HomeAssistantView):
+    """Handle file and folder uploads for the panel browser."""
+
+    url = PANEL_BROWSER_UPLOAD_URL
+    name = PANEL_BROWSER_UPLOAD_VIEW_NAME
+    requires_auth = True
+
+    async def post(self, request) -> web.StreamResponse:
+        """Upload one or more files into the currently browsed folder."""
+        hass: HomeAssistant = request.app["hass"]
+        config_entry = _get_config_entry(hass)
+        if config_entry is None:
+            raise web.HTTPNotFound(text="Chime TTS is not configured yet.")
+
+        reader = await request.multipart()
+        field_key = ""
+        destination_path = ""
+        overwrite_mode = "prompt"
+        uploads: list[tuple[str, bytes]] = []
+
+        while True:
+            part = await reader.next()
+            if part is None:
+                break
+            if part.name == "field_key":
+                field_key = str(await part.text()).strip()
+                continue
+            if part.name == "destination_path":
+                destination_path = str(await part.text()).strip()
+                continue
+            if part.name == "overwrite_mode":
+                overwrite_mode = str(await part.text()).strip() or "prompt"
+                continue
+            if part.name == "files":
+                uploads.append((part.filename or "", await part.read(decode=False)))
+
+        if field_key not in PATH_BROWSABLE_FIELD_KEYS:
+            raise web.HTTPBadRequest(text="Folder browsing is not available for that field.")
+        if not uploads:
+            raise web.HTTPBadRequest(text="No upload files were provided.")
+        if overwrite_mode not in {"prompt", "overwrite", "skip"}:
+            raise web.HTTPBadRequest(text="Invalid upload overwrite mode.")
+
+        try:
+            conflicts = await hass.async_add_executor_job(
+                inspect_browser_upload_conflicts,
+                hass,
+                config_entry,
+                field_key,
+                destination_path,
+                [filename for filename, _content in uploads],
+            )
+            if conflicts and overwrite_mode == "prompt":
+                return web.json_response(
+                    {
+                        "error": "upload_conflicts",
+                        "conflicts": conflicts,
+                        "conflict_count": len(conflicts),
+                        "upload_count": len(uploads),
+                    },
+                    status=409,
+                )
+
+            conflict_filenames = {item["filename"] for item in conflicts}
+            uploads_to_write = uploads
+            if conflicts and overwrite_mode == "skip":
+                uploads_to_write = [
+                    (filename, content)
+                    for filename, content in uploads
+                    if filename not in conflict_filenames
+                ]
+
+            for filename, content in uploads_to_write:
+                await hass.async_add_executor_job(
+                    save_browser_upload,
+                    hass,
+                    config_entry,
+                    field_key,
+                    destination_path,
+                    filename,
+                    content,
+                )
+            payload = await hass.async_add_executor_job(
+                build_directory_browser_payload,
+                hass,
+                config_entry,
+                field_key,
+                destination_path,
+            )
+            payload["upload_summary"] = {
+                "uploaded_count": len(uploads_to_write),
+                "skipped_count": len(uploads) - len(uploads_to_write),
+                "conflict_count": len(conflicts),
+            }
+        except FileNotFoundError as error:
+            raise web.HTTPNotFound(text=str(error)) from error
+        except FileExistsError as error:
+            raise web.HTTPConflict(text=f"An item already exists at {error}.") from error
+        except PermissionError as error:
+            raise web.HTTPForbidden(text=f"Uploads are not allowed for {error}.") from error
+        except ValueError as error:
+            raise web.HTTPBadRequest(text=str(error)) from error
+
+        return web.json_response(payload)
+
+
+class ChimeTTSPanelBrowserAudioView(HomeAssistantView):
+    """Stream an audio file for browser preview playback."""
+
+    url = PANEL_BROWSER_AUDIO_URL
+    name = PANEL_BROWSER_AUDIO_VIEW_NAME
+    requires_auth = True
+
+    async def get(self, request) -> web.StreamResponse:
+        """Return an audio file for in-panel playback."""
+        hass: HomeAssistant = request.app["hass"]
+        config_entry = _get_config_entry(hass)
+        if config_entry is None:
+            raise web.HTTPNotFound(text="Chime TTS is not configured yet.")
+
+        field_key = str(request.query.get("field_key", "")).strip()
+        file_path = str(request.query.get("path", "")).strip()
+
+        if field_key not in PATH_BROWSABLE_FIELD_KEYS:
+            raise web.HTTPBadRequest(text="Folder browsing is not available for that field.")
+
+        try:
+            resolved_path = await hass.async_add_executor_job(
+                resolve_browser_audio_file_path,
+                hass,
+                config_entry,
+                field_key,
+                file_path,
+            )
+        except FileNotFoundError as error:
+            raise web.HTTPNotFound(text=str(error)) from error
+        except PermissionError as error:
+            raise web.HTTPForbidden(text=f"Audio preview is not allowed for {error}.") from error
+        except ValueError as error:
+            raise web.HTTPBadRequest(text=str(error)) from error
+
+        content_type = mimetypes.guess_type(resolved_path)[0]
+        response = web.FileResponse(
+            resolved_path,
+            headers={"Content-Type": content_type} if content_type else None,
+        )
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
     """Register the custom settings panel and its backend APIs."""
     integration_path = Path(__file__).resolve().parent.parent
@@ -193,6 +354,8 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
         hass.http.register_view(ChimeTTSPanelFooterLogoView(integration_path))
         hass.http.register_view(ChimeTTSPanelIconsetView(panel_path))
         hass.http.register_view(ChimeTTSPanelOptionIconView(panel_path))
+        hass.http.register_view(ChimeTTSPanelBrowserAudioView())
+        hass.http.register_view(ChimeTTSPanelBrowserUploadView())
         add_extra_js_url(hass, panel_iconset_resource_url)
         hass.data[PANEL_DATA_KEY] = True
         LOGGER.debug(
@@ -204,6 +367,9 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
         websocket_api.async_register_command(hass, websocket_get_settings)
         websocket_api.async_register_command(hass, websocket_get_notify_profiles)
         websocket_api.async_register_command(hass, websocket_browse_path)
+        websocket_api.async_register_command(hass, websocket_browser_create_folder)
+        websocket_api.async_register_command(hass, websocket_browser_rename_entry)
+        websocket_api.async_register_command(hass, websocket_browser_delete_entry)
         websocket_api.async_register_command(hass, websocket_validate_path)
         websocket_api.async_register_command(hass, websocket_get_logs)
         websocket_api.async_register_command(hass, websocket_subscribe_logs)
@@ -333,13 +499,21 @@ async def websocket_get_notify_profiles(
         vol.Optional("path"): str,
     }
 )
-@websocket_api.require_admin
-def websocket_browse_path(
+@websocket_api.async_response
+async def websocket_browse_path(
     hass: HomeAssistant,
     connection,
     msg: dict[str, Any],
 ) -> None:
     """Return directory contents for the panel folder picker."""
+    if connection.user is None or not connection.user.is_admin:
+        connection.send_error(
+            msg["id"],
+            "unauthorized",
+            "Administrator access is required.",
+        )
+        return
+
     config_entry = _get_config_entry(hass)
     if config_entry is None:
         connection.send_error(
@@ -350,15 +524,14 @@ def websocket_browse_path(
         return
 
     try:
-        connection.send_result(
-            msg["id"],
-            build_directory_browser_payload(
-                hass,
-                config_entry,
-                msg["field_key"],
-                msg.get("path"),
-            ),
+        payload = await hass.async_add_executor_job(
+            build_directory_browser_payload,
+            hass,
+            config_entry,
+            msg["field_key"],
+            msg.get("path"),
         )
+        connection.send_result(msg["id"], payload)
     except FileNotFoundError:
         connection.send_error(
             msg["id"],
@@ -412,6 +585,148 @@ def websocket_validate_path(
             msg["path"],
         ),
     )
+
+
+@websocket_api.websocket_command(
+    {
+        "type": "chime_tts/browser_create_folder",
+        vol.Required("field_key"): vol.In(PATH_BROWSABLE_FIELD_KEYS),
+        vol.Required("path"): str,
+        vol.Required("name"): str,
+    }
+)
+@websocket_api.async_response
+async def websocket_browser_create_folder(
+    hass: HomeAssistant,
+    connection,
+    msg: dict[str, Any],
+) -> None:
+    """Create a folder in the browser and return refreshed listing."""
+    if connection.user is None or not connection.user.is_admin:
+        connection.send_error(msg["id"], "unauthorized", "Administrator access is required.")
+        return
+
+    config_entry = _get_config_entry(hass)
+    if config_entry is None:
+        connection.send_error(msg["id"], "not_configured", "Chime TTS is not configured yet.")
+        return
+
+    try:
+        payload = await hass.async_add_executor_job(
+            create_browser_directory,
+            hass,
+            config_entry,
+            msg["field_key"],
+            msg["path"],
+            msg["name"],
+        )
+    except FileExistsError:
+        connection.send_error(msg["id"], "already_exists", "A folder with that name already exists.")
+        return
+    except FileNotFoundError:
+        connection.send_error(msg["id"], "path_not_found", "The selected folder does not exist.")
+        return
+    except PermissionError:
+        connection.send_error(msg["id"], "path_forbidden", "That location is outside the allowed browser roots.")
+        return
+    except ValueError:
+        connection.send_error(msg["id"], "invalid_name", "Enter a valid folder name.")
+        return
+
+    connection.send_result(msg["id"], payload)
+
+
+@websocket_api.websocket_command(
+    {
+        "type": "chime_tts/browser_rename_entry",
+        vol.Required("field_key"): vol.In(PATH_BROWSABLE_FIELD_KEYS),
+        vol.Required("path"): str,
+        vol.Required("new_name"): str,
+    }
+)
+@websocket_api.async_response
+async def websocket_browser_rename_entry(
+    hass: HomeAssistant,
+    connection,
+    msg: dict[str, Any],
+) -> None:
+    """Rename a browser entry and return refreshed listing."""
+    if connection.user is None or not connection.user.is_admin:
+        connection.send_error(msg["id"], "unauthorized", "Administrator access is required.")
+        return
+
+    config_entry = _get_config_entry(hass)
+    if config_entry is None:
+        connection.send_error(msg["id"], "not_configured", "Chime TTS is not configured yet.")
+        return
+
+    try:
+        payload = await hass.async_add_executor_job(
+            rename_browser_entry,
+            hass,
+            config_entry,
+            msg["field_key"],
+            msg["path"],
+            msg["new_name"],
+        )
+    except FileExistsError:
+        connection.send_error(msg["id"], "already_exists", "An item with that name already exists.")
+        return
+    except FileNotFoundError:
+        connection.send_error(msg["id"], "path_not_found", "The selected item no longer exists.")
+        return
+    except PermissionError:
+        connection.send_error(msg["id"], "path_forbidden", "That item is outside the allowed browser roots.")
+        return
+    except ValueError:
+        connection.send_error(msg["id"], "invalid_name", "Enter a valid new name.")
+        return
+
+    connection.send_result(msg["id"], payload)
+
+
+@websocket_api.websocket_command(
+    {
+        "type": "chime_tts/browser_delete_entry",
+        vol.Required("field_key"): vol.In(PATH_BROWSABLE_FIELD_KEYS),
+        vol.Required("path"): str,
+    }
+)
+@websocket_api.async_response
+async def websocket_browser_delete_entry(
+    hass: HomeAssistant,
+    connection,
+    msg: dict[str, Any],
+) -> None:
+    """Delete a browser entry and return refreshed listing."""
+    if connection.user is None or not connection.user.is_admin:
+        connection.send_error(msg["id"], "unauthorized", "Administrator access is required.")
+        return
+
+    config_entry = _get_config_entry(hass)
+    if config_entry is None:
+        connection.send_error(msg["id"], "not_configured", "Chime TTS is not configured yet.")
+        return
+
+    try:
+        payload = await hass.async_add_executor_job(
+            delete_browser_entry,
+            hass,
+            config_entry,
+            msg["field_key"],
+            msg["path"],
+        )
+    except FileNotFoundError:
+        connection.send_error(msg["id"], "path_not_found", "The selected item no longer exists.")
+        return
+    except PermissionError:
+        connection.send_error(msg["id"], "path_forbidden", "That item is outside the allowed browser roots.")
+        return
+    except ValueError:
+        connection.send_error(msg["id"], "invalid_target", "That item cannot be deleted.")
+        return
+
+    connection.send_result(msg["id"], payload)
 
 
 @websocket_api.websocket_command({"type": "chime_tts/get_logs"})
