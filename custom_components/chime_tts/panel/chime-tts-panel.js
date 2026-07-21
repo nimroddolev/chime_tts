@@ -822,6 +822,7 @@ template.innerHTML = `
       align-items: center;
       justify-content: center;
       gap: 6px;
+      width: 90px;
     }
 
     .about-version-line {
@@ -840,6 +841,47 @@ template.innerHTML = `
       margin: 18px auto 0;
       object-fit: contain;
       filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.18));
+    }
+
+    .about-logo-object {
+      display: block;
+      width: 100%;
+      max-width: 650px;
+      aspect-ratio: 650 / 520;
+      margin: 18px auto 0;
+      background: transparent;
+      border: 0;
+      color-scheme: light dark;
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.18));
+    }
+
+    .about-logo-inline {
+      display: block;
+      width: 100%;
+      max-width: 650px;
+      aspect-ratio: 650 / 520;
+      margin: 18px auto 0;
+      background: transparent;
+      border: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.18));
+    }
+
+    .about-logo-inline:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--primary-color) 45%, transparent);
+      outline-offset: 6px;
+      border-radius: 16px;
+    }
+
+    .about-logo-inline svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-width: 650px;
+      pointer-events: none;
+      background: transparent !important;
+      background-color: transparent !important;
     }
 
     .about-card {
@@ -3118,6 +3160,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._notifyPreviewAudioLoadToken = 0;
     this._notifyPreviewLoadingKey = "";
     this._notifyPreviewPlayingKey = "";
+    this._footerLogoSvgMarkup = "";
+    this._footerLogoSvgUrl = "";
     this._advancedSections = {};
     this._expandedConfigSections = {};
     this._expandedNotifyProfiles = {};
@@ -3229,6 +3273,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._restartConfirmOpen = false;
       this._restarting = false;
       this._expandedChapters = {};
+      await this._ensureFooterLogoMarkup(this._data?.footer_logo_url || "");
       await this._ensureLogsSubscription();
     } catch (error) {
       this._data = {
@@ -3264,6 +3309,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._restartConfirmOpen = false;
       this._restarting = false;
       this._expandedChapters = {};
+      this._footerLogoSvgMarkup = "";
+      this._footerLogoSvgUrl = "";
     } finally {
       this._loading = false;
       this._render();
@@ -3470,6 +3517,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       event.preventDefault();
       this._submit();
     });
+    this._syncFooterLogoTransparency();
+    this._wireFooterLogoAnimation();
     this.shadowRoot.querySelectorAll("[data-reload-panel]").forEach((button) => {
       button.addEventListener("click", () => this._load());
     });
@@ -4391,13 +4440,28 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _renderPageFooter(data) {
     const version = data?.version || this._data?.version || "";
     const iconUrl = data?.footer_logo_url || this._data?.footer_logo_url || "";
-    if (!version && !iconUrl) {
+    const inlineMarkup =
+      iconUrl && this._footerLogoSvgUrl === iconUrl ? this._footerLogoSvgMarkup : "";
+    if (!version && !iconUrl && !inlineMarkup) {
       return "";
     }
     return `
       <div class="about-footer">
-        ${iconUrl
-          ? `<img class="about-logo" src="${this._escapeAttribute(iconUrl)}" alt="Chime TTS logo" loading="lazy" />`
+        ${inlineMarkup
+          ? `<div
+              class="about-logo-inline"
+              data-footer-logo-play="1"
+              role="button"
+              tabindex="0"
+              aria-label="Play Chime TTS logo animation"
+            >${inlineMarkup}</div>`
+          : iconUrl
+          ? `<object
+              class="about-logo-object"
+              data="${this._escapeAttribute(iconUrl)}"
+              type="image/svg+xml"
+              aria-label="Chime TTS logo"
+            ></object>`
           : ""
         }
         ${version
@@ -4406,6 +4470,114 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         }
       </div>
     `;
+  }
+
+  async _ensureFooterLogoMarkup(iconUrl) {
+    const normalizedUrl = String(iconUrl || "").trim();
+    if (!normalizedUrl) {
+      this._footerLogoSvgMarkup = "";
+      this._footerLogoSvgUrl = "";
+      return;
+    }
+    if (this._footerLogoSvgUrl === normalizedUrl && this._footerLogoSvgMarkup) {
+      return;
+    }
+    try {
+      const response = await fetch(normalizedUrl, {
+        credentials: "same-origin",
+        headers: this._buildPickerAuthHeaders(),
+      });
+      if (!response.ok) {
+        throw new Error(`Footer logo request failed with status ${response.status}`);
+      }
+      const rawMarkup = await response.text();
+      this._footerLogoSvgMarkup = rawMarkup
+        .replace(/<\?xml[\s\S]*?\?>/gi, "")
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/\s(tabindex|role|aria-label)="[^"]*"/gi, "")
+        .replace(/\sid="click-target"/gi, "")
+        .trim();
+      this._footerLogoSvgUrl = normalizedUrl;
+    } catch (_error) {
+      this._footerLogoSvgMarkup = "";
+      this._footerLogoSvgUrl = normalizedUrl;
+    }
+  }
+
+  _syncFooterLogoTransparency() {
+    this.shadowRoot.querySelectorAll(".about-logo-object").forEach((objectElement) => {
+      const applyTransparency = () => {
+        try {
+          const doc = objectElement.contentDocument;
+          if (!doc) {
+            return;
+          }
+          const html = doc.documentElement;
+          const body = doc.body;
+          const svg = doc.querySelector("svg");
+          if (html) {
+            html.style.background = "transparent";
+            html.style.backgroundColor = "transparent";
+          }
+          if (body) {
+            body.style.background = "transparent";
+            body.style.backgroundColor = "transparent";
+            body.style.margin = "0";
+          }
+          if (svg) {
+            svg.style.background = "transparent";
+            svg.style.backgroundColor = "transparent";
+          }
+        } catch (_error) {
+          // Ignore cross-document styling failures and leave the existing asset visible.
+        }
+      };
+
+      if (!objectElement.dataset.transparentBound) {
+        objectElement.addEventListener("load", applyTransparency);
+        objectElement.dataset.transparentBound = "1";
+      }
+      applyTransparency();
+    });
+  }
+
+  _wireFooterLogoAnimation() {
+    this.shadowRoot.querySelectorAll("[data-footer-logo-play]").forEach((container) => {
+      if (container.dataset.footerLogoBound === "1") {
+        return;
+      }
+      const playAnimation = () => {
+        const svg = container.querySelector("svg");
+        if (!svg) {
+          return;
+        }
+        try {
+          if (typeof svg.setCurrentTime === "function") {
+            svg.setCurrentTime(0);
+          }
+        } catch (_error) {
+          // Ignore browsers that do not expose the SVG SMIL timeline API.
+        }
+        container.querySelectorAll("animateTransform").forEach((node) => {
+          if (typeof node.beginElement === "function") {
+            try {
+              node.beginElement();
+            } catch (_error) {
+              // Ignore animation restarts that are not supported.
+            }
+          }
+        });
+      };
+      container.addEventListener("click", playAnimation);
+      container.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") {
+          return;
+        }
+        event.preventDefault();
+        playAnimation();
+      });
+      container.dataset.footerLogoBound = "1";
+    });
   }
 
   _renderAboutCard(item) {
