@@ -21,7 +21,15 @@ from homeassistant.exceptions import HomeAssistantError
 import logging
 
 from ..const import DOMAIN, NAME, VERSION
-from ..const import SERVICE_CLEAR_CACHE, SERVICE_REPLAY, SERVICE_SAY, SERVICE_SAY_URL
+from ..const import (
+    LOCAL_PATH_KEY,
+    PUBLIC_PATH_KEY,
+    SERVICE_CLEAR_CACHE,
+    SERVICE_REPLAY,
+    SERVICE_SAY,
+    SERVICE_SAY_URL,
+)
+from ..helpers.filesystem import FilesystemHelper
 from .panel_logs import (
     async_get_panel_log_events,
     async_setup_panel_log_store,
@@ -40,6 +48,7 @@ from ..settings import (
     rename_browser_entry,
     resolve_browser_audio_file_path,
     save_browser_upload,
+    get_settings_data,
     validate_path_field,
     validate_notify_profiles,
     validate_settings,
@@ -51,10 +60,11 @@ PANEL_COMPONENT_NAME = "chime-tts-settings-panel"
 PANEL_URL_PATH = "chime-tts"
 PANEL_MODULE_URL = f"/api/{DOMAIN}/panel.js"
 PANEL_ICON_URL = f"/api/{DOMAIN}/icon.svg"
-PANEL_FOOTER_LOGO_URL = f"/api/{DOMAIN}/footer_logo.png"
+PANEL_FOOTER_LOGO_URL = f"/api/{DOMAIN}/footer_logo.svg"
 PANEL_ICONSET_URL = f"/api/{DOMAIN}/iconset.js"
 PANEL_OPTION_ICON_URL = f"/api/{DOMAIN}/option_icons/{{icon_name}}"
 PANEL_BROWSER_AUDIO_URL = f"/api/{DOMAIN}/browser/audio"
+PANEL_CHIME_PREVIEW_URL = f"/api/{DOMAIN}/chime_preview"
 PANEL_BROWSER_UPLOAD_URL = f"/api/{DOMAIN}/browser/upload"
 PANEL_VIEW_NAME = f"api:{DOMAIN}:panel"
 PANEL_ICON_VIEW_NAME = f"api:{DOMAIN}:icon"
@@ -62,10 +72,14 @@ PANEL_FOOTER_LOGO_VIEW_NAME = f"api:{DOMAIN}:footer_logo"
 PANEL_ICONSET_VIEW_NAME = f"api:{DOMAIN}:iconset"
 PANEL_OPTION_ICON_VIEW_NAME = f"api:{DOMAIN}:option_icon"
 PANEL_BROWSER_AUDIO_VIEW_NAME = f"api:{DOMAIN}:browser_audio"
+PANEL_CHIME_PREVIEW_VIEW_NAME = f"api:{DOMAIN}:chime_preview"
 PANEL_BROWSER_UPLOAD_VIEW_NAME = f"api:{DOMAIN}:browser_upload"
 PANEL_DATA_KEY = f"{DOMAIN}_panel_view_registered"
 WS_DATA_KEY = f"{DOMAIN}_panel_ws_registered"
 ENTRY_DATA_KEY = f"{DOMAIN}_panel_entry_id"
+CHIME_PREVIEW_FIELD_KEYS = {"chime_path", "end_chime_path"}
+
+filesystem_helper = FilesystemHelper()
 
 
 def _build_asset_resource_url(base_url: str, asset_path: Path) -> str:
@@ -137,7 +151,7 @@ class ChimeTTSPanelFooterLogoView(HomeAssistantView):
 
     async def get(self, request) -> web.FileResponse:
         """Return the Chime TTS footer logo image."""
-        response = web.FileResponse(self._integration_path / "panel" / "footer-logo.png")
+        response = web.FileResponse(self._integration_path / "panel" / "chime_tts.svg")
         _set_cache_headers(response)
         return response
 
@@ -339,11 +353,73 @@ class ChimeTTSPanelBrowserAudioView(HomeAssistantView):
         return response
 
 
+class ChimeTTSPanelChimePreviewView(HomeAssistantView):
+    """Stream a selected start or end chime for panel preview playback."""
+
+    url = PANEL_CHIME_PREVIEW_URL
+    name = PANEL_CHIME_PREVIEW_VIEW_NAME
+    requires_auth = True
+
+    async def get(self, request) -> web.StreamResponse:
+        """Return a selected chime audio file for in-panel playback."""
+        hass: HomeAssistant = request.app["hass"]
+        config_entry = _get_config_entry(hass)
+        if config_entry is None:
+            raise web.HTTPNotFound(text="Chime TTS is not configured yet.")
+
+        field_key = str(request.query.get("field_key", "")).strip()
+        chime_value = str(request.query.get("value", "")).strip()
+
+        if field_key not in CHIME_PREVIEW_FIELD_KEYS:
+            raise web.HTTPBadRequest(text="Chime preview is not available for that field.")
+        if not chime_value:
+            raise web.HTTPBadRequest(text="A chime value is required for preview playback.")
+
+        settings_data = get_settings_data(hass, config_entry)
+        try:
+            resolved_chime = await filesystem_helper.async_get_chime_path(
+                chime_value,
+                True,
+                settings_data,
+                hass,
+            )
+        except Exception as error:
+            raise web.HTTPBadRequest(text=f"Unable to resolve that chime preview: {error}") from error
+
+        resolved_path: str | None = None
+        if isinstance(resolved_chime, dict):
+            audio_dict = resolved_chime.get("audio_dict", {}) if isinstance(resolved_chime.get("audio_dict"), dict) else {}
+            resolved_path = audio_dict.get(LOCAL_PATH_KEY)
+            if not resolved_path:
+                public_path = audio_dict.get(PUBLIC_PATH_KEY)
+                if public_path:
+                    resolved_path = filesystem_helper.get_local_path(hass, public_path)
+        elif isinstance(resolved_chime, str):
+            resolved_path = resolved_chime
+
+        if not resolved_path:
+            raise web.HTTPNotFound(text="Unable to locate the selected chime preview.")
+
+        validated_path = await filesystem_helper.async_validate_path(hass, resolved_path)
+        if not validated_path:
+            raise web.HTTPNotFound(text="The selected chime preview file could not be found.")
+
+        content_type = mimetypes.guess_type(validated_path)[0]
+        response = web.FileResponse(
+            validated_path,
+            headers={"Content-Type": content_type} if content_type else None,
+        )
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
     """Register the custom settings panel and its backend APIs."""
     integration_path = Path(__file__).resolve().parent.parent
     panel_path = integration_path / "panel"
-    panel_module_resource_url = PANEL_MODULE_URL
+    panel_module_resource_url = _build_asset_resource_url(
+        PANEL_MODULE_URL, panel_path / "chime-tts-panel.js"
+    )
     panel_iconset_resource_url = _build_asset_resource_url(
         PANEL_ICONSET_URL, panel_path / "iconset.js"
     )
@@ -355,6 +431,7 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
         hass.http.register_view(ChimeTTSPanelIconsetView(panel_path))
         hass.http.register_view(ChimeTTSPanelOptionIconView(panel_path))
         hass.http.register_view(ChimeTTSPanelBrowserAudioView())
+        hass.http.register_view(ChimeTTSPanelChimePreviewView())
         hass.http.register_view(ChimeTTSPanelBrowserUploadView())
         add_extra_js_url(hass, panel_iconset_resource_url)
         hass.data[PANEL_DATA_KEY] = True

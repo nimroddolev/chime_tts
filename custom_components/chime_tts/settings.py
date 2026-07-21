@@ -67,7 +67,7 @@ from .helpers.panel_logs import async_get_panel_log_events, get_panel_log_events
 helpers = ChimeTTSHelper()
 
 _INTEGRATION_ROOT = Path(__file__).resolve().parent
-_FOOTER_LOGO_PATH = _INTEGRATION_ROOT / "panel" / "footer-logo.png"
+_FOOTER_LOGO_PATH = _INTEGRATION_ROOT / "panel" / "chime_tts.svg"
 
 
 def _footer_logo_url() -> str:
@@ -77,7 +77,7 @@ def _footer_logo_url() -> str:
         asset_version = str(_FOOTER_LOGO_PATH.stat().st_mtime_ns)
     except OSError:
         asset_version = fallback_version
-    return f"/api/{DOMAIN}/footer_logo.png?v={asset_version}"
+    return f"/api/{DOMAIN}/footer_logo.svg?v={asset_version}"
 
 
 @dataclass
@@ -650,6 +650,20 @@ SETTINGS_FIELDS: tuple[SettingsField, ...] = (
         allow_custom_value=True,
     ),
     SettingsField(
+        key="chime_path",
+        label="Start chime",
+        description="Optional chime to play before generated speech.",
+        field_type="select",
+        section="playback",
+    ),
+    SettingsField(
+        key="end_chime_path",
+        label="End chime",
+        description="Optional chime to play after generated speech.",
+        field_type="select",
+        section="playback",
+    ),
+    SettingsField(
         key=OFFSET_KEY,
         label="Default offset",
         description="Milliseconds between chimes and TTS. Negative values overlay.",
@@ -757,6 +771,8 @@ SETTINGS_SECTIONS = (
         "title": "Playback Options",
         "description": "Audio timing and cleanup defaults for generated announcements.",
         "fields": [
+            "chime_path",
+            "end_chime_path",
             OFFSET_KEY,
             CROSSFADE_KEY,
             FADE_TRANSITION_KEY,
@@ -799,6 +815,8 @@ def _field_default_value(field_key: str, hass) -> Any:
         DEFAULT_VOICE_KEY: "",
         DEFAULT_TLD_KEY: "",
         FALLBACK_TTS_PLATFORM_KEY: "",
+        "chime_path": "",
+        "end_chime_path": "",
         OFFSET_KEY: DEFAULT_OFFSET_MS,
         CROSSFADE_KEY: 0,
         FADE_TRANSITION_KEY: DEFAULT_FADE_TRANSITION_MS,
@@ -1235,6 +1253,8 @@ async def async_build_panel_payload(
 
     tts_platforms = get_tts_platforms(hass)
     field_options = {
+        "chime_path": chime_options,
+        "end_chime_path": chime_options,
         TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]
         + [{"value": option, "label": option} for option in tts_platforms],
         FALLBACK_TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]
@@ -1375,6 +1395,14 @@ def build_options_schema(
     """Build the Home Assistant options flow schema."""
     data = get_settings_data(hass, config_entry, user_input)
     tts_platforms = get_tts_platforms(hass)
+    chime_options = get_notify_chime_options()
+    chime_selector_options = [
+        selector.SelectOptionDict(
+            value=option["value"],
+            label=option["label"] or option["value"] or "Not set",
+        )
+        for option in chime_options
+    ]
 
     return vol.Schema(
         {
@@ -1416,6 +1444,26 @@ def build_options_schema(
                     options=tts_platforms,
                     mode=selector.SelectSelectorMode.DROPDOWN,
                     custom_value=True,
+                )
+            ),
+            vol.Optional(
+                "chime_path",
+                default=data["chime_path"],
+            ): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=chime_selector_options,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                    custom_value=False,
+                )
+            ),
+            vol.Optional(
+                "end_chime_path",
+                default=data["end_chime_path"],
+            ): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=chime_selector_options,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                    custom_value=False,
                 )
             ),
             vol.Optional(
@@ -2345,6 +2393,8 @@ def validate_settings(
         DEFAULT_LANGUAGE_KEY,
         DEFAULT_VOICE_KEY,
         DEFAULT_TLD_KEY,
+        "chime_path",
+        "end_chime_path",
         CUSTOM_CHIMES_PATH_KEY,
         TEMP_CHIMES_PATH_KEY,
         TEMP_PATH_KEY,
@@ -2422,6 +2472,8 @@ def build_panel_payload(
     tts_platforms = get_tts_platforms(hass)
     chime_options = get_notify_chime_options()
     field_options = {
+        "chime_path": chime_options,
+        "end_chime_path": chime_options,
         TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]
         + [{"value": option, "label": option} for option in tts_platforms],
         FALLBACK_TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]

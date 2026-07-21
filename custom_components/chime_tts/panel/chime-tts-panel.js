@@ -65,6 +65,13 @@ const ICONS = {
       <path d="M14 3v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
     </svg>
   `,
+  music: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M4 10h4.2l5-4.2c.65-.54 1.8-.1 1.8.76v10.88c0 .86-1.15 1.3-1.8.76l-5-4.2H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z" fill="currentColor"/>
+      <path d="M17.2 9.1a1 1 0 0 1 1.41 0 4.54 4.54 0 0 1 0 6.4 1 1 0 1 1-1.41-1.42 2.54 2.54 0 0 0 0-3.56 1 1 0 0 1 0-1.42z" fill="currentColor"/>
+      <path d="M19.96 6.34a1 1 0 0 1 1.41 0 8.45 8.45 0 0 1 0 11.94 1 1 0 0 1-1.41-1.42 6.45 6.45 0 0 0 0-9.1 1 1 0 0 1 0-1.42z" fill="currentColor"/>
+    </svg>
+  `,
   upload: `
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M12 16V5M8 9l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
@@ -682,7 +689,7 @@ template.innerHTML = `
       width: 42px;
       height: 42px;
       border-radius: 999px;
-      border: 1px solid color-mix(in srgb, var(--divider-color) 80%, transparent);
+      border: 1px solid color-mix(in srgb, var(--divider-color) 64%, transparent);
       background: color-mix(in srgb, var(--card-background-color) 84%, white 16%);
       display: inline-flex;
       align-items: center;
@@ -692,23 +699,53 @@ template.innerHTML = `
     }
 
     .configuration-workspace .chapter-chevron {
-      background: color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
+      border-color: color-mix(in srgb, var(--primary-color) 26%, var(--divider-color));
+      background: color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color));
       color: color-mix(in srgb, var(--primary-color) 42%, black 58%);
     }
 
     .notify-workspace .chapter-chevron {
-      background: color-mix(in srgb, #e56b6f 14%, var(--divider-color));
+      border-color: color-mix(in srgb, #e56b6f 30%, var(--divider-color));
+      background: color-mix(in srgb, #e56b6f 16%, var(--card-background-color));
       color: color-mix(in srgb, #8f2832 82%, black 18%);
     }
 
     .logs-workspace .chapter-chevron {
-      background: color-mix(in srgb, #22c55e 14%, var(--divider-color));
+      border-color: color-mix(in srgb, #22c55e 30%, var(--divider-color));
+      background: color-mix(in srgb, #22c55e 16%, var(--card-background-color));
       color: color-mix(in srgb, #166534 86%, black 14%);
     }
 
     .about-workspace .chapter-chevron {
-      background: color-mix(in srgb, #f5c542 34%, var(--divider-color));
+      border-color: color-mix(in srgb, #f5c542 36%, var(--divider-color));
+      background: color-mix(in srgb, #f5c542 20%, var(--card-background-color));
       color: color-mix(in srgb, #8a5a00 84%, black 16%);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .configuration-workspace .chapter-chevron {
+        border-color: color-mix(in srgb, var(--primary-color) 42%, transparent);
+        background: color-mix(in srgb, var(--primary-color) 10%, var(--card-background-color));
+        color: color-mix(in srgb, var(--primary-color) 78%, white 22%);
+      }
+
+      .notify-workspace .chapter-chevron {
+        border-color: color-mix(in srgb, #f08a8d 46%, transparent);
+        background: color-mix(in srgb, #e56b6f 10%, var(--card-background-color));
+        color: color-mix(in srgb, #f08a8d 78%, white 22%);
+      }
+
+      .logs-workspace .chapter-chevron {
+        border-color: color-mix(in srgb, #49b675 46%, transparent);
+        background: color-mix(in srgb, #22c55e 10%, var(--card-background-color));
+        color: color-mix(in srgb, #49b675 82%, white 18%);
+      }
+
+      .about-workspace .chapter-chevron {
+        border-color: color-mix(in srgb, #d4a514 48%, transparent);
+        background: color-mix(in srgb, #f5c542 14%, var(--card-background-color));
+        color: color-mix(in srgb, #d4a514 86%, white 14%);
+      }
     }
 
     .chapter-chevron svg {
@@ -1376,7 +1413,7 @@ template.innerHTML = `
 
     .field-label-row {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 8px;
       flex-wrap: nowrap;
       min-width: 0;
@@ -1493,6 +1530,16 @@ template.innerHTML = `
     .input-row .control {
       flex: 1 1 auto;
       min-width: 0;
+    }
+
+    .input-row .control-select {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .field-preview-button {
+      flex: 0 0 auto;
+      align-self: stretch;
     }
 
     .browse-button {
@@ -1712,7 +1759,7 @@ template.innerHTML = `
     }
 
     .picker-error-banner {
-      margin: 14px 14px 0;
+      margin: 15px;
     }
 
     .picker-dialog-footer {
@@ -2039,6 +2086,7 @@ template.innerHTML = `
       justify-content: center;
       width: 28px;
       height: 28px;
+      margin-right: 7px;
       border-radius: 999px;
       border: 1px solid color-mix(in srgb, var(--divider-color) 78%, transparent);
       background: color-mix(in srgb, var(--card-background-color) 84%, white 16%);
@@ -2051,8 +2099,8 @@ template.innerHTML = `
       min-height: 28px;
       padding: 3px 6px;
       border-radius: 10px;
-      border: 1px solid transparent;
-      background: transparent;
+      border: 1px solid color-mix(in srgb, var(--primary-color) 16%, transparent);
+      background: color-mix(in srgb, var(--primary-color) 7%, transparent);
       color: var(--primary-text-color);
       box-shadow: none;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -2163,6 +2211,11 @@ template.innerHTML = `
       color: color-mix(in srgb, var(--primary-color) 72%, var(--secondary-text-color));
     }
 
+    .picker-file-kind.audio svg {
+      width: 20px;
+      height: 20px;
+    }
+
     .picker-file-open {
       padding: 0;
       border: 0;
@@ -2224,7 +2277,7 @@ template.innerHTML = `
       top: calc(100% + 8px);
       right: 0;
       z-index: 4;
-      min-width: 210px;
+      min-width: 177px;
       padding: 6px;
       display: flex;
       flex-direction: column;
@@ -2238,7 +2291,7 @@ template.innerHTML = `
     .picker-overflow-item {
       width: 100%;
       min-height: 38px;
-      gap: 8px;
+      gap: 15px;
       justify-content: flex-start;
       text-align: left;
       border-radius: 8px;
@@ -2269,9 +2322,11 @@ template.innerHTML = `
       display: grid;
       grid-template-columns: minmax(0, 1.7fr) minmax(110px, 0.72fr) minmax(74px, 0.46fr);
       grid-column: 1 / 4;
-      align-items: center;
       gap: 12px;
       min-width: 0;
+      min-height: 38px;
+      align-items: center;
+      grid-auto-flow: column;
     }
 
     .picker-file-row:focus-visible .picker-file-name-text,
@@ -2325,7 +2380,7 @@ template.innerHTML = `
     .picker-action-header-bar {
       display: flex;
       align-items: flex-start;
-      justify-content: space-between;
+      justify-content: center;
       gap: 12px;
     }
 
@@ -2354,6 +2409,7 @@ template.innerHTML = `
       margin: 0;
       color: var(--secondary-text-color);
       line-height: 1.55;
+      text-align: center;
     }
 
     .picker-action-form {
@@ -2378,7 +2434,7 @@ template.innerHTML = `
 
     .picker-action-actions {
       display: flex;
-      justify-content: flex-end;
+      justify-content: center;
       gap: 10px;
       flex-wrap: wrap;
     }
@@ -2901,19 +2957,30 @@ template.innerHTML = `
       flex-direction: column;
     }
 
+    :host([narrow]) .input-row.select-preview-row {
+      flex-direction: row;
+    }
+
     :host([narrow]) .picker-modal-backdrop {
-      padding: 8px;
+      padding:
+        calc(8px + var(--panel-safe-area-top))
+        calc(8px + var(--panel-safe-area-right))
+        calc(8px + var(--panel-safe-area-bottom))
+        calc(8px + var(--panel-safe-area-left));
     }
 
     :host([narrow]) .picker-modal {
-      width: calc(100vw - 16px);
-      height: calc(100vh - 16px);
+      width: calc(100vw - 16px - var(--panel-safe-area-left) - var(--panel-safe-area-right));
+      height: calc(100vh - 16px - var(--panel-safe-area-top) - var(--panel-safe-area-bottom));
+      max-width: calc(100vw - 16px - var(--panel-safe-area-left) - var(--panel-safe-area-right));
+      max-height: calc(100vh - 16px - var(--panel-safe-area-top) - var(--panel-safe-area-bottom));
       border-radius: 16px;
     }
 
     :host([narrow]) .picker-browser-shell {
       grid-template-columns: minmax(0, 1fr);
-      min-height: calc(100vh - 170px);
+      min-height: 0;
+      flex: 1 1 auto;
     }
 
     :host([narrow]) .picker-browser-sidebar {
@@ -3041,6 +3108,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._pickerAudioLoadToken = 0;
     this._pickerAudioLoadingPath = "";
     this._pickerPlayingPath = "";
+    this._fieldPreviewAudio = null;
+    this._fieldPreviewAudioObjectUrl = "";
+    this._fieldPreviewAudioLoadToken = 0;
+    this._fieldPreviewLoadingKey = "";
+    this._fieldPreviewPlayingKey = "";
+    this._notifyPreviewAudio = null;
+    this._notifyPreviewAudioObjectUrl = "";
+    this._notifyPreviewAudioLoadToken = 0;
+    this._notifyPreviewLoadingKey = "";
+    this._notifyPreviewPlayingKey = "";
     this._advancedSections = {};
     this._expandedConfigSections = {};
     this._expandedNotifyProfiles = {};
@@ -3090,6 +3167,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._clearLogsRefreshTimer();
     this._clearAllNotifyProfileTestTimers();
     this._clearAllLogCopyTimers();
+    this._stopPickerAudio();
+    this._stopFieldPreviewAudio();
+    this._stopNotifyPreviewAudio();
   }
 
   set hass(hass) {
@@ -3437,6 +3517,17 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         : "input";
       field.addEventListener(eventName, (event) => this._handleNotifyProfileFieldChange(event));
     });
+    this.shadowRoot.querySelectorAll("[data-notify-audio-toggle]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this._toggleNotifyPreviewAudio(
+          Number(event.currentTarget.dataset.notifyIndex),
+          event.currentTarget.dataset.notifyAudioToggle,
+          event.currentTarget.dataset.notifyAudioValue,
+        );
+      });
+    });
     this._wireNotifyEntityPickers();
     this.shadowRoot.querySelectorAll("[data-notify-range]").forEach((field) => {
       field.addEventListener("input", (event) => this._handleNotifyRangeInput(event));
@@ -3519,6 +3610,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     });
     this.shadowRoot.querySelectorAll("[data-browse-field]").forEach((button) => {
       button.addEventListener("click", (event) => this._openPicker(event.currentTarget.dataset.browseField));
+    });
+    this.shadowRoot.querySelectorAll("[data-field-audio-toggle]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this._toggleFieldPreviewAudio(
+          event.currentTarget.dataset.fieldAudioToggle,
+          event.currentTarget.dataset.fieldAudioValue,
+        );
+      });
     });
     this.shadowRoot.querySelectorAll("[data-picker-nav]").forEach((button) => {
       button.addEventListener("click", (event) => this._loadPicker(event.currentTarget.dataset.pickerNav));
@@ -4629,7 +4730,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       `;
     } else if (field.type === "select") {
       const selectedValue = value === null || value === undefined ? "" : String(value);
-      control = `
+      const selectMarkup = `
         <select
           class="control-select"
           data-notify-field="${this._escapeAttribute(field.key)}"
@@ -4641,6 +4742,28 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           }).join("")}
         </select>
       `;
+      if (this._isChimePreviewField(field) && selectedValue) {
+        const previewKey = this._getNotifyPreviewKey(index, field.key, selectedValue);
+        const isLoading = this._notifyPreviewLoadingKey === previewKey;
+        const isPlaying = this._notifyPreviewPlayingKey === previewKey;
+        const actionLabel = isLoading ? "Loading preview" : isPlaying ? "Pause preview" : "Play preview";
+        control = `
+          <div class="input-row select-preview-row">
+            ${selectMarkup}
+            <button
+              class="button-secondary icon-only-button field-preview-button"
+              type="button"
+              data-notify-audio-toggle="${this._escapeAttribute(field.key)}"
+              data-notify-audio-value="${this._escapeAttribute(selectedValue)}"
+              data-notify-index="${this._escapeAttribute(String(index))}"
+              aria-label="${this._escapeAttribute(`${actionLabel} for ${field.label}`)}"
+              title="${this._escapeAttribute(actionLabel)}"
+            >${isLoading ? '<span class="button-spinner" aria-hidden="true"></span>' : isPlaying ? ICONS.pause : ICONS.play}</button>
+          </div>
+        `;
+      } else {
+        control = selectMarkup;
+      }
     } else if (field.type === "range") {
       const normalizedValue = value === null || value === undefined || value === "" ? "" : String(value);
       control = `
@@ -4859,7 +4982,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const visibleOptions = usesPlaceholder
       ? (field.options || []).filter((option) => String(option.value ?? "") !== "")
       : (field.options || []);
-    return `
+    const selectMarkup = `
       <select class="control-select" data-field="${this._escapeAttribute(field.key)}">
         ${usesPlaceholder && selectedValue === ""
           ? `<option value="" selected disabled hidden>${this._escapeHtml(field.placeholder)}</option>`
@@ -4871,6 +4994,28 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           return `<option value="${this._escapeAttribute(optionValue)}" ${selected}>${this._escapeHtml(option.label ?? optionValue)}</option>`;
         }).join("")}
       </select>
+    `;
+
+    if (!this._isChimePreviewField(field) || !selectedValue) {
+      return selectMarkup;
+    }
+
+    const previewKey = this._getFieldPreviewKey(field.key, selectedValue);
+    const isLoading = this._fieldPreviewLoadingKey === previewKey;
+    const isPlaying = this._fieldPreviewPlayingKey === previewKey;
+    const actionLabel = isLoading ? "Loading preview" : isPlaying ? "Pause preview" : "Play preview";
+    return `
+      <div class="input-row select-preview-row">
+        ${selectMarkup}
+        <button
+          class="button-secondary icon-only-button field-preview-button"
+          type="button"
+          data-field-audio-toggle="${this._escapeAttribute(field.key)}"
+          data-field-audio-value="${this._escapeAttribute(selectedValue)}"
+          aria-label="${this._escapeAttribute(`${actionLabel} for ${field.label}`)}"
+          title="${this._escapeAttribute(actionLabel)}"
+        >${isLoading ? '<span class="button-spinner" aria-hidden="true"></span>' : isPlaying ? ICONS.pause : ICONS.play}</button>
+      </div>
     `;
   }
 
@@ -5076,7 +5221,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                 ${loading || (!hasParentRow && empty) || `
                   <div class="picker-filebrowser-table">
                     ${hasParentRow ? `
-                      <div class="picker-file-row folder " role="button" tabindex="0" data-picker-row-path="${this._escapeAttribute(`parent:${this._picker.parent_path}`)}" data-picker-row-index="0" data-picker-open="${this._escapeAttribute(this._picker.parent_path)}" data-picker-select-kind="file">
+                      <div class="picker-file-row folder parent" role="button" tabindex="0" data-picker-row-path="${this._escapeAttribute(`parent:${this._picker.parent_path}`)}" data-picker-row-index="0" data-picker-open="${this._escapeAttribute(this._picker.parent_path)}" data-picker-select-kind="file">
                         <div class="picker-file-row-main">
                           <span class="picker-file-name">
                             <span class="picker-file-kind" aria-hidden="true">${ICONS.folder}</span>
@@ -5198,7 +5343,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       >
         <div class="picker-file-row-main">
           <span class="picker-file-name">
-            <span class="picker-file-kind" aria-hidden="true">${item?.is_dir ? ICONS.folder : ICONS.file}</span>
+            <span class="picker-file-kind ${item?.is_audio ? "audio" : ""}" aria-hidden="true">${item?.is_dir ? ICONS.folder : item?.is_audio ? ICONS.music : ICONS.file}</span>
             ${canOpen
               ? `<button class="picker-file-open" type="button" data-picker-open="${this._escapeAttribute(item.path)}">${this._escapeHtml(item?.name || "")}</button>`
               : `<span class="picker-file-name-text">${this._escapeHtml(item?.name || "")}</span>`
@@ -6220,6 +6365,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       delete nextOverrides[key];
       this._invalidPathOverrides = nextOverrides;
     }
+    if (key === "chime_path" || key === "end_chime_path") {
+      this._stopFieldPreviewAudio();
+    }
     this._draftValues = {
       ...(this._draftValues || {}),
       [key]: nextValue,
@@ -6814,6 +6962,228 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
   }
 
+  _isChimePreviewField(field) {
+    return Boolean(field && (field.key === "chime_path" || field.key === "end_chime_path"));
+  }
+
+  _getFieldPreviewKey(fieldKey, value) {
+    return `${fieldKey || ""}:${value || ""}`;
+  }
+
+  _buildChimePreviewUrl(fieldKey, value) {
+    return `/api/chime_tts/chime_preview?field_key=${encodeURIComponent(fieldKey)}&value=${encodeURIComponent(value)}`;
+  }
+
+  _getNotifyPreviewKey(index, fieldKey, value) {
+    return `${Number.isNaN(index) ? "" : index}:${fieldKey || ""}:${value || ""}`;
+  }
+
+  _stopFieldPreviewAudio({ preserveElement = false } = {}) {
+    this._fieldPreviewAudioLoadToken += 1;
+    if (this._fieldPreviewAudio) {
+      this._fieldPreviewAudio.pause();
+      this._fieldPreviewAudio.src = "";
+      this._fieldPreviewAudio.load();
+      if (!preserveElement) {
+        this._fieldPreviewAudio = null;
+      }
+    }
+    this._fieldPreviewLoadingKey = "";
+    if (this._fieldPreviewAudioObjectUrl) {
+      URL.revokeObjectURL(this._fieldPreviewAudioObjectUrl);
+      this._fieldPreviewAudioObjectUrl = "";
+    }
+    if (this._fieldPreviewPlayingKey) {
+      this._fieldPreviewPlayingKey = "";
+    }
+  }
+
+  async _toggleFieldPreviewAudio(fieldKey, value) {
+    if (!fieldKey || !value) {
+      return;
+    }
+
+    const previewKey = this._getFieldPreviewKey(fieldKey, value);
+    if (this._fieldPreviewPlayingKey === previewKey && this._fieldPreviewAudio) {
+      this._stopFieldPreviewAudio({ preserveElement: true });
+      this._rerenderPreservingInputState(fieldKey);
+      return;
+    }
+
+    this._stopFieldPreviewAudio();
+    this._fieldPreviewLoadingKey = previewKey;
+    this._rerenderPreservingInputState(fieldKey);
+
+    const loadToken = this._fieldPreviewAudioLoadToken;
+    let objectUrl = "";
+    try {
+      objectUrl = await this._fetchPickerAudioObjectUrl(this._buildChimePreviewUrl(fieldKey, value));
+    } catch (_error) {
+      if (loadToken === this._fieldPreviewAudioLoadToken) {
+        this._fieldPreviewLoadingKey = "";
+        this._data = {
+          ...(this._data || {}),
+          message: "Unable to play this chime preview.",
+          message_type: "error",
+        };
+        this._rerenderPreservingInputState(fieldKey);
+      }
+      return;
+    }
+
+    if (loadToken !== this._fieldPreviewAudioLoadToken) {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+      return;
+    }
+
+    const audio = new Audio(objectUrl);
+    audio.addEventListener("ended", () => {
+      if (this._fieldPreviewAudio === audio) {
+        this._stopFieldPreviewAudio();
+        this._rerenderPreservingInputState(fieldKey);
+      }
+    });
+    audio.addEventListener("pause", () => {
+      if (this._fieldPreviewAudio === audio && audio.ended) {
+        return;
+      }
+      if (this._fieldPreviewAudio === audio && this._fieldPreviewPlayingKey) {
+        this._fieldPreviewPlayingKey = "";
+        this._rerenderPreservingInputState(fieldKey);
+      }
+    });
+    audio.addEventListener("play", () => {
+      if (this._fieldPreviewAudio === audio) {
+        this._fieldPreviewLoadingKey = "";
+        this._fieldPreviewPlayingKey = previewKey;
+        this._rerenderPreservingInputState(fieldKey);
+      }
+    });
+    this._fieldPreviewAudio = audio;
+    this._fieldPreviewAudioObjectUrl = objectUrl;
+    this._fieldPreviewPlayingKey = previewKey;
+    const playAttempt = audio.play();
+    if (playAttempt && typeof playAttempt.catch === "function") {
+      playAttempt.catch(() => {
+        if (this._fieldPreviewAudio === audio) {
+          this._stopFieldPreviewAudio();
+          this._data = {
+            ...(this._data || {}),
+            message: "Unable to play this chime preview.",
+            message_type: "error",
+          };
+          this._rerenderPreservingInputState(fieldKey);
+        }
+      });
+    }
+    this._rerenderPreservingInputState(fieldKey);
+  }
+
+  _stopNotifyPreviewAudio({ preserveElement = false } = {}) {
+    this._notifyPreviewAudioLoadToken += 1;
+    if (this._notifyPreviewAudio) {
+      this._notifyPreviewAudio.pause();
+      this._notifyPreviewAudio.src = "";
+      this._notifyPreviewAudio.load();
+      if (!preserveElement) {
+        this._notifyPreviewAudio = null;
+      }
+    }
+    this._notifyPreviewLoadingKey = "";
+    if (this._notifyPreviewAudioObjectUrl) {
+      URL.revokeObjectURL(this._notifyPreviewAudioObjectUrl);
+      this._notifyPreviewAudioObjectUrl = "";
+    }
+    if (this._notifyPreviewPlayingKey) {
+      this._notifyPreviewPlayingKey = "";
+    }
+  }
+
+  async _toggleNotifyPreviewAudio(index, fieldKey, value) {
+    if (Number.isNaN(index) || !fieldKey || !value) {
+      return;
+    }
+
+    const previewKey = this._getNotifyPreviewKey(index, fieldKey, value);
+    if (this._notifyPreviewPlayingKey === previewKey && this._notifyPreviewAudio) {
+      this._stopNotifyPreviewAudio({ preserveElement: true });
+      this._rerenderPreservingInputState();
+      return;
+    }
+
+    this._stopNotifyPreviewAudio();
+    this._notifyPreviewLoadingKey = previewKey;
+    this._rerenderPreservingInputState();
+
+    const loadToken = this._notifyPreviewAudioLoadToken;
+    let objectUrl = "";
+    try {
+      objectUrl = await this._fetchPickerAudioObjectUrl(this._buildChimePreviewUrl(fieldKey, value));
+    } catch (_error) {
+      if (loadToken === this._notifyPreviewAudioLoadToken) {
+        this._notifyPreviewLoadingKey = "";
+        this._data = {
+          ...(this._data || {}),
+          message: "Unable to play this chime preview.",
+          message_type: "error",
+        };
+        this._rerenderPreservingInputState();
+      }
+      return;
+    }
+
+    if (loadToken !== this._notifyPreviewAudioLoadToken) {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+      return;
+    }
+
+    const audio = new Audio(objectUrl);
+    audio.addEventListener("ended", () => {
+      if (this._notifyPreviewAudio === audio) {
+        this._stopNotifyPreviewAudio();
+        this._rerenderPreservingInputState();
+      }
+    });
+    audio.addEventListener("pause", () => {
+      if (this._notifyPreviewAudio === audio && audio.ended) {
+        return;
+      }
+      if (this._notifyPreviewAudio === audio && this._notifyPreviewPlayingKey) {
+        this._notifyPreviewPlayingKey = "";
+        this._rerenderPreservingInputState();
+      }
+    });
+    audio.addEventListener("play", () => {
+      if (this._notifyPreviewAudio === audio) {
+        this._notifyPreviewLoadingKey = "";
+        this._notifyPreviewPlayingKey = previewKey;
+        this._rerenderPreservingInputState();
+      }
+    });
+    this._notifyPreviewAudio = audio;
+    this._notifyPreviewAudioObjectUrl = objectUrl;
+    this._notifyPreviewPlayingKey = previewKey;
+    const playAttempt = audio.play();
+    if (playAttempt && typeof playAttempt.catch === "function") {
+      playAttempt.catch(() => {
+        if (this._notifyPreviewAudio === audio) {
+          this._stopNotifyPreviewAudio();
+          this._data = {
+            ...(this._data || {}),
+            message: "Unable to play this chime preview.",
+            message_type: "error",
+          };
+          this._rerenderPreservingInputState();
+        }
+      });
+    }
+    this._rerenderPreservingInputState();
+  }
+
   async _togglePickerAudio(path, url) {
     if (!path || !url) {
       return;
@@ -6962,7 +7332,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._pickerAction = {
       mode: "rename",
       title: "Rename item",
-      copy: `Choose a new name for ${currentName || "this item"}.`,
+      copy: `Choose a new name for ${currentName ? `"${currentName}"` : "this item"}.`,
       path,
       value: currentName || "",
       placeholder: currentName || "New name",
@@ -7006,7 +7376,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._pickerAction = {
         mode: "upload",
         title: "Upload Folder",
-        copy: `Upload ${files.length} file${files.length === 1 ? "" : "s"} from ${sourceFolderName} into the folder ${destinationFolderName}?`,
+        copy: `Upload ${files.length} file${files.length === 1 ? "" : "s"} from "${sourceFolderName}" into folder "${destinationFolderName}"?`,
         files,
         directory: true,
         error: "",
