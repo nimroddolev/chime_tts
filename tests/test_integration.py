@@ -7,6 +7,7 @@ Running this across the HA version matrix surfaces that before users hit it.
 """
 
 import importlib
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -57,3 +58,41 @@ async def test_async_setup_registers_services(hass):
 
     for service in (SERVICE_SAY, SERVICE_SAY_URL, SERVICE_CLEAR_CACHE):
         assert hass.services.has_service(DOMAIN, service), f"{service} not registered"
+
+
+@pytest.mark.asyncio
+async def test_script_continues_after_chime_queue_timeout(hass, monkeypatch):
+    """A timed-out Chime action must honor Home Assistant's continue_on_error."""
+    from custom_components.chime_tts import async_setup
+    from custom_components.chime_tts import queue
+    from custom_components.chime_tts.const import DOMAIN, SERVICE_SAY
+    from homeassistant.exceptions import HomeAssistantError
+    from homeassistant.helpers.script import Script
+
+    monkeypatch.setattr(
+        queue,
+        "add_to_queue",
+        AsyncMock(side_effect=HomeAssistantError("Service call timed out")),
+    )
+    assert await async_setup(hass, {}) is True
+
+    continued = []
+    hass.bus.async_listen("chime_tts_test_continued", lambda event: continued.append(event))
+    script = Script(
+        hass,
+        [
+            {
+                "action": f"{DOMAIN}.{SERVICE_SAY}",
+                "data": {"message": "hello"},
+                "continue_on_error": True,
+            },
+            {"event": "chime_tts_test_continued"},
+        ],
+        "chime_queue_timeout",
+        "test",
+        log_exceptions=False,
+    )
+
+    await script.async_run()
+
+    assert len(continued) == 1

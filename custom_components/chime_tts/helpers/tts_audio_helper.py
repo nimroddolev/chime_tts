@@ -74,13 +74,22 @@ class TTSAudioHelper:
         if not tts_platform:
             return None
 
-        # Step 2: Generate TTS audio
-        media_source_id, audio_data = await self._generate_tts_audio(
-            hass, tts_platform, message, language, cache, tts_options, is_fallback
-        )
-
-        # Step 3: Process the audio data
-        audio = await self._process_audio_data(hass, media_source_id, audio_data, start_time)
+        # Steps 2-3: Generate and retrieve TTS audio under one deadline. A
+        # media-source ID can be produced before the provider makes its network
+        # request, so timing only generation can prevent a fallback attempt.
+        timeout = self._tts_attempt_timeout(is_fallback)
+        try:
+            audio = await asyncio.wait_for(
+                self._async_generate_and_process_audio(
+                    hass, tts_platform, message, language, cache, tts_options,
+                    is_fallback, start_time, timeout,
+                ),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            self._last_error_message = f"TTS audio request with {tts_platform} timed out after {timeout}s."
+            _LOGGER.error(self._last_error_message)
+            audio = None
         if audio:
             return audio
 
@@ -91,6 +100,30 @@ class TTSAudioHelper:
     def last_error_message(self) -> str | None:
         """Return the most recent TTS generation error message, if any."""
         return self._last_error_message
+
+    def _tts_attempt_timeout(self, is_fallback: bool) -> int:
+        """Return the total time budget for one TTS platform attempt."""
+        timeout = int(self._data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT))
+        queue_timeout = int(self._data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
+        has_pending_fallback = bool(self._data.get(FALLBACK_TTS_PLATFORM_KEY)) and not is_fallback
+        clamped = _clamped_tts_timeout(timeout, queue_timeout, has_pending_fallback)
+        if clamped != timeout:
+            _LOGGER.debug(
+                "Clamping TTS attempt timeout from %ss to %ss so a fallback fits within the %ss queue timeout",
+                timeout, clamped, queue_timeout,
+            )
+        return clamped
+
+    async def _async_generate_and_process_audio(
+        self, hass: HomeAssistant, tts_platform: str, message: str,
+        language: str | None, cache: bool, tts_options: dict | None,
+        is_fallback: bool, start_time: datetime, timeout: int,
+    ):
+        """Generate a media source and retrieve its audio for one platform."""
+        media_source_id, audio_data = await self._generate_tts_audio(
+            hass, tts_platform, message, language, cache, tts_options, is_fallback, timeout
+        )
+        return await self._process_audio_data(hass, media_source_id, audio_data, start_time)
 
     def _prepare_tts_request(
         self,
@@ -185,26 +218,14 @@ class TTSAudioHelper:
         cache: bool,
         tts_options: dict | None,
         is_fallback: bool = False,
+        timeout: int | None = None,
     ) -> tuple[str | None, bytes | None]:
         media_source_id: str | None = None
         audio_data: bytes | None = None
         engine_candidates = self._engine_candidates(hass, tts_platform)
 
-        timeout = int(self._data.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT))
+        timeout = timeout if timeout is not None else self._tts_attempt_timeout(is_fallback)
         try:
-            queue_timeout = int(self._data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
-            # Only reserve room for a fallback when one is configured and this is
-            # not already the fallback attempt.
-            has_pending_fallback = bool(self._data.get(FALLBACK_TTS_PLATFORM_KEY)) and not is_fallback
-            clamped = _clamped_tts_timeout(timeout, queue_timeout, has_pending_fallback)
-            if clamped != timeout:
-                _LOGGER.debug(
-                    "Clamping TTS generation timeout from %ss to %ss so a fallback fits within the %ss queue timeout",
-                    timeout,
-                    clamped,
-                    queue_timeout,
-                )
-                timeout = clamped
             last_error: Exception | None = None
             last_engine = engine_candidates[0]
             for engine in engine_candidates:

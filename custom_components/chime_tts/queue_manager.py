@@ -5,6 +5,7 @@ import asyncio
 from collections.abc import Callable, Coroutine
 from datetime import datetime
 from typing import TypedDict
+from homeassistant.exceptions import HomeAssistantError
 from .const import (
     QUEUE_TIMEOUT_DEFAULT,
     MAX_CONCURRENT_TASKS,
@@ -81,7 +82,7 @@ class ChimeTTSQueueManager:
         elapsed_time = f"{completion_time}s" if completion_time >= 1 else f"{completion_time * 1000}ms"
         _LOGGER.warning("Service call %s timed out after %s", service_call, elapsed_time)
         service_call['future'].set_exception(
-            TimeoutError(f"Service call timed out after {elapsed_time} (configured timeout = {self.timeout_s}s)")
+            HomeAssistantError(f"Service call timed out after {elapsed_time} (configured timeout = {self.timeout_s}s)")
         )
 
     async def async_queue_processor(self) -> None:

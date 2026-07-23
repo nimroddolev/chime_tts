@@ -21,6 +21,7 @@ from custom_components.chime_tts.const import LOCAL_PATH_KEY
 from custom_components.chime_tts.const import MICROSOFT_TTS
 from custom_components.chime_tts.const import NABU_CASA_CLOUD_TTS
 from custom_components.chime_tts.const import PUBLIC_PATH_KEY
+from custom_components.chime_tts.const import QUEUE_TIMEOUT_KEY
 from custom_components.chime_tts.const import SONOS_PLATFORM
 from custom_components.chime_tts.const import TEMP_CHIMES_PATH_KEY
 from custom_components.chime_tts.const import TEMP_PATH_KEY
@@ -33,6 +34,7 @@ from homeassistant.components.media_player.const import ATTR_MEDIA_CONTENT_ID
 from homeassistant.components.media_player.const import ATTR_MEDIA_CONTENT_TYPE
 from homeassistant.components.media_player.const import MediaType
 from homeassistant.const import CONF_ENTITY_ID
+from homeassistant.exceptions import HomeAssistantError
 
 integration_module = importlib.import_module("custom_components.chime_tts.__init__")
 tts_audio_module = importlib.import_module("custom_components.chime_tts.helpers.tts_audio_helper")
@@ -319,7 +321,100 @@ async def test_queue_manager_times_out_long_running_calls() -> None:
         service_call
     )
 
-    assert isinstance(future.exception(), TimeoutError)
+    assert isinstance(future.exception(), HomeAssistantError)
+
+
+@pytest.mark.asyncio
+async def test_tts_audio_helper_download_timeout_uses_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A hung media download must fail the primary attempt and invoke fallback."""
+    helper = TTSAudioHelper()
+    helper._data[TTS_TIMEOUT_KEY] = 1
+    helper._data[QUEUE_TIMEOUT_KEY] = 4
+    helper._data[TTS_PLATFORM_KEY] = ""
+    helper._data[FALLBACK_TTS_PLATFORM_KEY] = "fallback_engine"
+    requested_platforms: list[str] = []
+
+    async def generate_audio(hass, tts_platform, *args, **kwargs):
+        requested_platforms.append(tts_platform)
+        return "media-source://tts/test", None
+
+    async def get_media_source_audio(*args, **kwargs):
+        if len(requested_platforms) == 1:
+            await asyncio.sleep(2)
+        return "audio/mpeg", b"fallback-audio"
+
+    monkeypatch.setattr(helper, "_generate_tts_audio", generate_audio)
+    monkeypatch.setattr(tts_audio_module.tts, "async_get_media_source_audio", get_media_source_audio)
+    monkeypatch.setattr(helper, "_extract_audio", AsyncMock(return_value="fallback-audio"))
+    monkeypatch.setattr(tts_audio_module.helpers, "get_tts_platform", lambda **kwargs: kwargs["tts_platform"])
+
+    result = await helper.async_request_tts_audio(
+        hass=FakeHass(), tts_platform="primary_engine", message="hello",
+        language="en", cache=True, options={},
+    )
+
+    assert result == "fallback-audio"
+    assert requested_platforms == ["primary_engine", "fallback_engine"]
+
+
+@pytest.mark.asyncio
+async def test_tts_audio_helper_returns_failure_when_primary_and_fallback_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Both timed-out attempts should fail cleanly without further retries."""
+    helper = TTSAudioHelper()
+    helper._data[TTS_TIMEOUT_KEY] = 1
+    helper._data[QUEUE_TIMEOUT_KEY] = 4
+    helper._data[TTS_PLATFORM_KEY] = ""
+    helper._data[FALLBACK_TTS_PLATFORM_KEY] = "fallback_engine"
+    requested_platforms: list[str] = []
+
+    async def generate_audio(hass, tts_platform, *args, **kwargs):
+        requested_platforms.append(tts_platform)
+        return "media-source://tts/test", None
+
+    async def get_media_source_audio(*args, **kwargs):
+        await asyncio.sleep(2)
+
+    monkeypatch.setattr(helper, "_generate_tts_audio", generate_audio)
+    monkeypatch.setattr(tts_audio_module.tts, "async_get_media_source_audio", get_media_source_audio)
+    monkeypatch.setattr(tts_audio_module.helpers, "get_tts_platform", lambda **kwargs: kwargs["tts_platform"])
+
+    result = await helper.async_request_tts_audio(
+        hass=FakeHass(), tts_platform="primary_engine", message="hello",
+        language="en", cache=True, options={},
+    )
+
+    assert result is None
+    assert requested_platforms == ["primary_engine", "fallback_engine"]
+
+
+@pytest.mark.asyncio
+async def test_tts_audio_helper_timeout_without_fallback_does_not_retry(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A timeout without a fallback must return failure after the primary attempt."""
+    helper = TTSAudioHelper()
+    helper._data[TTS_TIMEOUT_KEY] = 1
+    helper._data[QUEUE_TIMEOUT_KEY] = 4
+    helper._data[TTS_PLATFORM_KEY] = ""
+    helper._data[FALLBACK_TTS_PLATFORM_KEY] = ""
+    requested_platforms: list[str] = []
+
+    async def generate_audio(hass, tts_platform, *args, **kwargs):
+        requested_platforms.append(tts_platform)
+        return "media-source://tts/test", None
+
+    async def get_media_source_audio(*args, **kwargs):
+        await asyncio.sleep(2)
+
+    monkeypatch.setattr(helper, "_generate_tts_audio", generate_audio)
+    monkeypatch.setattr(tts_audio_module.tts, "async_get_media_source_audio", get_media_source_audio)
+    monkeypatch.setattr(tts_audio_module.helpers, "get_tts_platform", lambda **kwargs: kwargs["tts_platform"])
+
+    result = await helper.async_request_tts_audio(
+        hass=FakeHass(), tts_platform="primary_engine", message="hello",
+        language="en", cache=True, options={},
+    )
+
+    assert result is None
+    assert requested_platforms == ["primary_engine"]
 
 
 @pytest.mark.asyncio
