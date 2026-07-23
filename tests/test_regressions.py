@@ -4,6 +4,8 @@ Each fix lands with a test named `test_issue_<number>` that fails against the
 unfixed code and passes after the fix.
 """
 
+from pathlib import Path
+
 import yaml
 
 from custom_components.chime_tts.const import GOOGLE_CLOUD, NABU_CASA_CLOUD_TTS
@@ -134,6 +136,45 @@ def test_services_yaml_exposes_pre_and_post_scripts_for_say_actions():
         fields = services_yaml[service_name]["fields"]
         assert "pre_script" in fields
         assert "post_script" in fields
+
+
+def test_panel_uploads_use_home_assistants_authenticated_fetch_helper():
+    """Panel uploads must use HA's token-aware REST request helper."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert "this._hass.fetchWithAuth(url, init)" in panel_source
+    assert 'this._fetchPickerWithAuth("/api/chime_tts/browser/upload", {' in panel_source
+    assert "this._fetchPickerWithAuth(normalizedUrl)" in panel_source
+    assert "this._fetchPickerWithAuth(url)" in panel_source
+
+
+def test_picker_stops_preview_before_delete_navigation_and_close():
+    """Picker audio must not outlive the file or folder it belongs to."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    delete_action = panel_source.index('} else if (this._pickerAction.mode === "delete") {')
+    delete_command = panel_source.index('type: "chime_tts/browser_delete_entry",', delete_action)
+    assert panel_source.index("this._stopPickerAudio();", delete_action) < delete_command
+
+    close_picker = panel_source.index("  _closePicker() {")
+    close_picker_end = panel_source.index("  async _loadPicker(", close_picker)
+    assert "this._stopPickerAudio();" in panel_source[close_picker:close_picker_end]
+
+    load_picker = panel_source.index("  async _loadPicker(")
+    load_picker_end = panel_source.index("  _beginPickerLoadingDelay()", load_picker)
+    assert "this._stopPickerAudio();" in panel_source[load_picker:load_picker_end]
 
 
 def test_issue_291_full_entity_id_matches_installed():

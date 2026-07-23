@@ -4721,10 +4721,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return;
     }
     try {
-      const response = await fetch(normalizedUrl, {
-        credentials: "same-origin",
-        headers: this._buildPickerAuthHeaders(),
-      });
+      const response = await this._fetchPickerWithAuth(normalizedUrl);
       if (!response.ok) {
         throw new Error(`Footer logo request failed with status ${response.status}`);
       }
@@ -7727,10 +7724,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   async _fetchPickerAudioObjectUrl(url) {
-    const response = await fetch(url, {
-      credentials: "same-origin",
-      headers: this._buildPickerAuthHeaders(),
-    });
+    const response = await this._fetchPickerWithAuth(url);
     if (!response.ok) {
       throw new Error(`Audio preview request failed with status ${response.status}`);
     }
@@ -7739,15 +7733,18 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     return URL.createObjectURL(audioBlob);
   }
 
-  _buildPickerAuthHeaders() {
-    const headers = {};
-    const accessToken = this._hass?.auth?.data?.access_token
-      || this._hass?.auth?.accessToken
-      || this._hass?.auth?.access_token;
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
+  _fetchPickerWithAuth(url, init = {}) {
+    // Home Assistant owns token refresh and the Authorization header. Using its
+    // authenticated fetch helper also works when the auth object does not expose
+    // token data to custom panels.
+    if (typeof this._hass?.fetchWithAuth === "function") {
+      return this._hass.fetchWithAuth(url, init);
     }
-    return headers;
+
+    return fetch(url, {
+      ...init,
+      credentials: "same-origin",
+    });
   }
 
   async _runPickerBrowserCommand(command) {
@@ -7898,11 +7895,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         const relativeName = this._getPickerUploadRelativeName(file, { directory });
         formData.append("files", file, relativeName);
       }
-      const response = await fetch("/api/chime_tts/browser/upload", {
+      const response = await this._fetchPickerWithAuth("/api/chime_tts/browser/upload", {
         method: "POST",
         body: formData,
-        credentials: "same-origin",
-        headers: this._buildPickerAuthHeaders(),
       });
       if (response.status === 409) {
         const conflictPayload = await response.json().catch(() => null);
@@ -8020,6 +8015,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         new_name: value,
       };
     } else if (this._pickerAction.mode === "delete") {
+      if (
+        this._pickerPlayingPath === this._pickerAction.path
+        || this._pickerAudioLoadingPath === this._pickerAction.path
+      ) {
+        this._stopPickerAudio();
+      }
       command = {
         type: "chime_tts/browser_delete_entry",
         field_key: this._picker.field_key,

@@ -2188,8 +2188,9 @@ def _is_path_within_browser_roots(
     if field_key == CUSTOM_CHIMES_PATH_KEY:
         return os.path.isabs(normalized_path)
 
+    resolved_path = os.path.realpath(normalized_path)
     for root in get_browse_roots(hass, config_entry, field_key, values):
-        if _is_subdirectory(root.rstrip("/"), normalized_path):
+        if _is_subdirectory(os.path.realpath(root.rstrip("/")), resolved_path):
             return True
     return False
 
@@ -2269,6 +2270,10 @@ def resolve_browser_upload_target_path(
         target_path = _safe_browser_child_path(target_path, part)
 
     final_path = _safe_browser_child_path(target_path, relative_parts[-1])
+    if not _is_path_within_browser_roots(
+        hass, config_entry, field_key, final_path, current_values
+    ):
+        raise PermissionError(final_path)
     return final_path, "/".join(relative_parts)
 
 
@@ -2588,6 +2593,10 @@ def create_browser_directory(
         parent_path,
         values,
     )
+    if not _is_path_within_browser_roots(
+        hass, config_entry, field_key, target_parent, values
+    ):
+        raise PermissionError(target_parent)
     target_path = _safe_browser_child_path(target_parent, name)
     if os.path.exists(target_path):
         raise FileExistsError(target_path)

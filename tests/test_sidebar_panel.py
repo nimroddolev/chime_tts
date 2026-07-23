@@ -28,6 +28,9 @@ get_logs_handler = inspect.unwrap(panel_module.websocket_get_logs)
 get_settings_handler = inspect.unwrap(panel_module.websocket_get_settings)
 get_notify_profiles_handler = inspect.unwrap(panel_module.websocket_get_notify_profiles)
 browse_path_handler = inspect.unwrap(panel_module.websocket_browse_path)
+create_folder_handler = inspect.unwrap(panel_module.websocket_browser_create_folder)
+rename_entry_handler = inspect.unwrap(panel_module.websocket_browser_rename_entry)
+delete_entry_handler = inspect.unwrap(panel_module.websocket_browser_delete_entry)
 
 
 class FakeConfigEntries:
@@ -467,6 +470,142 @@ def test_build_directory_browser_payload_falls_back_to_existing_ancestor_for_mis
         == "The selected folder does not exist. Showing the closest existing folder instead."
     )
     assert payload["current_path"] == f"{paths['custom_chimes_dir']}/"
+
+
+def test_browser_file_mutations_and_uploads_are_reflected_in_the_listing(
+    tmp_path: Path,
+) -> None:
+    """Folder creation, file uploads, rename, and deletion share one safe browser root."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    root = paths["temp_audio_dir"]
+
+    settings_module.create_browser_directory(
+        hass, config_entry, TEMP_PATH_KEY, str(root), "announcements"
+    )
+    destination = root / "announcements"
+    settings_module.save_browser_upload(
+        hass,
+        config_entry,
+        TEMP_PATH_KEY,
+        str(destination),
+        "morning/welcome.mp3",
+        b"audio",
+    )
+
+    uploaded_file = destination / "morning" / "welcome.mp3"
+    assert uploaded_file.read_bytes() == b"audio"
+    assert settings_module.inspect_browser_upload_conflicts(
+        hass,
+        config_entry,
+        TEMP_PATH_KEY,
+        str(destination),
+        ["morning/welcome.mp3", "new.wav"],
+    ) == [
+        {
+            "filename": "morning/welcome.mp3",
+            "relative_path": "morning/welcome.mp3",
+            "existing_path": str(uploaded_file),
+        }
+    ]
+
+    settings_module.rename_browser_entry(
+        hass,
+        config_entry,
+        TEMP_PATH_KEY,
+        str(uploaded_file),
+        "hello.mp3",
+    )
+    renamed_file = uploaded_file.with_name("hello.mp3")
+    assert renamed_file.exists()
+
+    settings_module.delete_browser_entry(
+        hass, config_entry, TEMP_PATH_KEY, str(destination / "morning")
+    )
+    payload = settings_module.build_directory_browser_payload(
+        hass, config_entry, TEMP_PATH_KEY, str(destination)
+    )
+    assert not (destination / "morning").exists()
+    assert payload["files"] == []
+
+
+def test_browser_rejects_symlink_escape_from_restricted_roots(tmp_path: Path) -> None:
+    """Uploads and audio previews must not follow symlinks outside a media root."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    outside = paths["root_dir"] / "outside"
+    outside.mkdir()
+    escape_link = paths["temp_audio_dir"] / "escape"
+    escape_link.symlink_to(outside, target_is_directory=True)
+    escaped_audio = escape_link / "secret.mp3"
+    escaped_audio.write_bytes(b"audio")
+
+    with pytest.raises(PermissionError):
+        settings_module.resolve_browser_audio_file_path(
+            hass, config_entry, TEMP_PATH_KEY, str(escaped_audio)
+        )
+    with pytest.raises(PermissionError):
+        settings_module.save_browser_upload(
+            hass,
+            config_entry,
+            TEMP_PATH_KEY,
+            str(escape_link),
+            "uploaded.mp3",
+            b"audio",
+        )
+    with pytest.raises(PermissionError):
+        settings_module.create_browser_directory(
+            hass, config_entry, TEMP_PATH_KEY, str(escape_link), "nested"
+        )
+
+
+@pytest.mark.asyncio
+async def test_browser_mutation_websocket_commands_return_refreshed_payloads(
+    tmp_path: Path,
+) -> None:
+    """The picker receives a fresh listing after each filesystem mutation."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    connection = FakeConnection()
+    root = paths["temp_audio_dir"]
+
+    await create_folder_handler(
+        hass,
+        connection,
+        {
+            "id": 10,
+            "type": "chime_tts/browser_create_folder",
+            "field_key": TEMP_PATH_KEY,
+            "path": str(root),
+            "name": "uploads",
+        },
+    )
+    created = root / "uploads"
+    (created / "old.mp3").write_bytes(b"audio")
+
+    await rename_entry_handler(
+        hass,
+        connection,
+        {
+            "id": 11,
+            "type": "chime_tts/browser_rename_entry",
+            "field_key": TEMP_PATH_KEY,
+            "path": str(created / "old.mp3"),
+            "new_name": "new.mp3",
+        },
+    )
+    await delete_entry_handler(
+        hass,
+        connection,
+        {
+            "id": 12,
+            "type": "chime_tts/browser_delete_entry",
+            "field_key": TEMP_PATH_KEY,
+            "path": str(created / "new.mp3"),
+        },
+    )
+
+    assert connection.errors == []
+    assert [message_id for message_id, _payload in connection.results] == [10, 11, 12]
+    assert not (created / "new.mp3").exists()
+    assert connection.results[-1][1]["current_path"] == f"{created}/"
 
 
 @pytest.mark.asyncio
