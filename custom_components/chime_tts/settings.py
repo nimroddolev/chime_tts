@@ -27,6 +27,8 @@ from .const import (
     CUSTOM_CHIMES_PATH_KEY,
     DEFAULT_FADE_TRANSITION_MS,
     DEFAULT_LANGUAGE_KEY,
+    DEFAULT_POST_SCRIPT_KEY,
+    DEFAULT_PRE_SCRIPT_KEY,
     DEFAULT_OFFSET_MS,
     DEFAULT_TLD_KEY,
     DEFAULT_VOICE_KEY,
@@ -172,6 +174,8 @@ FIELD_PLACEHOLDERS = {
     DEFAULT_LANGUAGE_KEY: "Blank means the selected provider chooses the language.",
     DEFAULT_VOICE_KEY: "Blank means the selected provider chooses the voice.",
     DEFAULT_TLD_KEY: "Blank means Google Translate uses its default dialect.",
+    DEFAULT_PRE_SCRIPT_KEY: "Enter script.name, or YAML with script and data fields.",
+    DEFAULT_POST_SCRIPT_KEY: "Enter script.name, or YAML with script and data fields.",
     REMOVE_TEMP_FILE_DELAY_KEY: "Blank means the integration uses its built-in cleanup timing.",
     CUSTOM_CHIMES_PATH_KEY: "No custom chimes folder is configured.",
 }
@@ -549,6 +553,8 @@ FIELD_DOCUMENTATION_URLS = {
     DEFAULT_LANGUAGE_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#default-language",
     DEFAULT_VOICE_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#default-voice",
     DEFAULT_TLD_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#default-dialect",
+    DEFAULT_PRE_SCRIPT_KEY: f"{SAY_ACTION_PARAMS_DOCS_URL}#pre_script",
+    DEFAULT_POST_SCRIPT_KEY: f"{SAY_ACTION_PARAMS_DOCS_URL}#post_script",
     FALLBACK_TTS_PLATFORM_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#fallback-tts-platform",
     OFFSET_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#default-offset",
     CROSSFADE_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#crossfade",
@@ -690,6 +696,20 @@ SETTINGS_FIELDS: tuple[SettingsField, ...] = (
         allow_custom_value=True,
     ),
     SettingsField(
+        key=DEFAULT_PRE_SCRIPT_KEY,
+        label="Default pre-playback script",
+        description="Runs before playback when an action does not specify pre_script. Supports script.name or YAML with script and data fields.",
+        field_type="textarea",
+        section="general",
+    ),
+    SettingsField(
+        key=DEFAULT_POST_SCRIPT_KEY,
+        label="Default post-playback script",
+        description="Runs after playback when an action does not specify post_script. Supports script.name or YAML with script and data fields.",
+        field_type="textarea",
+        section="general",
+    ),
+    SettingsField(
         key="chime_path",
         label="Start chime",
         description="Optional chime to play before generated speech.",
@@ -796,7 +816,7 @@ SETTINGS_SECTIONS = (
     },
     {
         "key": "voice",
-        "title": "Default & Fallback Options",
+        "title": "TTS Provider Defaults & Fallback",
         "description": "Preferred TTS providers and their default language, voice, and dialect settings.",
         "fields": [
             TTS_PLATFORM_KEY,
@@ -822,9 +842,14 @@ SETTINGS_SECTIONS = (
     },
     {
         "key": "general",
-        "title": "Service Timeout Options",
-        "description": "Core timeout behavior used across the integration.",
-        "fields": [QUEUE_TIMEOUT_KEY, TTS_TIMEOUT_KEY],
+        "title": "Action & Script Options",
+        "description": "Core timeout behavior and default playback scripts used across the integration.",
+        "fields": [
+            QUEUE_TIMEOUT_KEY,
+            TTS_TIMEOUT_KEY,
+            DEFAULT_PRE_SCRIPT_KEY,
+            DEFAULT_POST_SCRIPT_KEY,
+        ],
     },
 )
 
@@ -1071,6 +1096,8 @@ def _field_default_value(field_key: str, hass) -> Any:
         DEFAULT_LANGUAGE_KEY: "",
         DEFAULT_VOICE_KEY: "",
         DEFAULT_TLD_KEY: "",
+        DEFAULT_PRE_SCRIPT_KEY: "",
+        DEFAULT_POST_SCRIPT_KEY: "",
         FALLBACK_TTS_PLATFORM_KEY: "",
         "chime_path": "",
         "end_chime_path": "",
@@ -1512,6 +1539,12 @@ def _build_panel_sections(
     """Build the shared panel sections payload used by both panel builders."""
     icon_suffix = f"?v={VERSION.lstrip('v') or VERSION}" if icon_versioned else ""
 
+    def icon_name(field_key: str) -> str:
+        """Return the concise SVG filename for a configuration field."""
+        if field_key.startswith("default_"):
+            field_key = field_key.removeprefix("default_")
+        return field_key.removesuffix("_key")
+
     sections = [
         {
             "key": section["key"],
@@ -1523,7 +1556,7 @@ def _build_panel_sections(
                     "label": field.label,
                     "description": field.description,
                     "docs_url": FIELD_DOCUMENTATION_URLS.get(field.key),
-                    "icon_url": f"/api/{DOMAIN}/option_icons/{field.key}.svg{icon_suffix}",
+                    "icon_url": f"/api/{DOMAIN}/option_icons/{icon_name(field.key)}.svg{icon_suffix}",
                     "type": field.field_type,
                     "required": field.required,
                     "allow_custom_value": field.allow_custom_value,
@@ -1768,6 +1801,14 @@ def build_options_schema(
                     custom_value=True,
                 )
             ),
+            vol.Optional(
+                DEFAULT_PRE_SCRIPT_KEY,
+                description={"suggested_value": data[DEFAULT_PRE_SCRIPT_KEY]},
+            ): str,
+            vol.Optional(
+                DEFAULT_POST_SCRIPT_KEY,
+                description={"suggested_value": data[DEFAULT_POST_SCRIPT_KEY]},
+            ): str,
             vol.Optional(
                 "chime_path",
                 default=data["chime_path"],
@@ -2759,6 +2800,8 @@ def validate_settings(
         DEFAULT_LANGUAGE_KEY,
         DEFAULT_VOICE_KEY,
         DEFAULT_TLD_KEY,
+        DEFAULT_PRE_SCRIPT_KEY,
+        DEFAULT_POST_SCRIPT_KEY,
         "chime_path",
         "end_chime_path",
         CUSTOM_CHIMES_PATH_KEY,

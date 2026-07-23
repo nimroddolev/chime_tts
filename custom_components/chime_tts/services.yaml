@@ -279,21 +279,27 @@ say:
           mode: box
           step: 1
     pre_script:
-      description: A script entity to run before the audio plays (e.g. script.front_door)
-      example: script.front_door
+      description: A script entity to run before the audio plays, or YAML containing a script entity and parameter values
+      example: |-
+        script: script.front_door
+        data:
+          volume: 0.5
       name: Pre-playback Script
       required: false
       selector:
-        entity:
-          domain: script
+        text:
+          multiline: true
     post_script:
-      description: A script entity to run after the audio finishes (e.g. script.front_door)
-      example: script.front_door
+      description: A script entity to run after the audio finishes, or YAML containing a script entity and parameter values
+      example: |-
+        script: script.front_door
+        data:
+          volume: 0.5
       name: Post-playback Script
       required: false
       selector:
-        entity:
-          domain: script
+        text:
+          multiline: true
     volume_level:
       description: The volume to use when playing audio
       example: 0.75

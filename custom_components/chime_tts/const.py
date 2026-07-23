@@ -110,6 +110,8 @@ FALLBACK_TTS_PLATFORM_KEY = "fallback_tts_platform_key"
 DEFAULT_LANGUAGE_KEY = "default_language_key"
 DEFAULT_VOICE_KEY = "default_voice_key"
 DEFAULT_TLD_KEY = "default_tld_key"
+DEFAULT_PRE_SCRIPT_KEY = "default_pre_script_key"
+DEFAULT_POST_SCRIPT_KEY = "default_post_script_key"
 
 # FFmpeg Arguments
 FFMPEG_ARGS_ALEXA = "-y -ac 2 -codec:a libmp3lame -b:a 48k -ar 24000 -write_xing 0"

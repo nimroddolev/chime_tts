@@ -5372,7 +5372,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       && !this._invalidPathOverrides?.[field.key]
     );
 
-    const inputMarkup = `
+    const inputMarkup = field.type === "textarea"
+      ? `
+        <textarea
+          class="control control-textarea"
+          data-field="${this._escapeAttribute(field.key)}"
+          ${placeholderAttr}
+        >${this._escapeHtml(String(normalizedValue))}</textarea>
+      `
+      : `
       <input
         class="control"
         data-field="${this._escapeAttribute(field.key)}"
@@ -5384,7 +5392,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       />
     `;
 
-    if (type !== "text" || !field.can_browse) {
+    if (field.type === "textarea" || type !== "text" || !field.can_browse) {
       return inputMarkup;
     }
 

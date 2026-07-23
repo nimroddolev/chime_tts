@@ -4,6 +4,8 @@ import logging
 import time
 from datetime import datetime
 
+import yaml
+
 from pydub import AudioSegment
 from pydub.exceptions import CouldntDecodeError
 
@@ -86,6 +88,8 @@ from .const import (
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
     DEFAULT_TLD_KEY,
+    DEFAULT_PRE_SCRIPT_KEY,
+    DEFAULT_POST_SCRIPT_KEY,
     FALLBACK_TTS_PLATFORM_KEY,
     OFFSET_KEY,
     CROSSFADE_KEY,
@@ -222,9 +226,10 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
             _data["service"] = service
 
         # Parse service parameters & TTS options
-        params = await helpers.async_parse_params(hass, service.data, is_say_url, media_player_helper)
+        service_data = apply_configured_script_defaults(service.data, _data)
+        params = await helpers.async_parse_params(hass, service_data, is_say_url, media_player_helper)
         if params is not None:
-            options = helpers.parse_options_yaml(data=service.data, default_data=_data)
+            options = helpers.parse_options_yaml(data=service_data, default_data=_data)
             media_players_array = params.get("media_players_array", None)
 
             if not (params["message"] or params["chime_path"] or params["end_chime_path"]):
@@ -365,17 +370,63 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
     return True
 
 async def async_run_script(hass: HomeAssistant, script):
-    """Run a script entity before or after playback, if one is configured (#310)."""
+    """Run a configured script entity, optionally with YAML-provided variables."""
     if not script:
         return
-    domain, _, name = str(script).strip().partition(".")
+
+    script_data = {}
+    if isinstance(script, dict):
+        definition = script
+    elif isinstance(script, str):
+        try:
+            definition = yaml.safe_load(script)
+        except yaml.YAMLError as error:
+            _LOGGER.warning("chime_tts: invalid script YAML: %s", error)
+            return
+    else:
+        _LOGGER.warning("chime_tts: invalid script value: %r", script)
+        return
+
+    if isinstance(definition, str):
+        script_entity_id = definition.strip()
+    elif isinstance(definition, dict):
+        script_entity_id = str(
+            definition.get("script", definition.get("entity_id", ""))
+        ).strip()
+        script_data = definition.get("data", definition.get("variables", {})) or {}
+        if not isinstance(script_data, dict):
+            _LOGGER.warning("chime_tts: script data must be a YAML mapping")
+            return
+    else:
+        _LOGGER.warning("chime_tts: script YAML must be a script entity ID or mapping")
+        return
+
+    domain, _, name = script_entity_id.partition(".")
     if domain != "script" or not name:
-        _LOGGER.warning("chime_tts: '%s' is not a script entity (expected script.<name>)", script)
+        _LOGGER.warning(
+            "chime_tts: '%s' is not a script entity (expected script.<name>)",
+            script_entity_id,
+        )
         return
     try:
-        await hass.services.async_call("script", name, blocking=True)
+        await hass.services.async_call(
+            "script", name, service_data=script_data, blocking=True
+        )
     except Exception as error:
-        _LOGGER.warning("chime_tts: error running script '%s': %s", script, error)
+        _LOGGER.warning("chime_tts: error running script '%s': %s", script_entity_id, error)
+
+
+def apply_configured_script_defaults(service_data, default_data: dict) -> dict:
+    """Apply configured playback scripts only when a service call omits them."""
+    data = dict(service_data or {})
+    for service_key, default_key in (
+        ("pre_script", DEFAULT_PRE_SCRIPT_KEY),
+        ("post_script", DEFAULT_POST_SCRIPT_KEY),
+    ):
+        if service_key not in data and default_data.get(default_key):
+            data[service_key] = default_data[default_key]
+    return data
+
 
 async def async_prepare_media(hass: HomeAssistant, params, options, media_players_array: list[ChimeTTSMediaPlayer], is_say_url, start_time):
     """Prepare and play media."""
@@ -563,6 +614,10 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Default voice
     _data[DEFAULT_TLD_KEY] = options.get(DEFAULT_TLD_KEY, None)
 
+    # Default playback scripts
+    _data[DEFAULT_PRE_SCRIPT_KEY] = options.get(DEFAULT_PRE_SCRIPT_KEY, "")
+    _data[DEFAULT_POST_SCRIPT_KEY] = options.get(DEFAULT_POST_SCRIPT_KEY, "")
+
     # Fallback TTS Platform
     _data[FALLBACK_TTS_PLATFORM_KEY] = options.get(FALLBACK_TTS_PLATFORM_KEY, "")
 
@@ -634,6 +689,8 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         DEFAULT_LANGUAGE_KEY,
         DEFAULT_VOICE_KEY,
         DEFAULT_TLD_KEY,
+        DEFAULT_PRE_SCRIPT_KEY,
+        DEFAULT_POST_SCRIPT_KEY,
         FALLBACK_TTS_PLATFORM_KEY,
         OFFSET_KEY,
         CROSSFADE_KEY,

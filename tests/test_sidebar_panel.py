@@ -206,6 +206,9 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
 
     assert language_field["provider_hint"]["tone"] == "info"
     assert "Google Translate" in language_field["provider_hint"]["message"]
+    assert language_field["icon_url"].startswith(
+        f"/api/{DOMAIN}/option_icons/language.svg"
+    )
     assert custom_chimes_field["icon_url"].startswith(
         f"/api/{DOMAIN}/option_icons/{CUSTOM_CHIMES_PATH_KEY}.svg"
     )
@@ -646,6 +649,33 @@ def test_build_panel_payload_supports_home_assistant_include_notify_yaml(
     payload = settings_module.build_panel_payload(hass, config_entry)
 
     assert payload["notify_profiles_load_error"] is None
+
+
+def test_sidebar_exposes_default_playback_script_fields(tmp_path: Path) -> None:
+    """The service section should expose configurable default scripts."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+    config_entry.options.update(
+        {
+            "default_pre_script_key": "script.prepare_speakers",
+            "default_post_script_key": "script.restore_speakers",
+        }
+    )
+
+    payload = settings_module.build_panel_payload(hass, config_entry)
+    service_section = next(
+        section for section in payload["sections"] if section["key"] == "general"
+    )
+    fields = {field["key"]: field for field in service_section["fields"]}
+
+    assert service_section["title"] == "Action & Script Options"
+    assert fields["default_pre_script_key"]["label"] == "Default pre-playback script"
+    assert fields["default_post_script_key"]["label"] == "Default post-playback script"
+    assert fields["default_pre_script_key"]["advanced"] is False
+    assert fields["default_post_script_key"]["advanced"] is False
+    assert fields["default_pre_script_key"]["type"] == "textarea"
+    assert fields["default_post_script_key"]["type"] == "textarea"
+    assert payload["values"]["default_pre_script_key"] == "script.prepare_speakers"
+    assert payload["values"]["default_post_script_key"] == "script.restore_speakers"
     assert payload["notify_profiles"] == [
         {
             "name": "kitchen",

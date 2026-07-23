@@ -76,6 +76,28 @@ def test_issue_294_build_chime_options_coerces_values_to_str():
     assert "None" not in values, "None must not be coerced to the string 'None'"
 
 
+def test_configured_playback_scripts_apply_only_when_service_omits_them():
+    """Configured scripts provide defaults while explicit service values win."""
+    from custom_components.chime_tts import apply_configured_script_defaults
+    from custom_components.chime_tts.const import (
+        DEFAULT_POST_SCRIPT_KEY,
+        DEFAULT_PRE_SCRIPT_KEY,
+    )
+
+    defaults = {
+        DEFAULT_PRE_SCRIPT_KEY: "script.prepare_speakers",
+        DEFAULT_POST_SCRIPT_KEY: "script.restore_speakers",
+    }
+    assert apply_configured_script_defaults({"message": "Hello"}, defaults) == {
+        "message": "Hello",
+        "pre_script": "script.prepare_speakers",
+        "post_script": "script.restore_speakers",
+    }
+    assert apply_configured_script_defaults(
+        {"pre_script": "script.custom_prepare", "post_script": ""}, defaults
+    ) == {"pre_script": "script.custom_prepare", "post_script": ""}
+
+
 def test_issue_294_round_trips_through_yaml_as_str():
     """Options survive a YAML dump/load with their values intact as str (#294)."""
     options = ChimeTTSServicesHelper._build_chime_options(
@@ -100,6 +122,18 @@ def test_issue_294_stale_structure_returns_none_not_crash():
         )
         is None
     )
+
+
+def test_services_yaml_exposes_pre_and_post_scripts_for_say_actions():
+    """Both say actions should expose pre/post script fields in the HA action UI."""
+    from custom_components.chime_tts.settings import _load_services_yaml
+
+    services_yaml = _load_services_yaml()
+
+    for service_name in ("say", "say_url"):
+        fields = services_yaml[service_name]["fields"]
+        assert "pre_script" in fields
+        assert "post_script" in fields
 
 
 def test_issue_291_full_entity_id_matches_installed():
@@ -385,21 +419,31 @@ def test_issue_314_repeat_is_part_of_cache_key():
 
 
 async def test_issue_310_runs_configured_script_before_after_tts():
-    """A configured pre/post script is invoked as a script service (#310)."""
+    """Configured scripts accept an entity ID or YAML with script variables (#310)."""
     from custom_components.chime_tts import async_run_script
 
     calls = []
 
     class _Services:
         async def async_call(self, domain, service, **kwargs):
-            calls.append((domain, service))
+            calls.append((domain, service, kwargs.get("service_data", {})))
 
     class _Hass:
         services = _Services()
 
     hass = _Hass()
     await async_run_script(hass, "script.front_door")
-    assert ("script", "front_door") in calls
+    assert ("script", "front_door", {}) in calls
+
+    await async_run_script(
+        hass,
+        """script: script.front_door
+data:
+  volume: 0.5
+  announcement: Welcome home
+""",
+    )
+    assert ("script", "front_door", {"volume": 0.5, "announcement": "Welcome home"}) in calls
 
     # A non-script entity is ignored, and None is a no-op.
     calls.clear()

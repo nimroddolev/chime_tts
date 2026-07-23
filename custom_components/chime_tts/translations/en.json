@@ -231,6 +231,8 @@
                     "default_language_key": "Default language (when using default TTS platform)",
                     "default_voice_key": "Default voice (when using default TTS platform)",
                     "default_tld_key": "Default dialect (when using the Google Translate TTS platform)",
+                    "default_pre_script_key": "Default pre-playback script",
+                    "default_post_script_key": "Default post-playback script",
                     "fallback_tts_platform_key": "Fallback TTS platform",
                     "offset": "Default offset value (in milliseconds) between chimes & TTS audio",
                     "crossfade": "Default crossfade value (in milliseconds) between audio segments",
