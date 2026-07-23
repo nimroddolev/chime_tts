@@ -1158,7 +1158,7 @@ def _load_configuration_yaml(hass) -> dict[str, Any]:
         loaded = yaml.load(config_file, Loader=_ChimeTTSYamlLoader) or {}
 
     if not isinstance(loaded, dict):
-        raise ValueError("configuration.yaml must contain a mapping at the root level.")
+        raise TypeError("configuration.yaml must contain a mapping at the root level.")
 
     return loaded
 
@@ -1201,7 +1201,7 @@ def _load_services_yaml() -> dict[str, Any]:
     with open(services_path, encoding="utf-8") as services_file:
         loaded = yaml.safe_load(services_file) or {}
     if not isinstance(loaded, dict):
-        raise ValueError("services.yaml must contain a mapping at the root level.")
+        raise TypeError("services.yaml must contain a mapping at the root level.")
     return loaded
 
 
@@ -1278,7 +1278,7 @@ def _normalize_notify_profile_number(value: Any) -> int | float | str:
 
 def _normalize_notify_entity_id_for_display(value: Any) -> str:
     """Normalize YAML entity ids into the panel text format."""
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, list | tuple):
         return ", ".join(
             _normalize_string(item) for item in value if _normalize_string(item)
         )

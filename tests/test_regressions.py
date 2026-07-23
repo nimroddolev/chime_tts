@@ -126,16 +126,18 @@ def test_issue_294_stale_structure_returns_none_not_crash():
     )
 
 
-def test_services_yaml_exposes_pre_and_post_scripts_for_say_actions():
-    """Both say actions should expose pre/post script fields in the HA action UI."""
+def test_services_yaml_exposes_scripts_only_for_say_action():
+    """Scripts are playback-only and must not be accepted by say_url."""
     from custom_components.chime_tts.settings import _load_services_yaml
 
     services_yaml = _load_services_yaml()
 
-    for service_name in ("say", "say_url"):
-        fields = services_yaml[service_name]["fields"]
-        assert "pre_script" in fields
-        assert "post_script" in fields
+    say_fields = services_yaml["say"]["fields"]
+    say_url_fields = services_yaml["say_url"]["fields"]
+    assert "pre_script" in say_fields
+    assert "post_script" in say_fields
+    assert "pre_script" not in say_url_fields
+    assert "post_script" not in say_url_fields
 
 
 def test_panel_uploads_use_home_assistants_authenticated_fetch_helper():
@@ -205,6 +207,20 @@ def test_issue_241_installed_list_keeps_full_entity_ids():
     installed = helper.get_installed_tts_platforms(hass)
     assert "tts.google_generative_ai_x" in installed
     assert "google" not in installed
+
+
+def test_installed_tts_platforms_include_legacy_provider_ids():
+    """YAML-configured TTS providers remain selectable without tts entities."""
+    helper = ChimeTTSHelper()
+    hass = _FakeHass()
+    hass.data["tts_manager"] = type(
+        "TTSManager", (), {"providers": {"test_support_tts": object()}}
+    )()
+
+    assert helper.get_installed_tts_platforms(hass) == ["test_support_tts"]
+    assert helper.get_tts_platform(hass, tts_platform="test_support_tts") == (
+        "test_support_tts"
+    )
 
 
 def test_google_translate_fallback_for_unmatched_google_request():

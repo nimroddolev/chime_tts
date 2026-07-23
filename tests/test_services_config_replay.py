@@ -497,3 +497,19 @@ async def test_say_url_returns_unsuccessful_payload_when_parse_fails(monkeypatch
         "duration": 0,
         "success": False,
     }
+
+
+@pytest.mark.asyncio
+async def test_say_url_rejects_playback_scripts() -> None:
+    """say_url must not accept scripts because it does not perform playback."""
+    hass = FakeHass()
+    await integration_module.async_setup(hass, SimpleNamespace())
+
+    say_url_handler = hass.services.registered[(DOMAIN, SERVICE_SAY_URL)][0]
+
+    with pytest.raises(HomeAssistantError, match="supported only by chime_tts.say"):
+        await say_url_handler(
+            SimpleNamespace(
+                data={"message": "Hello", "pre_script": "script.prepare_speakers"}
+            )
+        )

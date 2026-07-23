@@ -235,13 +235,7 @@ say:
           custom_value: true
           mode: dropdown
           multiple: false
-          options:
-          - label: tts.google_translate_en_com
-            value: tts.google_translate_en_com
-          - label: tts.pico_tts_en_us
-            value: tts.pico_tts_en_us
-          - label: tts.pico_tts_fr_fr
-            value: tts.pico_tts_fr_fr
+          options: null
     tts_speed:
       description: Set the speed of the TTS audio to between 1% and 500% of the original
       example: 125
@@ -279,22 +273,18 @@ say:
           mode: box
           step: 1
     pre_script:
-      description: A script entity to run before the audio plays, or YAML containing a script entity and parameter values
-      example: |-
-        script: script.front_door
-        data:
-          volume: 0.5
+      description: A script entity to run before the audio plays, or YAML containing
+        a script entity and parameter values
+      example: "script: script.front_door\ndata:\n  volume: 0.5"
       name: Pre-playback Script
       required: false
       selector:
         text:
           multiline: true
     post_script:
-      description: A script entity to run after the audio finishes, or YAML containing a script entity and parameter values
-      example: |-
-        script: script.front_door
-        data:
-          volume: 0.5
+      description: A script entity to run after the audio finishes, or YAML containing
+        a script entity and parameter values
+      example: "script: script.front_door\ndata:\n  volume: 0.5"
       name: Post-playback Script
       required: false
       selector:
@@ -613,13 +603,7 @@ say_url:
           custom_value: true
           mode: dropdown
           multiple: false
-          options:
-          - label: tts.google_translate_en_com
-            value: tts.google_translate_en_com
-          - label: tts.pico_tts_en_us
-            value: tts.pico_tts_en_us
-          - label: tts.pico_tts_fr_fr
-            value: tts.pico_tts_fr_fr
+          options: null
     tts_speed:
       description: Set the speed of the TTS audio to between 1% and 500% of the original
       example: 125

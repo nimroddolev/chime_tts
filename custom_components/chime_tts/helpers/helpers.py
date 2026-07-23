@@ -585,6 +585,19 @@ class ChimeTTSHelper:
         except Exception as e:
             _LOGGER.debug("Registry-based TTS detection failed: %s", e)
 
+        # YAML-configured legacy TTS providers do not create ``tts.*`` entities,
+        # but remain supported by Home Assistant's TTS manager.  Keep their bare
+        # engine ids so service requests can select them; the audio helper maps
+        # those ids to the legacy media-source API.
+        try:
+            manager = hass.data.get("tts_manager")
+            for engine_id in getattr(manager, "providers", {}):
+                engine_id = str(engine_id or "").strip()
+                if engine_id and engine_id not in platforms:
+                    platforms.append(engine_id)
+        except Exception as e:
+            _LOGGER.debug("Legacy TTS provider detection failed: %s", e)
+
         return sorted(platforms)
 
     @staticmethod

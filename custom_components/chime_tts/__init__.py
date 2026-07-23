@@ -180,6 +180,15 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
                 ),
             )
             created_event = True
+        if is_say_url and service_data and {
+            "pre_script",
+            "post_script",
+        }.intersection(service_data):
+            if created_event:
+                finish_panel_log_event(hass, event_id)
+            raise HomeAssistantError(
+                "pre_script and post_script are supported only by chime_tts.say."
+            )
         if is_say_url is False:
             if service is None:
                 helpers.debug_title(f"Chime TTS Replay Called. Version {VERSION}")
@@ -226,7 +235,11 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
             _data["service"] = service
 
         # Parse service parameters & TTS options
-        service_data = apply_configured_script_defaults(service.data, _data)
+        service_data = (
+            dict(service.data)
+            if is_say_url
+            else apply_configured_script_defaults(service.data, _data)
+        )
         params = await helpers.async_parse_params(hass, service_data, is_say_url, media_player_helper)
         if params is not None:
             options = helpers.parse_options_yaml(data=service_data, default_data=_data)

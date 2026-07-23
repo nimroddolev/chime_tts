@@ -114,16 +114,16 @@ class RuntimeTarget:
 TARGETS = (
     RuntimeTarget(
         name="stable",
-        service_name="homeassistant-stable",
-        hass_url="http://127.0.0.1:8123",
-        runtime_root=ROOT / ".ha" / "stable",
+        service_name="homeassistant-e2e-stable",
+        hass_url="http://127.0.0.1:28124",
+        runtime_root=ROOT / ".ha" / "e2e" / "stable",
         image="ghcr.io/home-assistant/home-assistant:stable",
     ),
     RuntimeTarget(
         name="dev",
-        service_name="homeassistant-dev",
-        hass_url="http://127.0.0.1:18123",
-        runtime_root=ROOT / ".ha" / "dev",
+        service_name="homeassistant-e2e-dev",
+        hass_url="http://127.0.0.1:28125",
+        runtime_root=ROOT / ".ha" / "e2e" / "dev",
         image="ghcr.io/home-assistant/home-assistant:dev",
     ),
 )
@@ -384,6 +384,7 @@ class HomeAssistantE2EClient:
         self.install_chime_tts_entry()
         self.wait_for_entry_loaded()
         await self.wait_for_panel()
+        await self.wait_for_tts_provider("test_support_tts")
 
     async def wait_for_panel(self, timeout: float = 60.0) -> None:
         """Wait until the custom panel websocket commands are registered."""
@@ -398,6 +399,23 @@ class HomeAssistantE2EClient:
                 continue
         raise RuntimeError(
             f"Timed out waiting for the Chime TTS panel websocket API on {self.target.name}"
+        )
+
+    async def wait_for_tts_provider(
+        self, provider: str, timeout: float = 60.0
+    ) -> None:
+        """Wait for HA's asynchronous legacy TTS platform setup to finish."""
+        deadline = time.monotonic() + timeout
+        startup_marker = "Captured settled startup TTS platforms:"
+        log_path = self.target.config_dir / "home-assistant.log"
+        while time.monotonic() < deadline:
+            with suppress(FileNotFoundError):
+                log = log_path.read_text(encoding="utf-8")
+                if startup_marker in log and provider in log.rsplit(startup_marker, 1)[1]:
+                    return
+            await asyncio.sleep(0.5)
+        raise RuntimeError(
+            f"Timed out waiting for TTS provider {provider!r} on {self.target.name}"
         )
 
     async def ws_command(self, payload: dict[str, Any]) -> Any:
@@ -569,13 +587,19 @@ async def test_panel_notify_profiles_round_trip(
         encoding="utf-8",
     )
 
-    payload = await e2e_client.ws_command({"type": "chime_tts/get_settings"})
-    notify_section = next(
-        section for section in payload["sections"] if section["key"] == "notify_profiles"
+    settings_payload = await e2e_client.ws_command(
+        {"type": "chime_tts/get_settings"}
     )
+    notify_section = next(
+        section
+        for section in settings_payload["sections"]
+        if section["key"] == "notify_profiles"
+    )
+    payload = await e2e_client.ws_command({"type": "chime_tts/get_notify_profiles"})
     notify_profile_fields = {
         field["key"]: field for field in notify_section["profile_fields"]
     }
+    assert payload["notify_profiles_hydrated"] is True
     assert payload["notify_profiles"][0]["name"] == "arrival"
     assert payload["notify_profiles"][0]["entity_id"] == (
         "media_player.test_speaker, media_player.group_speaker"
@@ -593,7 +617,7 @@ async def test_panel_notify_profiles_round_trip(
     saved = await e2e_client.ws_command(
         {
             "type": "chime_tts/save_settings",
-            "values": dict(payload["values"]),
+            "values": dict(settings_payload["values"]),
             "notify_profiles": [
                 {
                     "name": "arrival",
@@ -819,7 +843,7 @@ async def test_say_url_message_parameter_variants(
     )
 
     response = result["response"]
-    assert response["success"] is True
+    assert response["success"] is True, response
     assert response["url"]
 
     request = await e2e_client.wait_for_test_support_tts_request()

@@ -49,12 +49,12 @@ def _normalize_service_data(value):
     """Recursively normalize service data into JSON-safe primitives."""
     if isinstance(value, Mapping):
         return {str(key): _normalize_service_data(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple, set)):
+    if isinstance(value, list | tuple | set):
         return [_normalize_service_data(item) for item in value]
     return value
 
 
-def _append_event(store: "PanelLogStore", event: dict) -> None:
+def _append_event(store: PanelLogStore, event: dict) -> None:
     """Insert the latest event at the top of the bounded event list."""
     store.events.insert(0, event)
     if len(store.events) <= MAX_PANEL_LOG_EVENTS:
@@ -76,7 +76,7 @@ def _append_event(store: "PanelLogStore", event: dict) -> None:
     store.events = kept_events
 
 
-def _notify_panel_log_subscribers(store: "PanelLogStore", event: dict) -> None:
+def _notify_panel_log_subscribers(store: PanelLogStore, event: dict) -> None:
     """Push a new completed panel log event to active websocket subscribers."""
     if not store.subscribers:
         return
@@ -633,7 +633,6 @@ def _dedupe_events(events: list[dict]) -> list[dict]:
 def _is_relevant_to_open_event(current_event: dict, log_entry: dict) -> bool:
     """Return whether a log line belongs to the currently grouped event."""
     logger = log_entry["logger"]
-    message = log_entry["message"]
     title = current_event.get("title", "")
 
     if title == "Integration initialization":
