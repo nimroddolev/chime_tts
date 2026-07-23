@@ -13,6 +13,7 @@ from custom_components.chime_tts.const import DATA_STORAGE_KEY
 from custom_components.chime_tts.const import DOMAIN
 from custom_components.chime_tts.const import QUEUE_TIMEOUT_KEY
 from custom_components.chime_tts.const import SERVICE_REPLAY
+from custom_components.chime_tts.const import SERVICE_CLEAR_CACHE
 from custom_components.chime_tts.const import SERVICE_SAY
 from custom_components.chime_tts.const import SERVICE_SAY_URL
 from custom_components.chime_tts.const import TEMP_PATH_KEY
@@ -415,6 +416,34 @@ async def test_async_setup_registers_services_and_replay_reuses_previous_service
     assert replay_result == {"url": "https://example.test/out.mp3", "success": True}
     assert parse_params.await_count == 2
     assert integration_module._data["service"] is service
+
+
+@pytest.mark.asyncio
+async def test_clear_cache_returns_a_response_when_cache_has_not_been_initialized() -> None:
+    """Clearing an empty cache must work from the Developer Tools response UI."""
+    hass = FakeHass()
+    integration_module._data[DATA_STORAGE_KEY] = None
+
+    await integration_module.async_setup(hass, SimpleNamespace())
+
+    clear_cache_handler, registration = hass.services.registered[
+        (DOMAIN, SERVICE_CLEAR_CACHE)
+    ]
+    response = await clear_cache_handler(
+        SimpleNamespace(
+            data={"clear_temp_tts_cache": True},
+            return_response=True,
+        )
+    )
+
+    assert registration == {"supports_response": SupportsResponse.OPTIONAL}
+    assert response == {
+        "success": True,
+        "clear_chimes_cache": False,
+        "clear_temp_tts_cache": True,
+        "clear_www_tts_cache": False,
+        "clear_ha_tts_cache": False,
+    }
 
 
 @pytest.mark.asyncio

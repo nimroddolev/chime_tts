@@ -324,7 +324,11 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
                 return {} if wants_response else None
 
             # CLEAR CHIME TTS CACHE #
-            cached_dicts = dict(_data.get(DATA_STORAGE_KEY, None))
+            # The persistent cache is empty until the first audio file is cached.
+            # Treat that state as an empty cache rather than attempting to create a
+            # dictionary from ``None`` (which makes the action fail in Developer
+            # Tools before any audio has been generated).
+            cached_dicts = _data.get(DATA_STORAGE_KEY) or {}
             for key in cached_dicts:
                 await async_remove_cached_audio_data(hass,
                                                      str(key),
