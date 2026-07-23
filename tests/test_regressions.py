@@ -179,6 +179,27 @@ def test_picker_stops_preview_before_delete_navigation_and_close():
     assert "this._stopPickerAudio();" in panel_source[load_picker:load_picker_end]
 
 
+def test_panel_prompts_before_discarding_unsaved_changes():
+    """Reset and browser unload must not silently discard panel edits."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert "_requestResetAllChanges()" in panel_source
+    assert "_renderDiscardChangesConfirmation()" in panel_source
+    assert "data-discard-changes-save" in panel_source
+    assert "data-discard-changes-confirm" in panel_source
+    assert 'window.addEventListener("beforeunload", this._boundBeforeUnload);' in panel_source
+    assert "_handleBeforeUnload(event)" in panel_source
+    assert 'document.addEventListener("click", this._boundNavigationClick, true);' in panel_source
+    assert "_handleNavigationClick(event)" in panel_source
+    assert "_navigateAfterDiscard(url)" in panel_source
+
+
 def test_issue_291_full_entity_id_matches_installed():
     """A full tts.* entity id selects that entity instead of being rejected (#291)."""
     helper = ChimeTTSHelper()

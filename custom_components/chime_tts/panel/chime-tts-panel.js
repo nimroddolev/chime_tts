@@ -3335,11 +3335,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._boundSelectionRefresh = () => this._syncLogsRefresh();
     this._boundFocusRefresh = () => this._syncLogsRefresh();
     this._boundResizeRefresh = () => this._syncLogEventActionWrapping();
+    this._boundBeforeUnload = (event) => this._handleBeforeUnload(event);
+    this._boundNavigationClick = (event) => this._handleNavigationClick(event);
     this._pathValidationState = {};
     this._pathValidationTimers = {};
     this._invalidPathOverrides = {};
     this._restartPending = false;
     this._restartConfirmOpen = false;
+    this._discardChangesConfirmOpen = false;
+    this._pendingNavigationUrl = "";
+    this._allowUnload = false;
     this._restarting = false;
     this._restartContext = null;
     this._expandedChapters = {};
@@ -3354,6 +3359,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this.shadowRoot?.addEventListener("focusin", this._boundFocusRefresh);
     this.shadowRoot?.addEventListener("focusout", this._boundFocusRefresh);
     window.addEventListener("resize", this._boundResizeRefresh);
+    window.addEventListener("beforeunload", this._boundBeforeUnload);
+    document.addEventListener("click", this._boundNavigationClick, true);
   }
 
   disconnectedCallback() {
@@ -3362,6 +3369,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this.shadowRoot?.removeEventListener("focusin", this._boundFocusRefresh);
     this.shadowRoot?.removeEventListener("focusout", this._boundFocusRefresh);
     window.removeEventListener("resize", this._boundResizeRefresh);
+    window.removeEventListener("beforeunload", this._boundBeforeUnload);
+    document.removeEventListener("click", this._boundNavigationClick, true);
     this._teardownLogsSubscription();
     this._clearLogsRefreshTimer();
     this._clearAllNotifyProfileTestTimers();
@@ -3682,6 +3691,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       }
       ${this._renderPicker()}
       ${this._renderRestartConfirmation()}
+      ${this._renderDiscardChangesConfirmation()}
     `;
 
     this.shadowRoot.getElementById("settings-form")?.addEventListener("submit", (event) => {
@@ -4026,6 +4036,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-restart-confirm]").forEach((button) => {
       button.addEventListener("click", () => this._confirmRestart());
     });
+    this.shadowRoot.querySelectorAll("[data-discard-changes-cancel]").forEach((button) => {
+      button.addEventListener("click", () => this._closeDiscardChangesConfirmation());
+    });
+    this.shadowRoot.querySelectorAll("[data-discard-changes-confirm]").forEach((button) => {
+      button.addEventListener("click", () => this._confirmResetAllChanges());
+    });
+    this.shadowRoot.querySelectorAll("[data-discard-changes-save]").forEach((button) => {
+      button.addEventListener("click", () => this._saveUnsavedChanges());
+    });
     this.shadowRoot.querySelectorAll("[data-use-anyway]").forEach((button) => {
       button.addEventListener("click", (event) => this._useInvalidPathAnyway(event.currentTarget.dataset.useAnyway));
     });
@@ -4232,7 +4251,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       button.addEventListener("click", () => this._toggleHassMenu());
     });
     this.shadowRoot.querySelectorAll("[data-reset-all]").forEach((button) => {
-      button.addEventListener("click", () => this._resetAllChanges());
+      button.addEventListener("click", () => this._requestResetAllChanges());
     });
   }
 
@@ -5726,6 +5745,28 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     `;
   }
 
+  _renderDiscardChangesConfirmation() {
+    if (!this._discardChangesConfirmOpen) {
+      return "";
+    }
+
+    const isNavigating = Boolean(this._pendingNavigationUrl);
+
+    return `
+      <div class="confirm-overlay">
+        <div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="Unsaved changes">
+          <h3 class="confirm-title">Save your changes?</h3>
+          <p class="confirm-copy">You have unsaved changes. Save them before ${isNavigating ? "leaving this page" : "discarding your edits"}?</p>
+          <div class="confirm-actions">
+            <button class="button-secondary" type="button" data-discard-changes-cancel="1">Cancel</button>
+            <button class="button-secondary" type="button" data-discard-changes-confirm="1">${isNavigating ? "Leave without saving" : "Discard changes"}</button>
+            <button class="button-primary" type="button" data-discard-changes-save="1" ${this._saving || this._hasInvalidPathChanges() ? "disabled" : ""}>Save changes</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   _renderPickerPreview() {
     if (this._picker?.field_key !== "custom_chimes_path") {
       return "";
@@ -6122,6 +6163,96 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
   }
 
+  _handleBeforeUnload(event) {
+    if (!this._isDirty || this._saving || this._allowUnload) {
+      return;
+    }
+    event.preventDefault();
+    event.returnValue = "";
+  }
+
+  _handleNavigationClick(event) {
+    if (
+      !this._isDirty
+      || this._saving
+      || event.defaultPrevented
+      || event.button !== 0
+      || event.metaKey
+      || event.ctrlKey
+      || event.shiftKey
+      || event.altKey
+    ) {
+      return;
+    }
+
+    const anchor = event.composedPath().find((node) => node instanceof HTMLAnchorElement);
+    if (!anchor || anchor.target || anchor.hasAttribute("download")) {
+      return;
+    }
+
+    let targetUrl;
+    try {
+      targetUrl = new URL(anchor.href, window.location.href);
+    } catch (_error) {
+      return;
+    }
+    if (targetUrl.href === window.location.href) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    this._pendingNavigationUrl = targetUrl.href;
+    this._discardChangesConfirmOpen = true;
+    this._render();
+  }
+
+  _requestResetAllChanges() {
+    if (!this._isDirty) {
+      this._resetAllChanges();
+      return;
+    }
+    this._pendingNavigationUrl = "";
+    this._discardChangesConfirmOpen = true;
+    this._render();
+  }
+
+  _closeDiscardChangesConfirmation() {
+    this._discardChangesConfirmOpen = false;
+    this._pendingNavigationUrl = "";
+    this._render();
+  }
+
+  _confirmResetAllChanges() {
+    const navigationUrl = this._pendingNavigationUrl;
+    this._discardChangesConfirmOpen = false;
+    this._pendingNavigationUrl = "";
+    if (navigationUrl) {
+      this._navigateAfterDiscard(navigationUrl);
+      return;
+    }
+    this._resetAllChanges();
+  }
+
+  async _saveUnsavedChanges() {
+    await this._submit();
+    if (!this._isDirty) {
+      const navigationUrl = this._pendingNavigationUrl;
+      this._discardChangesConfirmOpen = false;
+      this._pendingNavigationUrl = "";
+      if (navigationUrl) {
+        this._navigateAfterDiscard(navigationUrl);
+      } else {
+        this._render();
+      }
+    }
+  }
+
+  _navigateAfterDiscard(url) {
+    this._allowUnload = true;
+    window.location.assign(url);
+  }
+
   _resetAllChanges() {
     this._draftValues = { ...(this._data?.values || {}) };
     this._draftNotifyProfiles = this._cloneNotifyProfiles(this._data?.notify_profiles || []);
@@ -6133,6 +6264,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._invalidPathOverrides = {};
     this._restartPending = false;
     this._restartConfirmOpen = false;
+    this._discardChangesConfirmOpen = false;
+    this._pendingNavigationUrl = "";
     this._restartContext = null;
     this._clearSaveResult();
     this._rerenderPreservingInputState();
