@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
+import json
 import os
 from pathlib import Path
 import shutil
@@ -299,6 +300,45 @@ PROVIDER_HINT_ALIASES = {
     PIPER: PIPER,
     VOICE_RSS: VOICE_RSS,
     YANDEX_TTS: YANDEX_TTS,
+}
+KNOWN_TTS_PROVIDER_ALIASES = {
+    AMAZON_POLLY.lower(): AMAZON_POLLY,
+    "amazonpolly": AMAZON_POLLY,
+    BAIDU.lower(): BAIDU,
+    "baidu": BAIDU,
+    ELEVENLABS.lower(): ELEVENLABS,
+    "elevenlabs": ELEVENLABS,
+    GOOGLE_CLOUD.lower(): GOOGLE_CLOUD,
+    "googlecloud": GOOGLE_CLOUD,
+    GOOGLE_TRANSLATE.lower(): GOOGLE_TRANSLATE,
+    "googletranslate": GOOGLE_TRANSLATE,
+    IBM_WATSON_TTS.lower(): IBM_WATSON_TTS,
+    "ibmwatson": IBM_WATSON_TTS,
+    "watsontts": IBM_WATSON_TTS,
+    MARYTTS.lower(): MARYTTS,
+    "marytts": MARYTTS,
+    MICROSOFT_TTS.lower(): MICROSOFT_TTS,
+    "microsofttts": MICROSOFT_TTS,
+    MICROSOFT_EDGE_TTS.lower(): MICROSOFT_EDGE_TTS,
+    "microsoftedgetts": MICROSOFT_EDGE_TTS,
+    "edgetts": MICROSOFT_EDGE_TTS,
+    NABU_CASA_CLOUD_TTS.lower(): NABU_CASA_CLOUD_TTS,
+    NABU_CASA_CLOUD_TTS_OLD.lower(): NABU_CASA_CLOUD_TTS,
+    "nabucasa": NABU_CASA_CLOUD_TTS,
+    "nabucasacloud": NABU_CASA_CLOUD_TTS,
+    "nabucasacloudtts": NABU_CASA_CLOUD_TTS,
+    "cloudsay": NABU_CASA_CLOUD_TTS,
+    OPENAI_TTS.lower(): OPENAI_TTS,
+    "openaitts": OPENAI_TTS,
+    PICOTTS.lower(): PICOTTS,
+    "picotts": PICOTTS,
+    PIPER.lower(): PIPER,
+    "piper": PIPER,
+    VOICE_RSS.lower(): VOICE_RSS,
+    "voicerss": VOICE_RSS,
+    YANDEX_TTS.lower(): YANDEX_TTS,
+    "yandex": YANDEX_TTS,
+    "yandextts": YANDEX_TTS,
 }
 
 CONFIGURATION_DOCS_BASE_URL = (
@@ -804,6 +844,223 @@ def get_tts_platforms(hass) -> list[str]:
     return sorted(helpers.get_installed_tts_platforms(hass))
 
 
+def get_available_tts_platforms(hass) -> list[str]:
+    """Return currently loaded TTS entity ids."""
+    return sorted(helpers.get_installed_tts_platforms(hass))
+
+
+def get_initial_tts_platforms(hass) -> list[str]:
+    """Return the startup TTS platform baseline for this HA session."""
+    domain_data = hass.data.get(DOMAIN, {}) if hass else {}
+    initial_platforms = domain_data.get("_initial_tts_platforms", [])
+    return sorted(str(platform) for platform in initial_platforms if str(platform))
+
+
+def has_initial_tts_platform_baseline(hass) -> bool:
+    """Return whether this HA boot has finished capturing its TTS baseline."""
+    domain_data = hass.data.get(DOMAIN, {}) if hass else {}
+    return "_initial_tts_platforms" in domain_data
+
+
+def _normalize_tts_provider_identity(provider: str) -> str:
+    """Normalize TTS provider names and entity ids to a comparable identity."""
+    normalized = _normalize_string(provider).lower()
+    if not normalized:
+        return ""
+
+    collapsed = "".join(character for character in normalized if character.isalnum())
+
+    def _match_alias_prefix(candidate: str) -> str:
+        """Return a canonical alias when a suffixed entity id starts with one."""
+        collapsed_candidate = "".join(character for character in candidate if character.isalnum())
+        for alias, canonical in KNOWN_TTS_PROVIDER_ALIASES.items():
+            if candidate.startswith(f"{alias}_"):
+                return canonical.lower()
+
+            collapsed_alias = "".join(character for character in alias if character.isalnum())
+            if not collapsed_alias:
+                continue
+            if candidate.startswith(f"{collapsed_alias}_"):
+                return canonical.lower()
+            if collapsed_candidate.startswith(collapsed_alias):
+                return canonical.lower()
+
+        return ""
+
+    if normalized in KNOWN_TTS_PROVIDER_ALIASES:
+        return KNOWN_TTS_PROVIDER_ALIASES[normalized].lower()
+    if collapsed in KNOWN_TTS_PROVIDER_ALIASES:
+        return KNOWN_TTS_PROVIDER_ALIASES[collapsed].lower()
+    if normalized.startswith("tts."):
+        suffix = normalized[4:]
+        if suffix in KNOWN_TTS_PROVIDER_ALIASES:
+            return KNOWN_TTS_PROVIDER_ALIASES[suffix].lower()
+        collapsed_suffix = "".join(character for character in suffix if character.isalnum())
+        if collapsed_suffix in KNOWN_TTS_PROVIDER_ALIASES:
+            return KNOWN_TTS_PROVIDER_ALIASES[collapsed_suffix].lower()
+        prefix_match = _match_alias_prefix(suffix)
+        if prefix_match:
+            return prefix_match
+
+    stripped = _normalize_string(helpers.get_stripped_tts_platform(normalized)).lower()
+    if stripped in KNOWN_TTS_PROVIDER_ALIASES:
+        return KNOWN_TTS_PROVIDER_ALIASES[stripped].lower()
+    stripped_collapsed = "".join(character for character in stripped if character.isalnum())
+    if stripped_collapsed in KNOWN_TTS_PROVIDER_ALIASES:
+        return KNOWN_TTS_PROVIDER_ALIASES[stripped_collapsed].lower()
+    prefix_match = _match_alias_prefix(stripped)
+    if prefix_match:
+        return prefix_match
+    prefix_match = _match_alias_prefix(stripped_collapsed)
+    if prefix_match:
+        return prefix_match
+    return ""
+
+
+def _format_tts_provider_display_name(candidate: str) -> str:
+    """Return the provider string that should be shown in panel alerts."""
+    return _normalize_string(candidate)
+
+
+def _get_configured_tts_provider_candidates(hass) -> list[dict[str, str]]:
+    """Return configured TTS providers with comparison ids and display names."""
+    configured: list[dict[str, str]] = []
+    seen_identities: set[str] = set()
+    for entry in hass.config_entries.async_entries():
+        raw_candidates = [
+            str(getattr(entry, "title", "") or ""),
+            str(getattr(entry, "name", "") or ""),
+            str(entry.domain or ""),
+        ]
+        provider_identity = next(
+            (
+                normalized
+                for normalized in (
+                    _normalize_tts_provider_identity(candidate)
+                    for candidate in raw_candidates
+                )
+                if normalized
+            ),
+            "",
+        )
+        if not provider_identity or provider_identity in seen_identities:
+            continue
+
+        display_name = next(
+            (
+                _format_tts_provider_display_name(candidate)
+                for candidate in raw_candidates
+                if _normalize_string(candidate)
+            ),
+            provider_identity,
+        )
+        configured.append(
+            {
+                "identity": provider_identity,
+                "display_name": display_name,
+            }
+        )
+        seen_identities.add(provider_identity)
+    return configured
+
+
+def _get_filesystem_tts_provider_candidates(hass) -> list[str]:
+    """Return TTS provider integrations detected from custom_components on disk."""
+    custom_components_path = Path(hass.config.path("custom_components"))
+    if not custom_components_path.exists() or not custom_components_path.is_dir():
+        return []
+
+    detected: list[str] = []
+    for entry in custom_components_path.iterdir():
+        if not entry.is_dir():
+            continue
+
+        domain = entry.name
+        manifest_path = entry / "manifest.json"
+        if manifest_path.exists():
+            try:
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                domain = str(manifest.get("domain") or domain)
+            except (OSError, ValueError, TypeError):
+                domain = entry.name
+
+        provider = _normalize_tts_provider_identity(domain)
+        if provider and provider not in detected:
+            detected.append(provider)
+
+    return detected
+
+
+def _build_panel_alerts(hass) -> tuple[list[dict[str, Any]], str | None]:
+    """Build startup alerts related to TTS provider availability."""
+    # Do not interpret the small startup window before the post-start snapshot
+    # as an empty provider list or as a list of newly installed providers.
+    if not has_initial_tts_platform_baseline(hass):
+        return [], None
+
+    available_platforms = get_available_tts_platforms(hass)
+    initial_platforms = get_initial_tts_platforms(hass)
+    initial_provider_identities = {
+        _normalize_tts_provider_identity(provider)
+        for provider in initial_platforms
+        if provider
+    }
+    newly_added_providers = [
+        provider
+        for provider in available_platforms
+        if (
+            normalized_provider := _normalize_tts_provider_identity(provider)
+        )
+        and normalized_provider not in initial_provider_identities
+    ]
+
+    alerts: list[dict[str, Any]] = []
+    panel_tone: str | None = None
+
+    if not available_platforms:
+        alerts.append(
+            {
+                "tone": "error",
+                "title": "No TTS providers detected",
+                "message": "At least 1 TTS provider must be installed before Chime TTS can be used.",
+                "action": {
+                    "kind": "link",
+                    "label": "Add TTS Provider",
+                    "href": "/config/integrations/dashboard",
+                },
+            }
+        )
+        panel_tone = "error"
+    elif newly_added_providers:
+        provider_count = len(newly_added_providers)
+        if provider_count == 1:
+            provider_list = newly_added_providers[0]
+        elif provider_count > 1:
+            provider_list = (
+                "</strong>, <strong>".join(newly_added_providers[:-1])
+                + "</strong> and <strong>"
+                + newly_added_providers[-1]
+            )
+        alerts.append(
+            {
+                "tone": "warning",
+                "title": "1 New TTS Provider Detected"
+                if provider_count == 1
+                else f"{provider_count} New TTS Providers Detected",
+                "message": f"To use the new {provider_list} TTS {'provider' if provider_count == 1 else 'providers'}, Home Assistant must be restarted.",
+                "message_html": f"To use the new <strong>{provider_list}</strong> TTS {'provider' if provider_count == 1 else 'providers'}, Home Assistant must be restarted.",
+                "highlighted_terms": newly_added_providers,
+                "action": {
+                    "kind": "restart",
+                    "label": "Restart",
+                },
+            }
+        )
+        panel_tone = "warning"
+
+    return alerts, panel_tone
+
+
 def _field_default_value(field_key: str, hass) -> Any:
     """Get the default value for a field."""
     root_path = get_root_path(hass)
@@ -919,6 +1176,32 @@ def _load_services_yaml() -> dict[str, Any]:
     if not isinstance(loaded, dict):
         raise ValueError("services.yaml must contain a mapping at the root level.")
     return loaded
+
+
+def get_loaded_chime_tts_platforms() -> list[str]:
+    """Return the TTS provider options currently loaded into Chime TTS services."""
+    try:
+        services_yaml = _load_services_yaml()
+        options = (
+            services_yaml.get("say", {})
+            .get("fields", {})
+            .get("tts_platform", {})
+            .get("selector", {})
+            .get("select", {})
+            .get("options", [])
+        )
+    except (OSError, ValueError, yaml.YAMLError):
+        options = []
+
+    loaded_platforms: list[str] = []
+    for option in options:
+        if not isinstance(option, dict):
+            continue
+        value = _normalize_string(option.get("value"))
+        normalized = _normalize_tts_provider_identity(value)
+        if normalized and normalized not in loaded_platforms:
+            loaded_platforms.append(normalized)
+    return loaded_platforms
 
 
 def get_notify_chime_options() -> list[dict[str, str]]:
@@ -1213,127 +1496,75 @@ async def async_save_notify_profiles(
     await hass.async_add_executor_job(save_notify_profiles, hass, profiles)
 
 
-async def async_build_panel_payload(
+def _build_panel_sections(
     hass,
     config_entry: config_entries.ConfigEntry,
-    **kwargs: Any,
-) -> dict[str, Any]:
-    """Build the panel payload without blocking the event loop."""
-    values = kwargs.get("values") or get_settings_data(hass, config_entry)
-    include_log_events = kwargs.get("include_log_events", True)
-    include_notify_profiles = kwargs.get("include_notify_profiles", True)
-    include_path_validations = kwargs.get("include_path_validations", True)
-    notify_profiles = kwargs.get("notify_profiles")
-    notify_profile_errors = kwargs.get("notify_profile_errors")
-    errors = kwargs.get("errors")
-    message = kwargs.get("message")
-    message_type = kwargs.get("message_type")
-    restart_required = kwargs.get("restart_required", False)
+    values: dict[str, Any],
+    *,
+    field_options: dict[str, list[dict[str, Any]]],
+    tts_platforms: list[str],
+    chime_options: list[dict[str, Any]],
+    default_provider: str,
+    fallback_provider: str,
+    include_path_validations: bool,
+    icon_versioned: bool,
+) -> list[dict[str, Any]]:
+    """Build the shared panel sections payload used by both panel builders."""
+    icon_suffix = f"?v={VERSION.lstrip('v') or VERSION}" if icon_versioned else ""
 
-    async_jobs = [async_get_notify_chime_options(hass)]
-    if include_notify_profiles:
-        async_jobs.insert(0, async_load_notify_profiles(hass))
-    if include_log_events:
-        async_jobs.append(async_get_panel_log_events(hass))
-
-    async_results = await asyncio.gather(*async_jobs)
-    result_index = 0
-    if include_notify_profiles:
-        loaded_notify_profiles, notify_profiles_load_error = async_results[result_index]
-        result_index += 1
-    else:
-        loaded_notify_profiles, notify_profiles_load_error = [], None
-
-    chime_options = async_results[result_index]
-    result_index += 1
-    log_events = async_results[result_index] if include_log_events else []
-
-    if notify_profiles is None:
-        notify_profiles = loaded_notify_profiles if include_notify_profiles else []
-
-    tts_platforms = get_tts_platforms(hass)
-    field_options = {
-        "chime_path": chime_options,
-        "end_chime_path": chime_options,
-        TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]
-        + [{"value": option, "label": option} for option in tts_platforms],
-        FALLBACK_TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]
-        + [{"value": option, "label": option} for option in tts_platforms],
-        DEFAULT_TLD_KEY: TLD_OPTIONS,
-    }
-    default_provider = _normalize_string(values.get(TTS_PLATFORM_KEY))
-    fallback_provider = _normalize_string(values.get(FALLBACK_TTS_PLATFORM_KEY))
-
-    return {
-        "version": VERSION,
-        "icon_url": f"/api/{DOMAIN}/icon.svg?v={VERSION.lstrip('v') or VERSION}",
-        "footer_logo_url": _footer_logo_url(),
-        "documentation_url": CONFIGURATION_DOCS_BASE_URL,
-        "logs_url": f"/config/logs?filter={DOMAIN}",
-        "fallback_note": "The standard Configure dialog still works and remains available as a fallback.",
-        "restart_note": "Changing the custom chimes folder or its contents requires a Home Assistant restart.",
-        "message": message,
-        "message_type": message_type,
-        "restart_required": restart_required,
-        "restart_required_field_keys": sorted(RESTART_REQUIRED_FIELD_KEYS),
-        "errors": errors or {},
-        "values": values,
-        "notify_profiles": notify_profiles,
-        "notify_profiles_hydrated": include_notify_profiles,
-        "notify_profile_errors": notify_profile_errors or [],
-        "notify_profiles_load_error": notify_profiles_load_error,
-        "log_events": log_events,
-        "sections": [
-            {
-                "key": section["key"],
-                "title": section["title"],
-                "description": section["description"],
-                "fields": [
-                    {
-                        "key": field.key,
-                        "label": field.label,
-                        "description": field.description,
-                        "docs_url": FIELD_DOCUMENTATION_URLS.get(field.key),
-                        "icon_url": f"/api/{DOMAIN}/option_icons/{field.key}.svg?v={VERSION.lstrip('v') or VERSION}",
-                        "type": field.field_type,
-                        "required": field.required,
-                        "allow_custom_value": field.allow_custom_value,
-                        "min": field.min_value,
-                        "step": field.step,
-                        "wide": field.wide,
-                        "advanced": field.advanced,
-                        "empty_default_hint": FIELD_EMPTY_DEFAULT_HINTS.get(field.key),
-                        "placeholder": FIELD_PLACEHOLDERS.get(field.key),
-                        "provider_hint": get_provider_hint(
+    sections = [
+        {
+            "key": section["key"],
+            "title": section["title"],
+            "description": section["description"],
+            "fields": [
+                {
+                    "key": field.key,
+                    "label": field.label,
+                    "description": field.description,
+                    "docs_url": FIELD_DOCUMENTATION_URLS.get(field.key),
+                    "icon_url": f"/api/{DOMAIN}/option_icons/{field.key}.svg{icon_suffix}",
+                    "type": field.field_type,
+                    "required": field.required,
+                    "allow_custom_value": field.allow_custom_value,
+                    "min": field.min_value,
+                    "step": field.step,
+                    "wide": field.wide,
+                    "advanced": field.advanced,
+                    "empty_default_hint": FIELD_EMPTY_DEFAULT_HINTS.get(field.key),
+                    "placeholder": FIELD_PLACEHOLDERS.get(field.key),
+                    "provider_hint": get_provider_hint(
+                        field.key,
+                        fallback_provider
+                        if field.key == FALLBACK_TTS_PLATFORM_KEY
+                        else default_provider,
+                    ),
+                    "provider_hints": PROVIDER_HINTS_BY_FIELD.get(field.key, {}),
+                    "can_browse": field.key in PATH_BROWSABLE_FIELD_KEYS,
+                    "path_validation": (
+                        validate_path_field(
+                            hass,
+                            config_entry,
                             field.key,
-                            fallback_provider
-                            if field.key == FALLBACK_TTS_PLATFORM_KEY
-                            else default_provider,
-                        ),
-                        "provider_hints": PROVIDER_HINTS_BY_FIELD.get(field.key, {}),
-                        "can_browse": field.key in PATH_BROWSABLE_FIELD_KEYS,
-                        "path_validation": (
-                            validate_path_field(
-                                hass,
-                                config_entry,
-                                field.key,
-                                _normalize_string(values.get(field.key)),
-                                values,
-                            )
-                            if include_path_validations
-                            and field.key in PATH_BROWSABLE_FIELD_KEYS
-                            else None
-                        ),
-                        "options": field_options.get(field.key, []),
-                    }
-                    for field in (
-                        SETTINGS_FIELD_MAP[field_key] for field_key in section["fields"]
-                    )
-                ],
-            }
-            for section in SETTINGS_SECTIONS
-        ]
-        + [
+                            _normalize_string(values.get(field.key)),
+                            values,
+                        )
+                        if include_path_validations
+                        and field.key in PATH_BROWSABLE_FIELD_KEYS
+                        else None
+                    ),
+                    "options": field_options.get(field.key, []),
+                }
+                for field in (
+                    SETTINGS_FIELD_MAP[field_key] for field_key in section["fields"]
+                )
+            ],
+        }
+        for section in SETTINGS_SECTIONS
+    ]
+
+    sections.extend(
+        [
             {
                 "key": "notify_profiles",
                 "kind": "notify_profiles",
@@ -1381,7 +1612,98 @@ async def async_build_panel_payload(
                 "footer_logo_url": _footer_logo_url(),
                 "about_items": [dict(item) for item in ABOUT_ITEMS],
             },
-        ],
+        ]
+    )
+
+    return sections
+
+
+async def async_build_panel_payload(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    **kwargs: Any,
+) -> dict[str, Any]:
+    """Build the panel payload without blocking the event loop."""
+    values = kwargs.get("values") or get_settings_data(hass, config_entry)
+    include_log_events = kwargs.get("include_log_events", True)
+    include_notify_profiles = kwargs.get("include_notify_profiles", True)
+    include_path_validations = kwargs.get("include_path_validations", True)
+    notify_profiles = kwargs.get("notify_profiles")
+    notify_profile_errors = kwargs.get("notify_profile_errors")
+    errors = kwargs.get("errors")
+    message = kwargs.get("message")
+    message_type = kwargs.get("message_type")
+    restart_required = kwargs.get("restart_required", False)
+
+    async_jobs = [async_get_notify_chime_options(hass)]
+    if include_notify_profiles:
+        async_jobs.insert(0, async_load_notify_profiles(hass))
+    if include_log_events:
+        async_jobs.append(async_get_panel_log_events(hass))
+
+    async_results = await asyncio.gather(*async_jobs)
+    result_index = 0
+    if include_notify_profiles:
+        loaded_notify_profiles, notify_profiles_load_error = async_results[result_index]
+        result_index += 1
+    else:
+        loaded_notify_profiles, notify_profiles_load_error = [], None
+
+    chime_options = async_results[result_index]
+    result_index += 1
+    log_events = async_results[result_index] if include_log_events else []
+
+    if notify_profiles is None:
+        notify_profiles = loaded_notify_profiles if include_notify_profiles else []
+
+    tts_platforms = get_available_tts_platforms(hass)
+    alerts, panel_tone = _build_panel_alerts(hass)
+    field_options = {
+        "chime_path": chime_options,
+        "end_chime_path": chime_options,
+        TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]
+        + [{"value": option, "label": option} for option in tts_platforms],
+        FALLBACK_TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]
+        + [{"value": option, "label": option} for option in tts_platforms],
+        DEFAULT_TLD_KEY: TLD_OPTIONS,
+    }
+    default_provider = _normalize_string(values.get(TTS_PLATFORM_KEY))
+    fallback_provider = _normalize_string(values.get(FALLBACK_TTS_PLATFORM_KEY))
+
+    return {
+        "version": VERSION,
+        "icon_url": f"/api/{DOMAIN}/icon.svg?v={VERSION.lstrip('v') or VERSION}",
+        "footer_logo_url": _footer_logo_url(),
+        "documentation_url": CONFIGURATION_DOCS_BASE_URL,
+        "logs_url": f"/config/logs?filter={DOMAIN}",
+        "alerts": alerts,
+        "panel_tone": panel_tone,
+        "restart_alert_note": "Home Assistant needs to restart before newly installed TTS providers appear in Chime TTS.",
+        "fallback_note": "The standard Configure dialog still works and remains available as a fallback.",
+        "restart_note": "Changing the custom chimes folder or its contents requires a Home Assistant restart.",
+        "message": message,
+        "message_type": message_type,
+        "restart_required": restart_required,
+        "restart_required_field_keys": sorted(RESTART_REQUIRED_FIELD_KEYS),
+        "errors": errors or {},
+        "values": values,
+        "notify_profiles": notify_profiles,
+        "notify_profiles_hydrated": include_notify_profiles,
+        "notify_profile_errors": notify_profile_errors or [],
+        "notify_profiles_load_error": notify_profiles_load_error,
+        "log_events": log_events,
+        "sections": _build_panel_sections(
+            hass,
+            config_entry,
+            values,
+            field_options=field_options,
+            tts_platforms=tts_platforms,
+            chime_options=chime_options,
+            default_provider=default_provider,
+            fallback_provider=fallback_provider,
+            include_path_validations=include_path_validations,
+            icon_versioned=True,
+        ),
         "notify_profile_template": dict(NOTIFY_PROFILE_DEFAULTS),
         "notify_chime_options": chime_options,
     }
@@ -1522,35 +1844,20 @@ def _normalize_int(value: Any, default: Any, required: bool) -> int | str:
 
 
 def _normalize_tts_platform(platform: str, installed_tts_platforms: list[str]) -> str:
-    """Normalize a selected TTS platform back to its canonical value."""
+    """Normalize a selected TTS platform back to a live TTS entity id."""
     if not platform:
         return ""
 
-    stripped_tts_platforms = [
-        provider.lower()
-        .replace("tts", "")
-        .replace(" ", "")
-        .replace(".", "")
-        .replace("-", "")
-        .replace("_", "")
-        for provider in installed_tts_platforms
-    ]
-    selected_platform = (
-        helpers.get_stripped_tts_platform(platform)
-        .lower()
-        .replace("tts", "")
-        .replace(" ", "")
-        .replace(".", "")
-        .replace("-", "")
-        .replace("_", "")
-    )
-
-    if not stripped_tts_platforms:
+    if not installed_tts_platforms:
         raise LookupError("tts_platform_none")
-    if selected_platform not in stripped_tts_platforms:
+
+    selected_platform = helpers._match_tts_platform(platform, installed_tts_platforms)
+    if selected_platform is None:
+        selected_platform = helpers._match_google_fallback(platform, installed_tts_platforms)
+    if selected_platform is None:
         raise LookupError("tts_platform_select")
 
-    return installed_tts_platforms[stripped_tts_platforms.index(selected_platform)]
+    return selected_platform
 
 
 def _is_subdirectory(parent_dir: str, sub_dir: str) -> bool:
@@ -1790,6 +2097,42 @@ def _normalize_browser_target_path(
         raise FileNotFoundError(normalized_path)
 
     return candidate if os.path.isdir(normalized_path) else normalized_path
+
+
+def _find_existing_browser_ancestor(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    field_key: str,
+    path: str | None,
+    values: dict[str, Any] | None = None,
+) -> str | None:
+    """Return the closest existing browsable ancestor for a requested path."""
+    current_values = values or get_settings_data(hass, config_entry)
+    candidate = ensure_trailing_slash(path or _normalize_string(current_values.get(field_key)))
+    if not candidate:
+        candidate = ensure_trailing_slash("/")
+
+    seen: set[str] = set()
+    while candidate and candidate not in seen:
+        seen.add(candidate)
+        normalized_path = candidate.rstrip("/") or "/"
+        if os.path.isdir(normalized_path) and is_path_navigable_for_field(
+            hass, config_entry, field_key, candidate, current_values
+        ):
+            return candidate
+        parent_path = ensure_trailing_slash(os.path.dirname(normalized_path) or "/")
+        if parent_path == candidate:
+            break
+        candidate = parent_path
+
+    for root in get_browse_roots(hass, config_entry, field_key, current_values):
+        normalized_root = ensure_trailing_slash(root)
+        if os.path.isdir(normalized_root.rstrip("/") or "/"):
+            return normalized_root
+
+    if is_path_navigable_for_field(hass, config_entry, field_key, "/", current_values):
+        return "/"
+    return None
 
 
 def _is_path_within_browser_roots(
@@ -2085,6 +2428,9 @@ def build_directory_browser_payload(
     allowed_roots = get_browse_roots(hass, config_entry, field_key, current_values)
     requested_path = ensure_trailing_slash(path or _normalize_string(current_values.get(field_key)))
     current_path = requested_path
+    requested_dir = current_path.rstrip("/") or "/"
+    requested_path_exists = bool(current_path) and os.path.isdir(requested_dir)
+    requested_path_missing = bool(current_path) and not requested_path_exists
 
     if not current_path or not is_path_navigable_for_field(
         hass, config_entry, field_key, current_path, current_values
@@ -2093,7 +2439,23 @@ def build_directory_browser_payload(
 
     current_dir = current_path.rstrip("/") or "/"
     if not os.path.isdir(current_dir):
-        raise FileNotFoundError(current_dir)
+        fallback_path = _find_existing_browser_ancestor(
+            hass,
+            config_entry,
+            field_key,
+            requested_path,
+            current_values,
+        )
+        if not fallback_path:
+            raise FileNotFoundError(current_dir)
+        current_path = ensure_trailing_slash(fallback_path)
+        current_dir = current_path.rstrip("/") or "/"
+
+    selected_path_notice = ""
+    if requested_path_missing:
+        selected_path_notice = (
+            "The selected folder does not exist. Showing the closest existing folder instead."
+        )
 
     entries_payload: list[dict[str, Any]] = []
     with os.scandir(current_dir) as entries:
@@ -2133,6 +2495,10 @@ def build_directory_browser_payload(
     return {
         "field_key": field_key,
         "title": field.label,
+        "requested_path": requested_path,
+        "requested_path_exists": requested_path_exists,
+        "requested_path_missing": requested_path_missing,
+        "selected_path_notice": selected_path_notice,
         "current_path": current_path,
         "parent_path": parent_path,
         "breadcrumbs": _browser_breadcrumbs(current_path),
@@ -2469,7 +2835,8 @@ def build_panel_payload(
     loaded_notify_profiles, notify_profiles_load_error = load_notify_profiles(hass)
     if notify_profiles is None:
         notify_profiles = loaded_notify_profiles
-    tts_platforms = get_tts_platforms(hass)
+    tts_platforms = get_available_tts_platforms(hass)
+    alerts, panel_tone = _build_panel_alerts(hass)
     chime_options = get_notify_chime_options()
     field_options = {
         "chime_path": chime_options,
@@ -2489,6 +2856,9 @@ def build_panel_payload(
         "footer_logo_url": _footer_logo_url(),
         "documentation_url": CONFIGURATION_DOCS_BASE_URL,
         "logs_url": f"/config/logs?filter={DOMAIN}",
+        "alerts": alerts,
+        "panel_tone": panel_tone,
+        "restart_alert_note": "Home Assistant needs to restart before newly installed TTS providers appear in Chime TTS.",
         "fallback_note": "The standard Configure dialog still works and remains available as a fallback.",
         "restart_note": "Changing the custom chimes folder or its contents requires a Home Assistant restart.",
         "message": message,
@@ -2501,104 +2871,18 @@ def build_panel_payload(
         "notify_profile_errors": notify_profile_errors or [],
         "notify_profiles_load_error": notify_profiles_load_error,
         "log_events": get_panel_log_events(hass),
-        "sections": [
-            {
-                "key": section["key"],
-                "title": section["title"],
-                "description": section["description"],
-                "fields": [
-                    {
-                        "key": field.key,
-                        "label": field.label,
-                        "description": field.description,
-                        "docs_url": FIELD_DOCUMENTATION_URLS.get(field.key),
-                        "icon_url": f"/api/{DOMAIN}/option_icons/{field.key}.svg",
-                        "type": field.field_type,
-                        "required": field.required,
-                        "allow_custom_value": field.allow_custom_value,
-                        "min": field.min_value,
-                        "step": field.step,
-                        "wide": field.wide,
-                        "advanced": field.advanced,
-                        "empty_default_hint": FIELD_EMPTY_DEFAULT_HINTS.get(field.key),
-                        "placeholder": FIELD_PLACEHOLDERS.get(field.key),
-                        "provider_hint": get_provider_hint(
-                            field.key,
-                            fallback_provider
-                            if field.key == FALLBACK_TTS_PLATFORM_KEY
-                            else default_provider,
-                        ),
-                        "provider_hints": PROVIDER_HINTS_BY_FIELD.get(field.key, {}),
-                        "can_browse": field.key in PATH_BROWSABLE_FIELD_KEYS,
-                        "path_validation": (
-                            validate_path_field(
-                                hass,
-                                config_entry,
-                                field.key,
-                                _normalize_string(values.get(field.key)),
-                                values,
-                            )
-                            if field.key in PATH_BROWSABLE_FIELD_KEYS
-                            else None
-                        ),
-                        "options": field_options.get(field.key, []),
-                    }
-                    for field in (
-                        SETTINGS_FIELD_MAP[field_key] for field_key in section["fields"]
-                    )
-                ],
-            }
-            for section in SETTINGS_SECTIONS
-        ]
-        + [
-            {
-                "key": "notify_profiles",
-                "kind": "notify_profiles",
-                "title": "Notification Profiles",
-                "description": "Create and manage notify services for Chime TTS to easily send Chime TTS notifications in automations and scripts. Saving changes requires a Home Assistant restart.",
-                "docs_url": NOTIFY_DOCS_URL,
-                "profile_fields": [
-                    {
-                        **field,
-                        "docs_url": NOTIFY_FIELD_DOCUMENTATION_URLS.get(
-                            field["key"], NOTIFY_DOCS_URL
-                        ),
-                        "options": (
-                            [{"value": "", "label": "Not set"}]
-                            + [{"value": option, "label": option} for option in tts_platforms]
-                            if field["key"] == "tts_platform"
-                            else (
-                                TLD_OPTIONS
-                                if field["key"] == "tld"
-                                else (
-                                    chime_options
-                                    if field["key"] in {"chime_path", "end_chime_path"}
-                                    else []
-                                )
-                            )
-                        ),
-                    }
-                    for field in NOTIFY_PROFILE_SCHEMA_FIELDS
-                ],
-            },
-            {
-                "key": "logs",
-                "kind": "logs",
-                "title": "Logs",
-                "description": "Review Chime TTS events captured during this Home Assistant session, including actions, generated media, and raw log output.",
-                "docs_url": CONFIGURATION_DOCS_BASE_URL,
-            },
-            {
-                "key": "about",
-                "kind": "about",
-                "title": "Support & Info",
-                "description": "Find documentation, support, bug reporting, feature request, and project support links for Chime TTS.",
-                "docs_url": PROJECT_HOME_URL,
-                "version": VERSION,
-                "footer_logo_url": _footer_logo_url(),
-                "about_items": [dict(item) for item in ABOUT_ITEMS],
-            },
-        ],
+        "sections": _build_panel_sections(
+            hass,
+            config_entry,
+            values,
+            field_options=field_options,
+            tts_platforms=tts_platforms,
+            chime_options=chime_options,
+            default_provider=default_provider,
+            fallback_provider=fallback_provider,
+            include_path_validations=True,
+            icon_versioned=False,
+        ),
         "notify_profile_template": dict(NOTIFY_PROFILE_DEFAULTS),
         "notify_chime_options": chime_options,
     }

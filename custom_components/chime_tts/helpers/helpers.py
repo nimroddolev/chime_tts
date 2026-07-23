@@ -39,6 +39,7 @@ from ..const import (
     QUOTE_CHAR_SUBSTITUTE
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.components.media_player.const import ATTR_MEDIA_VOLUME_LEVEL
 
 from pydub import AudioSegment
@@ -46,6 +47,42 @@ from pydub import AudioSegment
 filesystem_helper = FilesystemHelper()
 
 _LOGGER = logging.getLogger(__name__)
+_KNOWN_TTS_PROVIDER_ALIASES = {
+    "amazon_polly": AMAZON_POLLY,
+    "amazonpolly": AMAZON_POLLY,
+    "baidu": BAIDU,
+    "elevenlabs": ELEVENLABS,
+    "tts.elevenlabs": ELEVENLABS,
+    "google_cloud": GOOGLE_CLOUD,
+    "googlecloud": GOOGLE_CLOUD,
+    "tts.google_cloud": GOOGLE_CLOUD,
+    "google_translate": GOOGLE_TRANSLATE,
+    "googletranslate": GOOGLE_TRANSLATE,
+    "ibmwatson": IBM_WATSON_TTS,
+    "watson_tts": IBM_WATSON_TTS,
+    "watsontts": IBM_WATSON_TTS,
+    "marytts": MARYTTS,
+    "microsoft": MICROSOFT_TTS,
+    "microsofttts": MICROSOFT_TTS,
+    "edge_tts": MICROSOFT_EDGE_TTS,
+    "edgetts": MICROSOFT_EDGE_TTS,
+    "microsoftedgetts": MICROSOFT_EDGE_TTS,
+    "cloud": NABU_CASA_CLOUD_TTS,
+    "cloud_say": NABU_CASA_CLOUD_TTS,
+    "cloudsay": NABU_CASA_CLOUD_TTS,
+    "nabucasa": NABU_CASA_CLOUD_TTS,
+    "nabucasacloud": NABU_CASA_CLOUD_TTS,
+    "nabucasacloudtts": NABU_CASA_CLOUD_TTS,
+    "openai_tts": OPENAI_TTS,
+    "openaitts": OPENAI_TTS,
+    "picotts": PICOTTS,
+    "piper": PIPER,
+    "tts.piper": PIPER,
+    "voicerss": VOICE_RSS,
+    "voice_rss": VOICE_RSS,
+    "yandex": YANDEX_TTS,
+    "yandextts": YANDEX_TTS,
+}
 class ChimeTTSHelper:
     """Helper functions for Chime TTS."""
 
@@ -370,28 +407,42 @@ class ChimeTTSHelper:
                          hass,
                          tts_platform: str = "",
                          default_tts_platform: str = "",
-                         fallback_tts_platform: str = ""):
+                         fallback_tts_platform: str = "",
+                         allow_configured_fallbacks: bool = True):
         """TTS platform/entity_id to use for TTS audio."""
 
         installed_tts_platforms: list[str] = self.get_installed_tts_platforms(hass)
+        requested_candidates: list[str] = []
+        for candidate in (
+            tts_platform,
+            default_tts_platform if allow_configured_fallbacks else "",
+            fallback_tts_platform if allow_configured_fallbacks else "",
+        ):
+            normalized_candidate = str(candidate or "").strip()
+            if (
+                normalized_candidate
+                and normalized_candidate not in requested_candidates
+            ):
+                requested_candidates.append(normalized_candidate)
 
-        # No TTS platform provided
-        if not tts_platform:
-            tts_platform = default_tts_platform if default_tts_platform else fallback_tts_platform
-
-        # Match for deprecated Nabu Casa platform string
-        if tts_platform.lower() == NABU_CASA_CLOUD_TTS_OLD:
-            tts_platform = NABU_CASA_CLOUD_TTS
-
-        selected_platform = self._match_tts_platform(tts_platform, installed_tts_platforms)
-        if selected_platform is None:
-            selected_platform = self._match_google_fallback(tts_platform, installed_tts_platforms)
-
-        if selected_platform is None:
+        if not requested_candidates:
             _LOGGER.warning("Unable to select a TTS platform - installed TTS platforms: %s", installed_tts_platforms)
-        else:
-            _LOGGER.debug("Selected TTS platform: %s", selected_platform)
-        return selected_platform
+            return None
+
+        for candidate in requested_candidates:
+            # Match for deprecated Nabu Casa platform string
+            if candidate.lower() == NABU_CASA_CLOUD_TTS_OLD:
+                candidate = NABU_CASA_CLOUD_TTS
+
+            selected_platform = self._match_tts_platform(candidate, installed_tts_platforms)
+            if selected_platform is None:
+                selected_platform = self._match_google_fallback(candidate, installed_tts_platforms)
+            if selected_platform is not None:
+                _LOGGER.debug("Selected TTS platform: %s", selected_platform)
+                return selected_platform
+
+        _LOGGER.warning("Unable to select a TTS platform - installed TTS platforms: %s", installed_tts_platforms)
+        return None
 
     @staticmethod
     def _match_tts_platform(requested: str, installed: list[str]):
@@ -481,40 +532,87 @@ class ChimeTTSHelper:
         return tts_provider
 
     def get_installed_tts_platforms(self, hass: HomeAssistant) -> list[str]:
-        """Installed TTS platforms as full tts.* entity ids plus legacy names."""
+        """Return live TTS entity ids that Home Assistant can use for audio generation."""
         platforms: list[str] = []
-
-        # 2025.8+: TTS providers are exposed as tts.* entities. Keep the full
-        # entity id; truncating it (tts.google_generative_ai -> google) is what
-        # broke platform matching for multi-word providers (#291, #308, #241).
         try:
-            for entity in hass.states.async_all():
-                entity_id = str(entity.entity_id)
-                if entity_id.startswith("tts.") and entity_id not in platforms:
-                    platforms.append(entity_id)
-        except Exception as e:
-            _LOGGER.debug("Entity-based TTS detection failed: %s", e)
+            has_cloud_config_entry = any(
+                str(getattr(entry, "domain", "") or "") == "cloud"
+                for entry in hass.config_entries.async_entries()
+            )
+        except (AttributeError, TypeError):
+            has_cloud_config_entry = False
 
-        # Legacy providers (HA < 2025.8) are keyed by provider name.
+        def append_platform(candidate: str) -> None:
+            entity_id = str(candidate or "").strip()
+            if not entity_id.startswith("tts."):
+                return
+            if entity_id.lower() in ("tts.home_assistant_cloud", "tts.cloud") and not has_cloud_config_entry:
+                return
+            if entity_id not in platforms:
+                platforms.append(entity_id)
+
         try:
-            manager = hass.data.get("tts_manager")
-            if manager is not None:
-                for provider in manager.providers:
-                    if provider not in platforms:
-                        platforms.append(provider)
+            from homeassistant.components.tts.const import DATA_COMPONENT as TTS_DATA_COMPONENT
+
+            component = hass.data.get(TTS_DATA_COMPONENT)
+            for entity in getattr(component, "entities", []) or []:
+                append_platform(str(getattr(entity, "entity_id", "") or ""))
         except Exception as e:
-            _LOGGER.debug("Legacy TTS detection failed: %s", e)
+            _LOGGER.debug("Component-based TTS detection failed: %s", e)
 
-        # Service-based providers (tts.<name>_say) without a discoverable entity.
-        for platform in ("google_translate", "cloud", "edge_tts", "openai_tts", "piper"):
-            if platform not in platforms and hass.services.has_service("tts", f"{platform}_say"):
-                platforms.append(platform)
+        # States are also live entities and are available in HA versions where
+        # the component's entity collection is not exposed publicly.
+        try:
+            for state in hass.states.async_all("tts"):
+                append_platform(str(getattr(state, "entity_id", "") or ""))
+        except Exception as e:
+            _LOGGER.debug("State-based TTS detection failed: %s", e)
 
-        if not platforms:
-            _LOGGER.warning("Could not detect any TTS platforms; returning common defaults")
-            platforms = ["google_translate", "cloud", "edge_tts"]
+        # Include registry-backed entities as well as the loaded component. During
+        # startup those two sources may become available in a different order, so
+        # returning as soon as the first source has one entity loses late providers.
+        try:
+            entity_registry = er.async_get(hass)
+            for registry_entry in entity_registry.entities.values():
+                entity_id = str(getattr(registry_entry, "entity_id", "") or "")
+                if not entity_id.startswith("tts."):
+                    continue
+                if getattr(registry_entry, "disabled_by", None) is not None:
+                    continue
+                if not getattr(registry_entry, "config_entry_id", None):
+                    continue
+                append_platform(entity_id)
+        except Exception as e:
+            _LOGGER.debug("Registry-based TTS detection failed: %s", e)
 
         return sorted(platforms)
+
+    @staticmethod
+    def _normalize_known_tts_provider(candidate: str) -> str:
+        """Return a canonical known TTS provider id or an empty string."""
+        normalized = str(candidate or "").strip().lower()
+        if not normalized:
+            return ""
+
+        collapsed = "".join(character for character in normalized if character.isalnum())
+        if normalized in _KNOWN_TTS_PROVIDER_ALIASES:
+            return str(_KNOWN_TTS_PROVIDER_ALIASES[normalized])
+        if collapsed in _KNOWN_TTS_PROVIDER_ALIASES:
+            return str(_KNOWN_TTS_PROVIDER_ALIASES[collapsed])
+        if normalized.startswith("tts."):
+            suffix = normalized[4:]
+            if suffix in _KNOWN_TTS_PROVIDER_ALIASES:
+                return str(_KNOWN_TTS_PROVIDER_ALIASES[suffix])
+            collapsed_suffix = "".join(character for character in suffix if character.isalnum())
+            if collapsed_suffix in _KNOWN_TTS_PROVIDER_ALIASES:
+                return str(_KNOWN_TTS_PROVIDER_ALIASES[collapsed_suffix])
+            for alias, canonical in _KNOWN_TTS_PROVIDER_ALIASES.items():
+                if suffix.startswith(f"{alias}_"):
+                    return str(canonical)
+        stripped = str(ChimeTTSHelper().get_stripped_tts_platform(normalized) or "").strip()
+        if stripped:
+            return stripped
+        return ""
 
 
 

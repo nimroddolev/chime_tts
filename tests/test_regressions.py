@@ -154,6 +154,36 @@ def test_ambiguous_google_name_does_not_pick_generative_ai():
     )
 
 
+def test_unavailable_explicit_provider_falls_back_to_configured_default():
+    """An unavailable explicit provider should fall back to the configured default."""
+    helper = ChimeTTSHelper()
+    hass = _FakeHass(entity_ids=["tts.pico_tts_en_us"])
+    assert (
+        helper.get_tts_platform(
+            hass,
+            tts_platform="tts.google_translate_en_com",
+            default_tts_platform="tts.pico_tts_en_us",
+            fallback_tts_platform="tts.some_other_provider",
+        )
+        == "tts.pico_tts_en_us"
+    )
+
+
+def test_unavailable_explicit_provider_falls_back_to_configured_fallback():
+    """An unavailable explicit/default provider should fall back to the configured fallback."""
+    helper = ChimeTTSHelper()
+    hass = _FakeHass(entity_ids=["tts.pico_tts_en_us"])
+    assert (
+        helper.get_tts_platform(
+            hass,
+            tts_platform="tts.google_translate_en_com",
+            default_tts_platform="tts.missing_default",
+            fallback_tts_platform="tts.pico_tts_en_us",
+        )
+        == "tts.pico_tts_en_us"
+    )
+
+
 def test_issue_253_media_content_id_keeps_full_relative_path():
     """The relative path is preserved exactly, not off-by-one (#253)."""
     helper = MediaPlayerHelper()

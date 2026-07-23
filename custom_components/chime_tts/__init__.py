@@ -31,7 +31,7 @@ from .queue_manager import ChimeTTSQueueManager
 from .config_flow import ChimeTTSOptionsFlowHandler
 from .settings import get_root_path
 
-from homeassistant.const import CONF_ENTITY_ID
+from homeassistant.const import CONF_ENTITY_ID, EVENT_HOMEASSISTANT_STARTED
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceResponse, SupportsResponse
 from homeassistant.helpers import storage
@@ -99,6 +99,7 @@ ACTIVE_NOTIFY_LOG_EVENT_ID = "_active_notify_log_event_id"
 ACTIVE_NOTIFY_LOG_EVENT_SUMMARY = "_active_notify_log_event_summary"
 INTERNAL_NOTIFY_LOG_EVENT_ID = "_chime_tts_notify_log_event_id"
 INTERNAL_NOTIFY_ORIGIN = "_chime_tts_notify_origin"
+INITIAL_TTS_PLATFORMS_KEY = "_initial_tts_platforms"
 
 helpers = ChimeTTSHelper()
 tts_audio_helper = TTSAudioHelper()
@@ -116,6 +117,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     await async_setup_panel(hass, config_entry)
     queue.set_timeout(_data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
     queue.start_queue_processor()
+    await _async_schedule_services_yaml_refresh(hass, config_entry)
     init_event_id = _data.pop(ACTIVE_INIT_LOG_EVENT_ID, None)
     if init_event_id:
         finish_panel_log_event(hass, init_event_id)
@@ -462,6 +464,55 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     await async_refresh_stored_data(hass)
     await async_update_configuration(config_entry, hass)
     queue.set_timeout(_data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
+    await _async_schedule_services_yaml_refresh(hass, config_entry)
+
+
+async def _async_refresh_services_yaml_after_start(hass: HomeAssistant) -> None:
+    """Capture the settled TTS baseline and refresh service metadata."""
+    async_say = _data.get("async_say")
+    async_say_url = _data.get("async_say_url")
+    if async_say is None or async_say_url is None:
+        _LOGGER.debug("Skipping deferred services.yaml refresh; service callbacks are unavailable.")
+        return
+
+    # EVENT_HOMEASSISTANT_STARTED can be emitted while integrations spawned by
+    # startup are still registering their entities. Let that queued work settle
+    # before taking the once-per-boot baseline used by the panel restart alert.
+    await hass.async_block_till_done()
+
+    if INITIAL_TTS_PLATFORMS_KEY not in _data:
+        _data[INITIAL_TTS_PLATFORMS_KEY] = helpers.get_installed_tts_platforms(hass)
+        _LOGGER.debug(
+            "Captured settled startup TTS platforms: %s",
+            _data[INITIAL_TTS_PLATFORMS_KEY],
+        )
+
+    _LOGGER.debug("Refreshing services.yaml after Home Assistant startup completed")
+    await services_helper.async_update_services_yaml(
+        hass=hass,
+        say_service_func=async_say,
+        say_url_service_func=async_say_url,
+    )
+
+
+async def _async_schedule_services_yaml_refresh(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+) -> None:
+    """Schedule a second services.yaml refresh after Home Assistant startup."""
+    if getattr(hass, "is_running", False):
+        hass.async_create_task(_async_refresh_services_yaml_after_start(hass))
+        return
+
+    async def _async_handle_started(_event) -> None:
+        await _async_refresh_services_yaml_after_start(hass)
+
+    config_entry.async_on_unload(
+        hass.bus.async_listen_once(
+            EVENT_HOMEASSISTANT_STARTED,
+            _async_handle_started,
+        )
+    )
 
 # Integration options #
 
@@ -1056,8 +1107,14 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
                                                          segment_offset,
                                                          segment_crossfade)
                 else:
-                    _LOGGER.warning("Error generating TTS audio from messsage segment #%s: %s",
-                                    str(index+1), str(segment))
+                    segment_error = tts_audio_helper.last_error_message or "Unknown TTS generation error."
+                    _LOGGER.warning(
+                        "Error generating TTS audio from messsage segment #%s using provider '%s': %s. Segment: %s",
+                        str(index+1),
+                        str(segment_tts_platform),
+                        segment_error,
+                        str(segment),
+                    )
             else:
                 _LOGGER.warning("TTS 'message' value missing from messsage segment #%s: %s",
                                 str(index+1), str(segment))

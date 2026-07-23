@@ -82,12 +82,14 @@ def make_services_yaml(options: list[dict[str, str]]) -> dict:
             "fields": {
                 "chime_path": {"selector": {"select": {"options": list(options)}}},
                 "end_chime_path": {"selector": {"select": {"options": list(options)}}},
+                "tts_platform": {"selector": {"select": {"options": list(options)}}},
             }
         },
         "say_url": {
             "fields": {
                 "chime_path": {"selector": {"select": {"options": list(options)}}},
                 "end_chime_path": {"selector": {"select": {"options": list(options)}}},
+                "tts_platform": {"selector": {"select": {"options": list(options)}}},
             }
         },
     }
@@ -97,6 +99,12 @@ def make_services_yaml(options: list[dict[str, str]]) -> dict:
 async def test_async_update_services_yaml_refreshes_options_and_registration(monkeypatch: pytest.MonkeyPatch) -> None:
     """Service helper should refresh both services.yaml option lists and service registrations."""
     hass = FakeHass()
+    hass.data["tts_manager"] = SimpleNamespace(
+        providers={
+            "google_translate": object(),
+            "tts.google_generative_ai": object(),
+        }
+    )
     helper = services_helper_module.ChimeTTSServicesHelper()
     helper._data = {CUSTOM_CHIMES_PATH_KEY: "/custom/chimes"}
     save_yaml = AsyncMock()
@@ -105,6 +113,11 @@ async def test_async_update_services_yaml_refreshes_options_and_registration(mon
         services_helper_module.filesystem_helper,
         "async_get_chime_options_from_path",
         AsyncMock(return_value=[{"label": "Zulu", "value": "zulu"}]),
+    )
+    monkeypatch.setattr(
+        services_helper_module.helpers,
+        "get_installed_tts_platforms",
+        lambda hass: ["google_translate", "tts.google_generative_ai"],
     )
     monkeypatch.setattr(helper, "_async_parse_services_yaml", AsyncMock(return_value=make_services_yaml([])))
     monkeypatch.setattr(helper, "_async_save_services_yaml", save_yaml)
@@ -122,8 +135,23 @@ async def test_async_update_services_yaml_refreshes_options_and_registration(mon
         services_helper_module.DEFAULT_CHIME_OPTIONS + [{"label": "Zulu", "value": "zulu"}],
         key=lambda entry: entry["label"].lower(),
     )
+    expected_tts_options = [
+        {"label": "google_translate", "value": "google_translate"},
+        {
+            "label": "tts.google_generative_ai",
+            "value": "tts.google_generative_ai",
+        },
+    ]
     assert saved_yaml["say"]["fields"]["chime_path"]["selector"]["select"]["options"] == expected_options
     assert saved_yaml["say_url"]["fields"]["end_chime_path"]["selector"]["select"]["options"] == expected_options
+    assert (
+        saved_yaml["say"]["fields"]["tts_platform"]["selector"]["select"]["options"]
+        == expected_tts_options
+    )
+    assert (
+        saved_yaml["say_url"]["fields"]["tts_platform"]["selector"]["select"]["options"]
+        == expected_tts_options
+    )
     assert hass.services.removed == [(DOMAIN, SERVICE_SAY), (DOMAIN, SERVICE_SAY_URL)]
     assert hass.services.registered[(DOMAIN, SERVICE_SAY)][0] is say_service
     assert hass.services.registered[(DOMAIN, SERVICE_SAY_URL)][1] == {
@@ -147,6 +175,21 @@ async def test_async_update_chime_lists_adds_placeholder_when_no_custom_options(
         "label": "*** Add a local folder path in the configuration for your own custom chimes ***",
         "value": "",
     }
+
+
+def test_build_tts_platform_options_returns_every_installed_provider() -> None:
+    """Installed provider ids should be preserved exactly in dropdown options."""
+    helper = services_helper_module.ChimeTTSServicesHelper()
+
+    options = helper._build_tts_platform_options(
+        ["google_translate", "tts.google_generative_ai", "tts.piper", "google_translate"]
+    )
+
+    assert options == [
+        {"label": "google_translate", "value": "google_translate"},
+        {"label": "tts.google_generative_ai", "value": "tts.google_generative_ai"},
+        {"label": "tts.piper", "value": "tts.piper"},
+    ]
 
 
 def make_options_flow(options: dict | None = None, data: dict | None = None):

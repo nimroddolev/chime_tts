@@ -27,6 +27,7 @@ repeat_log_action_handler = inspect.unwrap(panel_module.websocket_repeat_log_act
 get_logs_handler = inspect.unwrap(panel_module.websocket_get_logs)
 get_settings_handler = inspect.unwrap(panel_module.websocket_get_settings)
 get_notify_profiles_handler = inspect.unwrap(panel_module.websocket_get_notify_profiles)
+browse_path_handler = inspect.unwrap(panel_module.websocket_browse_path)
 
 
 class FakeConfigEntries:
@@ -64,6 +65,31 @@ class FakeConnection:
         self.errors.append((message_id, code, message))
 
 
+class FakeServices:
+    """Capture service calls and optional registered service checks."""
+
+    def __init__(self) -> None:
+        """Initialise the fake service registry."""
+        self.calls: list[dict[str, object]] = []
+        self.available_services: set[tuple[str, str]] = set()
+
+    async def async_call(self, domain: str, service: str, *, service_data=None, blocking=False):
+        """Record a service call made by the panel handlers."""
+        self.calls.append(
+            {
+                "domain": domain,
+                "service": service,
+                "service_data": dict(service_data or {}),
+                "blocking": blocking,
+            }
+        )
+        return None
+
+    def has_service(self, domain: str, service: str) -> bool:
+        """Report whether a given service exists."""
+        return (domain, service) in self.available_services
+
+
 def make_hass(tmp_path: Path):
     """Create a Home Assistant stand-in with real filesystem roots."""
     root_dir = tmp_path / "ha-root"
@@ -94,20 +120,8 @@ def make_hass(tmp_path: Path):
         "tts_manager": SimpleNamespace(providers={"google_translate": object()}),
         DOMAIN: {},
     }
-    recorded_service_calls: list[dict[str, object]] = []
-
-    async def async_call(domain: str, service: str, *, service_data=None, blocking=False):
-        recorded_service_calls.append(
-            {
-                "domain": domain,
-                "service": service,
-                "service_data": dict(service_data or {}),
-                "blocking": blocking,
-            }
-        )
-        return None
-
-    hass.services = SimpleNamespace(async_call=async_call)
+    hass.services = FakeServices()
+    recorded_service_calls = hass.services.calls
 
     async def async_add_executor_job(func, *args):
         return func(*args)
@@ -205,6 +219,95 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
     assert about_section["version"] == payload["version"]
     assert all(item["title"] != "Version" for item in about_section["about_items"])
     assert any(item["title"] == "Buy Me a Coffee" for item in about_section["about_items"])
+
+
+def test_build_panel_payload_shows_restart_alert_for_platforms_added_after_startup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Providers added after the startup baseline should trigger a restart alert."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+    hass.data[DOMAIN]["_initial_tts_platforms"] = ["google_translate"]
+    monkeypatch.setattr(
+        settings_module.helpers,
+        "get_installed_tts_platforms",
+        lambda hass: ["google_translate", "tts.pico_tts_en_gb"],
+    )
+
+    payload = settings_module.build_panel_payload(hass, config_entry)
+
+    assert len(payload["alerts"]) == 1
+    alert = payload["alerts"][0]
+    assert alert["tone"] == "warning"
+    assert alert["title"] == "1 New TTS Provider Detected"
+    assert "tts.pico_tts_en_gb" in alert["message"]
+    assert "<strong>tts.pico_tts_en_gb</strong>" in alert["message_html"]
+    assert alert["action"] == {"kind": "restart", "label": "Restart"}
+
+
+def test_build_panel_payload_waits_for_startup_tts_baseline(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The panel must not mislabel providers while startup is still settling."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+    hass.data[DOMAIN].pop("_initial_tts_platforms", None)
+    monkeypatch.setattr(
+        settings_module.helpers,
+        "get_installed_tts_platforms",
+        lambda hass: ["tts.pico_tts_en_gb"],
+    )
+
+    payload = settings_module.build_panel_payload(hass, config_entry)
+
+    assert payload["alerts"] == []
+
+
+def test_build_panel_payload_clears_restart_alert_when_provider_is_loaded(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Restart alerts should clear when the provider is part of the startup baseline."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+    hass.data[DOMAIN]["_initial_tts_platforms"] = [
+        "google_translate",
+        "tts.pico_tts_en_gb",
+    ]
+    monkeypatch.setattr(
+        settings_module.helpers,
+        "get_installed_tts_platforms",
+        lambda hass: ["google_translate", "tts.pico_tts_en_gb"],
+    )
+
+    payload = settings_module.build_panel_payload(hass, config_entry)
+
+    assert payload["alerts"] == []
+
+
+def test_build_panel_payload_shows_no_providers_alert_when_none_are_available(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An empty live platform list should show the missing-provider alert."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+    hass.data[DOMAIN]["_initial_tts_platforms"] = []
+    monkeypatch.setattr(
+        settings_module.helpers,
+        "get_installed_tts_platforms",
+        lambda hass: [],
+    )
+
+    payload = settings_module.build_panel_payload(hass, config_entry)
+
+    assert payload["alerts"][0]["title"] == "No TTS providers detected"
+
+
+def test_normalize_tts_provider_identity_matches_pico_tts_entity_id() -> None:
+    """Pico TTS entity ids should normalize to the same provider identity."""
+    assert (
+        settings_module._normalize_tts_provider_identity("tts.pico_tts_en_gb")
+        == "picotts"
+    )
 
 
 @pytest.mark.asyncio
@@ -337,6 +440,57 @@ def test_build_directory_browser_payload_includes_previews_and_badges(tmp_path: 
         root["path"] == str(paths["custom_chimes_dir"]).rstrip("/") + "/"
         for root in payload["roots"]
     )
+
+
+def test_build_directory_browser_payload_falls_back_to_existing_ancestor_for_missing_path(
+    tmp_path: Path,
+) -> None:
+    """Missing configured folders should open the browser on the nearest existing ancestor."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    missing_path = paths["custom_chimes_dir"] / "nested" / "missing" / "folder"
+
+    payload = settings_module.build_directory_browser_payload(
+        hass,
+        config_entry,
+        CUSTOM_CHIMES_PATH_KEY,
+        str(missing_path),
+    )
+
+    assert payload["requested_path"] == f"{missing_path}/"
+    assert payload["requested_path_exists"] is False
+    assert payload["requested_path_missing"] is True
+    assert (
+        payload["selected_path_notice"]
+        == "The selected folder does not exist. Showing the closest existing folder instead."
+    )
+    assert payload["current_path"] == f"{paths['custom_chimes_dir']}/"
+
+
+@pytest.mark.asyncio
+async def test_websocket_browse_path_returns_missing_path_notice_with_existing_ancestor(
+    tmp_path: Path,
+) -> None:
+    """Folder browsing should return a warning payload instead of a hard error for missing paths."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    connection = FakeConnection()
+    missing_path = paths["custom_chimes_dir"] / "nested" / "missing" / "folder"
+
+    await browse_path_handler(
+        hass,
+        connection,
+        {
+            "id": 1,
+            "type": "chime_tts/browse_path",
+            "field_key": CUSTOM_CHIMES_PATH_KEY,
+            "path": str(missing_path),
+        },
+    )
+
+    assert connection.errors == []
+    assert connection.results
+    payload = connection.results[-1][1]
+    assert payload["requested_path_missing"] is True
+    assert payload["current_path"] == f"{paths['custom_chimes_dir']}/"
 
 
 @pytest.mark.asyncio
@@ -619,6 +773,7 @@ async def test_websocket_get_logs_returns_session_log_events(tmp_path: Path) -> 
     """The lightweight logs websocket should return the current session log rows."""
     hass, _config_entry, _paths = make_hass(tmp_path)
     connection = FakeConnection()
+    hass.services.available_services.add(("notify", "arrival"))
     panel_logs_module.async_setup_panel_log_store(hass)
     event_id = panel_logs_module.start_panel_log_event(
         hass,
@@ -1103,6 +1258,96 @@ async def test_websocket_repeat_log_action_replays_logged_service_call(
     assert connection.errors == []
     assert recorded_say_calls == [
         {"message": "Replay me", "entity_id": ["media_player.office"]}
+    ]
+    payload = connection.results[-1][1]
+    assert payload["message_type"] == "success"
+
+
+@pytest.mark.asyncio
+async def test_websocket_repeat_log_action_replays_logged_notification_call(
+    tmp_path: Path,
+) -> None:
+    """Repeating a logged notification should call the original notify service again."""
+    hass, _config_entry, _paths = make_hass(tmp_path)
+    connection = FakeConnection()
+    hass.services.available_services.add(("notify", "arrival"))
+    panel_logs_module.async_setup_panel_log_store(hass)
+    event_id = panel_logs_module.start_panel_log_event(
+        hass,
+        "notification_call",
+        "Notification profile call",
+        row_color="action",
+        details=panel_logs_module.build_notification_event_details(
+            "arrival",
+            {"message": "Front door open"},
+        ),
+        summary="notify.arrival",
+    )
+    panel_logs_module.finish_panel_log_event(hass, event_id)
+
+    await repeat_log_action_handler(
+        hass,
+        connection,
+        {
+            "id": 6,
+            "type": "chime_tts/repeat_log_action",
+            "event_id": event_id,
+        },
+    )
+
+    assert connection.errors == []
+    assert hass.services.calls == [
+        {
+            "domain": "notify",
+            "service": "arrival",
+            "service_data": {"message": "Front door open"},
+            "blocking": False,
+        }
+    ]
+    payload = connection.results[-1][1]
+    assert payload["message_type"] == "success"
+
+
+@pytest.mark.asyncio
+async def test_websocket_repeat_log_action_replays_notification_with_none_data_payload(
+    tmp_path: Path,
+) -> None:
+    """Repeating a logged notification should coerce a None notify data payload away."""
+    hass, _config_entry, _paths = make_hass(tmp_path)
+    connection = FakeConnection()
+    hass.services.available_services.add(("notify", "arrival"))
+    panel_logs_module.async_setup_panel_log_store(hass)
+    event_id = panel_logs_module.start_panel_log_event(
+        hass,
+        "notification_call",
+        "Notification profile call",
+        row_color="action",
+        details=panel_logs_module.build_notification_event_details(
+            "arrival",
+            {"message": "hello", "data": None},
+        ),
+        summary="notify.arrival",
+    )
+    panel_logs_module.finish_panel_log_event(hass, event_id)
+
+    await repeat_log_action_handler(
+        hass,
+        connection,
+        {
+            "id": 7,
+            "type": "chime_tts/repeat_log_action",
+            "event_id": event_id,
+        },
+    )
+
+    assert connection.errors == []
+    assert hass.services.calls == [
+        {
+            "domain": "notify",
+            "service": "arrival",
+            "service_data": {"message": "hello"},
+            "blocking": False,
+        }
     ]
     payload = connection.results[-1][1]
     assert payload["message_type"] == "success"

@@ -905,7 +905,10 @@ async def websocket_repeat_log_action(
         SERVICE_CLEAR_CACHE: integration_data.get("async_clear_cache"),
     }
     service_func = service_func_map.get(repeat_service)
-    if service_func is None:
+    repeat_domain = DOMAIN
+    if service_func is None and hass.services.has_service("notify", repeat_service):
+        repeat_domain = "notify"
+    elif service_func is None:
         connection.send_error(
             msg["id"],
             "unavailable",
@@ -916,7 +919,14 @@ async def websocket_repeat_log_action(
     service_call = type("PanelLogServiceCall", (), {"data": repeat_data or {}})()
     config_entry = _get_config_entry(hass)
     try:
-        await service_func(service_call)
+        if repeat_domain == "notify":
+            await hass.services.async_call(
+                repeat_domain,
+                repeat_service,
+                service_data=repeat_data or {},
+            )
+        else:
+            await service_func(service_call)
     except HomeAssistantError as error:
         if config_entry is None:
             connection.send_result(

@@ -55,13 +55,22 @@ class TTSAudioHelper:
     """Helper class for generating TTS Audio in Chime TTS."""
 
     _data = {}
+    _last_error_message: str | None = None
 
     async def async_request_tts_audio(self, hass: HomeAssistant, tts_platform: str, message: str, language: str, cache: bool, options: dict, is_fallback: bool = False):
         """Send an API request for TTS audio and return the audio file's local filepath."""
+        self._last_error_message = None
         start_time = datetime.now()
 
         # Step 1: Input validation and preparation
-        tts_platform, tts_options, language = self._prepare_tts_request(hass, tts_platform, message, language, options)
+        tts_platform, tts_options, language = self._prepare_tts_request(
+            hass,
+            tts_platform,
+            message,
+            language,
+            options,
+            allow_configured_fallbacks=not is_fallback,
+        )
         if not tts_platform:
             return None
 
@@ -78,13 +87,27 @@ class TTSAudioHelper:
         # Step 4: Retry with fallback platform if needed
         return await self._retry_with_fallback(hass, tts_platform, message, language, cache, options)
 
-    def _prepare_tts_request(self, hass: HomeAssistant, tts_platform, message, language, options):
+    @property
+    def last_error_message(self) -> str | None:
+        """Return the most recent TTS generation error message, if any."""
+        return self._last_error_message
+
+    def _prepare_tts_request(
+        self,
+        hass: HomeAssistant,
+        tts_platform,
+        message,
+        language,
+        options,
+        allow_configured_fallbacks: bool = True,
+    ):
         if not options:
             options = {}
         tts_options = options.copy()
 
         if not message:
-            _LOGGER.warning("No message text provided for TTS audio")
+            self._last_error_message = "No message text provided for TTS audio."
+            _LOGGER.warning(self._last_error_message)
             return None, None, None
 
         tts_platform = helpers.get_tts_platform(
@@ -92,6 +115,7 @@ class TTSAudioHelper:
             tts_platform=tts_platform,
             default_tts_platform=self._data[TTS_PLATFORM_KEY],
             fallback_tts_platform=self._data[FALLBACK_TTS_PLATFORM_KEY],
+            allow_configured_fallbacks=allow_configured_fallbacks,
         )
         if not tts_platform:
             return None, None, None
@@ -259,6 +283,7 @@ class TTSAudioHelper:
 
     async def _process_audio_data(self, hass: HomeAssistant, media_source_id, audio_data, start_time):
         if not media_source_id:
+            self._last_error_message = "Unable to generate a Home Assistant media source id for the TTS request."
             _LOGGER.error("Error: Unable to generate media_source_id")
             return None
 
@@ -267,6 +292,9 @@ class TTSAudioHelper:
                 hass=hass, media_source_id=media_source_id
             )
         except Exception as error:
+            self._last_error_message = (
+                f"Home Assistant could not retrieve audio for media source '{media_source_id}': {error}"
+            )
             _LOGGER.error(
                 "   - Error calling tts.async_get_media_source_audio with media_source_id = '%s': %s",
                 str(media_source_id),
@@ -282,6 +310,7 @@ class TTSAudioHelper:
         audio_bytes = audio_data[1]
         file = io.BytesIO(audio_bytes)
         if not file:
+            self._last_error_message = "Home Assistant returned TTS bytes, but they could not be converted into an audio stream."
             _LOGGER.error("...could not convert TTS bytes to audio")
             return None
 
@@ -295,6 +324,7 @@ class TTSAudioHelper:
             _LOGGER.debug("   ...TTS audio generated in %s", completion_time_string)
             return audio
 
+        self._last_error_message = "Home Assistant returned TTS audio, but Chime TTS could not decode it into a playable audio segment."
         _LOGGER.error("...could not extract TTS audio from file")
         return None
 
@@ -313,13 +343,20 @@ class TTSAudioHelper:
                 options=options,
                 is_fallback=True,
             )
+        self._last_error_message = self._last_error_message or "TTS audio generation failed."
         _LOGGER.error("...audio_data generation failed")
         return None
 
     def _handle_generation_error(self, error, tts_platform, media_source_id):
         if str(error) == "Invalid TTS provider selected":
+            self._last_error_message = (
+                f"The selected TTS provider '{tts_platform}' is not currently available in Home Assistant."
+            )
             missing_tts_platform_error(tts_platform)
         else:
+            self._last_error_message = (
+                f"Home Assistant failed to generate TTS audio with provider '{tts_platform}': {error}"
+            )
             _LOGGER.error(
                 "   - Error calling tts.media_source.generate_media_source_id: %s",
                 error,

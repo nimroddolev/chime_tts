@@ -298,6 +298,21 @@ template.innerHTML = `
       flex-wrap: wrap;
     }
 
+    .topbar-beta-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      padding: 0 12px;
+      border-radius: 15px;
+      background: #c62828;
+      color: #fff !important;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      line-height: 1;
+    }
+
     .section {
       border: 1px solid var(--divider-color);
       border-radius: 24px;
@@ -433,6 +448,11 @@ template.innerHTML = `
       animation: buttonSpin 0.8s linear infinite;
     }
 
+    .notify-profile-actions .button-primary .button-spinner {
+      border-color: color-mix(in srgb, var(--primary-color) 28%, transparent);
+      border-top-color: var(--primary-color);
+    }
+
     @keyframes restartPulse {
       0%,
       100% {
@@ -469,7 +489,7 @@ template.innerHTML = `
     }
 
     .message {
-      margin-bottom: 18px;
+      margin: 18px;
       padding: 16px 18px;
       border-radius: 18px;
       border: 1px solid;
@@ -485,6 +505,117 @@ template.innerHTML = `
       border-color: rgba(211, 47, 47, 0.35);
       background: rgba(211, 47, 47, 0.08);
       color: var(--primary-text-color);
+    }
+
+    .panel-alerts {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .panel-alert {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 20px;
+      border-radius: 20px;
+      border: 1px solid;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .panel-alert.warning {
+      border-color: color-mix(in srgb, var(--warning-color, #f59e0b) 62%, var(--divider-color) 38%);
+      background:
+        linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--warning-color, #f59e0b) 22%, var(--card-background-color) 78%),
+          color-mix(in srgb, var(--warning-color, #f59e0b) 10%, var(--card-background-color) 90%)
+        );
+      color: var(--primary-text-color);
+    }
+
+    .panel-alert.error {
+      border-color: color-mix(in srgb, #d32f2f 55%, transparent);
+      background: linear-gradient(135deg, rgba(244, 67, 54, 0.18), rgba(255, 235, 238, 0.9));
+      color: var(--primary-text-color);
+    }
+
+    .panel-alert-copy {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .panel-alert-icon {
+      width: 35px;
+      height: 35px;
+      flex: 0 0 35px;
+      margin-top: 2px;
+      color: currentColor;
+    }
+
+    .panel-alert-icon svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      fill: currentColor;
+    }
+
+    .panel-alert-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .panel-alert-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--primary-text-color);
+    }
+
+    .panel-alert-message {
+      margin: 0;
+      color: var(--primary-text-color);
+      line-height: 1.55;
+    }
+
+    .panel-alert-message strong {
+      font-weight: 800;
+      color: var(--primary-text-color);
+    }
+
+    .panel-alert-action {
+      flex: 0 0 auto;
+      align-self: center;
+      white-space: nowrap;
+    }
+
+    .panel-alert.warning .panel-alert-action.button-secondary {
+      color: var(--primary-text-color);
+      background: color-mix(in srgb, var(--warning-color, #f59e0b) 18%, var(--card-background-color) 82%);
+      border-color: color-mix(in srgb, var(--warning-color, #f59e0b) 48%, var(--divider-color) 52%);
+    }
+
+    .panel-alert.error .panel-alert-action.button-primary {
+      background: linear-gradient(135deg, #d32f2f, color-mix(in srgb, #d32f2f 76%, black 24%));
+      box-shadow: 0 16px 28px rgba(211, 47, 47, 0.24);
+    }
+
+    @media (max-width: 760px) {
+      .panel-alert {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-alert-action {
+        align-self: flex-start;
+      }
     }
 
     form {
@@ -832,6 +963,7 @@ template.innerHTML = `
       font-size: 0.95rem;
       font-weight: 700;
       letter-spacing: 0.01em;
+      inline-size: max-content;
     }
 
     .about-logo {
@@ -882,6 +1014,7 @@ template.innerHTML = `
       pointer-events: none;
       background: transparent !important;
       background-color: transparent !important;
+      cursor: auto;
     }
 
     .about-card {
@@ -1222,8 +1355,29 @@ template.innerHTML = `
       font-size: 0.84rem;
       line-height: 1.5;
       overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
+      overflow-y: hidden;
+      white-space: pre;
+    }
+
+    .log-event-raw-line {
+      display: block;
+      width: max-content;
+      min-width: 100%;
+      padding: 1px 6px;
+      margin: 0 -6px;
+      border-radius: 8px;
+    }
+
+    .log-event-raw-line.warning {
+      color: color-mix(in srgb, var(--warning-color, #f59e0b) 82%, var(--primary-text-color) 18%);
+      background: color-mix(in srgb, var(--warning-color, #f59e0b) 16%, transparent);
+      font-weight: 700;
+    }
+
+    .log-event-raw-line.error {
+      color: color-mix(in srgb, var(--error-color, #d32f2f) 84%, var(--primary-text-color) 16%);
+      background: color-mix(in srgb, var(--error-color, #d32f2f) 14%, transparent);
+      font-weight: 700;
     }
 
     .section {
@@ -1320,7 +1474,6 @@ template.innerHTML = `
     .config-section-body {
       margin-top: 2px;
       padding-top: 14px;
-      border-top: 1px solid color-mix(in srgb, var(--divider-color) 66%, transparent);
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -3188,9 +3341,11 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._restartPending = false;
     this._restartConfirmOpen = false;
     this._restarting = false;
+    this._restartContext = null;
     this._expandedChapters = {};
     this._notifyProfilesHydrationRequestId = 0;
     this._pathValidationHydrationRequestId = 0;
+    this._hassConnected = null;
   }
 
   connectedCallback() {
@@ -3217,9 +3372,21 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   set hass(hass) {
+    const wasConnected = this._hassConnected;
     this._hass = hass;
+    this._hassConnected = typeof hass?.connected === "boolean" ? hass.connected : null;
+    const reconnected = this._lastRequested
+      && wasConnected === false
+      && this._hassConnected === true
+      && !this._loading
+      && !this._saving
+      && !this._isDirty;
     if (!this._lastRequested) {
       this._lastRequested = true;
+      this._load();
+      return;
+    }
+    if (reconnected) {
       this._load();
       return;
     }
@@ -3272,6 +3439,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._restartPending = false;
       this._restartConfirmOpen = false;
       this._restarting = false;
+      this._restartContext = null;
       this._expandedChapters = {};
       await this._ensureFooterLogoMarkup(this._data?.footer_logo_url || "");
       await this._ensureLogsSubscription();
@@ -3308,6 +3476,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._restartPending = false;
       this._restartConfirmOpen = false;
       this._restarting = false;
+      this._restartContext = null;
       this._expandedChapters = {};
       this._footerLogoSvgMarkup = "";
       this._footerLogoSvgUrl = "";
@@ -3482,6 +3651,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const sections = data.sections || [];
     const values = this._draftValues || {};
     const errors = { ...(data.errors || {}), ...(this._clientErrors || {}) };
+    const alertsMarkup = this._renderPanelAlerts(data.alerts || []);
     const notifyProfilesLoadError = data.notify_profiles_load_error
       ? `<div class="message error">${this._escapeHtml(data.notify_profiles_load_error)}</div>`
       : "";
@@ -3492,6 +3662,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._renderTopbar(data);
 
     this._app.innerHTML = `
+      ${alertsMarkup}
       ${notifyProfilesLoadError}
       ${message}
       ${isLoadFailureState
@@ -3847,7 +4018,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       button.addEventListener("click", () => this._submitPickerAction());
     });
     this.shadowRoot.querySelectorAll("[data-restart-open]").forEach((button) => {
-      button.addEventListener("click", () => this._openRestartConfirmation());
+      button.addEventListener("click", (event) => this._openRestartConfirmation(event.currentTarget.dataset.restartOpen));
     });
     this.shadowRoot.querySelectorAll("[data-restart-cancel]").forEach((button) => {
       button.addEventListener("click", () => this._closeRestartConfirmation());
@@ -3941,7 +4112,73 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._restoreTransientFocus();
   }
 
+  _renderPanelAlerts(alerts) {
+    if (!Array.isArray(alerts) || alerts.length === 0) {
+      return "";
+    }
+
+    return `
+      <div class="panel-alerts">
+        ${alerts.map((alert) => this._renderPanelAlert(alert)).join("")}
+      </div>
+    `;
+  }
+
+  _renderPanelAlert(alert) {
+    if (!alert || !alert.message) {
+      return "";
+    }
+
+    const tone = alert.tone === "error" ? "error" : "warning";
+    const action = alert.action || null;
+    const message = alert.message_html
+      ? this._sanitizePanelAlertHtml(alert.message_html)
+      : this._renderPanelAlertMessage(alert.message, alert.highlighted_terms || []);
+    return `
+      <div class="panel-alert ${this._escapeAttribute(tone)}" role="alert">
+        <div class="panel-alert-copy">
+          <span class="panel-alert-icon" aria-hidden="true">${ICONS.alert}</span>
+          <div class="panel-alert-text">
+            ${alert.title ? `<p class="panel-alert-title">${this._escapeHtml(alert.title)}</p>` : ""}
+            <p class="panel-alert-message">${message}</p>
+          </div>
+        </div>
+        ${action?.kind === "restart"
+          ? `<button class="button-secondary panel-alert-action" type="button" data-restart-open="provider-refresh" ${this._restarting ? "disabled" : ""}>${this._escapeHtml(action.label || "Restart")}</button>`
+          : action?.kind === "link" && action?.href
+          ? `<a class="button-primary panel-alert-action" href="${this._escapeAttribute(action.href)}">${this._escapeHtml(action.label || "Open")}</a>`
+          : ""
+        }
+      </div>
+    `;
+  }
+
+  _renderPanelAlertMessage(message, highlightedTerms = []) {
+    const escapedMessage = this._escapeHtml(String(message || ""));
+    if (!Array.isArray(highlightedTerms) || highlightedTerms.length === 0) {
+      return escapedMessage;
+    }
+
+    let renderedMessage = escapedMessage;
+    const uniqueTerms = [...new Set(highlightedTerms.map((term) => String(term || "")).filter(Boolean))];
+    for (const term of uniqueTerms) {
+      const escapedTerm = this._escapeHtml(term);
+      renderedMessage = renderedMessage.replaceAll(
+        escapedTerm,
+        `<strong>${escapedTerm}</strong>`,
+      );
+    }
+    return renderedMessage;
+  }
+
+  _sanitizePanelAlertHtml(messageHtml) {
+    const html = String(messageHtml || "");
+    return html.replace(/<(?!\/?strong\b)[^>]*>/gi, "");
+  }
+
   _renderTopbar(data) {
+    const version = String(data?.version || "");
+    const isBetaVersion = /-beta[^/\\\s]*$/i.test(version);
     this._topbar.innerHTML = `
       <div>
         <div class="topbar">
@@ -3957,6 +4194,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             <div class="topbar-text">
               <p class="topbar-title">
                 <span>Chime TTS</span>
+                ${isBetaVersion ? '<span class="topbar-beta-badge">BETA</span>' : ""}
               </p>
             </div>
           </div>
@@ -3974,7 +4212,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               : this._restartPending && !this._isDirty
                 ? `
                   <div class="save-slot">
-                    <button class="button-restart" type="button" data-restart-open="1" ${this._restarting ? "disabled" : ""}>Restart</button>
+                    <button class="button-restart" type="button" data-restart-open="pending" ${this._restarting ? "disabled" : ""}>Restart</button>
                   </div>
                 `
                 : this._isDirty
@@ -4465,7 +4703,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           : ""
         }
         ${version
-          ? `<p class="about-version-line">${this._escapeHtml(`Version ${String(version)}`)}</p>`
+          ? `<p class="about-version-line">${this._escapeHtml(`Version ${String(version).replace("v", "")}`)}</p>`
           : ""
         }
       </div>
@@ -4614,9 +4852,23 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       : this._escapeAttribute(event.row_color || "action");
     const eventIcon = this._getLogEventIcon(event);
     const eventIconClass = this._getLogEventIconClass(event);
-    const rawLogs = (event.raw_logs || [])
-      .map((entry) => `[${entry.timestamp}] ${String(entry.level || "").toUpperCase()} ${entry.logger}: ${entry.message}`)
-      .join("\n");
+    const rawLogLines = (event.raw_logs || [])
+      .map((entry) => `[${entry.timestamp}] ${String(entry.level || "").toUpperCase()} ${entry.logger}: ${entry.message}`);
+    const rawLogs = rawLogLines.join("\n");
+    const rawLogsMarkup = rawLogLines.length > 0
+      ? rawLogLines
+        .map((line) => {
+          const normalized = String(line).toUpperCase();
+          let severityClass = "";
+          if (normalized.includes("] ERROR ")) {
+            severityClass = " error";
+          } else if (normalized.includes("] WARNING ")) {
+            severityClass = " warning";
+          }
+          return `<span class="log-event-raw-line${severityClass}">${this._escapeHtml(line)}</span>`;
+        })
+        .join("")
+      : this._escapeHtml("No raw logs were captured for this event.");
     const logCopyState = this._getLogCopyState(event.id);
     const logEventBody = expanded
       ? `
@@ -4625,7 +4877,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             ? `<p class="log-event-summary">${this._escapeHtml(event.summary)}</p>`
             : ""
           }
-          <pre class="log-event-raw">${this._escapeHtml(rawLogs || "No raw logs were captured for this event.")}</pre>
+          <pre class="log-event-raw">${rawLogsMarkup}</pre>
         </div>
       `
       : "";
@@ -5286,6 +5538,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const error = this._pickerError
       ? `<div class="message error picker-error-banner">${this._escapeHtml(this._pickerError)}</div>`
       : "";
+    const notice = this._picker?.requested_path_missing && this._picker?.selected_path_notice
+      ? `<div class="message warning picker-warning-banner">${this._escapeHtml(this._picker.selected_path_notice)}</div>`
+      : "";
     const isEmpty = !this._pickerLoading && items.length === 0;
     const empty = isEmpty
       ? `<p class="picker-empty">No files or folders match this location.</p>`
@@ -5339,6 +5594,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           <input data-picker-file-input type="file" multiple hidden />
           <input data-picker-folder-input type="file" webkitdirectory directory multiple hidden />
           ${error}
+          ${notice}
           <div class="picker-browser-shell">
             <aside class="picker-browser-sidebar">
               <div class="picker-sidebar-header">
@@ -5435,8 +5691,11 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return "";
     }
 
-    const restartCopy = this._data?.restart_note
-      || "Your changes have been saved, but they will not take effect until Home Assistant restarts.";
+    const restartCopy = this._restartContext === "provider-refresh"
+      ? (this._data?.restart_alert_note
+        || "Home Assistant needs to restart before newly installed TTS providers appear in Chime TTS.")
+      : (this._data?.restart_note
+        || "Your changes have been saved, but they will not take effect until Home Assistant restarts.");
 
     return `
       <div class="confirm-overlay">
@@ -5446,10 +5705,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             ${this._escapeHtml(restartCopy)}
           </p>
           <div class="confirm-actions">
-            <button class="button-secondary" type="button" data-restart-cancel="1" ${this._restarting ? "disabled" : ""}>Cancel</button>
+            ${this._restarting
+              ? ""
+              : '<button class="button-secondary" type="button" data-restart-cancel="1">Cancel</button>'
+            }
             <button class="button-restart" type="button" data-restart-confirm="1" ${this._restarting ? "disabled" : ""}>
               ${this._restarting
-                ? '<span class="button-spinner" aria-hidden="true"></span>'
+                ? '<span class="button-spinner" aria-hidden="true"></span>Restarting...'
                 : "Restart Home Assistant"
               }
             </button>
@@ -5762,13 +6024,20 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       ? activeElement.selectionEnd
       : null;
 
-    this._render();
-    window.requestAnimationFrame(() => {
+    const restoreScrollPosition = () => {
       if (scrollElement) {
         scrollElement.scrollTop = scrollTop;
       } else {
         window.scrollTo(0, scrollTop);
       }
+    };
+
+    this._render();
+    window.requestAnimationFrame(() => {
+      restoreScrollPosition();
+      // A complete panel render can change the page height after the first
+      // frame (for example when a profile collapses), so restore once more.
+      window.requestAnimationFrame(restoreScrollPosition);
 
       if (!activeFieldKey && !activeNotifyFieldKey && !activeNotifyInlineTest) {
         return;
@@ -5794,10 +6063,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     });
   }
 
-  _openRestartConfirmation() {
-    if (!this._restartPending || this._restarting) {
+  _openRestartConfirmation(reason = "pending") {
+    const restartReason = reason || "pending";
+    const canRestartForReason = restartReason === "provider-refresh" || this._restartPending;
+    if (!canRestartForReason || this._restarting) {
       return;
     }
+    this._restartContext = restartReason;
     this._restartConfirmOpen = true;
     this._render();
   }
@@ -5807,11 +6079,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return;
     }
     this._restartConfirmOpen = false;
+    this._restartContext = null;
     this._render();
   }
 
   async _confirmRestart() {
-    if (!this._restartPending || this._restarting) {
+    const restartContext = this._restartContext || "pending";
+    const canRestartForReason = restartContext === "provider-refresh" || this._restartPending;
+    if (!canRestartForReason || this._restarting) {
       return;
     }
 
@@ -5822,6 +6097,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       await this._hass.callService("homeassistant", "restart");
       this._restartPending = false;
       this._restartConfirmOpen = false;
+      this._restartContext = null;
       this._data = {
         ...(this._data || {}),
         message: "Home Assistant restart requested.",
@@ -5846,15 +6122,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._draftNotifyProfiles = this._cloneNotifyProfiles(this._data?.notify_profiles || []);
     this._clientErrors = {};
     this._notifyProfileClientErrors = [];
-    this._expandedNotifyProfiles = {};
     this._notifyProfileTests = {};
     this._isDirty = false;
     this._pathValidationState = this._buildInitialPathValidationState();
     this._invalidPathOverrides = {};
     this._restartPending = false;
     this._restartConfirmOpen = false;
+    this._restartContext = null;
     this._clearSaveResult();
-    this._render();
+    this._rerenderPreservingInputState();
   }
 
   _resetSection(sectionKey) {
@@ -5870,12 +6146,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (section.kind === "notify_profiles") {
       this._draftNotifyProfiles = this._cloneNotifyProfiles(this._data?.notify_profiles || []);
       this._notifyProfileClientErrors = [];
-      this._expandedNotifyProfiles = {};
       this._notifyProfileTests = {};
       this._isDirty = this._hasValueChanges();
       this._restartPending = false;
       this._restartConfirmOpen = false;
-      this._render();
+      this._restartContext = null;
+      this._rerenderPreservingInputState();
       return;
     }
 
@@ -5902,8 +6178,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (section.fields?.some((field) => field.key === "custom_chimes_path")) {
       this._restartPending = false;
       this._restartConfirmOpen = false;
+      this._restartContext = null;
     }
-    this._render();
+    this._rerenderPreservingInputState();
   }
 
   _toggleAdvanced(sectionKey) {
@@ -6930,9 +7207,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _wireNotifyEntityPickers() {
     this.shadowRoot.querySelectorAll("[data-notify-entity-picker]").forEach((picker) => {
       const index = Number(picker.dataset.notifyEntityPicker);
+      const selectedEntities = this._parseNotifyEntityIds(
+        this._draftNotifyProfiles?.[index]?.entity_id,
+      );
       const selectedValue = "";
       picker.hass = this._hass;
       picker.includeDomains = ["media_player"];
+      // A target is represented by a chip above this control, so exclude it
+      // from the picker until the user removes that chip again.
+      picker.excludeEntities = selectedEntities;
       picker.value = selectedValue;
       picker.label = "Add media player";
       picker.helper = "Choose a media_player entity to append";
@@ -7018,6 +7301,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._picker = {
       field_key: fieldKey,
       title: this._findFieldLabel(fieldKey),
+      requested_path: this._draftValues?.[fieldKey] || "",
+      requested_path_exists: true,
+      requested_path_missing: false,
+      selected_path_notice: "",
       current_path: this._draftValues?.[fieldKey] || "",
       parent_path: null,
       items: [],

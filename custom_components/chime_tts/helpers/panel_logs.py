@@ -800,14 +800,23 @@ def build_action_event_details(domain: str, service: str, service_data: Mapping 
 def build_notification_event_details(service: str, service_data: Mapping | None) -> dict:
     """Build reusable metadata for a notify profile log event."""
     normalized_data = _normalize_service_data(dict(service_data or {}))
+    notify_payload = dict(normalized_data)
+    notify_data = notify_payload.get("data", None)
+    if notify_data is None:
+        notify_payload.pop("data", None)
+    elif not isinstance(notify_data, Mapping):
+        notify_payload["data"] = {}
     payload = {
         "action": f"notify.{service}",
-        "data": normalized_data,
+        "data": notify_payload,
     }
-    summary = normalized_data.get("message") or service
+    summary = notify_payload.get("message") or service
     return {
         "summary": str(summary),
         "copy_yaml": yaml.safe_dump(payload, sort_keys=False, allow_unicode=False).strip(),
+        "can_repeat": True,
+        "repeat_service": service,
+        "repeat_data": notify_payload,
         "row_color": "action",
     }
 
