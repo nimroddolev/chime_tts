@@ -200,6 +200,26 @@ def test_panel_prompts_before_discarding_unsaved_changes():
     assert "_navigateAfterDiscard(url)" in panel_source
 
 
+def test_panel_title_displays_santa_hat_only_in_december():
+    """The seasonal title decoration is limited to December and served by the panel."""
+    root = Path(__file__).parents[1]
+    panel_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+    panel_backend = (
+        root / "custom_components" / "chime_tts" / "helpers" / "panel.py"
+    ).read_text(encoding="utf-8")
+
+    assert "new Date().getMonth() === 11" in panel_source
+    assert "const SANTA_HAT_SVG = `" in panel_source
+    assert '<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"' in panel_source
+    assert 'id="path1309"' in panel_source
+    assert "topbar-santa-hat" in panel_source
+    assert "filter: drop-shadow(0 0 1px #000);" in panel_source
+    assert "PANEL_SANTA_HAT_URL" not in panel_backend
+    assert "ChimeTTSPanelSantaHatView" not in panel_backend
+
+
 def test_issue_291_full_entity_id_matches_installed():
     """A full tts.* entity id selects that entity instead of being rejected (#291)."""
     helper = ChimeTTSHelper()
