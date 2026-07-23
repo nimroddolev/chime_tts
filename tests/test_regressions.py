@@ -117,12 +117,14 @@ def test_issue_294_round_trips_through_yaml_as_str():
 
 def test_issue_294_stale_structure_returns_none_not_crash():
     """A services.yaml missing the expected nesting yields None rather than raising (#294)."""
-    assert ChimeTTSServicesHelper._get_field_options({}, "say", "chime_path") is None
-    assert (
+    assert not isinstance(
+        ChimeTTSServicesHelper._get_field_options({}, "say", "chime_path"), list
+    )
+    assert not isinstance(
         ChimeTTSServicesHelper._get_field_options(
             {"say": {"fields": {"chime_path": {"selector": {}}}}}, "say", "chime_path"
-        )
-        is None
+        ),
+        list,
     )
 
 

@@ -19,6 +19,7 @@ from ..const import (
 filesystem_helper = FilesystemHelper()
 helpers = ChimeTTSHelper()
 _LOGGER = logging.getLogger(__name__)
+_OPTIONS_MISSING = object()
 
 class ChimeTTSServicesHelper:
     """Helper services YAML file functions for Chime TTS."""
@@ -74,21 +75,21 @@ class ChimeTTSServicesHelper:
         changed = False
         for service_name, field in self._CHIME_OPTION_FIELDS:
             options = self._get_field_options(services_yaml, service_name, field)
-            if options is None:
+            if options is _OPTIONS_MISSING:
                 # Unexpected structure, e.g. a stale file from an older version.
                 # Skip rather than overwrite with a half-built document.
                 _LOGGER.debug("No options list for %s.%s; skipping", service_name, field)
                 continue
-            if options != final_options:
+            if not isinstance(options, list) or options != final_options:
                 self._set_field_options(services_yaml, service_name, field, list(final_options))
                 changed = True
 
         for service_name, field in self._TTS_OPTION_FIELDS:
             options = self._get_field_options(services_yaml, service_name, field)
-            if options is None:
+            if options is _OPTIONS_MISSING:
                 _LOGGER.debug("No options list for %s.%s; skipping", service_name, field)
                 continue
-            if options != tts_options:
+            if not isinstance(options, list) or options != tts_options:
                 self._set_field_options(services_yaml, service_name, field, list(tts_options))
                 changed = True
 
@@ -132,11 +133,11 @@ class ChimeTTSServicesHelper:
 
     @staticmethod
     def _get_field_options(services_yaml: dict, service_name: str, field: str):
-        """Return the existing options list for a service field, or None if absent."""
+        """Return the existing options list, or a sentinel if its path is absent."""
         try:
             return services_yaml[service_name]["fields"][field]["selector"]["select"]["options"]
         except (KeyError, TypeError):
-            return None
+            return _OPTIONS_MISSING
 
     @staticmethod
     def _set_field_options(services_yaml: dict, service_name: str, field: str, options: list) -> None:
