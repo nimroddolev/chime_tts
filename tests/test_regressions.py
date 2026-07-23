@@ -222,6 +222,50 @@ def test_panel_title_displays_santa_hat_only_in_december():
     assert "ChimeTTSPanelSantaHatView" not in panel_backend
 
 
+def test_panel_uses_an_inline_christmas_footer_logo_only_in_december():
+    """The seasonal footer artwork is embedded rather than served as an asset."""
+    root = Path(__file__).parents[1]
+    panel_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert "const CHRISTMAS_FOOTER_SVG = `" in panel_source
+    assert 'id="CHIME"' in panel_source
+    assert "IS_DECEMBER\n        ? CHRISTMAS_FOOTER_SVG" in panel_source
+
+
+def test_panel_renders_inline_snowflakes_only_in_december_behind_the_ui():
+    """Snowfall is a seasonal, non-interactive visual layer with inline artwork."""
+    root = Path(__file__).parents[1]
+    panel_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert "const SNOWFLAKE_SVG = `" in panel_source
+    assert "_renderSnowfall()" in panel_source
+    assert "if (!IS_DECEMBER)" in panel_source
+    assert 'class="snowfall"' in panel_source
+    assert "pointer-events: none;" in panel_source
+    assert "@keyframes snowfall" in panel_source
+    assert "this._snowfall.childElementCount > 0" in panel_source
+
+
+def test_panel_chime_fields_allow_custom_values_in_settings_and_notify_profiles():
+    """Chime suggestions must not prevent typed paths in either editor."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert 'list="chime-options-${this._escapeAttribute(field.key)}"' in panel_source
+    assert 'list="notify-chime-options-${this._escapeAttribute(String(index))}-${this._escapeAttribute(field.key)}"' in panel_source
+    assert "<datalist id=\"chime-options-" in panel_source
+    assert "<datalist id=\"notify-chime-options-" in panel_source
+
+
 def test_issue_291_full_entity_id_matches_installed():
     """A full tts.* entity id selects that entity instead of being rejected (#291)."""
     helper = ChimeTTSHelper()
