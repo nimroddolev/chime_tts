@@ -1623,8 +1623,8 @@ def _build_panel_sections(
             {
                 "key": "notify_profiles",
                 "kind": "notify_profiles",
-                "title": "Notification Profiles",
-                "description": "Create and manage notify services for Chime TTS to easily send Chime TTS notifications in automations and scripts. Saving changes requires a Home Assistant restart.",
+                "title_key": "section.notify_profiles_title",
+                "description_key": "section.notify_profiles_description",
                 "docs_url": NOTIFY_DOCS_URL,
                 "profile_fields": [
                     {
@@ -1653,15 +1653,15 @@ def _build_panel_sections(
             {
                 "key": "logs",
                 "kind": "logs",
-                "title": "Logs",
-                "description": "Review Chime TTS events captured during this Home Assistant session, including actions, generated media, and raw log output.",
+                "title_key": "section.logs_title",
+                "description_key": "section.logs_description",
                 "docs_url": CONFIGURATION_DOCS_BASE_URL,
             },
             {
                 "key": "about",
                 "kind": "about",
-                "title": "Support & Info",
-                "description": "Find documentation, support, bug reporting, feature request, and project support links for Chime TTS.",
+                "title_key": "section.about_title",
+                "description_key": "section.about_description",
                 "docs_url": PROJECT_HOME_URL,
                 "version": VERSION,
                 "footer_logo_url": _footer_logo_url(),

@@ -3623,6 +3623,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._route = route;
   }
 
+  _t(key, replacements = undefined) {
+    const translationKey = `component.chime_tts.config_panel.${key}`;
+    const translated = this._hass?.localize?.(translationKey, replacements);
+    return translated && translated !== translationKey ? translated : key;
+  }
+
   async _load() {
     this._loading = true;
     this._render();
@@ -3658,7 +3664,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         sections: [],
         values: {},
         errors: {},
-        message: error?.message || "Unable to load Chime TTS panel.",
+        message: error?.message || this._t("error.load_panel"),
         message_type: "error",
         documentation_url: "https://nimroddolev.github.io/chime_tts/",
         logs_url: "/config/logs?filter=chime_tts",
@@ -3738,7 +3744,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._data = {
         ...(this._data || {}),
         notify_profiles_hydrated: true,
-        notify_profiles_load_error: error?.message || "Unable to load notification profiles.",
+        notify_profiles_load_error: error?.message || this._t("error.load_profiles"),
       };
       this._render();
     }
@@ -3879,7 +3885,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (this._loading) {
       this._snowfall.innerHTML = "";
       this._renderTopbar({});
-      this._app.innerHTML = `<div class="loading" role="status" aria-label="Loading Chime TTS settings"><span class="loading-spinner" aria-hidden="true"></span></div>`;
+      this._app.innerHTML = `<div class="loading" role="status" aria-label="${this._escapeAttribute(this._t("loading.settings"))}"><span class="loading-spinner" aria-hidden="true"></span></div>`;
       return;
     }
 
@@ -3913,7 +3919,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       ${isLoadFailureState
         ? `
           <div class="error-recovery">
-            <button class="button-primary" type="button" data-reload-panel="1">Reload</button>
+            <button class="button-primary" type="button" data-reload-panel="1">${this._escapeHtml(this._t("action.reload"))}</button>
           </div>
         `
         : `
@@ -4454,7 +4460,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           </div>
           <div class="topbar-actions">
             ${this._isDirty
-              ? '<button class="button-secondary" type="button" data-reset-all="1">Reset</button>'
+              ? `<button class="button-secondary" type="button" data-reset-all="1">${this._escapeHtml(this._t("action.reset"))}</button>`
               : ""
             }
             ${this._saveResult
@@ -4466,13 +4472,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               : this._restartPending && !this._isDirty
                 ? `
                   <div class="save-slot">
-                    <button class="button-restart" type="button" data-restart-open="pending" ${this._restarting ? "disabled" : ""}>Restart</button>
+                    <button class="button-restart" type="button" data-restart-open="pending" ${this._restarting ? "disabled" : ""}>${this._escapeHtml(this._t("action.restart"))}</button>
                   </div>
                 `
                 : this._isDirty
                   ? `
                     <div class="save-slot">
-                      <button class="button-primary" id="save-top" type="button" ${this._saving || this._hasInvalidPathChanges() ? "disabled" : ""}>Save</button>
+                      <button class="button-primary" id="save-top" type="button" ${this._saving || this._hasInvalidPathChanges() ? "disabled" : ""}>${this._escapeHtml(this._t("action.save"))}</button>
                     </div>
                   `
                   : ""
@@ -4668,7 +4674,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                   class="button-secondary"
                   type="button"
                   data-reset-section="${this._escapeAttribute(section.key)}"
-                >Reset Section</button>
+                >${this._escapeHtml(this._t("action.reset_section"))}</button>
               </div>
             ` : ""}
           </div>
@@ -4677,8 +4683,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               class="button-secondary icon-only-button config-section-toggle ${expanded ? "expanded" : "collapsed"}"
               type="button"
               data-toggle-config-section="${this._escapeAttribute(section.key)}"
-              aria-label="${this._escapeAttribute(expanded ? "Collapse section" : "Expand section")}"
-              title="${this._escapeAttribute(expanded ? "Collapse" : "Expand")}"
+              aria-label="${this._escapeAttribute(this._t(expanded ? "aria.collapse_section" : "aria.expand_section"))}"
+              title="${this._escapeAttribute(this._t(expanded ? "action.collapse" : "action.expand"))}"
             >${ICONS.chevron}</button>
           </div>
         </div>
@@ -4691,7 +4697,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               ${advancedFields.length > 0 ? `
                 <div class="advanced-toggle-row">
                   <button class="advanced-toggle" type="button" data-toggle-advanced="${this._escapeAttribute(section.key)}">
-                    ${isAdvancedOpen ? "Hide" : "Show"} Advanced
+                    ${this._escapeHtml(this._t(isAdvancedOpen ? "action.hide_advanced" : "action.show_advanced"))}
                   </button>
                 </div>
                 <div class="row-collapse ${isAdvancedOpen ? "expanded" : "collapsed"}">
@@ -4724,9 +4730,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ${this._renderChapterHero({
           chapterKey: "configuration",
           expanded: configExpanded,
-          eyebrow: "Settings",
-          title: "Configuration",
-          description: "Set default providers, folder paths, playback timing, and integration-wide behavior for Chime TTS.",
+          eyebrow: this._t("chapter.settings"),
+          title: this._t("chapter.configuration"),
+          description: this._t("chapter.configuration_description"),
           docsUrl: data.documentation_url,
           bodyMarkup: `
             <div class="chapter-content">
@@ -4752,7 +4758,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           role="button"
           tabindex="0"
           aria-expanded="${expanded ? "true" : "false"}"
-          aria-label="${this._escapeAttribute(`${expanded ? "Collapse" : "Expand"} ${title}`)}"
+          aria-label="${this._escapeAttribute(this._t(expanded ? "aria.collapse_named" : "aria.expand_named", { title }))}"
         >
           <div class="chapter-hero-inner">
             <div>
@@ -4766,8 +4772,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                         href="${this._escapeAttribute(docsUrl)}"
                         target="_blank"
                         rel="noreferrer"
-                        aria-label="${this._escapeAttribute(`Open help for ${title}`)}"
-                        title="${this._escapeAttribute(`Open help for ${title}`)}"
+                        aria-label="${this._escapeAttribute(this._t("aria.open_help", { title }))}"
+                        title="${this._escapeAttribute(this._t("aria.open_help", { title }))}"
                       >?</a>`
                     : ""
                   }
@@ -4799,6 +4805,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const notifyExpanded = this._isChapterExpanded("notify_profiles");
     const notifyProfilesHydrated = this._data?.notify_profiles_hydrated !== false;
     const notifyProfilesPending = !notifyProfilesHydrated;
+    const sectionTitle = section.title_key ? this._t(section.title_key) : section.title;
+    const sectionDescription = section.description_key ? this._t(section.description_key) : (section.description || "");
     return `
       <div
         class="chapter-group chapter-workspace notify-workspace ${notifyExpanded ? "expanded" : "collapsed"}"
@@ -4807,26 +4815,26 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ${this._renderChapterHero({
           chapterKey: "notify_profiles",
           expanded: notifyExpanded,
-          eyebrow: "Profiles",
-          title: section.title,
-          description: section.description || "",
+          eyebrow: this._t("chapter.profiles"),
+          title: sectionTitle,
+          description: sectionDescription,
           docsUrl: section.docs_url,
           bodyMarkup: `
             <div class="chapter-content chapter-body">
                 <div class="notify-profile-list-actions">
-                  <button class="button-primary" type="button" data-add-notify-profile="1">+ Add Profile</button>
+                  <button class="button-primary" type="button" data-add-notify-profile="1">${this._escapeHtml(this._t("action.add_profile"))}</button>
                   ${sectionDirty ? `
                     <button
                       class="button-secondary"
                       type="button"
                       data-reset-section="${this._escapeAttribute(section.key)}"
-                    >Reset Section</button>
+                    >${this._escapeHtml(this._t("action.reset_section"))}</button>
                   ` : ""}
                 </div>
                 ${notifyProfilesPending
-                  ? `<p class="hint">Loading notification profiles...</p>`
+                  ? `<p class="hint">${this._escapeHtml(this._t("loading.profiles"))}</p>`
                   : profiles.length === 0
-                  ? `<p class="hint">No Chime TTS notify profiles are configured yet.</p>`
+                  ? `<p class="hint">${this._escapeHtml(this._t("empty.profiles"))}</p>`
                   : `
                     <div class="notify-profile-list">
                       ${profiles.map((profile, index) => this._renderNotifyProfileCard(section, profile, index)).join("")}
@@ -4845,6 +4853,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const events = [...(this._data?.log_events || [])].reverse();
     const anyExpanded = events.some((event) => this._isLogEventExpanded(event.id));
     const logsPending = !this._logsHydrated && (this._logsOpeningRefresh || this._logsRefreshInFlight);
+    const sectionTitle = section.title_key ? this._t(section.title_key) : section.title;
+    const sectionDescription = section.description_key ? this._t(section.description_key) : (section.description || "");
     return `
       <div
         class="chapter-group chapter-workspace logs-workspace ${logsExpanded ? "expanded" : "collapsed"}"
@@ -4853,9 +4863,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ${this._renderChapterHero({
           chapterKey: "logs",
           expanded: logsExpanded,
-          eyebrow: "Session",
-          title: section.title,
-          description: section.description || "",
+          eyebrow: this._t("chapter.session"),
+          title: sectionTitle,
+          description: sectionDescription,
           docsUrl: section.docs_url,
           bodyMarkup: `
             <div class="chapter-content chapter-body">
@@ -4863,20 +4873,20 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                   ? `
                     <div class="logs-loading" aria-live="polite">
                       <span class="button-spinner" aria-hidden="true"></span>
-                      <span>Loading Chime TTS log events...</span>
+                      <span>${this._escapeHtml(this._t("loading.logs"))}</span>
                     </div>
                   `
                   : ""
                 }
                 ${events.length === 0 && !logsPending
-                  ? `<p class="hint">No Chime TTS logs have been captured in this Home Assistant session yet.</p>`
+                  ? `<p class="hint">${this._escapeHtml(this._t("empty.logs"))}</p>`
                   : `
                     <div class="logs-list-actions">
                       <a
                         class="button-secondary"
                         href="${this._escapeAttribute(this._data?.logs_url || "/config/logs?filter=chime_tts")}"
-                        title="Open the raw Home Assistant logs filtered to Chime TTS"
-                      >Raw Logs</a>
+                        title="${this._escapeAttribute(this._t("aria.open_raw_logs"))}"
+                      >${this._escapeHtml(this._t("action.raw_logs"))}</a>
                       ${events.length > 1
                         ? `
                           <div class="logs-list-actions-right">
@@ -4884,7 +4894,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                               class="button-secondary"
                               type="button"
                               data-toggle-all-logs="${anyExpanded ? "collapse" : "expand"}"
-                            >${anyExpanded ? "Collapse All" : "Expand All"}</button>
+                            >${this._escapeHtml(this._t(anyExpanded ? "action.collapse_all" : "action.expand_all"))}</button>
                           </div>
                         `
                         : ""
@@ -4905,6 +4915,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _renderAboutSection(section) {
     const aboutExpanded = this._isChapterExpanded("about");
     const items = section.about_items || [];
+    const sectionTitle = section.title_key ? this._t(section.title_key) : section.title;
+    const sectionDescription = section.description_key ? this._t(section.description_key) : (section.description || "");
     return `
       <div
         class="chapter-group chapter-workspace about-workspace ${aboutExpanded ? "expanded" : "collapsed"}"
@@ -4913,9 +4925,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ${this._renderChapterHero({
           chapterKey: "about",
           expanded: aboutExpanded,
-          eyebrow: "Project",
-          title: section.title,
-          description: section.description || "",
+          eyebrow: this._t("chapter.project"),
+          title: sectionTitle,
+          description: sectionDescription,
           docsUrl: section.docs_url,
           bodyMarkup: `
             <div class="chapter-content chapter-body">
@@ -4949,19 +4961,19 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               data-footer-logo-play="1"
               role="button"
               tabindex="0"
-              aria-label="Play Chime TTS logo animation"
+              aria-label="${this._escapeAttribute(this._t("aria.play_logo_animation"))}"
             >${inlineMarkup}</div>`
           : iconUrl
           ? `<object
               class="about-logo-object"
               data="${this._escapeAttribute(iconUrl)}"
               type="image/svg+xml"
-              aria-label="Chime TTS logo"
+              aria-label="${this._escapeAttribute(this._t("aria.logo"))}"
             ></object>`
           : ""
         }
         ${version
-          ? `<p class="about-version-line">${this._escapeHtml(`Version ${String(version).replace("v", "")}`)}</p>`
+          ? `<p class="about-version-line">${this._escapeHtml(this._t("label.version", { version: String(version).replace("v", "") }))}</p>`
           : ""
         }
       </div>
@@ -5093,7 +5105,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               href="${this._escapeAttribute(item.url)}"
               target="_blank"
               rel="noreferrer"
-            >${this._escapeHtml(item.link_label || "Open")}</a>`
+            >${this._escapeHtml(item.link_label || this._t("action.open"))}</a>`
           : ""
         }
       </article>
@@ -5123,7 +5135,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           return `<span class="log-event-raw-line${severityClass}">${this._escapeHtml(line)}</span>`;
         })
         .join("")
-      : this._escapeHtml("No raw logs were captured for this event.");
+      : this._escapeHtml(this._t("empty.raw_logs"));
     const logCopyState = this._getLogCopyState(event.id);
     const logEventBody = expanded
       ? `
@@ -5139,17 +5151,17 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const buttons = [];
     if ((event.type === "action_call" || event.type === "integration_initiation" || event.type === "notification_call") && rawLogs) {
       buttons.push(`
-        <button class="button-secondary" type="button" data-copy-log-raw="${this._escapeAttribute(event.id)}">${logCopyState.logs ? `<span class="copied-label">${ICONS.check}<span>Copied</span></span>` : "Copy Logs"}</button>
+        <button class="button-secondary" type="button" data-copy-log-raw="${this._escapeAttribute(event.id)}">${logCopyState.logs ? `<span class="copied-label">${ICONS.check}<span>${this._escapeHtml(this._t("status.copied"))}</span></span>` : this._escapeHtml(this._t("action.copy_logs"))}</button>
       `);
     }
     if (event.copy_yaml) {
       buttons.push(`
-        <button class="button-secondary" type="button" data-copy-log-yaml="${this._escapeAttribute(event.id)}">${logCopyState.yaml ? `<span class="copied-label">${ICONS.check}<span>Copied</span></span>` : "Copy YAML"}</button>
+        <button class="button-secondary" type="button" data-copy-log-yaml="${this._escapeAttribute(event.id)}">${logCopyState.yaml ? `<span class="copied-label">${ICONS.check}<span>${this._escapeHtml(this._t("status.copied"))}</span></span>` : this._escapeHtml(this._t("action.copy_yaml"))}</button>
       `);
     }
     if (event.can_repeat) {
       buttons.push(`
-        <button class="button-primary" type="button" data-repeat-log-action="${this._escapeAttribute(event.id)}">Repeat</button>
+        <button class="button-primary" type="button" data-repeat-log-action="${this._escapeAttribute(event.id)}">${this._escapeHtml(this._t("action.repeat"))}</button>
       `);
     }
     return `
@@ -5166,7 +5178,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             <div class="log-event-row-main">
               ${eventIcon ? `<span class="log-event-icon ${this._escapeAttribute(eventIconClass)}" aria-hidden="true">${eventIcon}</span>` : ""}
               <div class="log-event-copy">
-                <p class="log-event-title">${this._escapeHtml(event.title || "Log event")}</p>
+                <p class="log-event-title">${this._escapeHtml(event.title || this._t("label.log_event"))}</p>
                 <p class="log-event-meta">${this._escapeHtml(this._formatLogEventMeta(event))}</p>
               </div>
             </div>
@@ -5177,8 +5189,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               class="button-secondary log-event-toggle ${expanded ? "expanded" : "collapsed"}"
               type="button"
               data-toggle-log-arrow="${this._escapeAttribute(event.id)}"
-              aria-label="${this._escapeAttribute(expanded ? "Collapse log row" : "Expand log row")}"
-              title="${this._escapeAttribute(expanded ? "Collapse" : "Expand")}"
+              aria-label="${this._escapeAttribute(this._t(expanded ? "aria.collapse_log" : "aria.expand_log"))}"
+              title="${this._escapeAttribute(this._t(expanded ? "action.collapse" : "action.expand"))}"
             >${ICONS.chevron}</button>
           </div>
         </div>
@@ -5196,7 +5208,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const errors = this._getNotifyProfileErrors(index);
     const expanded = this._isNotifyProfileExpanded(index);
     const testState = this._getNotifyProfileTestState(index);
-    const name = String(profile?.name || "").trim() || `Profile ${index + 1}`;
+    const name = String(profile?.name || "").trim() || this._t("label.profile", { number: index + 1 });
     const detailFields = schemaFields.filter((field) => !["name", "entity_id"].includes(field.key));
     const boolFields = detailFields.filter((field) => field.type === "boolean");
     const standardFields = detailFields.filter((field) => field.type !== "boolean");
@@ -5240,7 +5252,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                     data-notify-index="${this._escapeAttribute(String(index))}"
                     type="text"
                     value="${this._escapeAttribute(String(profile?.name ?? ""))}"
-                    placeholder="Service name"
+                    placeholder="${this._escapeAttribute(this._t("placeholder.service_name"))}"
                   />
                 </div>
               `
@@ -5255,10 +5267,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                   data-notify-index="${this._escapeAttribute(String(index))}"
                   type="text"
                   value="${this._escapeAttribute(testState.message)}"
-                  placeholder="Enter TTS text"
+                  placeholder="${this._escapeAttribute(this._t("placeholder.tts_text"))}"
                 />
                 ${testState.sent
-                  ? `<span class="save-status success notify-inline-test-sent" aria-live="polite">&#10003; Sent</span>`
+                  ? `<span class="save-status success notify-inline-test-sent" aria-live="polite">&#10003; ${this._escapeHtml(this._t("status.sent"))}</span>`
                   : `
                     <button
                       class="button-primary"
@@ -5268,7 +5280,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                     >
                       ${testState.sending
                         ? '<span class="button-spinner" aria-hidden="true"></span>'
-                        : "Send"
+                        : this._escapeHtml(this._t("action.send"))
                       }
                     </button>
                   `
@@ -5277,8 +5289,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                   class="button-secondary"
                   type="button"
                   data-close-notify-test="${this._escapeAttribute(String(index))}"
-                  aria-label="Close test input"
-                  title="Close"
+                  aria-label="${this._escapeAttribute(this._t("aria.close_test"))}"
+                  title="${this._escapeAttribute(this._t("action.close"))}"
                 >X</button>
               `
               : `
@@ -5286,22 +5298,22 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                   class="button-secondary"
                   type="button"
                   data-open-notify-test="${this._escapeAttribute(String(index))}"
-                  aria-label="Test profile"
-                  title="Test"
+                  aria-label="${this._escapeAttribute(this._t("aria.test_profile"))}"
+                  title="${this._escapeAttribute(this._t("action.test"))}"
                 >${ICONS.beaker}</button>
                 <button
                   class="button-danger icon-only-button"
                   type="button"
                   data-remove-notify-profile="${this._escapeAttribute(String(index))}"
-                  aria-label="Delete profile"
-                  title="Delete"
+                  aria-label="${this._escapeAttribute(this._t("aria.delete_profile"))}"
+                  title="${this._escapeAttribute(this._t("action.delete"))}"
                 >${ICONS.trash}</button>
                 <button
                   class="button-secondary icon-only-button log-event-toggle ${expanded ? "expanded" : "collapsed"}"
                   type="button"
                   data-toggle-notify-profile="${this._escapeAttribute(String(index))}"
-                  aria-label="${this._escapeAttribute(expanded ? "Collapse profile" : "Expand profile")}"
-                  title="${this._escapeAttribute(expanded ? "Collapse" : "Expand")}"
+                  aria-label="${this._escapeAttribute(this._t(expanded ? "aria.collapse_profile" : "aria.expand_profile"))}"
+                  title="${this._escapeAttribute(this._t(expanded ? "action.collapse" : "action.expand"))}"
                 >${ICONS.chevron}</button>
               `
             }
@@ -5325,8 +5337,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           href="${this._escapeAttribute(entityField.docs_url)}"
           target="_blank"
           rel="noreferrer"
-          aria-label="${this._escapeAttribute(`Open help for ${entityField.label}`)}"
-          title="${this._escapeAttribute(`Open help for ${entityField.label}`)}"
+          aria-label="${this._escapeAttribute(this._t("aria.open_help", { title: entityField.label }))}"
+          title="${this._escapeAttribute(this._t("aria.open_help", { title: entityField.label }))}"
         >?</a>`
       : "";
     return `
@@ -5335,14 +5347,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           <div class="field-header">
             <div class="field-copy">
               <div class="field-label-row">
-                <p class="field-label">Target media players</p>
+                <p class="field-label">${this._escapeHtml(this._t("label.target_media_players"))}</p>
                 ${helpLink}
               </div>
             </div>
           </div>
-          <span class="required">Required</span>
+          <span class="required">${this._escapeHtml(this._t("label.required"))}</span>
           <div class="field-description-row">
-            <p class="field-description">Select one one or more media_player entities to play the notification.</p>
+            <p class="field-description">${this._escapeHtml(this._t("description.target_media_players"))}</p>
           </div>
         </div>
         ${selectedEntities.length > 0
@@ -5361,7 +5373,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               `).join("")}
             </div>
           `
-          : '<p class="hint">No media players selected yet.</p>'
+          : `<p class="hint">${this._escapeHtml(this._t("empty.media_players"))}</p>`
         }
         <ha-entity-picker
           class="notify-entity-picker"
@@ -5386,8 +5398,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           href="${this._escapeAttribute(field.docs_url)}"
           target="_blank"
           rel="noreferrer"
-          aria-label="${this._escapeAttribute(`Open help for ${field.label}`)}"
-          title="${this._escapeAttribute(`Open help for ${field.label}`)}"
+          aria-label="${this._escapeAttribute(this._t("aria.open_help", { title: field.label }))}"
+          title="${this._escapeAttribute(this._t("aria.open_help", { title: field.label }))}"
         >?</a>`
       : "";
 
@@ -5425,7 +5437,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         const previewKey = this._getNotifyPreviewKey(index, field.key, selectedValue);
         const isLoading = this._notifyPreviewLoadingKey === previewKey;
         const isPlaying = this._notifyPreviewPlayingKey === previewKey;
-        const actionLabel = isLoading ? "Loading preview" : isPlaying ? "Pause preview" : "Play preview";
+        const actionLabel = this._t(isLoading ? "action.loading_preview" : isPlaying ? "action.pause_preview" : "action.play_preview");
         control = `
           <div class="input-row select-preview-row">
             ${selectMarkup}
@@ -5466,7 +5478,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             max="${this._escapeAttribute(String(field.max ?? 100))}"
             step="${this._escapeAttribute(String(field.step ?? 1))}"
             value="${this._escapeAttribute(normalizedValue === "" ? "" : normalizedValue)}"
-            placeholder="${this._escapeAttribute(normalizedValue === "" ? `Auto${field.unit ? ` ${field.unit}` : ""}` : "")}"
+            placeholder="${this._escapeAttribute(normalizedValue === "" ? this._t("placeholder.auto", { unit: field.unit ? ` ${field.unit}` : "" }) : "")}"
           />
         </div>
       `;
@@ -5513,14 +5525,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                           class="field-reset-link"
                           data-reset-notify-field="${this._escapeAttribute(field.key)}"
                           data-notify-index="${this._escapeAttribute(String(index))}"
-                        >Reset</a>
+                        >${this._escapeHtml(this._t("action.reset"))}</a>
                       `
                       : ""
                     }
                   </div>
                 </div>
               </div>
-              ${field.required ? '<span class="required">Required</span>' : ""}
+              ${field.required ? `<span class="required">${this._escapeHtml(this._t("label.required"))}</span>` : ""}
               ${field.description && field.key === "audio_conversion"
                 ? `
                   <div class="field-description-row">
@@ -5569,7 +5581,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const isCustomChimesPathChanged = field.key === "custom_chimes_path"
       && this._normalizeForCompare(value) !== this._normalizeForCompare(savedCustomChimesPath);
     const restartNote = isCustomChimesPathChanged
-      ? `<div class="field-note">ℹ️  Restart Required<br />Any changes to the folder path or its contents will require a restart to take effect.</div>`
+      ? `<div class="field-note">ℹ️  ${this._escapeHtml(this._t("notice.restart_required_title"))}<br />${this._escapeHtml(this._t("notice.restart_required"))}</div>`
       : "";
     const providerHint = this._renderFieldSubhint(this._resolveProviderHint(field));
     const emptyDefaultHint = this._renderEmptyDefaultHint(field, value);
@@ -5580,8 +5592,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           href="${this._escapeAttribute(field.docs_url)}"
           target="_blank"
           rel="noreferrer"
-          aria-label="${this._escapeAttribute(`Open help for ${field.label}`)}"
-          title="${this._escapeAttribute(`Open help for ${field.label}`)}"
+          aria-label="${this._escapeAttribute(this._t("aria.open_help", { title: field.label }))}"
+          title="${this._escapeAttribute(this._t("aria.open_help", { title: field.label }))}"
         >?</a>`
       : "";
     return `
@@ -5592,12 +5604,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             <div class="field-copy">
               <div class="field-label-row">
                 <p class="field-label">${this._escapeHtml(field.label)}</p>
-                ${isChanged ? '<span class="field-changed-pill">Changed</span>' : ""}
+                ${isChanged ? `<span class="field-changed-pill">${this._escapeHtml(this._t("status.changed"))}</span>` : ""}
                 ${helpLink}
               </div>
             </div>
           </div>
-          ${field.required ? '<span class="required">Required</span>' : ""}
+          ${field.required ? `<span class="required">${this._escapeHtml(this._t("label.required"))}</span>` : ""}
           <div class="field-description-row">
             <p class="field-description">${this._escapeHtml(field.description || "")}</p>
           </div>
@@ -5655,10 +5667,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       <div class="input-row">
         ${inputMarkup}
         ${showInvalidIndicator
-          ? `<button class="path-inline-action" type="button" data-use-anyway="${this._escapeAttribute(field.key)}">Use Anyway</button>`
+          ? `<button class="path-inline-action" type="button" data-use-anyway="${this._escapeAttribute(field.key)}">${this._escapeHtml(this._t("action.use_anyway"))}</button>`
           : ""
         }
-        <button class="browse-button" type="button" data-browse-field="${this._escapeAttribute(field.key)}">Browse</button>
+        <button class="browse-button" type="button" data-browse-field="${this._escapeAttribute(field.key)}">${this._escapeHtml(this._t("action.browse"))}</button>
       </div>
     `;
   }
@@ -5690,7 +5702,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const previewKey = this._getFieldPreviewKey(field.key, selectedValue);
     const isLoading = this._fieldPreviewLoadingKey === previewKey;
     const isPlaying = this._fieldPreviewPlayingKey === previewKey;
-    const actionLabel = isLoading ? "Loading preview" : isPlaying ? "Pause preview" : "Play preview";
+    const actionLabel = this._t(isLoading ? "action.loading_preview" : isPlaying ? "action.pause_preview" : "action.play_preview");
     return `
       <div class="input-row select-preview-row">
         ${selectMarkup}
@@ -5714,7 +5726,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           type="checkbox"
           ${value ? "checked" : ""}
         />
-        <span>Enabled</span>
+        <span>${this._escapeHtml(this._t("label.enabled"))}</span>
       </label>
     `;
   }
@@ -5796,7 +5808,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const roots = this._picker.roots || [];
     const capabilities = this._picker.capabilities || {};
     const loading = this._pickerLoadingVisible
-      ? `<p class="picker-empty">Loading items...</p>`
+      ? `<p class="picker-empty">${this._escapeHtml(this._t("loading.items"))}</p>`
       : "";
     const error = this._pickerError
       ? `<div class="message error picker-error-banner">${this._escapeHtml(this._pickerError)}</div>`
@@ -5806,11 +5818,11 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       : "";
     const isEmpty = !this._pickerLoading && items.length === 0;
     const empty = isEmpty
-      ? `<p class="picker-empty">No files or folders match this location.</p>`
+      ? `<p class="picker-empty">${this._escapeHtml(this._t("empty.folder"))}</p>`
       : "";
     const breadcrumbs = (this._picker.breadcrumbs || []).map((segment, index) => {
       if (index === 0) {
-        return `<button class="picker-breadcrumb-home" type="button" data-picker-path="${this._escapeAttribute(segment.path)}" aria-label="Open ${this._escapeAttribute(segment.label)}">${ICONS.folder}</button>`;
+        return `<button class="picker-breadcrumb-home" type="button" data-picker-path="${this._escapeAttribute(segment.path)}" aria-label="${this._escapeAttribute(this._t("aria.open_named", { title: segment.label }))}">${ICONS.folder}</button>`;
       }
       return `
         <span class="picker-path-separator">/</span>
@@ -5820,7 +5832,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const currentPath = this._picker.current_path || "";
     const selectedPath = this._pickerSelectedPath || currentPath;
     const canSelect = Boolean(selectedPath && this._isPickerPathSelectable(selectedPath));
-    const pickerTitle = this._picker.title || "Select folder";
+    const pickerTitle = this._picker.title || this._t("action.select_folder");
     const menuOpen = Boolean(this._pickerMenuOpen);
     const preview = empty ? "" : this._renderPickerPreview();
     const rootList = roots.map((root) => `
@@ -5849,8 +5861,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               class="button-secondary icon-only-button picker-modal-close"
               type="button"
               data-picker-close="1"
-              aria-label="Close folder browser"
-              title="Close folder browser"
+              aria-label="${this._escapeAttribute(this._t("aria.close_folder_browser"))}"
+              title="${this._escapeAttribute(this._t("aria.close_folder_browser"))}"
             >${ICONS.close}</button>
           </div>
           <div class="picker-dialog-body">
@@ -5861,7 +5873,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           <div class="picker-browser-shell">
             <aside class="picker-browser-sidebar">
               <div class="picker-sidebar-header">
-                <p class="picker-location-label">Locations</p>
+                <p class="picker-location-label">${this._escapeHtml(this._t("label.locations"))}</p>
               </div>
               <div class="picker-sidebar-list">
                 ${rootList}
@@ -5875,7 +5887,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                     data-picker-filter="1"
                     type="search"
                     value="${this._escapeAttribute(this._pickerFilter || "")}"
-                    placeholder="Search current folder"
+                    placeholder="${this._escapeAttribute(this._t("placeholder.search_folder"))}"
                   />
                 </div>
                 <div class="picker-browser-toolbar-right">
@@ -5884,16 +5896,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                     type="button"
                     data-picker-menu-toggle="1"
                     aria-expanded="${menuOpen ? "true" : "false"}"
-                    aria-label="More actions"
-                    title="More actions"
+                    aria-label="${this._escapeAttribute(this._t("aria.more_actions"))}"
+                    title="${this._escapeAttribute(this._t("aria.more_actions"))}"
                   >${ICONS.more}</button>
                   ${menuOpen
                     ? `
                       <div class="picker-overflow-menu">
-                        <button class="button-secondary picker-overflow-item" type="button" data-picker-refresh="1">${ICONS.refresh}<span>Refresh</span></button>
-                        <button class="button-secondary picker-overflow-item" type="button" data-picker-new-folder="1" ${capabilities.can_create_folder ? "" : "disabled"}>${ICONS.plus}<span>New Folder</span></button>
-                        <button class="button-secondary picker-overflow-item" type="button" data-picker-upload-files="1" ${capabilities.can_upload ? "" : "disabled"}>${ICONS.upload}<span>Upload Files</span></button>
-                        <button class="button-secondary picker-overflow-item" type="button" data-picker-upload-folder="1" ${capabilities.can_upload ? "" : "disabled"}>${ICONS.folder}<span>Upload Folder</span></button>
+                        <button class="button-secondary picker-overflow-item" type="button" data-picker-refresh="1">${ICONS.refresh}<span>${this._escapeHtml(this._t("action.refresh"))}</span></button>
+                        <button class="button-secondary picker-overflow-item" type="button" data-picker-new-folder="1" ${capabilities.can_create_folder ? "" : "disabled"}>${ICONS.plus}<span>${this._escapeHtml(this._t("action.new_folder"))}</span></button>
+                        <button class="button-secondary picker-overflow-item" type="button" data-picker-upload-files="1" ${capabilities.can_upload ? "" : "disabled"}>${ICONS.upload}<span>${this._escapeHtml(this._t("action.upload_files"))}</span></button>
+                        <button class="button-secondary picker-overflow-item" type="button" data-picker-upload-folder="1" ${capabilities.can_upload ? "" : "disabled"}>${ICONS.folder}<span>${this._escapeHtml(this._t("action.upload_folder"))}</span></button>
                       </div>
                     `
                     : ""
@@ -5902,7 +5914,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               </div>
               <div class="picker-pathbar">
                 <div class="picker-pathbar-main">
-                  <p class="picker-pathbar-label">Current folder</p>
+                  <p class="picker-pathbar-label">${this._escapeHtml(this._t("label.current_folder"))}</p>
                   <div class="picker-breadcrumbs">
                     ${breadcrumbs}
                   </div>
@@ -5927,7 +5939,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                     ''}
                     ${items.map((item, index) => this._renderPickerItemRow(item, index + (this._picker.parent_path ? 1 : 0))).join("")}
                   </div>
-                  ${hasParentRow && isEmpty ? '<p class="picker-empty picker-empty-overlay">No files or folders match this location.</p>' : ""}
+                  ${hasParentRow && isEmpty ? `<p class="picker-empty picker-empty-overlay">${this._escapeHtml(this._t("empty.folder"))}</p>` : ""}
                 `}
               </div>
               ${preview}
@@ -5935,13 +5947,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           </div>
           ${this._renderPickerActionDialog()}
           <div class="picker-dialog-footer">
-            <button class="button-secondary" type="button" data-picker-close="1">Cancel</button>
+            <button class="button-secondary" type="button" data-picker-close="1">${this._escapeHtml(this._t("action.cancel"))}</button>
             <button
               class="button-primary"
               type="button"
               data-picker-choose="${this._escapeAttribute(selectedPath)}"
               ${canSelect ? "" : "disabled"}
-            >Select folder</button>
+            >${this._escapeHtml(this._t("action.select_folder"))}</button>
           </div>
         </div>
         </div>
@@ -5956,26 +5968,26 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
     const restartCopy = this._restartContext === "provider-refresh"
       ? (this._data?.restart_alert_note
-        || "Home Assistant needs to restart before newly installed TTS providers appear in Chime TTS.")
+        || this._t("notice.restart_providers"))
       : (this._data?.restart_note
-        || "Your changes have been saved, but they will not take effect until Home Assistant restarts.");
+        || this._t("notice.restart_saved"));
 
     return `
       <div class="confirm-overlay">
-        <div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="Confirm Home Assistant restart">
-          <h3 class="confirm-title">Restart Home Assistant?</h3>
+        <div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="${this._escapeAttribute(this._t("aria.confirm_restart"))}">
+          <h3 class="confirm-title">${this._escapeHtml(this._t("title.restart"))}</h3>
           <p class="confirm-copy">
             ${this._escapeHtml(restartCopy)}
           </p>
           <div class="confirm-actions">
             ${this._restarting
               ? ""
-              : '<button class="button-secondary" type="button" data-restart-cancel="1">Cancel</button>'
+              : `<button class="button-secondary" type="button" data-restart-cancel="1">${this._escapeHtml(this._t("action.cancel"))}</button>`
             }
             <button class="button-restart" type="button" data-restart-confirm="1" ${this._restarting ? "disabled" : ""}>
               ${this._restarting
-                ? '<span class="button-spinner" aria-hidden="true"></span>Restarting...'
-                : "Restart Home Assistant"
+                ? `<span class="button-spinner" aria-hidden="true"></span>${this._escapeHtml(this._t("status.restarting"))}`
+                : this._escapeHtml(this._t("action.restart_home_assistant"))
               }
             </button>
           </div>
@@ -5993,13 +6005,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
     return `
       <div class="confirm-overlay">
-        <div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="Unsaved changes">
-          <h3 class="confirm-title">${isNavigating ? "Save your changes?" : "Reset Changes"}</h3>
-          <p class="confirm-copy">${isNavigating ? "You have unsaved changes. Save them before leaving this page?" : "Discarding your unsaved edits?"}</p>
+        <div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="${this._escapeAttribute(this._t("aria.unsaved_changes"))}">
+          <h3 class="confirm-title">${this._escapeHtml(this._t(isNavigating ? "title.save_changes" : "title.reset_changes"))}</h3>
+          <p class="confirm-copy">${this._escapeHtml(this._t(isNavigating ? "notice.unsaved_changes" : "notice.discard_changes"))}</p>
           <div class="confirm-actions">
-            <button class="button-secondary" type="button" data-discard-changes-cancel="1">Cancel</button>
-            <button class="button-secondary" type="button" data-discard-changes-confirm="1">Discard</button>
-            <button class="button-primary" type="button" data-discard-changes-save="1" ${this._saving || this._hasInvalidPathChanges() ? "disabled" : ""}>Save</button>
+            <button class="button-secondary" type="button" data-discard-changes-cancel="1">${this._escapeHtml(this._t("action.cancel"))}</button>
+            <button class="button-secondary" type="button" data-discard-changes-confirm="1">${this._escapeHtml(this._t("action.discard"))}</button>
+            <button class="button-primary" type="button" data-discard-changes-save="1" ${this._saving || this._hasInvalidPathChanges() ? "disabled" : ""}>${this._escapeHtml(this._t("action.save"))}</button>
           </div>
         </div>
       </div>
@@ -6016,11 +6028,11 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       <div class="picker-preview">
         ${previewFiles.length > 0 ? `
           <p class="picker-preview-title centered">
-            ${previewFiles.length} Audio file${previewFiles.length > 1 ? "s" : ""} found
+            ${this._escapeHtml(this._t("picker.audio_files_found", { count: previewFiles.length }))}
           </p>` :
 
           `<p class="picker-preview-title centered">
-            No audio files were found in this folder.
+            ${this._escapeHtml(this._t("picker.no_audio_files"))}
           </p>`
         }
       </div>`;
@@ -6078,8 +6090,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                 type="button"
                 data-picker-audio-toggle="${this._escapeAttribute(item?.path || "")}"
                 data-picker-audio-url="${this._escapeAttribute(item?.audio_preview_url || "")}"
-                aria-label="${isPlaying ? "Pause" : "Play"} ${this._escapeAttribute(item?.name || "audio file")}"
-                title="${isPlaying ? "Pause preview" : isLoadingAudio ? "Loading preview" : "Play preview"}"
+                aria-label="${this._escapeAttribute(this._t(isPlaying ? "aria.pause_named" : "aria.play_named", { title: item?.name || this._t("label.audio_file") }))}"
+                title="${this._escapeAttribute(this._t(isPlaying ? "action.pause_preview" : isLoadingAudio ? "action.loading_preview" : "action.play_preview"))}"
               >${isLoadingAudio ? '<span class="button-spinner" aria-hidden="true"></span>' : isPlaying ? ICONS.pause : ICONS.play}</button>`
             : ""
           }
@@ -6088,8 +6100,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             type="button"
             data-picker-rename="${this._escapeAttribute(item?.path || "")}"
             data-picker-name="${this._escapeAttribute(item?.name || "")}"
-            aria-label="Rename ${this._escapeAttribute(item?.name || "item")}"
-            title="Rename"
+            aria-label="${this._escapeAttribute(this._t("aria.rename_named", { title: item?.name || this._t("label.item") }))}"
+            title="${this._escapeAttribute(this._t("action.rename"))}"
             ${canRename ? "" : "disabled"}
           >${ICONS.pencil}</button>
           <button
@@ -6097,8 +6109,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             type="button"
             data-picker-delete="${this._escapeAttribute(item?.path || "")}"
             data-picker-name="${this._escapeAttribute(item?.name || "")}"
-            aria-label="Delete ${this._escapeAttribute(item?.name || "item")}"
-            title="Delete"
+            aria-label="${this._escapeAttribute(this._t("aria.delete_named", { title: item?.name || this._t("label.item") }))}"
+            title="${this._escapeAttribute(this._t("action.delete"))}"
             ${canDelete ? "" : "disabled"}
           >${ICONS.trash}</button>
         </span>
@@ -6116,16 +6128,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const isUploadConflicts = this._pickerAction.mode === "upload_conflicts";
     const isUploadFolder = isUpload && Boolean(this._pickerAction.directory);
     const actionLabel = isDelete
-      ? "Delete"
+      ? this._t("action.delete")
       : isUploadConflicts
-        ? "Overwrite Existing"
+        ? this._t("action.overwrite_existing")
       : isUpload
-        ? "Upload"
+        ? this._t("action.upload")
       : this._pickerAction.mode === "rename"
-        ? "Rename"
-        : "Create Folder";
+        ? this._t("action.rename")
+        : this._t("action.create_folder");
     const secondaryLabel = isUploadConflicts && this._pickerAction.nonExistingCount > 0
-      ? `Upload ${this._pickerAction.nonExistingCount} Non-Existing`
+      ? this._t("action.upload_non_existing", { count: this._pickerAction.nonExistingCount })
       : "";
     const error = this._pickerAction.error
       ? `<div class="message error">${this._escapeHtml(this._pickerAction.error)}</div>`
@@ -6134,7 +6146,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       ? ""
       : `
         <div class="picker-action-field">
-          <label for="picker-action-input">${this._pickerAction.mode === "rename" ? "New name" : "Folder name"}</label>
+          <label for="picker-action-input">${this._escapeHtml(this._t(this._pickerAction.mode === "rename" ? "label.new_name" : "label.folder_name"))}</label>
           <input
             id="picker-action-input"
             class="control"
@@ -6153,7 +6165,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             <div class="picker-action-header-bar">
               <h3 class="picker-action-title">${this._escapeHtml(this._pickerAction.title || actionLabel)}</h3>
               ${isUploadConflicts
-                ? `<button class="button-secondary icon-only-button picker-action-close" type="button" data-picker-action-cancel="1" aria-label="Close overwrite dialog" title="Close">${ICONS.close}</button>`
+                ? `<button class="button-secondary icon-only-button picker-action-close" type="button" data-picker-action-cancel="1" aria-label="${this._escapeAttribute(this._t("aria.close_overwrite"))}" title="${this._escapeAttribute(this._t("action.close"))}">${ICONS.close}</button>`
                 : ""
               }
             </div>
@@ -6165,7 +6177,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             <div class="picker-action-actions">
               ${isUploadConflicts
                 ? ""
-                : `<button class="button-secondary" type="button" data-picker-action-cancel="1">Cancel</button>`
+                : `<button class="button-secondary" type="button" data-picker-action-cancel="1">${this._escapeHtml(this._t("action.cancel"))}</button>`
               }
               ${secondaryLabel
                 ? `<button class="button-secondary" type="button" data-picker-action-secondary="1">${this._escapeHtml(secondaryLabel)}</button>`
@@ -6278,7 +6290,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           field_key: fieldKey,
           valid: false,
           tone: "error",
-          message: error?.message || "Unable to validate this folder path right now.",
+          message: error?.message || this._t("error.validate_folder"),
           badges: [],
         },
       };
@@ -6392,14 +6404,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._restartContext = null;
       this._data = {
         ...(this._data || {}),
-        message: "Home Assistant restart requested.",
+        message: this._t("status.restart_requested"),
         message_type: "success",
       };
       this._showSaveResult("success");
     } catch (error) {
       this._data = {
         ...(this._data || {}),
-        message: error?.message || "Unable to request a Home Assistant restart.",
+        message: error?.message || this._t("error.restart"),
         message_type: "error",
       };
       this._showSaveResult("error");
@@ -6855,13 +6867,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _formatLogEventMeta(event) {
     const parts = [];
     if (event.type === "integration_initiation") {
-      parts.push("Integration initiation");
+      parts.push(this._t("log.integration_initiation"));
     } else if (event.type === "notification_call") {
-      parts.push("Notification");
+      parts.push(this._t("log.notification"));
     } else if (event.type === "configuration_update") {
-      parts.push("Configuration update");
+      parts.push(this._t("log.configuration_update"));
     } else if (event.type === "action_call") {
-      parts.push("Action call");
+      parts.push(this._t("log.action_call"));
     }
     if (event.started_at) {
       parts.push(this._formatTimestamp(event.started_at));
@@ -7009,7 +7021,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     } catch (_error) {
       this._data = {
         ...(this._data || {}),
-        message: "Unable to copy logs to the clipboard.",
+        message: this._t("error.copy_logs"),
         message_type: "error",
       };
       this._render();
@@ -7035,7 +7047,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     } catch (_error) {
       this._data = {
         ...(this._data || {}),
-        message: "Unable to copy YAML to the clipboard.",
+        message: this._t("error.copy_yaml"),
         message_type: "error",
       };
     }
@@ -7059,7 +7071,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     } catch (error) {
       this._data = {
         ...(this._data || {}),
-        message: error?.message || "Unable to repeat this action.",
+        message: error?.message || this._t("error.repeat"),
         message_type: "error",
       };
     }
@@ -7171,7 +7183,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     } catch (error) {
       this._data = {
         ...(this._data || {}),
-        message: error?.message || "Unable to save Chime TTS settings.",
+        message: error?.message || this._t("error.save"),
         message_type: "error",
       };
       this._showSaveResult("error");
@@ -7347,7 +7359,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (numberInput && document.activeElement !== numberInput) {
       numberInput.value = value;
       numberInput.placeholder = value === ""
-        ? `Auto${field?.unit ? ` ${field.unit}` : ""}`
+        ? this._t("placeholder.auto", { unit: field?.unit ? ` ${field.unit}` : "" })
         : "";
     }
   }
@@ -7472,8 +7484,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (button) {
       button.classList.toggle("expanded", expanded);
       button.classList.toggle("collapsed", !expanded);
-      button.setAttribute("aria-label", `${expanded ? "Collapse" : "Expand"} ${labelType}`);
-      button.setAttribute("title", expanded ? "Collapse" : "Expand");
+      button.setAttribute("aria-label", this._t(expanded ? "aria.collapse_named" : "aria.expand_named", { title: labelType }));
+      button.setAttribute("title", this._t(expanded ? "action.collapse" : "action.expand"));
     }
   }
 
@@ -7517,7 +7529,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (toggle) {
       toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
       const title = group.querySelector(".chapter-hero-title")?.textContent?.trim() || "section";
-      toggle.setAttribute("aria-label", `${expanded ? "Collapse" : "Expand"} ${title}`);
+      toggle.setAttribute("aria-label", this._t(expanded ? "aria.collapse_named" : "aria.expand_named", { title }));
     }
 
     const collapse = group.querySelector(":scope .chapter-collapse");
@@ -7601,8 +7613,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       // from the picker until the user removes that chip again.
       picker.excludeEntities = selectedEntities;
       picker.value = selectedValue;
-      picker.label = "Add media player";
-      picker.helper = "Choose a media_player entity to append";
+      picker.label = this._t("label.add_media_player");
+      picker.helper = this._t("description.add_media_player");
       picker.clearable = true;
       picker.disabled = this._saving;
       if (picker.__notifyPickerBound) {
@@ -7749,7 +7761,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ? this._pickerSelectedPath
         : this._picker.current_path || "";
     } catch (error) {
-      this._pickerError = error?.message || "Unable to browse folders.";
+      this._pickerError = error?.message || this._t("error.browse_folders");
     } finally {
       this._pickerLoading = false;
       this._endPickerLoadingDelay();
@@ -7866,7 +7878,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         this._fieldPreviewLoadingKey = "";
         this._data = {
           ...(this._data || {}),
-          message: "Unable to play this chime preview.",
+          message: this._t("error.play_chime_preview"),
           message_type: "error",
         };
         this._rerenderPreservingInputState(fieldKey);
@@ -7914,7 +7926,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           this._stopFieldPreviewAudio();
           this._data = {
             ...(this._data || {}),
-            message: "Unable to play this chime preview.",
+            message: this._t("error.play_chime_preview"),
             message_type: "error",
           };
           this._rerenderPreservingInputState(fieldKey);
@@ -7969,7 +7981,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         this._notifyPreviewLoadingKey = "";
         this._data = {
           ...(this._data || {}),
-          message: "Unable to play this chime preview.",
+          message: this._t("error.play_chime_preview"),
           message_type: "error",
         };
         this._rerenderPreservingInputState();
@@ -8017,7 +8029,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           this._stopNotifyPreviewAudio();
           this._data = {
             ...(this._data || {}),
-            message: "Unable to play this chime preview.",
+            message: this._t("error.play_chime_preview"),
             message_type: "error",
           };
           this._rerenderPreservingInputState();
@@ -8050,7 +8062,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     } catch (_error) {
       if (loadToken === this._pickerAudioLoadToken) {
         this._pickerAudioLoadingPath = "";
-        this._pickerError = "Unable to play this audio preview.";
+        this._pickerError = this._t("error.play_audio_preview");
         this._renderPreservingPickerScroll();
       }
       return;
@@ -8094,7 +8106,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       playAttempt.catch(() => {
         if (this._pickerAudio === audio) {
           this._stopPickerAudio();
-          this._pickerError = "Unable to play this audio preview.";
+          this._pickerError = this._t("error.play_audio_preview");
           this._renderPreservingPickerScroll();
         }
       });
@@ -8145,7 +8157,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         : this._picker.current_path || "";
       return true;
     } catch (error) {
-      this._pickerError = error?.message || "Unable to complete that browser action.";
+      this._pickerError = error?.message || this._t("error.browser_action");
       return false;
     } finally {
       this._pickerBusy = false;
@@ -8159,10 +8171,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
     this._pickerAction = {
       mode: "create",
-      title: "Create folder",
+      title: this._t("action.create_folder"),
       copy: `Add a new folder inside ${this._picker.current_path || "/"}.`,
       value: "",
-      placeholder: "New folder name",
+      placeholder: this._t("placeholder.new_folder_name"),
       error: "",
     };
     this._render();
@@ -8174,11 +8186,11 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
     this._pickerAction = {
       mode: "rename",
-      title: "Rename item",
-      copy: `Choose a new name for ${currentName ? `"${currentName}"` : "this item"}.`,
+      title: this._t("title.rename_item"),
+      copy: this._t("notice.rename_item", { name: currentName ? `"${currentName}"` : this._t("label.this_item") }),
       path,
       value: currentName || "",
-      placeholder: currentName || "New name",
+      placeholder: currentName || this._t("label.new_name"),
       error: "",
     };
     this._render();
@@ -8190,8 +8202,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
     this._pickerAction = {
       mode: "delete",
-      title: "Delete item",
-      copy: `Delete ${name || path}? This action cannot be undone.`,
+      title: this._t("title.delete_item"),
+      copy: this._t("notice.delete_item", { name: name || path }),
       path,
       value: "",
       error: "",
@@ -8218,8 +8230,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       const destinationFolderName = this._getPickerFolderLabel(this._picker.current_path || "/");
       this._pickerAction = {
         mode: "upload",
-        title: "Upload Folder",
-        copy: `Upload ${files.length} file${files.length === 1 ? "" : "s"} from "${sourceFolderName}" into folder "${destinationFolderName}"?`,
+        title: this._t("action.upload_folder"),
+        copy: this._t("notice.upload_folder", { count: files.length, source: sourceFolderName, destination: destinationFolderName }),
         files,
         directory: true,
         error: "",
@@ -8234,7 +8246,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _getPickerUploadSourceFolderName(files) {
     const firstRelativePath = files?.[0]?.webkitRelativePath || "";
     const firstSegment = String(firstRelativePath).replace(/\\/g, "/").split("/").filter(Boolean)[0];
-    return firstSegment || "selected folder";
+    return firstSegment || this._t("label.selected_folder");
   }
 
   _getPickerFolderLabel(path) {
@@ -8284,12 +8296,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           const conflictCount = Number(conflictPayload.conflict_count || 0);
           const nonExistingCount = Math.max(0, files.length - conflictCount);
           const destinationFolderName = this._getPickerFolderLabel(this._picker.current_path || "/");
-          const conflictCopy = nonExistingCount === 0
-            ? `${conflictCount === 1 ? "That file already exists" : "Those files already exist"} in the folder "${destinationFolderName}".`
-            : `${conflictCount} file${conflictCount === 1 ? "" : "s"} already ${conflictCount === 1 ? "exists" : "exist"} in the folder "${destinationFolderName}".`;
+          const conflictCopy = this._t(
+            nonExistingCount === 0 ? "notice.upload_conflicts_all" : "notice.upload_conflicts",
+            { count: conflictCount, destination: destinationFolderName },
+          );
           this._pickerAction = {
             mode: "upload_conflicts",
-            title: "Overwrite Existing Files?",
+            title: this._t("title.overwrite_files"),
             copy: conflictCopy,
             files,
             directory,
@@ -8301,7 +8314,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         }
       }
       if (!response.ok) {
-        throw new Error(await response.text() || "Unable to upload selected files.");
+        throw new Error(await response.text() || this._t("error.upload_files"));
       }
       const pickerData = await response.json();
       this._picker = {
@@ -8316,10 +8329,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       if (this._pickerAction?.mode === "upload") {
         this._pickerAction = {
           ...this._pickerAction,
-          error: error?.message || "Unable to upload the selected files.",
+          error: error?.message || this._t("error.upload_files"),
         };
       } else {
-        this._pickerError = error?.message || "Unable to upload the selected files.";
+        this._pickerError = error?.message || this._t("error.upload_files");
       }
     } finally {
       this._pickerBusy = false;
@@ -8371,7 +8384,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
     if (this._pickerAction.mode === "create") {
       if (!value) {
-        this._pickerAction = { ...this._pickerAction, error: "Enter a folder name." };
+        this._pickerAction = { ...this._pickerAction, error: this._t("error.folder_name_required") };
         this._render();
         return;
       }
@@ -8383,7 +8396,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       };
     } else if (this._pickerAction.mode === "rename") {
       if (!value) {
-        this._pickerAction = { ...this._pickerAction, error: "Enter a new name." };
+        this._pickerAction = { ...this._pickerAction, error: this._t("error.new_name_required") };
         this._render();
         return;
       }
@@ -8455,14 +8468,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           valid: false,
           exists: false,
           tone: "error",
-          message: error?.message || "Unable to validate this folder path right now.",
+          message: error?.message || this._t("error.validate_folder"),
           badges: [],
         };
       }
     }
 
     if (!validation.valid) {
-      this._pickerError = validation.message || "That folder cannot be selected for this field.";
+      this._pickerError = validation.message || this._t("error.folder_not_selectable");
       this._render();
       return;
     }
@@ -8498,7 +8511,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         }
       }
     }
-    return "Select folder";
+    return this._t("action.select_folder");
   }
 
   _findField(fieldKey) {
@@ -8796,7 +8809,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     } catch (error) {
       this._data = {
         ...(this._data || {}),
-        message: error?.message || `Unable to send notify.${service}.`,
+        message: error?.message || this._t("error.send_notification", { service }),
         message_type: "error",
       };
       this._notifyProfileTests = {
@@ -8912,18 +8925,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _formatError(errorKey) {
-    const errorMap = {
-      required: "This field is required.",
-      invalid_number: "Enter a valid number.",
-      invalid_yaml: "Enter valid YAML.",
-      timeout: "The timeout value is invalid.",
-      timeout_sub: "Enter a valid timeout duration.",
-      tts_platform_none: "No TTS platforms were detected. Add at least one TTS integration first.",
-      tts_platform_select: "The selected TTS platform was not found.",
-      temp_path: "The temp folder must be inside a configured media directory.",
-      www_path: "The say_url output folder must be inside an external directory, /media, or /config/www.",
-    };
-    return errorMap[errorKey] || errorKey;
+    const translated = this._t(`validation.${errorKey}`);
+    return translated === `validation.${errorKey}` ? errorKey : translated;
   }
 
   _escapeHtml(value) {

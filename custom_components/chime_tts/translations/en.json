@@ -220,6 +220,49 @@
             }
         }
     },
+    "config_panel": {
+        "loading": {
+            "settings": "Loading Chime TTS settings",
+            "profiles": "Loading notification profiles...",
+            "logs": "Loading Chime TTS log events...",
+            "items": "Loading items..."
+        },
+        "chapter": {
+            "settings": "Settings",
+            "configuration": "Configuration",
+            "configuration_description": "Set default providers, folder paths, playback timing, and integration-wide behavior for Chime TTS.",
+            "profiles": "Profiles",
+            "session": "Session",
+            "project": "Project"
+        },
+        "section": {
+            "notify_profiles_title": "Notification Profiles",
+            "notify_profiles_description": "Create and manage notify services for Chime TTS to easily send Chime TTS notifications in automations and scripts. Saving changes requires a Home Assistant restart.",
+            "logs_title": "Logs",
+            "logs_description": "Review Chime TTS events captured during this Home Assistant session, including actions, generated media, and raw log output.",
+            "about_title": "Support & Info",
+            "about_description": "Find documentation, support, bug reporting, feature request, and project support links for Chime TTS."
+        },
+        "action": {
+            "reload": "Reload", "reset": "Reset", "reset_section": "Reset Section", "save": "Save", "restart": "Restart", "restart_home_assistant": "Restart Home Assistant", "cancel": "Cancel", "discard": "Discard", "close": "Close", "open": "Open", "browse": "Browse", "use_anyway": "Use Anyway", "expand": "Expand", "collapse": "Collapse", "expand_all": "Expand All", "collapse_all": "Collapse All", "show_advanced": "Show Advanced", "hide_advanced": "Hide Advanced", "add_profile": "+ Add Profile", "raw_logs": "Raw Logs", "copy_logs": "Copy Logs", "copy_yaml": "Copy YAML", "repeat": "Repeat", "send": "Send", "test": "Test", "delete": "Delete", "rename": "Rename", "refresh": "Refresh", "new_folder": "New Folder", "upload": "Upload", "upload_files": "Upload Files", "upload_folder": "Upload Folder", "create_folder": "Create Folder", "overwrite_existing": "Overwrite Existing", "upload_non_existing": "Upload {count} Non-Existing", "select_folder": "Select folder", "play_preview": "Play preview", "pause_preview": "Pause preview", "loading_preview": "Loading preview"
+        },
+        "aria": {
+            "collapse_section": "Collapse section", "expand_section": "Expand section", "collapse_named": "Collapse {title}", "expand_named": "Expand {title}", "collapse_profile": "Collapse profile", "expand_profile": "Expand profile", "open_help": "Open help for {title}", "open_raw_logs": "Open the raw Home Assistant logs filtered to Chime TTS", "play_logo_animation": "Play Chime TTS logo animation", "logo": "Chime TTS logo", "collapse_log": "Collapse log row", "expand_log": "Expand log row", "close_test": "Close test input", "test_profile": "Test profile", "delete_profile": "Delete profile", "close_folder_browser": "Close folder browser", "more_actions": "More actions", "open_named": "Open {title}", "pause_named": "Pause {title}", "play_named": "Play {title}", "rename_named": "Rename {title}", "delete_named": "Delete {title}", "close_overwrite": "Close overwrite dialog", "confirm_restart": "Confirm Home Assistant restart", "unsaved_changes": "Unsaved changes"
+        },
+        "label": {
+            "required": "Required", "enabled": "Enabled", "target_media_players": "Target media players", "locations": "Locations", "current_folder": "Current folder", "version": "Version {version}", "profile": "Profile {number}", "log_event": "Log event", "audio_file": "audio file", "item": "item", "this_item": "this item", "selected_folder": "selected folder", "new_name": "New name", "folder_name": "Folder name", "add_media_player": "Add media player"
+        },
+        "placeholder": {"service_name": "Service name", "tts_text": "Enter TTS text", "search_folder": "Search current folder", "new_folder_name": "New folder name", "auto": "Auto{unit}"},
+        "description": {"target_media_players": "Select one or more media_player entities to play the notification.", "add_media_player": "Choose a media_player entity to append"},
+        "title": {"restart": "Restart Home Assistant?", "save_changes": "Save your changes?", "reset_changes": "Reset Changes", "rename_item": "Rename item", "delete_item": "Delete item", "overwrite_files": "Overwrite Existing Files?"},
+        "notice": {"restart_required_title": "Restart Required", "restart_required": "Any changes to the folder path or its contents will require a restart to take effect.", "restart_providers": "Home Assistant needs to restart before newly installed TTS providers appear in Chime TTS.", "restart_saved": "Your changes have been saved, but they will not take effect until Home Assistant restarts.", "unsaved_changes": "You have unsaved changes. Save them before leaving this page?", "discard_changes": "Discarding your unsaved edits?", "rename_item": "Choose a new name for {name}.", "delete_item": "Delete {name}? This action cannot be undone.", "upload_folder": "Upload {count} file(s) from \"{source}\" into folder \"{destination}\"?", "upload_conflicts_all": "Those files already exist in the folder \"{destination}\".", "upload_conflicts": "{count} file(s) already exist in the folder \"{destination}\"."},
+        "status": {"changed": "Changed", "copied": "Copied", "sent": "Sent", "restarting": "Restarting...", "restart_requested": "Home Assistant restart requested."},
+        "empty": {"profiles": "No Chime TTS notify profiles are configured yet.", "logs": "No Chime TTS logs have been captured in this Home Assistant session yet.", "raw_logs": "No raw logs were captured for this event.", "media_players": "No media players selected yet.", "folder": "No files or folders match this location."},
+        "picker": {"audio_files_found": "{count} audio file(s) found", "no_audio_files": "No audio files were found in this folder."},
+        "log": {"integration_initiation": "Integration initiation", "notification": "Notification", "configuration_update": "Configuration update", "action_call": "Action call"},
+        "validation": {"required": "This field is required.", "invalid_number": "Enter a valid number.", "invalid_yaml": "Enter valid YAML.", "timeout": "The timeout value is invalid.", "timeout_sub": "Enter a valid timeout duration.", "tts_platform_none": "No TTS platforms were detected. Add at least one TTS integration first.", "tts_platform_select": "The selected TTS platform was not found.", "temp_path": "The temp folder must be inside a configured media directory.", "www_path": "The say_url output folder must be inside an external directory, /media, or /config/www."},
+        "error": {"load_panel": "Unable to load Chime TTS panel.", "load_profiles": "Unable to load notification profiles.", "validate_folder": "Unable to validate this folder path right now.", "restart": "Unable to request a Home Assistant restart.", "copy_logs": "Unable to copy logs to the clipboard.", "copy_yaml": "Unable to copy YAML to the clipboard.", "repeat": "Unable to repeat this action.", "save": "Unable to save Chime TTS settings.", "browse_folders": "Unable to browse folders.", "play_chime_preview": "Unable to play this chime preview.", "play_audio_preview": "Unable to play this audio preview.", "browser_action": "Unable to complete that browser action.", "upload_files": "Unable to upload the selected files.", "folder_name_required": "Enter a folder name.", "new_name_required": "Enter a new name.", "folder_not_selectable": "That folder cannot be selected for this field.", "send_notification": "Unable to send notify.{service}."}
+    },
     "options": {
         "step": {
             "init": {
