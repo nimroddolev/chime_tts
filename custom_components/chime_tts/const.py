@@ -62,6 +62,7 @@ WWW_PATH_DEFAULT = "/config/www/chime_tts/"
 MP3_PRESET_PATH = "custom_components/chime_tts/mp3s/"
 MP3_PRESET_PATH_PLACEHOLDER = "mp3_path_placeholder-"  # DEPRECATED
 DEFAULT_CHIME_OPTIONS = [
+    {"label": "Airport", "value": "airport"},
     {"label": "Ba-Dum Tss!", "value": "ba_dum_tss"},
     {"label": "Bells", "value": "bells"},
     {"label": "Bells 2", "value": "bells_2"},

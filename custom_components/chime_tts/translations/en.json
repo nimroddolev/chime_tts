@@ -190,6 +190,7 @@
         },
         "chime_paths": {
             "options": {
+                "airport": "Airport",
                 "ba_dum_tss": "Ba-Dum Tss!",
                 "bells": "Bells",
                 "bells_2": "Bells 2",
