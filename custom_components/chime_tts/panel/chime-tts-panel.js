@@ -6294,6 +6294,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const scrollElement = document.scrollingElement;
     const scrollTop = scrollElement?.scrollTop ?? window.scrollY ?? 0;
     const activeElement = this.shadowRoot.activeElement;
+    // Re-focusing a native select after its change event can reopen its picker
+    // on mobile browsers. The newly rendered select already has the selected
+    // value, so only restore focus for controls that need cursor preservation.
+    const shouldRestoreFocus = activeElement?.tagName !== "SELECT";
     const activeFieldKey = fieldKey || activeElement?.dataset?.field || null;
     const activeNotifyFieldKey = activeElement?.dataset?.notifyField || null;
     const activeNotifyIndex = activeElement?.dataset?.notifyIndex || null;
@@ -6324,7 +6328,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       // frame (for example when a profile collapses), so restore once more.
       window.requestAnimationFrame(restoreScrollPosition);
 
-      if (!activeFieldKey && !activeNotifyFieldKey && !activeNotifyInlineTest) {
+      if (
+        !shouldRestoreFocus
+        || (!activeFieldKey && !activeNotifyFieldKey && !activeNotifyInlineTest)
+      ) {
         return;
       }
 

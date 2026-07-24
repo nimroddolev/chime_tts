@@ -294,6 +294,20 @@ def test_panel_renders_chime_fields_as_selectable_options_with_preview_controls(
     assert "data-notify-audio-toggle" in panel_source
 
 
+def test_panel_does_not_refocus_native_selects_after_rendering():
+    """A chime select must close normally after a mobile selection."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert 'const shouldRestoreFocus = activeElement?.tagName !== "SELECT";' in panel_source
+    assert "!shouldRestoreFocus" in panel_source
+
+
 def test_issue_291_full_entity_id_matches_installed():
     """A full tts.* entity id selects that entity instead of being rejected (#291)."""
     helper = ChimeTTSHelper()
