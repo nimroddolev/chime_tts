@@ -477,6 +477,20 @@ NOTIFY_PROFILE_SCHEMA_FIELDS: tuple[dict[str, Any], ...] = (
         "description": "Convert audio for Alexa playback, scale volume with FFmpeg, or provide custom FFmpeg arguments.",
     },
     {
+        "key": "pre_script",
+        "label": "Pre-playback script",
+        "type": "textarea",
+        "description": "Runs before playback. Supports script.name or YAML with script and data fields.",
+        "placeholder": "eg: script.mute_tv",
+    },
+    {
+        "key": "post_script",
+        "label": "Post-playback script",
+        "type": "textarea",
+        "description": "Runs after playback. Supports script.name or YAML with script and data fields.",
+        "placeholder": "eg script.unmute_tv",
+    },
+    {
         "key": "options",
         "label": "TTS options YAML",
         "type": "textarea",
@@ -515,6 +529,8 @@ NOTIFY_STRING_KEYS = {
     "tld",
     "audio_conversion",
     "options",
+    "pre_script",
+    "post_script",
 }
 NOTIFY_EDITABLE_KEYS = (
     tuple(NOTIFY_STRING_KEYS)
@@ -538,6 +554,8 @@ NOTIFY_PROFILE_DEFAULTS = {
     "volume_level": "",
     "audio_conversion": "",
     "options": "",
+    "pre_script": "",
+    "post_script": "",
     "announce": False,
     "cache": False,
     "fade_audio": False,
@@ -587,6 +605,8 @@ NOTIFY_FIELD_DOCUMENTATION_URLS = {
     "volume_level": f"{SAY_ACTION_PARAMS_DOCS_URL}#volume_level",
     "audio_conversion": f"{SAY_ACTION_PARAMS_DOCS_URL}#audio_conversion",
     "options": f"{SAY_ACTION_PARAMS_DOCS_URL}#options",
+    "pre_script": f"{SAY_ACTION_PARAMS_DOCS_URL}#pre_script",
+    "post_script": f"{SAY_ACTION_PARAMS_DOCS_URL}#post_script",
     "announce": f"{SAY_ACTION_PARAMS_DOCS_URL}#announce",
     "cache": f"{SAY_ACTION_PARAMS_DOCS_URL}#cache",
     "fade_audio": f"{SAY_ACTION_PARAMS_DOCS_URL}#fade_audio",
@@ -1447,6 +1467,8 @@ def _serialize_notify_profile(profile: dict[str, Any]) -> dict[str, Any]:
         "volume_level",
         "audio_conversion",
         "options",
+        "pre_script",
+        "post_script",
         "announce",
         "cache",
         "fade_audio",

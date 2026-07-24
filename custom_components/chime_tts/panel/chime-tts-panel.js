@@ -8595,6 +8595,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       volume_level: "",
       audio_conversion: "",
       options: "",
+      pre_script: "",
+      post_script: "",
       announce: false,
       cache: false,
       fade_audio: false,

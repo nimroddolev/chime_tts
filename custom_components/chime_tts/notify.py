@@ -71,7 +71,9 @@ class ChimeTTSNotificationService(BaseNotificationService):
             "tld",
             "voice",
             "options",
-            "audio_conversion"
+            "audio_conversion",
+            "pre_script",
+            "post_script",
         ]:
             kwargs[key] = data.get(key, self._config.get(key))
 

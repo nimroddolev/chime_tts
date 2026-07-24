@@ -48,3 +48,30 @@ async def test_notify_service_forwards_crossfade_and_legacy_crossafade() -> None
 
     assert recorded_calls[0]["service_data"]["crossfade"] == 222
     assert recorded_calls[1]["service_data"]["crossfade"] == 333
+
+
+@pytest.mark.asyncio
+async def test_notify_service_forwards_configured_playback_scripts() -> None:
+    """Notify profile scripts should be passed through to chime_tts.say."""
+    recorded_calls: list[dict] = []
+
+    async def async_call(domain, service, service_data, blocking):
+        recorded_calls.append({"service_data": dict(service_data)})
+
+    hass = SimpleNamespace(
+        services=SimpleNamespace(async_call=async_call),
+        data={DOMAIN: {}},
+    )
+    service = ChimeTTSNotificationService(
+        hass,
+        {
+            "entity_id": "media_player.office",
+            "pre_script": "script.prepare_speakers",
+            "post_script": "script.restore_speakers",
+        },
+    )
+
+    await service.async_send_message("hello")
+
+    assert recorded_calls[0]["service_data"]["pre_script"] == "script.prepare_speakers"
+    assert recorded_calls[0]["service_data"]["post_script"] == "script.restore_speakers"
