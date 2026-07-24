@@ -315,14 +315,28 @@ template.innerHTML = `
     }
 
     .topbar-wrap {
+      --topbar-background: color-mix(in srgb, var(--card-background-color) 72%, transparent);
       position: sticky;
       top: 0;
       z-index: 10;
       width: 100%;
       padding-top: var(--panel-safe-area-top);
       backdrop-filter: blur(14px);
-      background: color-mix(in srgb, var(--card-background-color) 72%, transparent);
+      background: var(--topbar-background);
       border-bottom: 1px solid color-mix(in srgb, var(--divider-color) 86%, transparent);
+      isolation: isolate;
+    }
+
+    .topbar-wrap::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: -100vh;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: var(--topbar-background);
+      pointer-events: none;
     }
 
     .topbar {
@@ -2033,9 +2047,20 @@ template.innerHTML = `
     }
 
     .loading {
+      min-height: calc(100vh - 160px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       padding: 56px 24px;
-      text-align: center;
-      color: var(--secondary-text-color);
+    }
+
+    .loading-spinner {
+      width: 42px;
+      height: 42px;
+      border: 4px solid color-mix(in srgb, var(--primary-color, #03a9f4) 20%, transparent);
+      border-top-color: var(--primary-color, #03a9f4);
+      border-radius: 50%;
+      animation: buttonSpin 0.8s linear infinite;
     }
 
     .error-recovery {
@@ -2180,17 +2205,19 @@ template.innerHTML = `
       color: var(--primary-text-color);
       font-size: 1.2rem;
       font-weight: 700;
+      text-align: center;
     }
 
     .confirm-copy {
       margin: 0;
       color: var(--secondary-text-color);
       line-height: 1.6;
+      text-align: center;
     }
 
     .confirm-actions {
       display: flex;
-      justify-content: flex-end;
+      justify-content: center;
       align-items: center;
       gap: 12px;
       flex-wrap: wrap;
@@ -3840,10 +3867,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _render() {
-    this._renderSnowfall();
     if (this._loading) {
+      this._snowfall.innerHTML = "";
       this._renderTopbar({});
-      this._app.innerHTML = `<div class="loading">Loading Chime TTS settings...</div>`;
+      this._app.innerHTML = `<div class="loading" role="status" aria-label="Loading Chime TTS settings"><span class="loading-spinner" aria-hidden="true"></span></div>`;
       return;
     }
 
@@ -5956,12 +5983,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     return `
       <div class="confirm-overlay">
         <div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="Unsaved changes">
-          <h3 class="confirm-title">Save your changes?</h3>
-          <p class="confirm-copy">You have unsaved changes. Save them before ${isNavigating ? "leaving this page" : "discarding your edits"}?</p>
+          <h3 class="confirm-title">${isNavigating ? "Save your changes?" : "Reset Changes"}</h3>
+          <p class="confirm-copy">${isNavigating ? "You have unsaved changes. Save them before leaving this page?" : "Discarding your unsaved edits?"}</p>
           <div class="confirm-actions">
             <button class="button-secondary" type="button" data-discard-changes-cancel="1">Cancel</button>
-            <button class="button-secondary" type="button" data-discard-changes-confirm="1">${isNavigating ? "Leave without saving" : "Discard changes"}</button>
-            <button class="button-primary" type="button" data-discard-changes-save="1" ${this._saving || this._hasInvalidPathChanges() ? "disabled" : ""}>Save changes</button>
+            <button class="button-secondary" type="button" data-discard-changes-confirm="1">Discard</button>
+            <button class="button-primary" type="button" data-discard-changes-save="1" ${this._saving || this._hasInvalidPathChanges() ? "disabled" : ""}>Save</button>
           </div>
         </div>
       </div>
