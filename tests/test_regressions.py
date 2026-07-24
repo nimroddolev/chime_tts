@@ -222,6 +222,21 @@ def test_panel_title_displays_santa_hat_only_in_december():
     assert "ChimeTTSPanelSantaHatView" not in panel_backend
 
 
+def test_mobile_pull_to_refresh_keeps_the_topbar_background_continuous():
+    """The sticky topbar surface must extend into the mobile overscroll area."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert ".topbar-wrap::before" in panel_source
+    assert "top: -100vh;" in panel_source
+    assert "background: var(--topbar-background);" in panel_source
+
+
 def test_panel_uses_an_inline_christmas_footer_logo_only_in_december():
     """The seasonal footer artwork is embedded rather than served as an asset."""
     root = Path(__file__).parents[1]
@@ -250,8 +265,20 @@ def test_panel_renders_inline_snowflakes_only_in_december_behind_the_ui():
     assert "this._snowfall.childElementCount > 0" in panel_source
 
 
-def test_panel_chime_fields_allow_custom_values_in_settings_and_notify_profiles():
-    """Chime suggestions must not prevent typed paths in either editor."""
+def test_panel_hides_snowfall_and_uses_a_spinner_while_loading():
+    """Seasonal decoration waits until the configuration is ready to render."""
+    root = Path(__file__).parents[1]
+    panel_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert 'this._snowfall.innerHTML = "";' in panel_source
+    assert 'class="loading-spinner"' in panel_source
+    assert "Loading Chime TTS settings..." not in panel_source
+
+
+def test_panel_renders_chime_fields_as_selectable_options_with_preview_controls():
+    """Chime fields use selects in both editors and retain their preview controls."""
     panel_source = (
         Path(__file__).parents[1]
         / "custom_components"
@@ -260,10 +287,11 @@ def test_panel_chime_fields_allow_custom_values_in_settings_and_notify_profiles(
         / "chime-tts-panel.js"
     ).read_text(encoding="utf-8")
 
-    assert 'list="chime-options-${this._escapeAttribute(field.key)}"' in panel_source
-    assert 'list="notify-chime-options-${this._escapeAttribute(String(index))}-${this._escapeAttribute(field.key)}"' in panel_source
-    assert "<datalist id=\"chime-options-" in panel_source
-    assert "<datalist id=\"notify-chime-options-" in panel_source
+    assert '<select class="control-select" data-field="${this._escapeAttribute(field.key)}">' in panel_source
+    assert 'data-notify-field="${this._escapeAttribute(field.key)}"' in panel_source
+    assert "_isChimePreviewField(field)" in panel_source
+    assert "data-field-audio-toggle" in panel_source
+    assert "data-notify-audio-toggle" in panel_source
 
 
 def test_issue_291_full_entity_id_matches_installed():
