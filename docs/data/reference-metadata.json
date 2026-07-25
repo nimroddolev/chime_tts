@@ -1,0 +1,34 @@
+{
+  "configuration": [
+    {"key":"queue_timeout","name":"Action timeout","description":"Maximum seconds to wait for queued Chime TTS work.","default":"60"},
+    {"key":"tts_timeout","name":"TTS generation timeout","description":"Maximum seconds to wait for a TTS platform response. Use -1 to disable this timeout.","default":"30"},
+    {"key":"tts_platform","name":"Default TTS platform","description":"Used when an action does not specify a TTS platform.","default":"Provider default"},
+    {"key":"fallback_tts_platform","name":"Fallback TTS platform","description":"Used when the requested TTS platform is unavailable.","default":"None"},
+    {"key":"default_language","name":"Default language","description":"Applied with the default TTS platform when supported.","default":"Provider default"},
+    {"key":"default_voice","name":"Default voice","description":"Applied with the default TTS platform when supported.","default":"Provider default"},
+    {"key":"default_tld","name":"Default dialect","description":"Google Translate dialect fallback.","default":"Provider default"},
+    {"key":"chime_path","name":"Default start chime","description":"Optional chime played before generated speech.","default":"None"},
+    {"key":"end_chime_path","name":"Default end chime","description":"Optional chime played after generated speech.","default":"None"},
+    {"key":"offset","name":"Default offset","description":"Milliseconds between chimes and TTS; negative values overlay audio.","default":"450"},
+    {"key":"crossfade","name":"Default crossfade","description":"Milliseconds to fade one audio segment out while the next fades in.","default":"0"},
+    {"key":"fade_transition","name":"Fade transition","description":"Milliseconds used for announce and fade_audio transitions.","default":"500"},
+    {"key":"remove_temp_file_delay","name":"Temporary-file cleanup delay","description":"Milliseconds to wait before deleting uncached temporary files.","default":"Built-in timing"},
+    {"key":"add_cover_art","name":"Add cover art","description":"Embed Chime TTS cover art in generated MP3 files.","default":"false"},
+    {"key":"custom_chimes_path","name":"Custom chimes folder","description":"Folder containing your own chimes. Changes require a Home Assistant restart.","default":"None"},
+    {"key":"temp_chimes_path","name":"Downloaded chimes folder","description":"Where downloaded chime files are cached.","default":"/media/sounds/temp/chime_tts/chimes/"},
+    {"key":"temp_path","name":"Temporary audio folder","description":"Generated-audio folder; it must be inside a configured media directory.","default":"/media/sounds/temp/chime_tts/"},
+    {"key":"www_path","name":"say_url output folder","description":"Generated public-audio folder; it must be allowlisted, /media, or /config/www.","default":"/config/www/chime_tts/"},
+    {"key":"default_pre_script","name":"Default pre-playback script","description":"Runs before playback unless an action or profile overrides it.","default":"None"},
+    {"key":"default_post_script","name":"Default post-playback script","description":"Runs after playback unless an action or profile overrides it.","default":"None"}
+  ],
+  "notifyProfiles": [
+    {"key":"name","name":"Name","description":"Required notify service name.","default":"—"},
+    {"key":"entity_id","name":"Media players","description":"Required target media player or list of media players.","default":"—"},
+    {"key":"chime_path","name":"Start chime","description":"Optional chime before the message.","default":"None"},
+    {"key":"end_chime_path","name":"End chime","description":"Optional chime after the message.","default":"None"},
+    {"key":"tts_platform","name":"TTS platform, language, voice and TLD","description":"Provider selection and supported provider defaults.","default":"Configuration defaults"},
+    {"key":"offset","name":"Timing and TTS tuning","description":"offset, crossfade, final_delay, tts_speed and tts_pitch.","default":"Configuration defaults"},
+    {"key":"playback","name":"Playback and audio options","description":"volume_level, audio_conversion, options, announce, fade_audio, cache, join_players and unjoin_players.","default":"false / provider defaults"},
+    {"key":"scripts","name":"Playback scripts","description":"pre_script and post_script accept a script entity or YAML with script and data.","default":"Configuration defaults"}
+  ]
+}

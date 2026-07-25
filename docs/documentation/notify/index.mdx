@@ -4,13 +4,26 @@ title: Notify
 ---
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
+import ReferenceTable from '@site/src/components/ReferenceTable';
 import './notify.css'
 
 # Chime TTS Notify Entries
 
-You can add Chime TTS notify entries to your `configuration.yaml` file, each with specific parameter values.
+You can create and manage Chime TTS notification profiles in the Chime TTS sidebar panel. The panel writes the profiles to `configuration.yaml`; direct YAML configuration remains fully supported.
 
 This allows you to create fully customized & reusable notify entries that can be tailored based on the time of day, who is home, or any other use case you can think of.
+
+## Configure profiles from the sidebar panel
+
+1. Open **Chime TTS** from the Home Assistant sidebar.
+2. Open the **Notification Profiles** section.
+3. Select **Add profile**, or expand an existing profile to edit it.
+4. Enter a profile name and one or more media-player targets, then choose the chimes, TTS provider, timing, playback, and optional script settings you need.
+5. Save the profile. Chime TTS validates the values and writes the resulting notify entry to `configuration.yaml`.
+
+After saving a profile named `announcements`, Home Assistant exposes it as `notify.announcements`. Use that action in automations and scripts, supplying only the message or any values that should override the profile defaults.
+
+The panel is the recommended workflow. You can still [add profiles directly in YAML](./adding) when that better suits your setup.
 
 ## Example Notify Entries
 
@@ -69,3 +82,11 @@ This allows you to create fully customized & reusable notify entries that can be
     </td>
   </tr>
 </table>
+
+---
+
+## Notification-profile reference
+
+This generated reference covers the current panel and YAML profile fields.
+
+<ReferenceTable type="notifyProfiles" />

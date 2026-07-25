@@ -3,8 +3,12 @@ sidebar_position: 1
 ---
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
+import ReferenceTable from '@site/src/components/ReferenceTable';
 
 # Configuration
+
+The Chime TTS can be configured via the sidebar panel.
+
 
 You can configure the following options for the [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) and [`chime_tts.say_url`](/chime_tts/docs/documentation/actions/say_url-action) actions through the integration's configuration page:
 
@@ -105,6 +109,39 @@ Positive values introduce a delay, while negative values overlap the audio segme
 
 ---
 
+### Default Start Chime
+
+Set an optional chime to play before generated speech. An action can override this default.
+
+<table>
+<tr><td><b>Default Value:</b></td><td>None</td></tr>
+<tr><td><b>Required:</b></td><td>No</td></tr>
+</table>
+
+---
+
+### Default End Chime
+
+Set an optional chime to play after generated speech. An action can override this default.
+
+<table>
+<tr><td><b>Default Value:</b></td><td>None</td></tr>
+<tr><td><b>Required:</b></td><td>No</td></tr>
+</table>
+
+---
+
+### Default Crossfade
+
+Set the default crossfade duration between audio segments. An action can override this value. A negative offset overlays segments; crossfade controls how one segment fades into the next.
+
+<table>
+<tr><td><b>Default Value:</b></td><td>`0`</td></tr>
+<tr><td><b>Required:</b></td><td>No</td></tr>
+</table>
+
+---
+
 ### Fade Transition
 
 The duration (in milliseconds) to fade out the now playing audio _before_ an announcement, and then fade it back in _after_ the announcement is completed.
@@ -126,6 +163,46 @@ The delay duaration after [`chime_tts.say`](/chime_tts/docs/documentation/action
 <tr><td><b>Default Value:</b></td><td>None</td></tr>
 <tr><td><b>Required:</b></td><td>No</td></tr>
 </table>
+
+---
+
+### Default Playback Scripts
+
+Use a pre-playback script to prepare a player or environment before playback, and a post-playback script for cleanup. An action or notification profile can override either configured default.
+
+#### `pre_script`
+
+Runs before playback unless an action or notification profile specifies its own `pre_script` value.
+
+<table>
+<tr><td><b>Default Value:</b></td><td>None</td></tr>
+<tr><td><b>Required:</b></td><td>No</td></tr>
+</table>
+
+#### `post_script`
+
+Runs after playback unless an action or notification profile specifies its own `post_script` value.
+
+<table>
+<tr><td><b>Default Value:</b></td><td>None</td></tr>
+<tr><td><b>Required:</b></td><td>No</td></tr>
+</table>
+
+Simple script entity:
+
+```yaml
+pre_script: script.front_door_prepare
+post_script: script.front_door_restore
+```
+
+Script with data:
+
+```yaml
+pre_script:
+  script: script.front_door_prepare
+  data:
+    volume: 0.5
+```
 
 ---
 
@@ -193,3 +270,11 @@ When enabled, adds the Chime TTS logo as the cover art in generated MP3 files.
 <tr><td><b>Default Value:</b></td><td>`false`</td></tr>
 <tr><td><b>Required:</b></td><td>No</td></tr>
 </table>
+
+---
+
+## Configuration reference
+
+This table is generated from the current Chime TTS configuration metadata. Changes to settings should be reflected here by running `npm run generate:references`.
+
+<ReferenceTable type="configuration" />

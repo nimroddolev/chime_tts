@@ -1,0 +1,481 @@
+{
+  "generatedFrom": "custom_components/chime_tts/services.yaml",
+  "actions": {
+    "say": [
+      {
+        "key": "chime_path",
+        "description": "A preset or custom audio file to be played before TTS audio",
+        "example": "custom_components/chime_tts/mp3s/bells.mp3",
+        "name": "Chime Path",
+        "required": "false"
+      },
+      {
+        "key": "end_chime_path",
+        "description": "A preset or custom audio file to be played after TTS audio",
+        "example": "custom_components/chime_tts/mp3s/tada.mp3",
+        "name": "End Chime Path",
+        "required": "false"
+      },
+      {
+        "key": "offset",
+        "description": "Adds a delay between audio segments when value > 0, or overlays audio segments when value < 0.",
+        "example": "450",
+        "name": "Offset",
+        "required": "false"
+      },
+      {
+        "key": "crossfade",
+        "description": "Crossfade (in milliseconds) between audio segments",
+        "example": "1000",
+        "name": "Crossfade",
+        "required": "false"
+      },
+      {
+        "key": "final_delay",
+        "description": "Final delay (in milliseconds) added to the end of the audio",
+        "example": "100",
+        "name": "Final Delay",
+        "required": "false"
+      },
+      {
+        "key": "message",
+        "description": "Text converted into TTS audio",
+        "example": "Hello world!",
+        "name": "Message",
+        "required": "false"
+      },
+      {
+        "key": "tts_platform",
+        "description": "TTS platform used to generate TTS audio",
+        "example": "google_translate",
+        "name": "TTS Platform",
+        "required": "false"
+      },
+      {
+        "key": "tts_speed",
+        "description": "Set the speed of the TTS audio to between 1% and 500% of the original",
+        "example": "125",
+        "name": "TTS Speed",
+        "required": "false"
+      },
+      {
+        "key": "tts_pitch",
+        "description": "Change the the TTS pitch in semitones. Negative values for lower, positive for higher",
+        "example": "3",
+        "name": "TTS Pitch",
+        "required": "false"
+      },
+      {
+        "key": "repeat",
+        "description": "Repeat the chime and message this many times",
+        "example": "2",
+        "name": "Repeat",
+        "required": "false"
+      },
+      {
+        "key": "pre_script",
+        "description": "A script entity to run before the audio plays, or YAML containing a script entity and parameter values",
+        "example": "script: script.front_door\\ndata:\\n  volume: 0.5",
+        "name": "Pre-playback Script",
+        "required": "false"
+      },
+      {
+        "key": "post_script",
+        "description": "A script entity to run after the audio finishes, or YAML containing a script entity and parameter values",
+        "example": "script: script.front_door\\ndata:\\n  volume: 0.5",
+        "name": "Post-playback Script",
+        "required": "false"
+      },
+      {
+        "key": "volume_level",
+        "description": "The volume to use when playing audio",
+        "example": "0.75",
+        "name": "Volume Level",
+        "required": "false"
+      },
+      {
+        "key": "join_players",
+        "description": "Join media_players for simultaneous playback (for supported speakers)",
+        "example": "True",
+        "name": "Join Players",
+        "required": "false"
+      },
+      {
+        "key": "unjoin_players",
+        "description": "Release the joined media_players after playback",
+        "example": "True",
+        "name": "Unjoin Players",
+        "required": "false"
+      },
+      {
+        "key": "cache",
+        "description": "Whether or not to save/reuse the generated audio file in a local cache",
+        "example": "True",
+        "name": "Cache",
+        "required": "false"
+      },
+      {
+        "key": "announce",
+        "description": "Reduce volume of currently playing audio during during announcement (on supported devices)",
+        "example": "True",
+        "name": "Announce",
+        "required": "false"
+      },
+      {
+        "key": "fade_audio",
+        "description": "Fade out playing audio during announcement, fade back in when completed (on supported devices)",
+        "example": "True",
+        "name": "Fade Audio",
+        "required": "false"
+      },
+      {
+        "key": "audio_conversion",
+        "description": "Convert the audio to match Alexa speaker requirements, or use your own FFmpeg arguments",
+        "example": "Alexa",
+        "name": "Audio Conversion",
+        "required": "false"
+      },
+      {
+        "key": "language",
+        "description": "The TTS language (supported by Google Translate, Microsoft Edge TTS, Amazon Polly and Nabu Casa Cloud TTS)",
+        "example": "en",
+        "name": "Language",
+        "required": "false"
+      },
+      {
+        "key": "tld",
+        "description": "The dialect (supported by Google Translate)",
+        "example": "com.au",
+        "name": "TLD",
+        "required": "false"
+      },
+      {
+        "key": "voice",
+        "description": "Define the voice for the TTS audio (on supported TTS platforms)",
+        "example": "en-AU",
+        "name": "Voice",
+        "required": "false"
+      },
+      {
+        "key": "options",
+        "description": "YAML Options to pass to TTS services (will override `tld` and `voice` fields)",
+        "example": "tld: com.au\\voice: en-AU",
+        "name": "Options",
+        "required": "false"
+      }
+    ],
+    "say_url": [
+      {
+        "key": "chime_path",
+        "description": "A preset or custom audio file to be played before TTS audio",
+        "example": "custom_components/chime_tts/mp3s/bells.mp3",
+        "name": "Chime Path",
+        "required": "false"
+      },
+      {
+        "key": "end_chime_path",
+        "description": "A preset or custom audio file to be played after TTS audio",
+        "example": "custom_components/chime_tts/mp3s/tada.mp3",
+        "name": "End Chime Path",
+        "required": "false"
+      },
+      {
+        "key": "offset",
+        "description": "Adds a delay between audio segments when value > 0, or overlays audio segments when value < 0.",
+        "example": "450",
+        "name": "Offset",
+        "required": "false"
+      },
+      {
+        "key": "crossfade",
+        "description": "Crossfade (in milliseconds) between audio segments",
+        "example": "1000",
+        "name": "Crossfade",
+        "required": "false"
+      },
+      {
+        "key": "final_delay",
+        "description": "Final delay (in milliseconds) added to the end of the audio",
+        "example": "100",
+        "name": "Final Delay",
+        "required": "false"
+      },
+      {
+        "key": "message",
+        "description": "Text converted into TTS audio",
+        "example": "Hello world!",
+        "name": "Message",
+        "required": "false"
+      },
+      {
+        "key": "tts_platform",
+        "description": "TTS platform used to generate TTS audio",
+        "example": "google_translate",
+        "name": "TTS Platform",
+        "required": "false"
+      },
+      {
+        "key": "tts_speed",
+        "description": "Set the speed of the TTS audio to between 1% and 500% of the original",
+        "example": "125",
+        "name": "TTS Speed",
+        "required": "false"
+      },
+      {
+        "key": "tts_pitch",
+        "description": "Change the the TTS pitch in semitones. Negative values for lower, positive for higher",
+        "example": "3",
+        "name": "TTS Pitch",
+        "required": "false"
+      },
+      {
+        "key": "cache",
+        "description": "Whether or not to save/reuse the generated audio file in a local cache",
+        "example": "True",
+        "name": "Cache",
+        "required": "false"
+      },
+      {
+        "key": "audio_conversion",
+        "description": "Convert the audio to match Alexa speaker requirements, or use your own FFmpeg arguments",
+        "example": "Alexa",
+        "name": "Audio Conversion",
+        "required": "false"
+      },
+      {
+        "key": "language",
+        "description": "The TTS language (supported by Google Translate, Microsoft Edge TTS, Amazon Polly and Nabu Casa Cloud TTS)",
+        "example": "en",
+        "name": "Language",
+        "required": "false"
+      },
+      {
+        "key": "tld",
+        "description": "The dialect (supported by Google Translate)",
+        "example": "com.au",
+        "name": "TLD",
+        "required": "false"
+      },
+      {
+        "key": "voice",
+        "description": "Define the voice for the TTS audio (on supported TTS platforms)",
+        "example": "en-AU",
+        "name": "Voice",
+        "required": "false"
+      },
+      {
+        "key": "options",
+        "description": "YAML Options to pass to TTS services (will override `tld` and `voice` fields)",
+        "example": "tld: com.au\\voice: en-AU",
+        "name": "Options",
+        "required": "false"
+      }
+    ],
+    "clear_cache": [
+      {
+        "key": "clear_chimes_cache",
+        "default": "true",
+        "description": "Remove the cached local chime files downloaded by Chime TTS",
+        "example": "True",
+        "name": "Temporary Chimes Cache",
+        "required": "false"
+      },
+      {
+        "key": "clear_ha_tts_cache",
+        "name": "Home Assistant TTS Cache",
+        "description": "Remove the TTS audio files stored in the Home Assistant TTS cache",
+        "default": "true",
+        "example": "True",
+        "required": "false"
+      },
+      {
+        "key": "clear_temp_tts_cache",
+        "default": "true",
+        "description": "Remove the local temporary audio files stored in the Chime TTS cache",
+        "example": "True",
+        "name": "Temporary Chime TTS Cache",
+        "required": "false"
+      },
+      {
+        "key": "clear_www_tts_cache",
+        "default": "true",
+        "description": "Remove the publicly accessible audio files stored in the Chime TTS cache",
+        "example": "True",
+        "name": "Publicly Accessible Chime TTS Cache",
+        "required": "false"
+      }
+    ]
+  },
+  "configuration": [
+    {
+      "key": "queue_timeout",
+      "name": "Action timeout",
+      "description": "Maximum seconds to wait for queued Chime TTS work.",
+      "default": "60"
+    },
+    {
+      "key": "tts_timeout",
+      "name": "TTS generation timeout",
+      "description": "Maximum seconds to wait for a TTS platform response. Use -1 to disable this timeout.",
+      "default": "30"
+    },
+    {
+      "key": "tts_platform",
+      "name": "Default TTS platform",
+      "description": "Used when an action does not specify a TTS platform.",
+      "default": "Provider default"
+    },
+    {
+      "key": "fallback_tts_platform",
+      "name": "Fallback TTS platform",
+      "description": "Used when the requested TTS platform is unavailable.",
+      "default": "None"
+    },
+    {
+      "key": "default_language",
+      "name": "Default language",
+      "description": "Applied with the default TTS platform when supported.",
+      "default": "Provider default"
+    },
+    {
+      "key": "default_voice",
+      "name": "Default voice",
+      "description": "Applied with the default TTS platform when supported.",
+      "default": "Provider default"
+    },
+    {
+      "key": "default_tld",
+      "name": "Default dialect",
+      "description": "Google Translate dialect fallback.",
+      "default": "Provider default"
+    },
+    {
+      "key": "chime_path",
+      "name": "Default start chime",
+      "description": "Optional chime played before generated speech.",
+      "default": "None"
+    },
+    {
+      "key": "end_chime_path",
+      "name": "Default end chime",
+      "description": "Optional chime played after generated speech.",
+      "default": "None"
+    },
+    {
+      "key": "offset",
+      "name": "Default offset",
+      "description": "Milliseconds between chimes and TTS; negative values overlay audio.",
+      "default": "450"
+    },
+    {
+      "key": "crossfade",
+      "name": "Default crossfade",
+      "description": "Milliseconds to fade one audio segment out while the next fades in.",
+      "default": "0"
+    },
+    {
+      "key": "fade_transition",
+      "name": "Fade transition",
+      "description": "Milliseconds used for announce and fade_audio transitions.",
+      "default": "500"
+    },
+    {
+      "key": "remove_temp_file_delay",
+      "name": "Temporary-file cleanup delay",
+      "description": "Milliseconds to wait before deleting uncached temporary files.",
+      "default": "Built-in timing"
+    },
+    {
+      "key": "add_cover_art",
+      "name": "Add cover art",
+      "description": "Embed Chime TTS cover art in generated MP3 files.",
+      "default": "false"
+    },
+    {
+      "key": "custom_chimes_path",
+      "name": "Custom chimes folder",
+      "description": "Folder containing your own chimes. Changes require a Home Assistant restart.",
+      "default": "None"
+    },
+    {
+      "key": "temp_chimes_path",
+      "name": "Downloaded chimes folder",
+      "description": "Where downloaded chime files are cached.",
+      "default": "/media/sounds/temp/chime_tts/chimes/"
+    },
+    {
+      "key": "temp_path",
+      "name": "Temporary audio folder",
+      "description": "Generated-audio folder; it must be inside a configured media directory.",
+      "default": "/media/sounds/temp/chime_tts/"
+    },
+    {
+      "key": "www_path",
+      "name": "say_url output folder",
+      "description": "Generated public-audio folder; it must be allowlisted, /media, or /config/www.",
+      "default": "/config/www/chime_tts/"
+    },
+    {
+      "key": "default_pre_script",
+      "name": "Default pre-playback script",
+      "description": "Runs before playback unless an action or profile overrides it.",
+      "default": "None"
+    },
+    {
+      "key": "default_post_script",
+      "name": "Default post-playback script",
+      "description": "Runs after playback unless an action or profile overrides it.",
+      "default": "None"
+    }
+  ],
+  "notifyProfiles": [
+    {
+      "key": "name",
+      "name": "Name",
+      "description": "Required notify service name.",
+      "default": "—"
+    },
+    {
+      "key": "entity_id",
+      "name": "Media players",
+      "description": "Required target media player or list of media players.",
+      "default": "—"
+    },
+    {
+      "key": "chime_path",
+      "name": "Start chime",
+      "description": "Optional chime before the message.",
+      "default": "None"
+    },
+    {
+      "key": "end_chime_path",
+      "name": "End chime",
+      "description": "Optional chime after the message.",
+      "default": "None"
+    },
+    {
+      "key": "tts_platform",
+      "name": "TTS platform, language, voice and TLD",
+      "description": "Provider selection and supported provider defaults.",
+      "default": "Configuration defaults"
+    },
+    {
+      "key": "offset",
+      "name": "Timing and TTS tuning",
+      "description": "offset, crossfade, final_delay, tts_speed and tts_pitch.",
+      "default": "Configuration defaults"
+    },
+    {
+      "key": "playback",
+      "name": "Playback and audio options",
+      "description": "volume_level, audio_conversion, options, announce, fade_audio, cache, join_players and unjoin_players.",
+      "default": "false / provider defaults"
+    },
+    {
+      "key": "scripts",
+      "name": "Playback scripts",
+      "description": "pre_script and post_script accept a script entity or YAML with script and data.",
+      "default": "Configuration defaults"
+    }
+  ]
+}

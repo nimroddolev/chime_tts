@@ -4,9 +4,16 @@ title: Parameters
 ---
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
+import ReferenceTable from '@site/src/components/ReferenceTable';
 
 # `chime_tts.say_url` Parameters
 
-The `chime_tts.say_url` action accepts the exact same parameters as the [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) action _(with the exception of all audio playback parameters such as media_player targets and other playback-related parameters, as there is no audio playback)_.
+The `chime_tts.say_url` action generates a publicly accessible audio file; it does not play audio. It therefore accepts its own audio-generation parameters and does not accept media-player targets, volume, announcement, fade, or player-group controls.
 
-Please refer to the [`chime_tts.say` parameters documentation](/chime_tts/docs/documentation/actions/say-action/parameters) to learn more about how the parameters are used.
+Refer to the [`chime_tts.say` parameters documentation](/chime_tts/docs/documentation/actions/say-action/parameters) for detailed behavior and segment examples. Configure the output location in [Configuration](/chime_tts/docs/documentation/configuration); the folder must be an allowlisted external directory, `/media`, or `/config/www`.
+
+## Generated action reference
+
+This table is generated from the current `services.yaml` schema and lists only parameters available to `chime_tts.say_url`.
+
+<ReferenceTable type="action" service="say_url" />

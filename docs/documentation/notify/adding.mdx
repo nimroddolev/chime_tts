@@ -7,6 +7,8 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 
 # Adding Chime TTS Notify Entries
 
+The Chime TTS sidebar panel is the recommended way to create and edit profiles. It validates the values and persists them to `configuration.yaml`. To manage them manually:
+
 1. Open your Home Assistant `configuration.yaml` file.
 2. Locate or add the `notify` section within your configuration.
 3. Add 1 or more notify entires (see the example below).
@@ -46,4 +48,10 @@ notify:
     announce: true
     join_players: true
     unjoin_players: true
+    crossfade: 250
+    pre_script: script.announcement_prepare
+    post_script:
+      script: script.announcement_complete
+      data:
+        source: chime_tts
 ```

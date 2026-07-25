@@ -26,6 +26,12 @@ The `chime_tts.say` action has [standard parameters](#standard-parameters) used 
   | **Example:**     | `The washing's done!`                    |
   | **Default:**     | None                                     |
 
+`message` uses Home Assistant's template selector, so templates can be used wherever Home Assistant allows templates:
+
+```yaml
+message: "The temperature is {{ states('sensor.kitchen_temperature') }} degrees."
+```
+
 #### Advanced Usage: "Segment" sequences
 
 The `message` parameter can also define a YAML sequence built from 3 different "segment" types: [`tts`](#tts-segment-type), [`chime`](#chime-segment-type) and [`delay`](#delay-segment-type). These segments can be used together to create any combination, for example:
@@ -238,8 +244,70 @@ When using a negative value the audio components are overlaid:
 | **Description:** | The duration of time (in milliseconds) to gradually decrease the volume of an audio segment while simultaneously increasing the volume of the next. |
 | ---------------- | ---------------------------------------------------------------------------------------------- |
 | **Required:**    | No                                                                                             |
-| **Example 1:**   | `500` (Crossfades segments over a half second)                                                 |
+| **Example:**   | `500` (Crossfades segments over a half second)                                                 |
 | **Default:**     | `0`                                                                                          |
+
+---
+
+### `pre_script`
+
+Run a script immediately before playback. This action value overrides the configured default `pre_script`.
+
+<table>
+<tr><td><b>Default Value:</b></td><td>None</td></tr>
+<tr><td><b>Required:</b></td><td>No</td></tr>
+</table>
+
+:::info
+
+This field is available only for `chime_tts.say`; it is not available for `chime_tts.say_url`.
+
+:::
+
+Simple script entity:
+
+```yaml
+pre_script: script.front_door_prepare
+```
+
+YAML form with service data:
+
+```yaml
+pre_script:
+  script: script.front_door_prepare
+  data:
+    volume: 0.5
+```
+
+### `post_script`
+
+Run a script after the generated audio finishes. This action value overrides the configured default `post_script`.
+
+<table>
+<tr><td><b>Default Value:</b></td><td>None</td></tr>
+<tr><td><b>Required:</b></td><td>No</td></tr>
+</table>
+
+:::info
+
+This field is available only for `chime_tts.say`; it is not available for `chime_tts.say_url`.
+
+:::
+
+Simple script entity:
+
+```yaml
+post_script: script.front_door_restore
+```
+
+YAML form with service data:
+
+```yaml
+post_script:
+  script: script.front_door_restore
+  data:
+    volume: 0.5
+```
 
 ---
 
@@ -406,3 +474,5 @@ The following parameters can be used with select TTS platforms, as outlined belo
 | **Required:**        | No                                                              |
 | **Example:**         | `TinaNeural`                                                    |
 | **Default:**         | None                                                            |
+
+---
