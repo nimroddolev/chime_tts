@@ -1,4 +1,5 @@
 const PANEL_TAG = "chime-tts-settings-panel";
+const PANEL_TRANSLATION_FALLBACKS = {"loading.settings":"Loading Chime TTS settings","loading.profiles":"Loading notification profiles...","loading.logs":"Loading Chime TTS log events...","loading.items":"Loading items...","chapter.settings":"Settings","chapter.configuration":"Configuration","chapter.configuration_description":"Set default providers, folder paths, playback timing, and integration-wide behavior for Chime TTS.","chapter.profiles":"Profiles","chapter.session":"Session","chapter.project":"Project","section.notify_profiles_title":"Notification Profiles","section.notify_profiles_description":"Create and manage notify services for Chime TTS to easily send Chime TTS notifications in automations and scripts. Saving changes requires a Home Assistant restart.","section.logs_title":"Logs","section.logs_description":"Review Chime TTS events captured during this Home Assistant session, including actions, generated media, and raw log output.","section.about_title":"Support & Info","section.about_description":"Find documentation, support, bug reporting, feature request, and project support links for Chime TTS.","action.reload":"Reload","action.reset":"Reset","action.reset_section":"Reset Section","action.save":"Save","action.restart":"Restart","action.restart_home_assistant":"Restart Home Assistant","action.cancel":"Cancel","action.discard":"Discard","action.close":"Close","action.open":"Open","action.browse":"Browse","action.use_anyway":"Use Anyway","action.expand":"Expand","action.collapse":"Collapse","action.expand_all":"Expand All","action.collapse_all":"Collapse All","action.show_advanced":"Show Advanced","action.hide_advanced":"Hide Advanced","action.add_profile":"+ Add Profile","action.raw_logs":"Raw Logs","action.copy_logs":"Copy Logs","action.copy_yaml":"Copy YAML","action.repeat":"Repeat","action.send":"Send","action.test":"Test","action.delete":"Delete","action.rename":"Rename","action.refresh":"Refresh","action.new_folder":"New Folder","action.upload":"Upload","action.upload_files":"Upload Files","action.upload_folder":"Upload Folder","action.create_folder":"Create Folder","action.overwrite_existing":"Overwrite Existing","action.upload_non_existing":"Upload {count} Non-Existing","action.select_folder":"Select folder","action.play_preview":"Play preview","action.pause_preview":"Pause preview","action.loading_preview":"Loading preview","aria.collapse_section":"Collapse section","aria.expand_section":"Expand section","aria.collapse_named":"Collapse {title}","aria.expand_named":"Expand {title}","aria.collapse_profile":"Collapse profile","aria.expand_profile":"Expand profile","aria.open_help":"Open help for {title}","aria.open_raw_logs":"Open the raw Home Assistant logs filtered to Chime TTS","aria.play_logo_animation":"Play Chime TTS logo animation","aria.logo":"Chime TTS logo","aria.collapse_log":"Collapse log row","aria.expand_log":"Expand log row","aria.close_test":"Close test input","aria.test_profile":"Test profile","aria.delete_profile":"Delete profile","aria.close_folder_browser":"Close folder browser","aria.more_actions":"More actions","aria.open_named":"Open {title}","aria.pause_named":"Pause {title}","aria.play_named":"Play {title}","aria.rename_named":"Rename {title}","aria.delete_named":"Delete {title}","aria.close_overwrite":"Close overwrite dialog","aria.confirm_restart":"Confirm Home Assistant restart","aria.unsaved_changes":"Unsaved changes","label.required":"Required","label.enabled":"Enabled","label.target_media_players":"Target media players","label.locations":"Locations","label.current_folder":"Current folder","label.version":"Version {version}","label.profile":"Profile {number}","label.log_event":"Log event","label.audio_file":"audio file","label.item":"item","label.this_item":"this item","label.selected_folder":"selected folder","label.new_name":"New name","label.folder_name":"Folder name","label.add_media_player":"Add media player","placeholder.service_name":"Service name","placeholder.tts_text":"Enter TTS text","placeholder.search_folder":"Search current folder","placeholder.new_folder_name":"New folder name","placeholder.auto":"Auto{unit}","description.target_media_players":"Select one or more media_player entities to play the notification.","description.add_media_player":"Choose a media_player entity to append","title.restart":"Restart Home Assistant?","title.save_changes":"Save your changes?","title.reset_changes":"Reset Changes","title.rename_item":"Rename item","title.delete_item":"Delete item","title.overwrite_files":"Overwrite Existing Files?","notice.restart_required_title":"Restart Required","notice.restart_required":"Any changes to the folder path or its contents will require a restart to take effect.","notice.restart_providers":"Home Assistant needs to restart before newly installed TTS providers appear in Chime TTS.","notice.restart_saved":"Your changes have been saved, but they will not take effect until Home Assistant restarts.","notice.unsaved_changes":"You have unsaved changes. Save them before leaving this page?","notice.discard_changes":"Discarding your unsaved edits?","notice.rename_item":"Choose a new name for {name}.","notice.delete_item":"Delete {name}? This action cannot be undone.","notice.upload_folder":"Upload {count} file(s) from \"{source}\" into folder \"{destination}\"?","notice.upload_conflicts_all":"Those files already exist in the folder \"{destination}\".","notice.upload_conflicts":"{count} file(s) already exist in the folder \"{destination}\".","status.changed":"Changed","status.copied":"Copied","status.sent":"Sent","status.restarting":"Restarting...","status.restart_requested":"Home Assistant restart requested.","empty.profiles":"No Chime TTS notify profiles are configured yet.","empty.logs":"No Chime TTS logs have been captured in this Home Assistant session yet.","empty.raw_logs":"No raw logs were captured for this event.","empty.media_players":"No media players selected yet.","empty.folder":"No files or folders match this location.","picker.audio_files_found":"{count} audio file(s) found","picker.no_audio_files":"No audio files were found in this folder.","log.integration_initiation":"Integration initiation","log.notification":"Notification","log.configuration_update":"Configuration update","log.action_call":"Action call","validation.required":"This field is required.","validation.invalid_number":"Enter a valid number.","validation.invalid_yaml":"Enter valid YAML.","validation.timeout":"The timeout value is invalid.","validation.timeout_sub":"Enter a valid timeout duration.","validation.tts_platform_none":"No TTS platforms were detected. Add at least one TTS integration first.","validation.tts_platform_select":"The selected TTS platform was not found.","validation.temp_path":"The temp folder must be inside a configured media directory.","validation.www_path":"The say_url output folder must be inside an external directory, /media, or /config/www.","error.load_panel":"Unable to load Chime TTS panel.","error.load_profiles":"Unable to load notification profiles.","error.validate_folder":"Unable to validate this folder path right now.","error.restart":"Unable to request a Home Assistant restart.","error.copy_logs":"Unable to copy logs to the clipboard.","error.copy_yaml":"Unable to copy YAML to the clipboard.","error.repeat":"Unable to repeat this action.","error.save":"Unable to save Chime TTS settings.","error.browse_folders":"Unable to browse folders.","error.play_chime_preview":"Unable to play this chime preview.","error.play_audio_preview":"Unable to play this audio preview.","error.browser_action":"Unable to complete that browser action.","error.upload_files":"Unable to upload the selected files.","error.folder_name_required":"Enter a folder name.","error.new_name_required":"Enter a new name.","error.folder_not_selectable":"That folder cannot be selected for this field.","error.send_notification":"Unable to send notify.{service}."};
 const IS_DECEMBER = new Date().getMonth() === 11;
 const SNOWFLAKE_SVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2v20M3.34 7l17.32 10M3.34 17L20.66 7M12 2l-2.2 2.2M12 2l2.2 2.2M12 22l-2.2-2.2M12 22l2.2-2.2M3.34 7l3 .8M3.34 7l.8 3M20.66 17l-3-.8M20.66 17l-.8-3M3.34 17l.8-3M3.34 17l3-.8M20.66 7l-.8 3M20.66 7l-3 .8" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const SANTA_HAT_SVG = `<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://web.resource.org/cc/" xmlns:dc="http://purl.org/dc/elements/1.1/" id="svg2" viewBox="0 0 410.44 285.17" version="1.0">
@@ -3475,6 +3476,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._topbar = this.shadowRoot.getElementById("topbar");
     this._snowfall = this.shadowRoot.getElementById("snowfall");
     this._data = null;
+    this._panelTranslations = {};
     this._draftValues = {};
     this._draftNotifyProfiles = [];
     this._isDirty = false;
@@ -3625,14 +3627,39 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
   _t(key, replacements = undefined) {
     const translationKey = `component.chime_tts.config_panel.${key}`;
-    const translated = this._hass?.localize?.(translationKey, replacements);
-    return translated && translated !== translationKey ? translated : key;
+    const fallback = PANEL_TRANSLATION_FALLBACKS[key] || key;
+    const translated = this._panelTranslations?.[translationKey]
+      || this._hass?.localize?.(translationKey, replacements);
+    return Object.entries(replacements || {}).reduce(
+      (value, [placeholder, replacement]) => value.replaceAll(`{${placeholder}}`, String(replacement)),
+      !translated || translated === translationKey || translated === key ? fallback : translated,
+    );
+  }
+
+  async _loadPanelTranslations() {
+    if (!this._hass?.callWS) {
+      return;
+    }
+
+    try {
+      const language = this._hass.locale?.language || this._hass.language || navigator.language;
+      const result = await this._hass.callWS({
+        type: "frontend/get_translations",
+        language,
+        category: "config_panel",
+        integration: ["chime_tts"],
+      });
+      this._panelTranslations = result?.resources || {};
+    } catch (_error) {
+      this._panelTranslations = {};
+    }
   }
 
   async _load() {
     this._loading = true;
     this._render();
     try {
+      await this._loadPanelTranslations();
       this._data = await this._hass.callWS({ type: "chime_tts/get_settings" });
       this._draftValues = { ...(this._data?.values || {}) };
       this._draftNotifyProfiles = this._cloneNotifyProfiles(this._data?.notify_profiles || []);
