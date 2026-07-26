@@ -1108,7 +1108,7 @@ async def websocket_save_settings(
             values=dict(config_entry.options),
             notify_profiles=notify_validation.data,
             message=(
-                "Settings saved. Restart Home Assistant to apply the updated notify profiles and custom chimes folder."
+                "Settings saved. Restart Home Assistant to apply changes that require it, including updated notify profiles, the custom chimes folder, and added or removed Chime Sets."
                 if restart_required
                 else "Settings saved."
             ),

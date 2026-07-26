@@ -189,6 +189,7 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
     assert payload["logs_url"] == "/config/logs?filter=chime_tts"
     assert payload["restart_required_field_keys"] == [CUSTOM_CHIMES_PATH_KEY]
     assert [section["key"] for section in payload["sections"]] == [
+        "chime_sets",
         "paths",
         "voice",
         "playback",
@@ -199,12 +200,18 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
     ]
     assert payload["log_events"] == []
 
+    chime_sets_section = next(
+        section for section in payload["sections"] if section["key"] == "chime_sets"
+    )
+    assert chime_sets_section["docs_url"].endswith("/chime-sets/")
+
     voice_section = next(section for section in payload["sections"] if section["key"] == "voice")
     language_field = next(
         field for field in voice_section["fields"] if field["key"] == "default_language_key"
     )
+    paths_section = next(section for section in payload["sections"] if section["key"] == "paths")
     custom_chimes_field = next(
-        field for field in payload["sections"][0]["fields"] if field["key"] == CUSTOM_CHIMES_PATH_KEY
+        field for field in paths_section["fields"] if field["key"] == CUSTOM_CHIMES_PATH_KEY
     )
 
     assert language_field["provider_hint"]["tone"] == "info"

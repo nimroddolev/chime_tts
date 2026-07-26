@@ -93,7 +93,9 @@ from .const import (
     FALLBACK_TTS_PLATFORM_KEY,
     OFFSET_KEY,
     CROSSFADE_KEY,
+    CHIME_SETS_KEY,
 )
+from .chime_sets import normalize_sets, set_id_from_reference
 from .config import SONOS_SNAPSHOT_ENABLED
 
 _LOGGER = logging.getLogger(__name__)
@@ -677,6 +679,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
 
     # Update the services.yaml file with refreshed chimes options
     _data[CUSTOM_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(options.get(CUSTOM_CHIMES_PATH_KEY))
+    _data[CHIME_SETS_KEY] = normalize_sets(options.get(CHIME_SETS_KEY))
 
     # Update _data in helper classes
     tts_audio_helper._data = _data
@@ -760,6 +763,18 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     is_public = public_count > 0 or (entity_ids is None or len(entity_ids) == 0)
     is_local = entity_ids is not None and len(entity_ids) > 0 and public_count != len(entity_ids)
 
+    # Resolve sets before generating the cache key. This makes cache-enabled
+    # calls unique to the actual chime selected rather than the set reference.
+    chime_path, chime_set_offset = await filesystem_helper.async_get_chime_path_with_offset(chime_path, cache, _data, hass)
+    end_chime_path, end_chime_set_offset = await filesystem_helper.async_get_chime_path_with_offset(end_chime_path, cache, _data, hass)
+    if chime_set_offset is not None:
+        params["offset"] = chime_set_offset
+    if end_chime_set_offset is not None:
+        end_chime_offset = end_chime_set_offset
+    else:
+        end_chime_offset = offset
+    params["chime_path"] = chime_path
+    params["end_chime_path"] = end_chime_path
     filepath_hash = get_filename_hash_from_service_data({**params}, {**options})
     _data["generated_filename"] = filepath_hash
 
@@ -791,7 +806,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     output_audio = await async_get_audio_from_path(hass=hass,
                                                    filepath=end_chime_path,
                                                    cache=cache,
-                                                   offset=offset,
+                                                   offset=end_chime_offset,
                                                    crossfade=crossfade,
                                                    audio=output_audio)
 
@@ -1063,6 +1078,16 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
         # Chime tag
         if segment_type == "chime":
             if len(segment.get("path", "")) > 0:
+                if set_id_from_reference(segment["path"]):
+                    resolved_path, chime_set_offset = await filesystem_helper.async_get_chime_path_with_offset(
+                        segment["path"], segment_cache, _data, hass
+                    )
+                    if resolved_path is None:
+                        _LOGGER.warning("Chime Set could not provide a chime for message segment #%s", index + 1)
+                        continue
+                    segment["path"] = resolved_path
+                    if chime_set_offset is not None:
+                        segment_offset = chime_set_offset
                 output_audio = await async_get_audio_from_path(hass=hass,
                                                                filepath=segment["path"],
                                                                cache=segment_cache,

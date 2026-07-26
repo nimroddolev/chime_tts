@@ -27,6 +27,7 @@ from ..const import (
     LOCAL_PATH_KEY,
     AUDIO_DURATION_KEY,
 )
+from ..chime_sets import choose_member, member_offset, set_id_from_reference
 from .media_player_helper import MediaPlayerHelper
 media_player_helper = MediaPlayerHelper()
 
@@ -35,6 +36,10 @@ _AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.
 
 class FilesystemHelper:
     """Filesystem helper functions for Chime TTS."""
+
+    def __init__(self):
+        """Keep random-set history in memory for the current HA runtime."""
+        self._chime_set_last_choices: dict[str, str] = {}
 
     def filepath_exists_locally(self, hass: HomeAssistant, filepath):
         """Test whether a local filepath or extenral URL exists locally."""
@@ -107,6 +112,40 @@ class FilesystemHelper:
 
     async def async_get_chime_path(self, chime_path: str, cache, data: dict, hass: HomeAssistant):
         """Retrieve preset chime path if selected."""
+
+        if not isinstance(chime_path, str):
+            return None
+
+        random_set_id = set_id_from_reference(chime_path)
+        if random_set_id:
+            attempted: set[str] = set()
+            while member := choose_member(
+                data,
+                chime_path,
+                self._chime_set_last_choices,
+                excluded=attempted,
+            ):
+                # A set can contain unavailable custom files. Try each member
+                # once, without allowing a recursive set reference.
+                attempted.add(member)
+                if set_id_from_reference(member):
+                    _LOGGER.warning("Chime Set '%s' contains another set reference", random_set_id)
+                    continue
+                resolved = await self.async_get_chime_path(member, cache, data, hass)
+                if resolved is not None:
+                    self._chime_set_last_choices[random_set_id] = member
+                    _LOGGER.debug("Chime Set '%s' selected '%s'", random_set_id, member)
+                    return resolved
+                _LOGGER.warning(
+                    "Chime Set '%s' member is unavailable and was skipped: %s",
+                    random_set_id,
+                    member,
+                )
+            _LOGGER.warning("Chime Set '%s' has no available chimes", random_set_id)
+            return None
+        if chime_path.startswith("chime_set:"):
+            _LOGGER.warning("Chime Set not found: %s", chime_path)
+            return None
 
         # Remove prefix (prefix deprecated in v0.9.1)
         chime_path = chime_path.replace(MP3_PRESET_PATH_PLACEHOLDER, "")
@@ -279,6 +318,23 @@ class FilesystemHelper:
             _LOGGER.warning("Unable to extract audio from URL with content-type '%s'",
                             str(content_type))
         return None
+
+    async def async_get_chime_path_with_offset(self, chime_path: str, cache, data: dict, hass: HomeAssistant):
+        """Resolve a Chime Set and return its selected member offset."""
+        set_id = set_id_from_reference(chime_path)
+        if not set_id:
+            return await self.async_get_chime_path(chime_path, cache, data, hass), None
+
+        attempted: set[str] = set()
+        while member := choose_member(data, chime_path, self._chime_set_last_choices, excluded=attempted):
+            attempted.add(member)
+            if set_id_from_reference(member):
+                continue
+            resolved = await self.async_get_chime_path(member, cache, data, hass)
+            if resolved is not None:
+                self._chime_set_last_choices[set_id] = member
+                return resolved, member_offset(data, chime_path, member)
+        return None, None
 
     async def async_create_folder(self, hass: HomeAssistant, folder):
         """Create folder if it doesn't already exist."""

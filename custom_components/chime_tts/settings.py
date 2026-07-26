@@ -51,6 +51,7 @@ from .const import (
     QUEUE_TIMEOUT_DEFAULT,
     QUEUE_TIMEOUT_KEY,
     REMOVE_TEMP_FILE_DELAY_KEY,
+    CHIME_SETS_KEY,
     TEMP_CHIMES_PATH_DEFAULT,
     TEMP_CHIMES_PATH_KEY,
     TEMP_PATH_DEFAULT,
@@ -66,6 +67,11 @@ from .const import (
 )
 from .helpers.helpers import ChimeTTSHelper
 from .helpers.panel_logs import async_get_panel_log_events, get_panel_log_events
+from .chime_sets import (
+    normalize_sets,
+    selector_options,
+    set_id_from_reference,
+)
 
 helpers = ChimeTTSHelper()
 
@@ -350,6 +356,9 @@ CONFIGURATION_DOCS_BASE_URL = (
 )
 NOTIFY_DOCS_URL = (
     "https://nimroddolev.github.io/chime_tts/docs/documentation/notify/"
+)
+CHIME_SETS_DOCS_URL = (
+    "https://nimroddolev.github.io/chime_tts/docs/documentation/chime-sets/"
 )
 SAY_ACTION_PARAMS_DOCS_URL = (
     "https://nimroddolev.github.io/chime_tts/docs/documentation/actions/say-action/parameters/"
@@ -1157,10 +1166,17 @@ def get_settings_data(
     user_input: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Get current settings data."""
-    return {
+    values = {
         field.key: _get_entry_value(config_entry, field.key, hass, user_input)
         for field in SETTINGS_FIELDS
     }
+    source = (
+        user_input
+        if user_input is not None and CHIME_SETS_KEY in user_input
+        else config_entry.options
+    )
+    values[CHIME_SETS_KEY] = normalize_sets(source.get(CHIME_SETS_KEY))
+    return values
 
 
 def _configuration_yaml_path(hass) -> str:
@@ -1283,6 +1299,20 @@ def get_notify_chime_options() -> list[dict[str, str]]:
 async def async_get_notify_chime_options(hass) -> list[dict[str, str]]:
     """Load notify chime options without blocking the event loop."""
     return await hass.async_add_executor_job(get_notify_chime_options)
+
+
+def _with_chime_sets(
+    chime_options: list[dict[str, str]], values: dict[str, Any]
+) -> list[dict[str, str]]:
+    """Append current Random Chime Sets without waiting for services.yaml reload."""
+    options = [dict(option) for option in chime_options]
+    known_values = {str(option.get("value", "")) for option in options}
+    options.extend(
+        option
+        for option in selector_options(values)
+        if option["value"] not in known_values
+    )
+    return options
 
 
 def _normalize_notify_profile_number(value: Any) -> int | float | str:
@@ -1569,6 +1599,20 @@ def _build_panel_sections(
 
     sections = [
         {
+            "key": CHIME_SETS_KEY,
+            "kind": "chime_sets",
+            "title": "Chime Sets",
+            "description": "Create purpose-specific chime sets and let Chime TTS randomly choose the sound each time.",
+            "docs_url": CHIME_SETS_DOCS_URL,
+            "sets": normalize_sets(values.get(CHIME_SETS_KEY)),
+            "available_chimes": [
+                option
+                for option in chime_options
+                if option.get("value") and set_id_from_reference(option.get("value")) is None
+            ],
+        },
+    ] + [
+        {
             "key": section["key"],
             "title": section["title"],
             "description": section["description"],
@@ -1706,6 +1750,7 @@ async def async_build_panel_payload(
 
     chime_options = async_results[result_index]
     result_index += 1
+    chime_options = _with_chime_sets(chime_options, values)
     log_events = async_results[result_index] if include_log_events else []
 
     if notify_profiles is None:
@@ -1735,7 +1780,7 @@ async def async_build_panel_payload(
         "panel_tone": panel_tone,
         "restart_alert_note": "Home Assistant needs to restart before newly installed TTS providers appear in Chime TTS.",
         "fallback_note": "The standard Configure dialog still works and remains available as a fallback.",
-        "restart_note": "Changing the custom chimes folder or its contents requires a Home Assistant restart.",
+        "restart_note": "Changing the custom chimes folder or adding/removing Chime Sets requires a Home Assistant restart.",
         "message": message,
         "message_type": message_type,
         "restart_required": restart_required,
@@ -1772,7 +1817,7 @@ def build_options_schema(
     """Build the Home Assistant options flow schema."""
     data = get_settings_data(hass, config_entry, user_input)
     tts_platforms = get_tts_platforms(hass)
-    chime_options = get_notify_chime_options()
+    chime_options = _with_chime_sets(get_notify_chime_options(), data)
     chime_selector_options = [
         selector.SelectOptionDict(
             value=option["value"],
@@ -2842,6 +2887,17 @@ def validate_settings(
     ):
         normalized[field_key] = _normalize_string(user_input.get(field_key))
 
+    submitted_sets = user_input.get(
+       CHIME_SETS_KEY, current_data[CHIME_SETS_KEY]
+    )
+    normalized_sets = normalize_sets(submitted_sets)
+    if submitted_sets not in (None, []) and len(normalized_sets) != len(submitted_sets):
+        errors[CHIME_SETS_KEY] = "invalid_chime_sets"
+    names = [chime_set["name"].casefold() for chime_set in normalized_sets]
+    if len(names) != len(set(names)):
+        errors[CHIME_SETS_KEY] = "duplicate_chime_set_name"
+    normalized[CHIME_SETS_KEY] = normalized_sets
+
     normalized[ADD_COVER_ART_KEY] = _normalize_bool(user_input.get(ADD_COVER_ART_KEY))
 
     installed_tts_platforms = get_tts_platforms(hass)
@@ -2881,9 +2937,16 @@ def validate_settings(
             if WWW_PATH_KEY not in allow_invalid_paths:
                 errors[WWW_PATH_KEY] = WWW_PATH_KEY
 
-    restart_required = _normalize_string(
+    custom_chimes_restart_required = _normalize_string(
         normalized[CUSTOM_CHIMES_PATH_KEY]
     ) != _normalize_string(config_entry.options.get(CUSTOM_CHIMES_PATH_KEY))
+    saved_set_ids = {
+        chime_set["id"]
+        for chime_set in normalize_sets(current_data.get(CHIME_SETS_KEY))
+    }
+    submitted_set_ids = {chime_set["id"] for chime_set in normalized_sets}
+    chime_sets_restart_required = saved_set_ids != submitted_set_ids
+    restart_required = custom_chimes_restart_required or chime_sets_restart_required
 
     return ValidationResult(
         data=normalized,
@@ -2911,7 +2974,7 @@ def build_panel_payload(
         notify_profiles = loaded_notify_profiles
     tts_platforms = get_available_tts_platforms(hass)
     alerts, panel_tone = _build_panel_alerts(hass)
-    chime_options = get_notify_chime_options()
+    chime_options = _with_chime_sets(get_notify_chime_options(), values)
     field_options = {
         "chime_path": chime_options,
         "end_chime_path": chime_options,
@@ -2934,7 +2997,7 @@ def build_panel_payload(
         "panel_tone": panel_tone,
         "restart_alert_note": "Home Assistant needs to restart before newly installed TTS providers appear in Chime TTS.",
         "fallback_note": "The standard Configure dialog still works and remains available as a fallback.",
-        "restart_note": "Changing the custom chimes folder or its contents requires a Home Assistant restart.",
+        "restart_note": "Changing the custom chimes folder or adding/removing Chime Sets requires a Home Assistant restart.",
         "message": message,
         "message_type": message_type,
         "restart_required": restart_required,

@@ -8,11 +8,16 @@ from pathlib import Path
 
 import yaml
 
-from custom_components.chime_tts.const import GOOGLE_CLOUD, NABU_CASA_CLOUD_TTS
+from custom_components.chime_tts.const import (
+    GOOGLE_CLOUD,
+    NABU_CASA_CLOUD_TTS,
+    CHIME_SETS_KEY,
+)
 from custom_components.chime_tts.helpers.helpers import ChimeTTSHelper
 from custom_components.chime_tts.helpers.media_player_helper import MediaPlayerHelper
 from custom_components.chime_tts.helpers.services_helper import ChimeTTSServicesHelper
 from custom_components.chime_tts.helpers.tts_audio_helper import TTSAudioHelper
+from custom_components.chime_tts.chime_sets import choose_member, selector_options, set_reference
 
 
 class _FakeConfig:
@@ -113,6 +118,32 @@ def test_issue_294_round_trips_through_yaml_as_str():
     for option in reloaded:
         assert isinstance(option["label"], str)
         assert isinstance(option["value"], str)
+
+
+def test_chime_sets_use_stable_references_and_avoid_immediate_repeats(monkeypatch):
+    """A set's picker should exclude its last successful chime when possible."""
+    data = {
+       CHIME_SETS_KEY: [
+            {"id": "door", "name": "Doorbell", "chimes": ["bells", "ding_dong"]}
+        ]
+    }
+    reference = set_reference("door")
+    assert selector_options(data) == [{"label": "🎲 Doorbell", "value": reference}]
+
+    monkeypatch.setattr("custom_components.chime_tts.chime_sets.random.choice", lambda items: items[0])
+    history = {"door": "bells"}
+    assert choose_member(data, reference, history) == "ding_dong"
+
+
+def test_chime_set_options_are_exposed_to_service_selectors():
+    """Service YAML selectors include saved sets alongside individual chimes."""
+    helper = ChimeTTSServicesHelper()
+    helper._data = {
+       CHIME_SETS_KEY: [
+            {"id": "alerts", "name": "Alerts", "chimes": ["bells"]}
+        ]
+    }
+    assert {"label": "🎲 Alerts", "value": "chime_set:alerts"} in helper._build_chime_options([], helper._data)
 
 
 def test_issue_294_stale_structure_returns_none_not_crash():

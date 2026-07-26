@@ -442,7 +442,7 @@ template.innerHTML = `
       align-items: center;
       gap: 14px;
       flex: 0 0 auto;
-      margin-left: auto;
+      margin-left: 0;
     }
 
     .topbar-text {
@@ -864,6 +864,7 @@ template.innerHTML = `
     }
 
     .chapter-hero {
+      --chapter-hero-copy-color: color-mix(in srgb, var(--primary-color) 78%, white 22%);
       padding: 22px 24px;
       border-radius: 24px;
       border: 2px solid color-mix(in srgb, var(--primary-color) 14%, var(--divider-color));
@@ -909,8 +910,24 @@ template.innerHTML = `
       box-shadow: 0 22px 48px rgba(0, 0, 0, 0.18);
     }
 
-    .notify-workspace .chapter-hero-eyebrow {
-      color: color-mix(in srgb, #f08a8d 78%, white 22%);
+    .notify-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #f08a8d 78%, white 22%); }
+
+    .chime-sets-workspace .chapter-hero {
+      border-color: color-mix(in srgb, #8b5cf6 32%, var(--divider-color));
+      background:
+        radial-gradient(circle at top right, color-mix(in srgb, #8b5cf6 16%, transparent), transparent 44%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #f5f1ff 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #f8f5ff 8%));
+    }
+    .chime-sets-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #8b5cf6 82%, white 18%); }
+    .chime-sets-workspace .chime-sets-chapter-toggle {
+      width: 42px;
+      min-width: 42px;
+      min-height: 42px;
+      padding: 0;
+      border-radius: 999px;
+      border-color: color-mix(in srgb, #8b5cf6 30%, var(--divider-color));
+      background: color-mix(in srgb, #8b5cf6 16%, var(--card-background-color));
+      color: color-mix(in srgb, #5b21b6 82%, black 18%);
     }
 
     .logs-workspace .chapter-hero {
@@ -920,9 +937,7 @@ template.innerHTML = `
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #effaf3 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #f4fcf7 8%));
     }
 
-    .logs-workspace .chapter-hero-eyebrow {
-      color: color-mix(in srgb, #49b675 82%, white 18%);
-    }
+    .logs-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #49b675 82%, white 18%); }
 
     .about-workspace .chapter-hero {
       border-color: color-mix(in srgb, #f5c542 34%, var(--divider-color));
@@ -931,9 +946,7 @@ template.innerHTML = `
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff8de 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fffaf0 8%));
     }
 
-    .about-workspace .chapter-hero-eyebrow {
-      color: color-mix(in srgb, #d4a514 86%, white 14%);
-    }
+    .about-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #d4a514 86%, white 14%); }
 
     .chapter-workspace.collapsed .chapter-hero {
       margin: 0;
@@ -953,15 +966,6 @@ template.innerHTML = `
       align-items: flex-start;
     }
 
-    .chapter-hero-eyebrow {
-      margin: 0 0 10px;
-      color: color-mix(in srgb, var(--primary-color) 78%, white 22%);
-      font-size: 0.75rem;
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
-
     .chapter-hero-title-row {
       display: inline-flex;
       align-items: center;
@@ -974,15 +978,18 @@ template.innerHTML = `
       font-size: 1.65rem;
       line-height: 1.1;
       letter-spacing: -0.03em;
-      color: var(--primary-text-color);
+      color: var(--chapter-hero-copy-color);
     }
 
     .chapter-hero-description {
-      margin: 10px 0 0;
-      max-width: 72ch;
+      margin: 10px 0 0;  
       font-size: 1rem;
       line-height: 1.6;
-      color: var(--secondary-text-color);
+      color: var(--chapter-hero-copy-color);
+    }
+
+    .chapter-hero-title-row .field-help-link {
+      color: var(--chapter-hero-copy-color);
     }
 
     .chapter-hero-actions {
@@ -1041,6 +1048,19 @@ template.innerHTML = `
     }
 
     @media (prefers-color-scheme: dark) {
+      .chime-sets-workspace .chapter-hero {
+        border-color: color-mix(in srgb, #a78bfa 48%, transparent);
+        background:
+          radial-gradient(circle at top right, color-mix(in srgb, #8b5cf6 20%, transparent), transparent 44%),
+          linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 94%, #261a44 6%), color-mix(in srgb, var(--secondary-background-color) 90%, #1d1633 10%));
+      }
+      .chime-sets-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #c4b5fd 86%, white 14%); }
+      .chime-sets-workspace .chime-sets-chapter-toggle {
+        border-color: color-mix(in srgb, #a78bfa 46%, transparent);
+        background: color-mix(in srgb, #8b5cf6 10%, var(--card-background-color));
+        color: color-mix(in srgb, #a78bfa 78%, white 22%);
+      }
+
       .configuration-workspace .chapter-chevron {
         border-color: color-mix(in srgb, var(--primary-color) 42%, transparent);
         background: color-mix(in srgb, var(--primary-color) 10%, var(--card-background-color));
@@ -1666,6 +1686,99 @@ template.innerHTML = `
       gap: 16px;
     }
 
+    .random-chime-sets-card { cursor: pointer; }
+    .random-chime-set-row-toggle {
+      display: flex;
+      flex: 1 1 auto;
+      min-width: 0;
+      align-items: center;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .random-chime-set-card.expanded .random-chime-set-row-toggle {
+      display: none;
+    }
+
+    .random-chime-set-card [data-delete-random-chime-set] {
+      width: 42px;
+      min-width: 42px;
+      min-height: 42px;
+      padding: 0;
+      border-radius: 999px;
+    }
+    .random-chime-member-grid {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, 1fr);
+      gap: 8px 16px;
+    }
+    .random-chime-member {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      padding: 8px 0;
+      font-size: .9rem;
+    }
+    .random-chime-member label { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .random-chime-member span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .random-chime-member .field-preview-button {
+      width: 30px;
+      min-width: 30px;
+      min-height: 30px;
+      padding: 0;
+      flex: 0 0 auto;
+      border-radius: 999px;
+    }
+    .random-chime-member .chime-set-offset-button {
+      width: 30px;
+      min-width: 30px;
+      min-height: 30px;
+      padding: 0;
+      flex: 0 0 auto;
+      border-radius: 999px;
+    }
+    .chime-set-offset-control {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .chime-set-offset-control .field-label { flex: 0 0 auto; }
+    .chime-set-offset-input.control {
+      width: 14ch;
+      min-width: 14ch;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .random-chime-member input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
+    }
+    .random-chime-set-title-input {
+      width: 100%;
+      padding: 4px 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .random-chime-set-title-input:focus { box-shadow: none; }
+    :host([narrow]) .random-chime-member-grid {
+      grid-template-rows: none !important;
+      grid-auto-flow: row;
+      grid-template-columns: 1fr;
+    }
+    :host([narrow]) .random-chime-member .field-preview-button { margin-left: auto; }
+
     .field-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1922,6 +2035,35 @@ template.innerHTML = `
     .field-preview-button {
       flex: 0 0 auto;
       align-self: stretch;
+    }
+
+    .preview-playing {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      background: #16a34a !important;
+      border-color: #22c55e !important;
+    }
+
+    .preview-playing::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background: color-mix(in srgb, var(--secondary-background-color) 92%, var(--card-background-color));
+      clip-path: circle(0% at 50% 50%);
+      animation: previewRadialWipe var(--preview-duration, 1s) linear forwards;
+    }
+
+    .preview-playing > svg,
+    .preview-playing > span { position: relative; z-index: 1; }
+
+    @keyframes previewRadialWipe {
+      to { clip-path: circle(75% at 50% 50%); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .preview-playing::before { animation: none; clip-path: circle(75% at 50% 50%); }
     }
 
     .browse-button {
@@ -2876,6 +3018,20 @@ template.innerHTML = `
       background: color-mix(in srgb, var(--secondary-background-color) 58%, transparent);
     }
 
+    .chime-sets-workspace .random-chime-set-card {
+      border-color: color-mix(in srgb, #8b5cf6 32%, var(--divider-color));
+      background:
+        radial-gradient(circle at top right, color-mix(in srgb, #8b5cf6 16%, transparent), transparent 44%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #f5f1ff 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #f8f5ff 8%));
+    }
+
+    .notify-workspace .notify-profile-card {
+      border-color: color-mix(in srgb, #e56b6f 24%, var(--divider-color));
+      background:
+        radial-gradient(circle at top right, color-mix(in srgb, #e56b6f 12%, transparent), transparent 44%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff4f5 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fff7f8 8%));
+    }
+
     .notify-profile-header {
       display: flex;
       align-items: center;
@@ -2893,6 +3049,19 @@ template.innerHTML = `
     .notify-profile-copy h3 {
       margin: 0;
       font-size: 1.02rem;
+    }
+
+    .notify-profile-title-display {
+      padding-left: 15px;
+    }
+
+    .random-chime-set-title-name {
+      font-weight: 700;
+    }
+
+    .random-chime-set-title-count {
+      color: var(--secondary-text-color);
+      font-weight: 400;
     }
 
     .notify-profile-title-display,
@@ -2957,7 +3126,8 @@ template.innerHTML = `
       white-space: nowrap;
     }
 
-    .notify-profile-actions [data-toggle-notify-profile] {
+    .notify-profile-actions [data-toggle-notify-profile],
+    .notify-profile-actions [data-toggle-random-chime-set] {
       width: 42px;
       min-width: 42px;
       min-height: 42px;
@@ -3506,20 +3676,24 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._pickerAudioLoadToken = 0;
     this._pickerAudioLoadingPath = "";
     this._pickerPlayingPath = "";
+    this._pickerPreviewDuration = 0;
     this._fieldPreviewAudio = null;
     this._fieldPreviewAudioObjectUrl = "";
     this._fieldPreviewAudioLoadToken = 0;
     this._fieldPreviewLoadingKey = "";
     this._fieldPreviewPlayingKey = "";
+    this._fieldPreviewDuration = 0;
     this._notifyPreviewAudio = null;
     this._notifyPreviewAudioObjectUrl = "";
     this._notifyPreviewAudioLoadToken = 0;
     this._notifyPreviewLoadingKey = "";
     this._notifyPreviewPlayingKey = "";
+    this._notifyPreviewDuration = 0;
     this._footerLogoSvgMarkup = "";
     this._footerLogoSvgUrl = "";
     this._advancedSections = {};
     this._expandedConfigSections = {};
+    this._expandedRandomChimeSets = {};
     this._expandedNotifyProfiles = {};
     this._notifyProfileTests = {};
     this._notifyProfileTestTimers = {};
@@ -3540,12 +3714,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._boundResizeRefresh = () => this._syncLogEventActionWrapping();
     this._boundBeforeUnload = (event) => this._handleBeforeUnload(event);
     this._boundNavigationClick = (event) => this._handleNavigationClick(event);
+    this._boundChapterToggle = (event) => this._handleChapterToggleEvent(event);
     this._pathValidationState = {};
     this._pathValidationTimers = {};
     this._invalidPathOverrides = {};
     this._restartPending = false;
     this._restartConfirmOpen = false;
     this._discardChangesConfirmOpen = false;
+    this._randomChimeSetDeleteTarget = null;
+    this._chimeSetOffsetEditor = null;
     this._pendingNavigationUrl = "";
     this._allowUnload = false;
     this._restarting = false;
@@ -3561,6 +3738,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     document.addEventListener("selectionchange", this._boundSelectionRefresh);
     this.shadowRoot?.addEventListener("focusin", this._boundFocusRefresh);
     this.shadowRoot?.addEventListener("focusout", this._boundFocusRefresh);
+    this.shadowRoot?.addEventListener("click", this._boundChapterToggle);
+    this.shadowRoot?.addEventListener("keydown", this._boundChapterToggle);
     window.addEventListener("resize", this._boundResizeRefresh);
     window.addEventListener("beforeunload", this._boundBeforeUnload);
     document.addEventListener("click", this._boundNavigationClick, true);
@@ -3571,6 +3750,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     document.removeEventListener("selectionchange", this._boundSelectionRefresh);
     this.shadowRoot?.removeEventListener("focusin", this._boundFocusRefresh);
     this.shadowRoot?.removeEventListener("focusout", this._boundFocusRefresh);
+    this.shadowRoot?.removeEventListener("click", this._boundChapterToggle);
+    this.shadowRoot?.removeEventListener("keydown", this._boundChapterToggle);
     window.removeEventListener("resize", this._boundResizeRefresh);
     window.removeEventListener("beforeunload", this._boundBeforeUnload);
     document.removeEventListener("click", this._boundNavigationClick, true);
@@ -3667,6 +3848,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._clientErrors = {};
       this._notifyProfileClientErrors = [];
       this._expandedConfigSections = {};
+      this._expandedRandomChimeSets = {};
       this._expandedNotifyProfiles = {};
       this._clearAllNotifyProfileTestTimers();
       this._notifyProfileTests = {};
@@ -3704,6 +3886,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._clientErrors = {};
       this._notifyProfileClientErrors = [];
       this._expandedConfigSections = {};
+      this._expandedRandomChimeSets = {};
       this._expandedNotifyProfiles = {};
       this._clearAllNotifyProfileTestTimers();
       this._notifyProfileTests = {};
@@ -3961,6 +4144,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       ${this._renderPicker()}
       ${this._renderRestartConfirmation()}
       ${this._renderDiscardChangesConfirmation()}
+      ${this._renderRandomChimeSetDeleteConfirmation()}
+      ${this._renderChimeSetOffsetEditor()}
     `;
 
     this.shadowRoot.getElementById("settings-form")?.addEventListener("submit", (event) => {
@@ -4009,6 +4194,52 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ? "change"
         : "input";
       field.addEventListener(eventName, (event) => this._handleFieldChange(event));
+    });
+    this.shadowRoot.querySelectorAll("[data-add-random-chime-set]").forEach((button) => {
+      button.addEventListener("click", () => this._addRandomChimeSet());
+    });
+    this.shadowRoot.querySelectorAll("[data-random-set-name]").forEach((field) => {
+      field.addEventListener("change", (event) => this._updateRandomChimeSetName(Number(event.currentTarget.dataset.randomSetName), event.currentTarget.value));
+    });
+    this.shadowRoot.querySelectorAll("[data-random-set-member]").forEach((field) => {
+      field.addEventListener("change", (event) => this._toggleRandomChimeSetMember(Number(event.currentTarget.dataset.randomSetMember), event.currentTarget.value, event.currentTarget.checked));
+    });
+    this.shadowRoot.querySelectorAll("[data-edit-chime-set-offset]").forEach((button) => {
+      button.addEventListener("click", (event) => this._openChimeSetOffsetEditor(Number(event.currentTarget.dataset.editChimeSetOffset), event.currentTarget.dataset.chimeSetMember, event.currentTarget.dataset.chimeSetMemberLabel));
+    });
+    this.shadowRoot.querySelectorAll("[data-chime-set-offset-input]").forEach((field) => {
+      field.addEventListener("input", (event) => { if (this._chimeSetOffsetEditor) this._chimeSetOffsetEditor.offset = event.currentTarget.value; });
+    });
+    this.shadowRoot.querySelectorAll("[data-chime-set-offset-cancel]").forEach((button) => button.addEventListener("click", () => this._closeChimeSetOffsetEditor()));
+    this.shadowRoot.querySelectorAll("[data-chime-set-offset-save]").forEach((button) => button.addEventListener("click", () => this._saveChimeSetOffset()));
+    this.shadowRoot.querySelectorAll("[data-delete-random-chime-set]").forEach((button) => {
+      button.addEventListener("click", (event) => this._requestRandomChimeSetDelete(Number(event.currentTarget.dataset.deleteRandomChimeSet)));
+    });
+    this.shadowRoot.querySelectorAll("[data-random-chime-set-delete-cancel]").forEach((button) => {
+      button.addEventListener("click", () => this._closeRandomChimeSetDeleteConfirmation());
+    });
+    this.shadowRoot.querySelectorAll("[data-random-chime-set-delete-confirm]").forEach((button) => {
+      button.addEventListener("click", () => this._confirmRandomChimeSetDelete());
+    });
+    this.shadowRoot.querySelectorAll("[data-random-chime-audio-toggle]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this._toggleFieldPreviewAudio("chime_path", event.currentTarget.dataset.randomChimeAudioToggle);
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-random-chime-set-header]").forEach((header) => {
+      header.addEventListener("click", (event) => {
+        const target = event.target;
+        if (target instanceof Element && target.closest("button, input, label, .notify-profile-actions")) return;
+        this._toggleRandomChimeSet(Number(event.currentTarget.dataset.randomChimeSetHeader));
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-toggle-random-chime-set]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        this._toggleRandomChimeSet(Number(event.currentTarget.dataset.toggleRandomChimeSet));
+      });
     });
     this.shadowRoot.querySelectorAll("[data-notify-field]").forEach((field) => {
       const eventName = field.tagName === "SELECT" || field.type === "checkbox"
@@ -4090,6 +4321,11 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-open-notify-test]").forEach((button) => {
       button.addEventListener("click", (event) => {
         this._openNotifyProfileTest(Number(event.currentTarget.dataset.openNotifyTest));
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-reset-notify-profile]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        this._resetNotifyProfile(Number(event.currentTarget.dataset.resetNotifyProfile));
       });
     });
     this.shadowRoot.querySelectorAll("[data-close-notify-test]").forEach((button) => {
@@ -4324,17 +4560,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           event.currentTarget.dataset.setPath,
           event.currentTarget.dataset.pathValue,
         );
-      });
-    });
-    this.shadowRoot.querySelectorAll("[data-toggle-chapter]").forEach((button) => {
-      button.addEventListener("click", (event) => {
-        this._toggleChapter(event.currentTarget.dataset.toggleChapter);
-      });
-      button.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          this._toggleChapter(event.currentTarget.dataset.toggleChapter);
-        }
       });
     });
     this.shadowRoot.querySelectorAll(".chapter-hero-toggle a").forEach((link) => {
@@ -4664,6 +4889,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _renderSection(section, values, errors) {
+    if (section.kind === "chime_sets") {
+      return this._renderRandomChimeSetsSection(section, errors.chime_sets);
+    }
     if (section.kind === "notify_profiles") {
       return this._renderNotifyProfilesSection(section);
     }
@@ -4742,11 +4970,77 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     `;
   }
 
+  _renderRandomChimeSetsSection(section, error) {
+    const sets = Array.isArray(this._draftValues?.chime_sets)
+      ? this._draftValues.chime_sets
+      : [];
+    const available = Array.isArray(section.available_chimes) ? section.available_chimes : [];
+    const expanded = this._isChapterExpanded("chime_sets");
+    const sectionDirty = this._isFieldChanged("chime_sets");
+    const restartRequired = this._randomChimeSetStructureChanged();
+    const hasUnsavedSet = this._hasUnsavedRandomChimeSet();
+    return `
+      <div class="chapter-group chapter-workspace chime-sets-workspace ${expanded ? "expanded" : "collapsed"}" data-chapter-key="chime_sets">
+        ${this._renderChapterHero({
+          chapterKey: "chime_sets",
+          expanded,
+          title: section.title,
+          description: section.description || "",
+          docsUrl: section.docs_url,
+          showToggleButton: true,
+          bodyMarkup: `<div class="chapter-content chapter-body config-section-body">
+            ${hasUnsavedSet ? "" : '<div class="notify-profile-list-actions"><button class="button-primary" type="button" data-add-random-chime-set="1">+ Add Set</button></div>'}
+            ${restartRequired ? '<div class="field-note">ℹ️ <strong>Restart Required</strong><br />Adding or removing a Chime Set takes effect after Home Assistant restarts. Changing selected chimes does not require a restart.</div>' : ""}
+            ${error ? `<div class="error-text">${this._escapeHtml(this._formatError(error))}</div>` : ""}
+            ${sets.length === 0
+              ? '<p class="hint">No Chime Sets yet. Add one to mix up your notifications.</p>'
+              : sets.map((chimeSet, index) => this._renderRandomChimeSetCard(chimeSet, index, available)).join("")}
+          </div>`,
+        })}
+      </div>
+    `;
+  }
+
+  _renderRandomChimeSetCard(chimeSet, index, available) {
+    const expanded = this._isRandomChimeSetExpanded(index);
+    const name = String(chimeSet?.name || "").trim() || "Chime Set";
+    const selectedCount = Array.isArray(chimeSet?.chimes) ? chimeSet.chimes.length : 0;
+    const chimeRows = Math.max(1, Math.ceil(available.length / 3));
+    return `
+      <article class="notify-profile-card random-chime-set-card ${expanded ? "expanded" : "collapsed"}" data-random-chime-set-card="${index}" aria-expanded="${expanded ? "true" : "false"}">
+        <div class="notify-profile-header random-chime-set-header" data-random-chime-set-header="${index}">
+          <div class="notify-profile-copy">
+            <button class="random-chime-set-row-toggle" type="button" data-toggle-random-chime-set="${index}" aria-expanded="${expanded ? "true" : "false"}"><div class="notify-profile-title-display"><h3><span class="random-chime-set-title-name">${this._escapeHtml(name)}</span><span class="random-chime-set-title-count"> - ${this._escapeHtml(`${selectedCount} ${selectedCount === 1 ? "chime" : "chimes"} selected`)}</span></h3></div></button>
+            <div class="notify-profile-title-edit"><input class="notify-profile-title-input random-chime-set-title-input" data-random-set-name="${index}" type="text" value="${this._escapeAttribute(chimeSet.name || "")}" placeholder="Chime set name" /></div>
+          </div>
+          <div class="notify-profile-actions">
+            <button class="button-danger icon-only-button" type="button" data-delete-random-chime-set="${index}" aria-label="${this._escapeAttribute(this._t("action.delete"))}" title="${this._escapeAttribute(this._t("action.delete"))}">${ICONS.trash}</button>
+            <button class="button-secondary icon-only-button log-event-toggle ${expanded ? "expanded" : "collapsed"}" type="button" data-toggle-random-chime-set="${index}" aria-label="${this._escapeAttribute(this._t(expanded ? "aria.collapse_profile" : "aria.expand_profile"))}" title="${this._escapeAttribute(this._t(expanded ? "action.collapse" : "action.expand"))}">${ICONS.chevron}</button>
+          </div>
+        </div>
+        <div class="row-collapse ${expanded ? "expanded" : "collapsed"}"><div class="row-collapse-inner">
+          <div class="random-chime-member-grid" style="grid-template-rows: repeat(${chimeRows}, auto)">
+            ${available.map((option) => {
+              const value = String(option.value || "");
+              const checked = Array.isArray(chimeSet.chimes) && chimeSet.chimes.includes(value);
+              const previewKey = this._getFieldPreviewKey("chime_path", value);
+              const loading = this._fieldPreviewLoadingKey === previewKey;
+              const playing = this._fieldPreviewPlayingKey === previewKey;
+              const editButton = checked ? `<button class="button-secondary icon-only-button chime-set-offset-button" type="button" data-edit-chime-set-offset="${index}" data-chime-set-member="${this._escapeAttribute(value)}" data-chime-set-member-label="${this._escapeAttribute(option.label || value)}" aria-label="Edit chime offset" title="Edit offset">${ICONS.pencil}</button>` : "";
+              return `<div class="random-chime-member"><label><input type="checkbox" data-random-set-member="${index}" value="${this._escapeAttribute(value)}" ${checked ? "checked" : ""} /><span>${this._escapeHtml(option.label || value)}</span></label><button class="button-secondary icon-only-button field-preview-button ${playing ? "preview-playing" : ""}" ${this._previewPlayingStyle(playing, this._fieldPreviewDuration)} type="button" data-random-chime-audio-toggle="${this._escapeAttribute(value)}" aria-label="${this._escapeAttribute(this._t(loading ? "action.loading_preview" : playing ? "action.pause_preview" : "action.play_preview"))}" title="${this._escapeAttribute(this._t(loading ? "action.loading_preview" : playing ? "action.pause_preview" : "action.play_preview"))}">${loading ? '<span class="button-spinner" aria-hidden="true"></span>' : playing ? ICONS.pause : ICONS.play}</button>${editButton}</div>`;
+            }).join("")}
+          </div>
+        </div></div>
+      </article>
+    `;
+  }
+
   _renderSettingsContent(sections, values, errors, data) {
     const notifySection = sections.find((section) => section.kind === "notify_profiles");
     const logsSection = sections.find((section) => section.kind === "logs");
     const aboutSection = sections.find((section) => section.kind === "about");
-    const configSections = sections.filter((section) => !["notify_profiles", "logs", "about"].includes(section.kind));
+    const chimeSetsSection = sections.find((section) => section.kind === "chime_sets");
+    const configSections = sections.filter((section) => !["chime_sets", "notify_profiles", "logs", "about"].includes(section.kind));
     const configExpanded = this._isChapterExpanded("configuration");
 
     return `
@@ -4757,7 +5051,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ${this._renderChapterHero({
           chapterKey: "configuration",
           expanded: configExpanded,
-          eyebrow: this._t("chapter.settings"),
           title: this._t("chapter.configuration"),
           description: this._t("chapter.configuration_description"),
           docsUrl: data.documentation_url,
@@ -4768,13 +5061,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           `,
         })}
       </div>
+      ${chimeSetsSection ? this._renderRandomChimeSetsSection(chimeSetsSection, errors[chimeSetsSection.key]) : ""}
       ${notifySection ? this._renderNotifyProfilesSection(notifySection) : ""}
       ${logsSection ? this._renderLogsSection(logsSection) : ""}
       ${aboutSection ? this._renderAboutSection(aboutSection) : ""}
     `;
   }
 
-  _renderChapterHero({ chapterKey, expanded, eyebrow, title, description, docsUrl, actionsMarkup = "", bodyMarkup = "" }) {
+  _renderChapterHero({ chapterKey, expanded, title, description, docsUrl, actionsMarkup = "", bodyMarkup = "", showToggleButton = false }) {
     return `
       <section
         class="chapter-hero"
@@ -4790,7 +5084,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           <div class="chapter-hero-inner">
             <div>
               <div class="chapter-hero-copy">
-                ${eyebrow ? `<p class="chapter-hero-eyebrow">${this._escapeHtml(eyebrow)}</p>` : ""}
                 <div class="chapter-hero-title-row">
                   <h2 class="chapter-hero-title">${this._escapeHtml(title)}</h2>
                   ${docsUrl
@@ -4813,7 +5106,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                 ? `<div class="chapter-hero-actions">${actionsMarkup}</div>`
                 : ""
               }
-              <span class="chapter-chevron" aria-hidden="true">${ICONS.chevron}</span>
+              ${showToggleButton
+                ? `<button class="button-secondary icon-only-button config-section-toggle chime-sets-chapter-toggle ${expanded ? "expanded" : "collapsed"}" type="button" data-toggle-chapter="${this._escapeAttribute(chapterKey)}" aria-label="${this._escapeAttribute(this._t(expanded ? "aria.collapse_named" : "aria.expand_named", { title }))}" title="${this._escapeAttribute(this._t(expanded ? "action.collapse" : "action.expand"))}">${ICONS.chevron}</button>`
+                : `<span class="chapter-chevron" aria-hidden="true">${ICONS.chevron}</span>`
+              }
             </div>
           </div>
         </div>
@@ -4842,7 +5138,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ${this._renderChapterHero({
           chapterKey: "notify_profiles",
           expanded: notifyExpanded,
-          eyebrow: this._t("chapter.profiles"),
           title: sectionTitle,
           description: sectionDescription,
           docsUrl: section.docs_url,
@@ -4890,7 +5185,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ${this._renderChapterHero({
           chapterKey: "logs",
           expanded: logsExpanded,
-          eyebrow: this._t("chapter.session"),
           title: sectionTitle,
           description: sectionDescription,
           docsUrl: section.docs_url,
@@ -4952,7 +5246,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ${this._renderChapterHero({
           chapterKey: "about",
           expanded: aboutExpanded,
-          eyebrow: this._t("chapter.project"),
           title: sectionTitle,
           description: sectionDescription,
           docsUrl: section.docs_url,
@@ -5235,6 +5528,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const errors = this._getNotifyProfileErrors(index);
     const expanded = this._isNotifyProfileExpanded(index);
     const testState = this._getNotifyProfileTestState(index);
+    const hasUnsavedChanges = this._isNotifyProfileDirty(index);
     const name = String(profile?.name || "").trim() || this._t("label.profile", { number: index + 1 });
     const detailFields = schemaFields.filter((field) => !["name", "entity_id"].includes(field.key));
     const boolFields = detailFields.filter((field) => field.type === "boolean");
@@ -5303,7 +5597,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                       class="button-primary"
                       type="button"
                       data-run-notify-inline-test="${this._escapeAttribute(String(index))}"
-                      ${testState.sending || !String(testState.message || "").trim() ? "disabled" : ""}
+                      ${testState.sending || hasUnsavedChanges || !String(testState.message || "").trim() ? "disabled" : ""}
                     >
                       ${testState.sending
                         ? '<span class="button-spinner" aria-hidden="true"></span>'
@@ -5321,13 +5615,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                 >X</button>
               `
               : `
-                <button
-                  class="button-secondary"
-                  type="button"
-                  data-open-notify-test="${this._escapeAttribute(String(index))}"
-                  aria-label="${this._escapeAttribute(this._t("aria.test_profile"))}"
-                  title="${this._escapeAttribute(this._t("action.test"))}"
-                >${ICONS.beaker}</button>
+                ${hasUnsavedChanges
+                  ? `<button class="button-secondary" type="button" data-reset-notify-profile="${this._escapeAttribute(String(index))}">${this._escapeHtml(this._t("action.reset"))}</button>`
+                  : `<button
+                      class="button-secondary"
+                      type="button"
+                      data-open-notify-test="${this._escapeAttribute(String(index))}"
+                      aria-label="${this._escapeAttribute(this._t("aria.test_profile"))}"
+                      title="${this._escapeAttribute(this._t("action.test"))}"
+                    >${ICONS.beaker}</button>`
+                }
                 <button
                   class="button-danger icon-only-button"
                   type="button"
@@ -5469,7 +5766,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           <div class="input-row select-preview-row">
             ${selectMarkup}
             <button
-              class="button-secondary icon-only-button field-preview-button"
+              class="button-secondary icon-only-button field-preview-button ${isPlaying ? "preview-playing" : ""}"
+              ${this._previewPlayingStyle(isPlaying, this._notifyPreviewDuration)}
               type="button"
               data-notify-audio-toggle="${this._escapeAttribute(field.key)}"
               data-notify-audio-value="${this._escapeAttribute(selectedValue)}"
@@ -5734,7 +6032,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       <div class="input-row select-preview-row">
         ${selectMarkup}
         <button
-          class="button-secondary icon-only-button field-preview-button"
+          class="button-secondary icon-only-button field-preview-button ${isPlaying ? "preview-playing" : ""}"
+          ${this._previewPlayingStyle(isPlaying, this._fieldPreviewDuration)}
           type="button"
           data-field-audio-toggle="${this._escapeAttribute(field.key)}"
           data-field-audio-value="${this._escapeAttribute(selectedValue)}"
@@ -6045,6 +6344,44 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     `;
   }
 
+  _renderRandomChimeSetDeleteConfirmation() {
+    const target = this._randomChimeSetDeleteTarget;
+    if (!target) {
+      return "";
+    }
+
+    const usageWarning = target.usedBy?.length
+      ? `It is currently used by ${target.usedBy.join(", ")}.`
+      : "";
+    return `
+      <div class="confirm-overlay">
+        <div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="Delete Chime Set">
+          <h3 class="confirm-title">Delete Chime Set?</h3>
+          <p class="confirm-copy">Delete “${this._escapeHtml(target.name || "Chime Set")}”?</p>
+          ${usageWarning ? `<p class="confirm-copy">${this._escapeHtml(usageWarning)}</p>` : ""}
+          <div class="confirm-actions">
+            <button class="button-secondary" type="button" data-random-chime-set-delete-cancel="1">${this._escapeHtml(this._t("action.cancel"))}</button>
+            <button class="button-danger" type="button" data-random-chime-set-delete-confirm="1">${this._escapeHtml(this._t("action.delete"))}</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  _renderChimeSetOffsetEditor() {
+    const editor = this._chimeSetOffsetEditor;
+    if (!editor) return "";
+    return `<div class="confirm-overlay"><div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="Edit chime offset">
+      <h3 class="confirm-title">Chime offset</h3>
+      <p class="confirm-copy">
+        Set the offset for “<b>${this._escapeHtml(editor.label)}</b>”.<br />
+        This will replace the offset when this chime is selected.
+      </p>
+      <div class="chime-set-offset-control"><span class="field-label">Offset (milliseconds)</span><input class="control chime-set-offset-input" type="number" step="1" data-chime-set-offset-input="1" value="${this._escapeAttribute(editor.offset)}" /></div>
+      <div class="confirm-actions"><button class="button-secondary" type="button" data-chime-set-offset-cancel="1">${this._escapeHtml(this._t("action.cancel"))}</button><button class="button-primary" type="button" data-chime-set-offset-save="1">${this._escapeHtml(this._t("action.save"))}</button></div>
+    </div></div>`;
+  }
+
   _renderPickerPreview() {
     if (this._picker?.field_key !== "custom_chimes_path") {
       return "";
@@ -6113,7 +6450,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         <span class="picker-file-actions">
           ${canPreviewAudio
             ? `<button
-                class="button-secondary icon-only-button"
+                class="button-secondary icon-only-button ${isPlaying ? "preview-playing" : ""}"
+                ${this._previewPlayingStyle(isPlaying, this._pickerPreviewDuration)}
                 type="button"
                 data-picker-audio-toggle="${this._escapeAttribute(item?.path || "")}"
                 data-picker-audio-url="${this._escapeAttribute(item?.audio_preview_url || "")}"
@@ -6578,6 +6916,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return;
     }
 
+    if (section.kind === "chime_sets") {
+      this._draftValues = {
+        ...(this._draftValues || {}),
+        chime_sets: this._cloneRandomChimeSets(this._data?.values?.chime_sets || []),
+      };
+      this._isDirty = this._hasValueChanges();
+      this._rerenderPreservingInputState();
+      return;
+    }
+
     const nextDraftValues = { ...(this._draftValues || {}) };
     for (const field of section.fields || []) {
       nextDraftValues[field.key] = this._data?.values?.[field.key];
@@ -6682,6 +7030,17 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
   _isChapterExpanded(chapterKey) {
     return this._expandedChapters?.[chapterKey] === true;
+  }
+
+  _handleChapterToggleEvent(event) {
+    if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return;
+    const toggle = event.composedPath().find(
+      (node) => node instanceof Element && node.matches?.("[data-toggle-chapter]"),
+    );
+    if (!toggle) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this._toggleChapter(toggle.dataset.toggleChapter);
   }
 
   _toggleChapter(chapterKey) {
@@ -7124,6 +7483,20 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     return this._normalizeForCompare(savedProfile[fieldKey]) !== this._normalizeForCompare(draftProfile[fieldKey]);
   }
 
+  _isNotifyProfileDirty(index) {
+    const defaults = this._buildEmptyNotifyProfile();
+    const savedProfile = {
+      ...defaults,
+      ...((this._data?.notify_profiles || [])[index] || {}),
+    };
+    const draftProfile = {
+      ...defaults,
+      ...((this._draftNotifyProfiles || [])[index] || {}),
+    };
+    const keys = new Set([...Object.keys(savedProfile), ...Object.keys(draftProfile)]);
+    return [...keys].some((key) => this._normalizeForCompare(savedProfile[key]) !== this._normalizeForCompare(draftProfile[key]));
+  }
+
   _getRestartRequiredChangedFields() {
     const restartKeys = this._data?.restart_required_field_keys || [];
     const labels = new Map();
@@ -7254,6 +7627,160 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._schedulePathValidation(key, nextValue);
     }
     this._rerenderPreservingInputState(key);
+  }
+
+  _randomChimeSetsDraft() {
+    return Array.isArray(this._draftValues?.chime_sets)
+      ? this._draftValues.chime_sets.map((chimeSet) => ({
+        ...chimeSet,
+        chimes: Array.isArray(chimeSet.chimes) ? [...chimeSet.chimes] : [],
+        offsets: { ...(chimeSet.offsets || {}) },
+      }))
+      : [];
+  }
+
+  _cloneRandomChimeSets(sets) {
+    return Array.isArray(sets) ? sets.map((chimeSet) => ({
+      ...chimeSet,
+      chimes: Array.isArray(chimeSet.chimes) ? [...chimeSet.chimes] : [],
+      offsets: { ...(chimeSet.offsets || {}) },
+    })) : [];
+  }
+
+  _randomChimeSetStructureChanged() {
+    const savedIds = new Set((this._data?.values?.chime_sets || []).map((chimeSet) => chimeSet?.id).filter(Boolean));
+    const draftIds = new Set(this._randomChimeSetsDraft().map((chimeSet) => chimeSet?.id).filter(Boolean));
+    return savedIds.size !== draftIds.size || [...savedIds].some((id) => !draftIds.has(id));
+  }
+
+  _hasUnsavedRandomChimeSet() {
+    const savedIds = new Set((this._data?.values?.chime_sets || []).map((chimeSet) => chimeSet?.id).filter(Boolean));
+    return this._randomChimeSetsDraft().some((chimeSet) => chimeSet?.id && !savedIds.has(chimeSet.id));
+  }
+
+  _setRandomChimeSetsDraft(sets) {
+    this._draftValues = { ...(this._draftValues || {}), chime_sets: sets };
+    if (this._clientErrors.chime_sets) {
+      const errors = { ...(this._clientErrors || {}) };
+      delete errors.chime_sets;
+      this._clientErrors = errors;
+    }
+    this._isDirty = this._hasValueChanges();
+    this._rerenderPreservingInputState();
+  }
+
+  _addRandomChimeSet() {
+    const sets = this._randomChimeSetsDraft();
+    const id = globalThis.crypto?.randomUUID?.() || `set-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    sets.unshift({ id, name: "", chimes: [] });
+    this._expandedRandomChimeSets = {
+      ...this._offsetNotifyProfileState(this._expandedRandomChimeSets, 1),
+      0: true,
+    };
+    this._setRandomChimeSetsDraft(sets);
+  }
+
+  _updateRandomChimeSetName(index, name) {
+    const sets = this._randomChimeSetsDraft();
+    if (!sets[index]) return;
+    sets[index].name = name;
+    this._setRandomChimeSetsDraft(sets);
+  }
+
+  _toggleRandomChimeSetMember(index, value, checked) {
+    const sets = this._randomChimeSetsDraft();
+    if (!sets[index]) return;
+    const members = new Set(sets[index].chimes || []);
+    if (checked) members.add(value);
+    else members.delete(value);
+    sets[index].chimes = [...members];
+    this._setRandomChimeSetsDraft(sets);
+  }
+
+  _openChimeSetOffsetEditor(index, member, label = member) {
+    const chimeSet = this._randomChimeSetsDraft()[index];
+    if (!chimeSet || !chimeSet.chimes?.includes(member)) return;
+    this._chimeSetOffsetEditor = { index, member, label, offset: String(chimeSet.offsets?.[member] ?? 0) };
+    this._render();
+  }
+
+  _closeChimeSetOffsetEditor() {
+    this._chimeSetOffsetEditor = null;
+    this._render();
+  }
+
+  _saveChimeSetOffset() {
+    const editor = this._chimeSetOffsetEditor;
+    const offset = Number(editor?.offset);
+    if (!editor || !Number.isInteger(offset)) return;
+    const sets = this._randomChimeSetsDraft();
+    if (!sets[editor.index]) return;
+    sets[editor.index].offsets = { ...(sets[editor.index].offsets || {}), [editor.member]: offset };
+    this._chimeSetOffsetEditor = null;
+    this._setRandomChimeSetsDraft(sets);
+  }
+
+  _requestRandomChimeSetDelete(index) {
+    const sets = this._randomChimeSetsDraft();
+    const chimeSet = sets[index];
+    if (!chimeSet) return;
+    const reference = `chime_set:${chimeSet.id}`;
+    const usedBy = [];
+    for (const field of ["chime_path", "end_chime_path"]) {
+      if (this._draftValues?.[field] === reference && !usedBy.includes("default settings")) usedBy.push("default settings");
+    }
+    (this._draftNotifyProfiles || []).forEach((profile) => {
+      for (const field of ["chime_path", "end_chime_path"]) {
+        if (profile?.[field] === reference) {
+          const profileName = String(profile?.name || "").trim() || "Unnamed notification profile";
+          if (!usedBy.includes(profileName)) usedBy.push(`"${profileName}" notification profile`);
+        }
+      }
+    });
+    this._randomChimeSetDeleteTarget = { index, name: chimeSet.name, usedBy };
+    this._render();
+  }
+
+  _closeRandomChimeSetDeleteConfirmation() {
+    this._randomChimeSetDeleteTarget = null;
+    this._render();
+  }
+
+  _confirmRandomChimeSetDelete() {
+    const index = this._randomChimeSetDeleteTarget?.index;
+    if (!Number.isInteger(index)) {
+      this._closeRandomChimeSetDeleteConfirmation();
+      return;
+    }
+    const sets = this._randomChimeSetsDraft();
+    if (!sets[index]) {
+      this._closeRandomChimeSetDeleteConfirmation();
+      return;
+    }
+    sets.splice(index, 1);
+    this._expandedRandomChimeSets = this._reindexNotifyProfileState(this._expandedRandomChimeSets, index);
+    this._randomChimeSetDeleteTarget = null;
+    this._setRandomChimeSetsDraft(sets);
+  }
+
+  _isRandomChimeSetExpanded(index) {
+    return this._expandedRandomChimeSets?.[index] === true;
+  }
+
+  _toggleRandomChimeSet(index) {
+    if (Number.isNaN(index)) return;
+    const expanded = !this._isRandomChimeSetExpanded(index);
+    this._expandedRandomChimeSets = {
+      ...(this._expandedRandomChimeSets || {}),
+      [index]: expanded,
+    };
+    const card = this.shadowRoot?.querySelector(
+      `[data-random-chime-set-card="${this._escapeSelectorValue(index)}"]`,
+    );
+    this._applyExpandableState(card, expanded, {
+      buttonSelector: "[data-toggle-random-chime-set]",
+      labelType: "Chime Set",
+    });
   }
 
   _handleNotifyProfileFieldChange(event) {
@@ -7409,6 +7936,29 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._render();
   }
 
+  _resetNotifyProfile(index) {
+    if (Number.isNaN(index)) {
+      return;
+    }
+    const savedProfile = (this._data?.notify_profiles || [])[index];
+    if (!savedProfile) {
+      this._removeNotifyProfile(index);
+      return;
+    }
+    const profiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
+    profiles[index] = this._cloneNotifyProfiles([savedProfile])[0];
+    this._draftNotifyProfiles = profiles;
+    const errors = this._cloneNotifyProfileErrors(this._notifyProfileClientErrors);
+    errors[index] = {};
+    this._notifyProfileClientErrors = errors;
+    this._notifyProfileTests = {
+      ...(this._notifyProfileTests || {}),
+      [index]: { open: false, message: "", sending: false, sentAt: 0 },
+    };
+    this._isDirty = this._hasValueChanges();
+    this._render();
+  }
+
   _addNotifyProfile() {
     const defaults = this._buildEmptyNotifyProfile();
     this._draftNotifyProfiles = [defaults, ...(this._draftNotifyProfiles || [])];
@@ -7507,13 +8057,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       collapse.classList.toggle("collapsed", !expanded);
     }
 
-    const button = buttonSelector ? element.querySelector(buttonSelector) : null;
-    if (button) {
+    const buttons = buttonSelector ? element.querySelectorAll(buttonSelector) : [];
+    buttons.forEach((button) => {
       button.classList.toggle("expanded", expanded);
       button.classList.toggle("collapsed", !expanded);
       button.setAttribute("aria-label", this._t(expanded ? "aria.collapse_named" : "aria.expand_named", { title: labelType }));
       button.setAttribute("title", this._t(expanded ? "action.collapse" : "action.expand"));
-    }
+      button.setAttribute("aria-expanded", expanded ? "true" : "false");
+    });
   }
 
   _applyAdvancedSectionState(sectionKey, expanded) {
@@ -7842,6 +8393,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (this._pickerPlayingPath) {
       this._pickerPlayingPath = "";
     }
+    this._pickerPreviewDuration = 0;
   }
 
   _isChimePreviewField(field) {
@@ -7850,6 +8402,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
   _getFieldPreviewKey(fieldKey, value) {
     return `${fieldKey || ""}:${value || ""}`;
+  }
+
+  _previewPlayingStyle(isPlaying, duration) {
+    if (!isPlaying) return "";
+    const seconds = Number.isFinite(duration) && duration > 0 ? duration : 1;
+    return `style="--preview-duration: ${seconds}s"`;
   }
 
   _buildChimePreviewUrl(fieldKey, value) {
@@ -7878,6 +8436,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (this._fieldPreviewPlayingKey) {
       this._fieldPreviewPlayingKey = "";
     }
+    this._fieldPreviewDuration = 0;
   }
 
   async _toggleFieldPreviewAudio(fieldKey, value) {
@@ -7921,6 +8480,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
 
     const audio = new Audio(objectUrl);
+    audio.addEventListener("loadedmetadata", () => {
+      if (this._fieldPreviewAudio === audio) {
+        this._fieldPreviewDuration = audio.duration;
+        this._rerenderPreservingInputState(fieldKey);
+      }
+    });
     audio.addEventListener("ended", () => {
       if (this._fieldPreviewAudio === audio) {
         this._stopFieldPreviewAudio();
@@ -7940,6 +8505,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       if (this._fieldPreviewAudio === audio) {
         this._fieldPreviewLoadingKey = "";
         this._fieldPreviewPlayingKey = previewKey;
+        this._fieldPreviewDuration = audio.duration;
         this._rerenderPreservingInputState(fieldKey);
       }
     });
@@ -7981,6 +8547,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (this._notifyPreviewPlayingKey) {
       this._notifyPreviewPlayingKey = "";
     }
+    this._notifyPreviewDuration = 0;
   }
 
   async _toggleNotifyPreviewAudio(index, fieldKey, value) {
@@ -8024,6 +8591,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
 
     const audio = new Audio(objectUrl);
+    audio.addEventListener("loadedmetadata", () => {
+      if (this._notifyPreviewAudio === audio) {
+        this._notifyPreviewDuration = audio.duration;
+        this._rerenderPreservingInputState();
+      }
+    });
     audio.addEventListener("ended", () => {
       if (this._notifyPreviewAudio === audio) {
         this._stopNotifyPreviewAudio();
@@ -8043,6 +8616,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       if (this._notifyPreviewAudio === audio) {
         this._notifyPreviewLoadingKey = "";
         this._notifyPreviewPlayingKey = previewKey;
+        this._notifyPreviewDuration = audio.duration;
         this._rerenderPreservingInputState();
       }
     });
@@ -8103,6 +8677,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
 
     const audio = new Audio(objectUrl);
+    audio.addEventListener("loadedmetadata", () => {
+      if (this._pickerAudio === audio) {
+        this._pickerPreviewDuration = audio.duration;
+        this._renderPreservingPickerScroll();
+      }
+    });
     audio.addEventListener("ended", () => {
       if (this._pickerAudio === audio) {
         this._stopPickerAudio();
@@ -8122,6 +8702,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       if (this._pickerAudio === audio) {
         this._pickerAudioLoadingPath = "";
         this._pickerPlayingPath = path;
+        this._pickerPreviewDuration = audio.duration;
         this._renderPreservingPickerScroll();
       }
     });
@@ -8615,6 +9196,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (typeof value === "boolean") {
       return value ? "true" : "false";
     }
+    if (Array.isArray(value) || (typeof value === "object" && value !== null)) {
+      return JSON.stringify(value);
+    }
     const normalized = String(value);
     if (fieldKey && this._isPathFieldKey(fieldKey)) {
       return this._normalizePathForCompare(normalized);
@@ -8777,7 +9361,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const sendButton = row?.querySelector(`[data-run-notify-inline-test="${this._escapeSelectorValue(String(index))}"]`);
     if (sendButton) {
       const state = this._getNotifyProfileTestState(index);
-      sendButton.disabled = state.sending || !String(state.message || "").trim();
+      sendButton.disabled = state.sending || this._isNotifyProfileDirty(index) || !String(state.message || "").trim();
     }
   }
 
@@ -8789,7 +9373,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const service = String(profile?.name || "").trim();
     const current = this._getNotifyProfileTestState(index);
     const message = String(current.message || "").trim();
-    if (!service || !message || current.sending) {
+    if (!service || !message || current.sending || this._isNotifyProfileDirty(index)) {
       return;
     }
 
@@ -8875,7 +9459,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _hasNotifyProfileChanges() {
     const savedProfiles = this._data?.notify_profiles || [];
     const draftProfiles = this._draftNotifyProfiles || [];
-    return JSON.stringify(savedProfiles) !== JSON.stringify(draftProfiles);
+    if (savedProfiles.length !== draftProfiles.length) {
+      return true;
+    }
+    return draftProfiles.some((_, index) => this._isNotifyProfileDirty(index));
   }
 
   _scheduleMessageClear() {
@@ -8952,6 +9539,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _formatError(errorKey) {
+    const randomSetErrors = {
+      invalid_chime_sets: "Each Chime Set needs a name and at least one chime.",
+      duplicate_chime_set_name: "Chime Set names must be unique.",
+      invalid_chime_member: "Sets may contain only available bundled or custom chimes.",
+    };
+    if (randomSetErrors[errorKey]) return randomSetErrors[errorKey];
     const translated = this._t(`validation.${errorKey}`);
     return translated === `validation.${errorKey}` ? errorKey : translated;
   }

@@ -16,6 +16,7 @@ from ..const import (
     DEFAULT_CHIME_OPTIONS,
     CUSTOM_CHIMES_PATH_KEY,
 )
+from ..chime_sets import selector_options
 filesystem_helper = FilesystemHelper()
 helpers = ChimeTTSHelper()
 _LOGGER = logging.getLogger(__name__)
@@ -61,7 +62,7 @@ class ChimeTTSServicesHelper:
             return
 
         try:
-            final_options = self._build_chime_options(custom_chime_options)
+            final_options = self._build_chime_options(custom_chime_options, self._data)
             tts_options = self._build_tts_platform_options(
                 helpers.get_installed_tts_platforms(hass)
             )
@@ -97,7 +98,9 @@ class ChimeTTSServicesHelper:
             await self._async_save_services_yaml(services_yaml)
 
     @staticmethod
-    def _build_chime_options(custom_chime_options: list | None) -> list:
+    def _build_chime_options(
+        custom_chime_options: list | None, data: dict | None = None
+    ) -> list:
         """Return the sorted chime options with every label and value as a str.
 
         HA's select selector requires string label/value pairs. Custom chime
@@ -106,7 +109,11 @@ class ChimeTTSServicesHelper:
         (issue #294). Entries missing a label or value are dropped rather than
         coerced to the string "None".
         """
-        merged = list(DEFAULT_CHIME_OPTIONS) + list(custom_chime_options or [])
+        merged = (
+            list(DEFAULT_CHIME_OPTIONS)
+            + list(custom_chime_options or [])
+            + selector_options(data or {})
+        )
         options = [
             {"label": str(o["label"]), "value": str(o["value"])}
             for o in merged
