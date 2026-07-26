@@ -120,6 +120,11 @@ const config = {
               },
               {
                 type: "doc",
+                label: "Chime Sets",
+                docId: "documentation/chime-sets"
+              },
+              {
+                type: "doc",
                 label: "Actions",
                 docId: "documentation/actions/index"
               },

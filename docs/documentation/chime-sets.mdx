@@ -1,0 +1,63 @@
+---
+sidebar_position: 2
+title: Chime Sets
+---
+
+# Chime Sets
+
+Chime Sets let Chime TTS select a random chime from a group (Chime Set) each time an action runs. They are useful when a notification should stay recognisable without sounding identical every time.
+
+For example, create a `Reminder` set with ear-catching chimes, and then use that `Reminder` as the chime for an announcement.
+
+## Create and manage sets from the sidebar panel
+
+1. In Home Assistant, open **Chime TTS** from the sidebar.
+2. Expand **Chime Sets**.
+3. Select **Add Set**.
+4. Enter a name, select one or more chimes, and optionally set an offset for each selected chime.
+5. Save the changes.
+
+Saved sets appear in the **Start Chime** and **End Chime** selectors in the panel, prefixed with the 🎲 icon. They can also be used by notification profiles.
+
+## Use a set in an action
+
+Chime TTS uses the Chime Set's displayed name as its action value. Chime Set names must be unique, including names that differ only by letter case.
+
+Use that reference with either `chime_path` or `end_chime_path`:
+
+```yaml
+action: chime_tts.say
+target:
+  entity_id: media_player.kitchen
+data:
+  message: Someone is at the front door.
+  chime_path: Reminder
+```
+
+Use the panel selector when possible, because it supplies the exact name automatically. Renaming a set changes the value used by actions and notification profiles, so update any YAML automations or scripts that reference the previous name.
+
+## How selection works
+
+Chime TTS selects one available member from the set at runtime. When a set has more than one available chime, it avoids immediately repeating the last successfully selected member for that set where possible.
+
+If a member cannot be loaded, Chime TTS skips it and tries another member. Nested Chime Sets are not supported: select actual chimes in a set rather than another Chime Set.
+
+## Per-chime offsets
+
+Each selected chime can have an optional offset, in milliseconds. This offset applies when that specific member is chosen and overrides the action's regular `offset` value for that selected set member.
+
+- A positive value adds silence before the following audio segment.
+- A negative value overlaps the chime and the following audio segment.
+- Leave the field empty to use the action or configured default offset.
+
+For instance, a long doorbell chime can use a negative offset so the spoken announcement begins before the chime has fully finished, while a short alert can keep the normal action offset.
+
+## Restart behavior
+
+Adding or removing a Chime Set requires a Home Assistant restart before the change is available to Chime TTS actions. Editing the chimes selected within an existing set, including their per-chime offsets, does not require a restart.
+
+:::tip
+
+Give sets descriptive names such as `Doorbell`, `Success`, or `Reminder`. The name is shown in panel selectors and is the value used by actions and notification profiles.
+
+:::
