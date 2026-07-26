@@ -31,3 +31,7 @@ package-lock.json
 custom_components
 .docusaurus/docusaurus-plugin-debug
 generated.js
+.ha
+.venv
+.venv311b
+.venv319

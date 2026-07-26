@@ -120,33 +120,18 @@ const config = {
               },
               {
                 type: "doc",
-                label: "Say Action",
-                docId: "documentation/actions/say-action/index"
-              },
-              {
-                type: "doc",
-                label: "Say URL Action",
-                docId: "documentation/actions/say_url-action/index"
-              },
-              {
-                type: "doc",
-                label: "Logs",
-                docId: "documentation/logs"
-              },
-              {
-                type: "doc",
-                label: "Replay Action",
-                docId: "documentation/actions/replay-action"
-              },
-              {
-                type: "doc",
-                label: "Clear Cache Action",
-                docId: "documentation/actions/clear_cache-action"
+                label: "Actions",
+                docId: "documentation/actions/index"
               },
               {
                 type: "doc",
                 label: "Notify",
                 docId: "documentation/notify/index"
+              },
+              {
+                type: "doc",
+                label: "Logs",
+                docId: "documentation/logs"
               },
             ],
           },
