@@ -38,4 +38,4 @@ def test_manifest_requirements_present():
 def test_hacs_metadata():
     hacs = _load(HACS)
     assert hacs.get("name")
-    assert hacs.get("homeassistant"), "hacs.json must declare a minimum HA version"
+    assert hacs["homeassistant"] == "2024.8.0"
