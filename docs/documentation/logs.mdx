@@ -1,0 +1,38 @@
+---
+sidebar_position: 3
+title: Logs
+---
+
+# Logs
+
+The **Logs** section in the Chime TTS sidebar panel collects integration activity in one place. It is useful for checking what happened during an action, reviewing the underlying Chime TTS log messages, and repeating an eligible entry without rebuilding its data manually.
+
+:::note
+
+The Logs section is available to Home Assistant administrators.
+
+:::
+
+## Open Logs
+
+1. In Home Assistant, open **Chime TTS** from the sidebar.
+2. Expand **Logs**.
+3. The panel loads the Chime TTS events captured during the current Home Assistant session, with the most recent event first.
+
+## Review an entry
+
+Each row identifies the event type and outcome. Select a row to expand it and view its summary and associated raw log lines. The raw lines include their timestamp, severity, logger, and message, so they can be shared when troubleshooting.
+
+Use **Copy Logs** to copy the raw lines for eligible integration, action, and notification events. When an entry has a YAML representation, **Copy YAML** copies that data instead.
+
+For a broader Home Assistant view, select **Raw Logs**. It opens the Home Assistant log viewer filtered to Chime TTS. Use **Expand All** or **Collapse All** when reviewing several entries.
+
+## Repeat an eligible log entry
+
+Some entries provide a **Repeat** button. This repeats that specific panel log entry using the data stored with it. Entries without the button cannot be repeated from the Logs panel.
+
+This is distinct from the [`chime_tts.replay`](./actions/replay-action) action. The service repeats the most recent Chime TTS playback request; it does not read from, select, or depend on the Logs panel.
+
+## Retention
+
+The Logs panel keeps events for the lifetime of the current Home Assistant instance. Restarting Home Assistant starts a new in-memory log session, so previously captured panel entries are no longer available there.

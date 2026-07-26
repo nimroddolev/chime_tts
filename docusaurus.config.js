@@ -140,6 +140,11 @@ const config = {
               },
               {
                 type: "doc",
+                label: "Logs",
+                docId: "documentation/logs"
+              },
+              {
+                type: "doc",
                 label: "Notify",
                 docId: "documentation/notify/index"
               },
