@@ -140,6 +140,11 @@ const config = {
               },
               {
                 type: "doc",
+                label: "Clear Cache Action",
+                docId: "documentation/actions/clear_cache-action"
+              },
+              {
+                type: "doc",
                 label: "Notify",
                 docId: "documentation/notify/index"
               },
