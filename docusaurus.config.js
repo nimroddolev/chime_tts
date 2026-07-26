@@ -130,18 +130,13 @@ const config = {
               },
               {
                 type: "doc",
-                label: "Replay Action",
-                docId: "documentation/actions/replay-action"
-              },
-              {
-                type: "doc",
-                label: "Clear Cache Action",
-                docId: "documentation/actions/clear_cache-action"
-              },
-              {
-                type: "doc",
                 label: "Logs",
                 docId: "documentation/logs"
+              },
+              {
+                type: "doc",
+                label: "Replay Action",
+                docId: "documentation/actions/replay-action"
               },
               {
                 type: "doc",
