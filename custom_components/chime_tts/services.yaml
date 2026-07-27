@@ -81,6 +81,8 @@ say:
             value: crickets
           - label: Ding Dong
             value: ding_dong
+          - label: Doorbell
+            value: doorbell
           - label: Drum Roll
             value: drumroll
           - label: Dun dun DUUUN!
@@ -113,9 +115,6 @@ say:
             value: twenty_four
           - label: Whistle
             value: whistle
-          - label: '*** Add a local folder path in the configuration for your own
-              custom chimes ***'
-            value: ''
           translation_key: chime_paths
     end_chime_path:
       description: A preset or custom audio file to be played after TTS audio
@@ -150,6 +149,8 @@ say:
             value: crickets
           - label: Ding Dong
             value: ding_dong
+          - label: Doorbell
+            value: doorbell
           - label: Drum Roll
             value: drumroll
           - label: Dun dun DUUUN!
@@ -182,9 +183,6 @@ say:
             value: twenty_four
           - label: Whistle
             value: whistle
-          - label: '*** Add a local folder path in the configuration for your own
-              custom chimes ***'
-            value: ''
           translation_key: chime_paths
     offset:
       description: Adds a delay between audio segments when value > 0, or overlays
@@ -453,6 +451,8 @@ say_url:
             value: crickets
           - label: Ding Dong
             value: ding_dong
+          - label: Doorbell
+            value: doorbell
           - label: Drum Roll
             value: drumroll
           - label: Dun dun DUUUN!
@@ -485,9 +485,6 @@ say_url:
             value: twenty_four
           - label: Whistle
             value: whistle
-          - label: '*** Add a local folder path in the configuration for your own
-              custom chimes ***'
-            value: ''
           translation_key: chime_paths
     end_chime_path:
       description: A preset or custom audio file to be played after TTS audio
@@ -522,6 +519,8 @@ say_url:
             value: crickets
           - label: Ding Dong
             value: ding_dong
+          - label: Doorbell
+            value: doorbell
           - label: Drum Roll
             value: drumroll
           - label: Dun dun DUUUN!
@@ -554,9 +553,6 @@ say_url:
             value: twenty_four
           - label: Whistle
             value: whistle
-          - label: '*** Add a local folder path in the configuration for your own
-              custom chimes ***'
-            value: ''
           translation_key: chime_paths
     offset:
       description: Adds a delay between audio segments when value > 0, or overlays

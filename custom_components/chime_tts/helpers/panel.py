@@ -37,6 +37,7 @@ from .panel_logs import (
     subscribe_panel_log_events,
 )
 from ..settings import (
+    CHIME_FILE_EXTENSIONS,
     async_build_panel_payload,
     async_load_notify_profiles,
     async_save_notify_profiles,
@@ -59,6 +60,7 @@ LOGGER = logging.getLogger(__name__)
 PANEL_COMPONENT_NAME = "chime-tts-settings-panel"
 PANEL_URL_PATH = "chime-tts"
 PANEL_MODULE_URL = f"/api/{DOMAIN}/panel.js"
+PANEL_CHAPTER_ICONS_URL = f"/api/{DOMAIN}/chapter-icons.js"
 PANEL_ICON_URL = f"/api/{DOMAIN}/icon.svg"
 PANEL_FOOTER_LOGO_URL = f"/api/{DOMAIN}/footer_logo.svg"
 PANEL_ICONSET_URL = f"/api/{DOMAIN}/iconset.js"
@@ -67,6 +69,7 @@ PANEL_BROWSER_AUDIO_URL = f"/api/{DOMAIN}/browser/audio"
 PANEL_CHIME_PREVIEW_URL = f"/api/{DOMAIN}/chime_preview"
 PANEL_BROWSER_UPLOAD_URL = f"/api/{DOMAIN}/browser/upload"
 PANEL_VIEW_NAME = f"api:{DOMAIN}:panel"
+PANEL_CHAPTER_ICONS_VIEW_NAME = f"api:{DOMAIN}:chapter_icons"
 PANEL_ICON_VIEW_NAME = f"api:{DOMAIN}:icon"
 PANEL_FOOTER_LOGO_VIEW_NAME = f"api:{DOMAIN}:footer_logo"
 PANEL_ICONSET_VIEW_NAME = f"api:{DOMAIN}:iconset"
@@ -78,6 +81,12 @@ PANEL_DATA_KEY = f"{DOMAIN}_panel_view_registered"
 WS_DATA_KEY = f"{DOMAIN}_panel_ws_registered"
 ENTRY_DATA_KEY = f"{DOMAIN}_panel_entry_id"
 CHIME_PREVIEW_FIELD_KEYS = {"chime_path", "end_chime_path"}
+
+
+def _is_supported_audio_upload(filename: str) -> bool:
+    """Return whether an upload filename has a supported audio extension."""
+    return Path(filename).suffix.lower() in CHIME_FILE_EXTENSIONS
+
 
 filesystem_helper = FilesystemHelper()
 
@@ -116,6 +125,24 @@ class ChimeTTSPanelView(HomeAssistantView):
     async def get(self, request) -> web.FileResponse:
         """Return the panel JavaScript module."""
         response = web.FileResponse(self._panel_path / "chime-tts-panel.js")
+        _set_panel_module_headers(response)
+        return response
+
+
+class ChimeTTSChapterIconsView(HomeAssistantView):
+    """Serve the shared SVG markup used by panel chapter headings."""
+
+    url = PANEL_CHAPTER_ICONS_URL
+    name = PANEL_CHAPTER_ICONS_VIEW_NAME
+    requires_auth = False
+
+    def __init__(self, panel_path: Path) -> None:
+        """Initialize the chapter icons view."""
+        self._panel_path = panel_path
+
+    async def get(self, request) -> web.FileResponse:
+        """Return the chapter icons JavaScript module."""
+        response = web.FileResponse(self._panel_path / "chapter-icons.js")
         _set_panel_module_headers(response)
         return response
 
@@ -243,6 +270,8 @@ class ChimeTTSPanelBrowserUploadView(HomeAssistantView):
             raise web.HTTPBadRequest(text="Folder browsing is not available for that field.")
         if not uploads:
             raise web.HTTPBadRequest(text="No upload files were provided.")
+        if any(not _is_supported_audio_upload(filename) for filename, _content in uploads):
+            raise web.HTTPBadRequest(text="Only supported audio files can be uploaded.")
         if overwrite_mode not in {"prompt", "overwrite", "skip"}:
             raise web.HTTPBadRequest(text="Invalid upload overwrite mode.")
 
@@ -426,6 +455,7 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
 
     if not hass.data.get(PANEL_DATA_KEY):
         hass.http.register_view(ChimeTTSPanelView(panel_path))
+        hass.http.register_view(ChimeTTSChapterIconsView(panel_path))
         hass.http.register_view(ChimeTTSPanelIconView(integration_path))
         hass.http.register_view(ChimeTTSPanelFooterLogoView(integration_path))
         hass.http.register_view(ChimeTTSPanelIconsetView(panel_path))
@@ -451,6 +481,7 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
         websocket_api.async_register_command(hass, websocket_get_logs)
         websocket_api.async_register_command(hass, websocket_subscribe_logs)
         websocket_api.async_register_command(hass, websocket_repeat_log_action)
+        websocket_api.async_register_command(hass, websocket_refresh_custom_chimes)
         websocket_api.async_register_command(hass, websocket_save_settings)
         hass.data[WS_DATA_KEY] = True
         LOGGER.debug("Registered Chime TTS panel websocket commands")
@@ -993,6 +1024,49 @@ async def websocket_repeat_log_action(
     )
 
 
+@websocket_api.websocket_command({"type": "chime_tts/refresh_custom_chimes"})
+@websocket_api.async_response
+async def websocket_refresh_custom_chimes(
+    hass: HomeAssistant,
+    connection,
+    msg: dict[str, Any],
+) -> None:
+    """Immediately refresh custom chime options after closing the folder browser."""
+    if connection.user is None or not connection.user.is_admin:
+        connection.send_error(
+            msg["id"],
+            "unauthorized",
+            "Administrator access is required to refresh custom chimes.",
+        )
+        return
+
+    refresh_custom_chimes = hass.data.get(DOMAIN, {}).get(
+        "async_refresh_custom_chimes"
+    )
+    if refresh_custom_chimes is None:
+        connection.send_error(
+            msg["id"],
+            "unavailable",
+            "Custom chime refresh is not available right now.",
+        )
+        return
+
+    try:
+        refreshed = await refresh_custom_chimes(hass)
+    except Exception as error:
+        LOGGER.exception("Failed to refresh custom chime options")
+        connection.send_error(msg["id"], "refresh_failed", str(error))
+        return
+
+    connection.send_result(
+        msg["id"],
+        {
+            "refreshed": refreshed,
+            "log_events": await async_get_panel_log_events(hass),
+        },
+    )
+
+
 @websocket_api.websocket_command(
     {
         "type": "chime_tts/save_settings",
@@ -1035,7 +1109,8 @@ async def websocket_save_settings(
     notify_validation = validate_notify_profiles(msg.get("notify_profiles"))
     restart_required = validation.restart_required
     loaded_notify_profiles, _ = await async_load_notify_profiles(hass)
-    if notify_validation.data != loaded_notify_profiles:
+    notify_profiles_changed = notify_validation.data != loaded_notify_profiles
+    if notify_profiles_changed:
         restart_required = True
 
     if validation.errors:
@@ -1077,7 +1152,21 @@ async def websocket_save_settings(
         updated = hass.config_entries.async_update_entry(
             config_entry, options=validation.data
         )
+        async_block_till_done = getattr(hass, "async_block_till_done", None)
+        if callable(async_block_till_done):
+            await async_block_till_done()
         await async_save_notify_profiles(hass, notify_validation.data)
+        if notify_profiles_changed:
+            try:
+                from ..notify import async_reregister_notify_profiles
+
+                notify_profiles_reregistered = await async_reregister_notify_profiles(
+                    hass, notify_validation.data
+                )
+            except Exception:  # noqa: BLE001
+                LOGGER.exception("Failed to re-register updated Chime TTS notify profiles")
+                notify_profiles_reregistered = False
+            restart_required = validation.restart_required or not notify_profiles_reregistered
         LOGGER.debug(
             "Chime TTS panel settings saved=%s options=%s",
             updated,
@@ -1108,7 +1197,7 @@ async def websocket_save_settings(
             values=dict(config_entry.options),
             notify_profiles=notify_validation.data,
             message=(
-                "Settings saved. Restart Home Assistant to apply changes that require it, including updated notify profiles, the custom chimes folder, and added or removed Chime Sets."
+                "Settings saved. Restart Home Assistant to apply changes that require it, including added, removed, or renamed notification profiles and added or removed Chime Sets."
                 if restart_required
                 else "Settings saved."
             ),

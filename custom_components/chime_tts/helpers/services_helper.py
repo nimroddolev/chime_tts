@@ -7,6 +7,7 @@ import aiofiles.os
 import logging
 # import voluptuous as vol
 from homeassistant.core import HomeAssistant, SupportsResponse
+from homeassistant.helpers import service as service_helper
 from .filesystem import FilesystemHelper
 from .helpers import ChimeTTSHelper
 from ..const import (
@@ -30,10 +31,13 @@ class ChimeTTSServicesHelper:
     async def async_update_services_yaml(self,
                                          hass,
                                          say_service_func,
-                                         say_url_service_func):
+                                         say_url_service_func) -> bool:
         """Update the list of chimes for the say and say-url services."""
         custom_chimes_options = await filesystem_helper.async_get_chime_options_from_path(self._data[CUSTOM_CHIMES_PATH_KEY])
-        await self._async_update_chime_lists(hass=hass, custom_chime_options=custom_chimes_options)
+        services_yaml = await self._async_update_chime_lists(
+            hass=hass,
+            custom_chime_options=custom_chimes_options,
+        )
         hass.services.async_remove(DOMAIN, SERVICE_SAY)
         hass.services.async_register(DOMAIN, SERVICE_SAY, say_service_func)
         hass.services.async_remove(DOMAIN, SERVICE_SAY_URL)
@@ -41,6 +45,10 @@ class ChimeTTSServicesHelper:
                                     SERVICE_SAY_URL,
                                     say_url_service_func,
                                     supports_response=SupportsResponse.ONLY)
+        if isinstance(services_yaml, dict):
+            self._refresh_service_descriptions(hass, services_yaml)
+            return True
+        return False
 
     # Service fields whose chime dropdown options are kept in sync.
     _CHIME_OPTION_FIELDS = (
@@ -59,7 +67,7 @@ class ChimeTTSServicesHelper:
 
         services_yaml = await self._async_parse_services_yaml()
         if not services_yaml:
-            return
+            return None
 
         try:
             final_options = self._build_chime_options(custom_chime_options, self._data)
@@ -68,7 +76,7 @@ class ChimeTTSServicesHelper:
             )
         except Exception as e:
             _LOGGER.error("Unexpected error building chime options: %s", str(e))
-            return
+            return None
 
         # Only write when an option list actually changes, and never after an
         # error. A previous version saved unconditionally, which re-persisted a
@@ -96,6 +104,7 @@ class ChimeTTSServicesHelper:
 
         if changed:
             await self._async_save_services_yaml(services_yaml)
+        return services_yaml
 
     @staticmethod
     def _build_chime_options(
@@ -150,6 +159,19 @@ class ChimeTTSServicesHelper:
     def _set_field_options(services_yaml: dict, service_name: str, field: str, options: list) -> None:
         """Write the options list for a service field."""
         services_yaml[service_name]["fields"][field]["selector"]["select"]["options"] = copy.deepcopy(options)
+
+    @staticmethod
+    def _refresh_service_descriptions(hass: HomeAssistant, services_yaml: dict) -> None:
+        """Refresh Home Assistant's cached service descriptions for say actions."""
+        for service_name in (SERVICE_SAY, SERVICE_SAY_URL):
+            schema = services_yaml.get(service_name)
+            if isinstance(schema, dict):
+                service_helper.async_set_service_schema(
+                    hass,
+                    DOMAIN,
+                    service_name,
+                    copy.deepcopy(schema),
+                )
 
     async def _async_parse_services_yaml(self):
         """Load the services.yaml file into a dictionary."""

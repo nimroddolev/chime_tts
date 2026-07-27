@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock, call
 
 import pytest
 
@@ -109,6 +109,7 @@ async def test_async_update_services_yaml_refreshes_options_and_registration(mon
     helper = services_helper_module.ChimeTTSServicesHelper()
     helper._data = {CUSTOM_CHIMES_PATH_KEY: "/custom/chimes"}
     save_yaml = AsyncMock()
+    refreshed_schemas: list[tuple[str, str, dict]] = []
 
     monkeypatch.setattr(
         services_helper_module.filesystem_helper,
@@ -119,6 +120,13 @@ async def test_async_update_services_yaml_refreshes_options_and_registration(mon
         services_helper_module.helpers,
         "get_installed_tts_platforms",
         lambda hass: ["google_translate", "tts.google_generative_ai"],
+    )
+    monkeypatch.setattr(
+        services_helper_module.service_helper,
+        "async_set_service_schema",
+        lambda hass, domain, service, schema: refreshed_schemas.append(
+            (domain, service, schema)
+        ),
     )
     monkeypatch.setattr(helper, "_async_parse_services_yaml", AsyncMock(return_value=make_services_yaml([])))
     monkeypatch.setattr(helper, "_async_save_services_yaml", save_yaml)
@@ -153,11 +161,126 @@ async def test_async_update_services_yaml_refreshes_options_and_registration(mon
         saved_yaml["say_url"]["fields"]["tts_platform"]["selector"]["select"]["options"]
         == expected_tts_options
     )
+    assert [(domain, service) for domain, service, _schema in refreshed_schemas] == [
+        (DOMAIN, SERVICE_SAY),
+        (DOMAIN, SERVICE_SAY_URL),
+    ]
+    assert (
+        refreshed_schemas[0][2]["fields"]["chime_path"]["selector"]["select"]["options"]
+        == expected_options
+    )
     assert hass.services.removed == [(DOMAIN, SERVICE_SAY), (DOMAIN, SERVICE_SAY_URL)]
     assert hass.services.registered[(DOMAIN, SERVICE_SAY)][0] is say_service
     assert hass.services.registered[(DOMAIN, SERVICE_SAY_URL)][1] == {
         "supports_response": SupportsResponse.ONLY
     }
+
+
+@pytest.mark.asyncio
+async def test_custom_chimes_monitor_refreshes_services_after_folder_change(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A changed custom-chimes folder refreshes the action selector options."""
+    hass = FakeHass()
+    refresh_services = AsyncMock()
+    fingerprint = AsyncMock(return_value=(("new-chime.mp3", 2, 1024),))
+    start_event = Mock(return_value="custom-chimes-update")
+    finish_event = Mock()
+    subtitle = Mock()
+    debug = Mock()
+
+    async def say_service(service):
+        return service
+
+    async def say_url_service(service):
+        return service
+
+    monkeypatch.setattr(
+        integration_module,
+        "_data",
+        {
+            CUSTOM_CHIMES_PATH_KEY: "/custom/chimes",
+            integration_module.CUSTOM_CHIMES_FINGERPRINT_KEY: (("old-chime.mp3", 1, 512),),
+            "async_say": say_service,
+            "async_say_url": say_url_service,
+        },
+    )
+    monkeypatch.setattr(
+        integration_module.filesystem_helper,
+        "async_get_chime_directory_fingerprint",
+        fingerprint,
+    )
+    monkeypatch.setattr(
+        integration_module.services_helper,
+        "async_update_services_yaml",
+        refresh_services,
+    )
+    monkeypatch.setattr(integration_module, "start_panel_log_event", start_event)
+    monkeypatch.setattr(integration_module, "finish_panel_log_event", finish_event)
+    monkeypatch.setattr(integration_module.helpers, "debug_subtitle", subtitle)
+    monkeypatch.setattr(integration_module, "_LOGGER", Mock(debug=debug))
+
+    assert await integration_module._async_check_custom_chimes_folder(hass) is True
+    start_event.assert_called_once_with(
+        hass,
+        "custom_chimes_update",
+        "Custom Chimes Update",
+        row_color="configuration",
+    )
+    subtitle.assert_called_once_with("Custom Chimes Update")
+    assert call("- Added: %s", "new-chime.mp3") in debug.call_args_list
+    assert call("- Removed: %s", "old-chime.mp3") in debug.call_args_list
+    finish_event.assert_called_once_with(hass, "custom-chimes-update")
+    refresh_services.assert_awaited_once_with(
+        hass=hass,
+        say_service_func=say_service,
+        say_url_service_func=say_url_service,
+    )
+
+
+@pytest.mark.asyncio
+async def test_custom_chimes_monitor_retries_after_metadata_refresh_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed metadata refresh must leave the previous fingerprint for retry."""
+    hass = FakeHass()
+    previous_fingerprint = (("old-chime.mp3", 1, 512),)
+    current_fingerprint = (("new-chime.mp3", 2, 1024),)
+
+    async def say_service(service):
+        return service
+
+    async def say_url_service(service):
+        return service
+
+    monkeypatch.setattr(
+        integration_module,
+        "_data",
+        {
+            CUSTOM_CHIMES_PATH_KEY: "/custom/chimes",
+            integration_module.CUSTOM_CHIMES_FINGERPRINT_KEY: previous_fingerprint,
+            "async_say": say_service,
+            "async_say_url": say_url_service,
+        },
+    )
+    monkeypatch.setattr(
+        integration_module.filesystem_helper,
+        "async_get_chime_directory_fingerprint",
+        AsyncMock(return_value=current_fingerprint),
+    )
+    monkeypatch.setattr(
+        integration_module.services_helper,
+        "async_update_services_yaml",
+        AsyncMock(return_value=False),
+    )
+    monkeypatch.setattr(integration_module, "start_panel_log_event", Mock(return_value="event"))
+    monkeypatch.setattr(integration_module, "finish_panel_log_event", Mock())
+
+    assert await integration_module._async_check_custom_chimes_folder(hass) is False
+    assert (
+        integration_module._data[integration_module.CUSTOM_CHIMES_FINGERPRINT_KEY]
+        == previous_fingerprint
+    )
 
 
 @pytest.mark.asyncio
@@ -274,8 +397,8 @@ async def test_options_flow_requires_public_path_under_allowlist(monkeypatch: py
 
 
 @pytest.mark.asyncio
-async def test_options_flow_shows_restart_step_on_first_custom_chimes_path(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Adding a custom chimes path for the first time should show the restart step."""
+async def test_options_flow_saves_first_custom_chimes_path_without_restart(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Adding a custom chimes path takes effect without a Home Assistant restart."""
     flow = make_options_flow(options={})
 
     monkeypatch.setattr(config_flow_module.helpers, "get_installed_tts_platforms", lambda hass: ["google_translate"])
@@ -302,8 +425,7 @@ async def test_options_flow_shows_restart_step_on_first_custom_chimes_path(monke
         }
     )
 
-    assert result["type"] == "form"
-    assert result["step_id"] == "restart_required"
+    assert result["type"] == "create_entry"
 
 
 @pytest.mark.asyncio

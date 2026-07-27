@@ -11,6 +11,7 @@ from types import SimpleNamespace
 import yaml
 
 import pytest
+from homeassistant.components.notify.legacy import NOTIFY_SERVICES
 
 from custom_components.chime_tts.const import CUSTOM_CHIMES_PATH_KEY
 from custom_components.chime_tts.const import TEMP_CHIMES_PATH_KEY
@@ -31,6 +32,16 @@ browse_path_handler = inspect.unwrap(panel_module.websocket_browse_path)
 create_folder_handler = inspect.unwrap(panel_module.websocket_browser_create_folder)
 rename_entry_handler = inspect.unwrap(panel_module.websocket_browser_rename_entry)
 delete_entry_handler = inspect.unwrap(panel_module.websocket_browser_delete_entry)
+
+
+def test_browser_upload_accepts_supported_audio_extensions_only() -> None:
+    """Reject non-audio uploads before they reach the custom chimes folder."""
+    assert panel_module._is_supported_audio_upload("doorbell.mp3")
+    assert panel_module._is_supported_audio_upload("DOORBELL.WAV")
+    assert panel_module._is_supported_audio_upload("doorbell.aiff")
+    assert panel_module._is_supported_audio_upload("doorbell.oga")
+    assert not panel_module._is_supported_audio_upload("doorbell.txt")
+    assert not panel_module._is_supported_audio_upload("doorbell.mp3.exe")
 
 
 class FakeConfigEntries:
@@ -91,6 +102,22 @@ class FakeServices:
     def has_service(self, domain: str, service: str) -> bool:
         """Report whether a given service exists."""
         return (domain, service) in self.available_services
+
+
+class FakeNotifyProfileService:
+    """Represent a registered notify profile for panel re-registration tests."""
+
+    def __init__(self, service_name: str, config: dict) -> None:
+        self._service_name = service_name
+        self._config = config
+        self.unregister_calls = 0
+        self.register_calls = 0
+
+    async def async_unregister_services(self) -> None:
+        self.unregister_calls += 1
+
+    async def async_register_services(self) -> None:
+        self.register_calls += 1
 
 
 def make_hass(tmp_path: Path):
@@ -187,7 +214,7 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
     assert payload["version"]
     assert payload["documentation_url"].endswith("/configuration/")
     assert payload["logs_url"] == "/config/logs?filter=chime_tts"
-    assert payload["restart_required_field_keys"] == [CUSTOM_CHIMES_PATH_KEY]
+    assert payload["restart_required_field_keys"] == []
     assert [section["key"] for section in payload["sections"]] == [
         "chime_sets",
         "paths",
@@ -232,6 +259,34 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
     assert about_section["version"] == payload["version"]
     assert all(item["title"] != "Version" for item in about_section["about_items"])
     assert any(item["title"] == "Buy Me a Coffee" for item in about_section["about_items"])
+
+
+@pytest.mark.asyncio
+async def test_websocket_save_custom_chimes_path_does_not_require_restart(tmp_path: Path) -> None:
+    """A custom chimes folder update is applied without a restart prompt."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    new_custom_chimes_dir = paths["config_dir"] / "alternate_chimes"
+    new_custom_chimes_dir.mkdir()
+    values = dict(config_entry.options)
+    values[CUSTOM_CHIMES_PATH_KEY] = str(new_custom_chimes_dir)
+    connection = FakeConnection()
+
+    await save_settings_handler(
+        hass,
+        connection,
+        {
+            "id": 2,
+            "type": "chime_tts/save_settings",
+            "values": values,
+            "notify_profiles": [],
+        },
+    )
+
+    assert connection.errors == []
+    payload = connection.results[-1][1]
+    assert payload["message_type"] == "success"
+    assert payload["restart_required"] is False
+    assert config_entry.options[CUSTOM_CHIMES_PATH_KEY] == str(new_custom_chimes_dir)
 
 
 def test_build_panel_payload_shows_restart_alert_for_platforms_added_after_startup(
@@ -1027,6 +1082,78 @@ def test_build_backfilled_grouped_events_keeps_notification_and_nested_say_logs_
     ]
 
 
+def test_build_backfilled_grouped_events_adds_grouped_unmatched_warning_and_error_rows() -> None:
+    """Unmatched Chime TTS warnings/errors should become grouped fallback log rows."""
+    events = panel_logs_module._build_backfilled_grouped_events(  # noqa: SLF001
+        [
+            {
+                "timestamp": "2026-07-27T10:00:00+00:00",
+                "level": "warning",
+                "logger": "homeassistant.core",
+                "message": "Chime TTS warning: first unmatched line",
+            },
+            {
+                "timestamp": "2026-07-27T10:00:00.500000+00:00",
+                "level": "warning",
+                "logger": "system.logger",
+                "message": "chime_tts warning: second unmatched line",
+            },
+            {
+                "timestamp": "2026-07-27T10:00:02+00:00",
+                "level": "error",
+                "logger": "system.logger",
+                "message": "chime tts error: unmatched failure",
+            },
+        ]
+    )
+
+    by_type = {event["type"]: event for event in events}
+    assert by_type["warning"]["title"] == "Warning"
+    assert by_type["warning"]["row_color"] == "warning"
+    assert by_type["warning"]["has_error"] is False
+    assert [log["message"] for log in by_type["warning"]["raw_logs"]] == [
+        "Chime TTS warning: first unmatched line",
+        "chime_tts warning: second unmatched line",
+    ]
+    assert by_type["error"]["title"] == "Error"
+    assert by_type["error"]["row_color"] == "error"
+    assert by_type["error"]["has_error"] is True
+    assert by_type["error"]["error_count"] == 1
+    assert [log["message"] for log in by_type["error"]["raw_logs"]] == [
+        "chime tts error: unmatched failure",
+    ]
+
+
+def test_panel_logs_omit_home_assistants_generic_custom_integration_warning() -> None:
+    """The standard custom-integration disclaimer is not an actionable panel warning."""
+    entries = [
+        {
+            "timestamp": "2026-07-27T10:00:00+00:00",
+            "level": "warning",
+            "logger": "homeassistant.loader",
+            "message": (
+                "We found a custom integration chime_tts which has not been tested "
+                "by Home Assistant. This component might cause stability problems, "
+                "be sure to disable it if you experience issues with Home Assistant"
+            ),
+        },
+        {
+            "timestamp": "2026-07-27T10:00:02+00:00",
+            "level": "warning",
+            "logger": "custom_components.chime_tts",
+            "message": "Chime TTS warning: actionable warning",
+        },
+    ]
+
+    events = panel_logs_module._build_backfilled_grouped_events(entries)  # noqa: SLF001
+
+    assert len(events) == 1
+    assert events[0]["type"] == "warning"
+    assert [log["message"] for log in events[0]["raw_logs"]] == [
+        "Chime TTS warning: actionable warning",
+    ]
+
+
 def test_finish_panel_log_event_merges_nested_say_row_into_active_notification_row(
     tmp_path: Path,
 ) -> None:
@@ -1089,6 +1216,42 @@ def test_finish_panel_log_event_merges_nested_say_row_into_active_notification_r
         " - message = 'Doorbell'",
         "Chime TTS Say Called. Version test",
         "Chime TTS Say Completed in 120 ms",
+    ]
+
+
+def test_panel_log_handler_creates_live_grouped_warning_event_without_active_row(
+    tmp_path: Path,
+) -> None:
+    """Live unmatched Chime TTS warnings should become grouped fallback events."""
+    hass, _config_entry, _paths = make_hass(tmp_path)
+    store = panel_logs_module.async_setup_panel_log_store(hass)
+    handler = hass.data[panel_logs_module.PANEL_LOG_HANDLER_KEY]
+
+    now = time.time()
+
+    def emit(level: int, logger_name: str, message: str, *, created: float) -> None:
+        record = logging.LogRecord(
+            logger_name,
+            level,
+            __file__,
+            1,
+            message,
+            (),
+            None,
+        )
+        record.created = created
+        handler.emit(record)
+
+    emit(logging.WARNING, "homeassistant.core", "Chime TTS warning: first line", created=now)
+    emit(logging.WARNING, "system.logger", "chime_tts warning: second line", created=now + 0.2)
+
+    assert len(store.events) == 1
+    assert store.events[0]["type"] == "warning"
+    assert store.events[0]["title"] == "Warning"
+    assert store.events[0]["row_color"] == "warning"
+    assert [log["message"] for log in store.events[0]["raw_logs"]] == [
+        "Chime TTS warning: first line",
+        "chime_tts warning: second line",
     ]
 
 
@@ -1306,6 +1469,59 @@ async def test_websocket_save_settings_updates_notify_profiles_in_configuration_
         "announce": True,
         "cache": True,
     }
+
+
+@pytest.mark.asyncio
+async def test_websocket_save_settings_reregisters_existing_notify_profile(
+    tmp_path: Path,
+) -> None:
+    """Changing an existing profile applies its new properties without restart."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    paths["config_dir"].joinpath("configuration.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "notify": [
+                    {
+                        "platform": DOMAIN,
+                        "name": "arrival",
+                        "entity_id": "media_player.kitchen",
+                        "volume_level": 0.4,
+                    }
+                ]
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    service = FakeNotifyProfileService(
+        "arrival",
+        {"platform": DOMAIN, "name": "arrival", "entity_id": "media_player.kitchen"},
+    )
+    hass.data[NOTIFY_SERVICES] = {DOMAIN: [service]}
+    connection = FakeConnection()
+
+    await save_settings_handler(
+        hass,
+        connection,
+        {
+            "id": 31,
+            "type": "chime_tts/save_settings",
+            "values": dict(config_entry.options),
+            "notify_profiles": [
+                {
+                    "name": "arrival",
+                    "entity_id": "media_player.kitchen",
+                    "volume_level": "0.75",
+                }
+            ],
+        },
+    )
+
+    payload = connection.results[-1][1]
+    assert payload["restart_required"] is False
+    assert service.unregister_calls == 1
+    assert service.register_calls == 1
+    assert service._config["volume_level"] == 0.75
 
 
 @pytest.mark.asyncio

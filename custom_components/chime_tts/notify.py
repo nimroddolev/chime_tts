@@ -1,6 +1,9 @@
 """Chime TTS Notify."""
 
 import logging
+from typing import Any
+
+from homeassistant.components.notify.legacy import NOTIFY_SERVICES
 from .const import (
     DOMAIN,
     SERVICE_SAY
@@ -18,6 +21,7 @@ from . import (
 )
 from homeassistant.components.notify import BaseNotificationService
 from homeassistant.core import HomeAssistant
+from homeassistant.util import slugify
 
 _LOGGER = logging.getLogger(__name__)
 helpers = ChimeTTSHelper()
@@ -26,6 +30,43 @@ async def async_get_service(hass: HomeAssistant, config, _discovery_info):
     """Retrieve instance of ChimeTTSNotificationService class."""
     _config = config or {}
     return ChimeTTSNotificationService(hass, config)
+
+
+async def async_reregister_notify_profiles(
+    hass: HomeAssistant,
+    profiles: list[dict[str, Any]],
+) -> bool:
+    """Apply updated settings to the currently registered Chime TTS notifiers.
+
+    This intentionally supports only an unchanged set of service names. Adding,
+    removing, or renaming a YAML notify profile still requires Home Assistant to
+    create a different set of legacy notify services during startup.
+    """
+    from .settings import _serialize_notify_profile  # noqa: PLC0415
+
+    services = list(hass.data.get(NOTIFY_SERVICES, {}).get(DOMAIN, []))
+    profile_configs = {
+        slugify(str(profile.get("name") or "")): _serialize_notify_profile(profile)
+        for profile in profiles
+    }
+    service_names = {getattr(service, "_service_name", "") for service in services}
+
+    if (
+        not services
+        or not profile_configs
+        or len(profile_configs) != len(profiles)
+        or service_names != set(profile_configs)
+    ):
+        return False
+
+    for service in services:
+        await service.async_unregister_services()
+
+    for service in services:
+        service._config = profile_configs[service._service_name]
+        await service.async_register_services()
+
+    return True
 
 class ChimeTTSNotificationService(BaseNotificationService):
     """Chime TTS Notify Service class."""

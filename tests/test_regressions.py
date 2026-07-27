@@ -4,7 +4,10 @@ Each fix lands with a test named `test_issue_<number>` that fails against the
 unfixed code and passes after the fix.
 """
 
+import asyncio
+import importlib
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import yaml
 
@@ -127,7 +130,7 @@ def test_chime_sets_use_stable_references_and_avoid_immediate_repeats(monkeypatc
             {"id": "door", "name": "Doorbell", "chimes": ["bells", "ding_dong"]}
         ]
     }
-    reference = set_reference("door")
+    reference = set_reference("Doorbell")
     assert selector_options(data) == [{"label": "🎲 Doorbell", "value": reference}]
 
     monkeypatch.setattr("custom_components.chime_tts.chime_sets.random.choice", lambda items: items[0])
@@ -143,7 +146,80 @@ def test_chime_set_options_are_exposed_to_service_selectors():
             {"id": "alerts", "name": "Alerts", "chimes": ["bells"]}
         ]
     }
-    assert {"label": "🎲 Alerts", "value": "chime_set:alerts"} in helper._build_chime_options([], helper._data)
+    assert {"label": "🎲 Alerts", "value": "Alerts"} in helper._build_chime_options([], helper._data)
+
+
+def test_chime_set_names_resolve_for_preview_and_playback():
+    """A named Chime Set resolves to a member and retains its member offset."""
+    from custom_components.chime_tts.helpers.filesystem import FilesystemHelper
+
+    class _ChimeSetFilesystemHelper(FilesystemHelper):
+        async def async_get_chime_path(self, chime_path, cache, data, hass):
+            if chime_path == "Doorbell":
+                return await super().async_get_chime_path(chime_path, cache, data, hass)
+            assert chime_path == "bells"
+            return "/tmp/bells.mp3"
+
+    data = {
+        CHIME_SETS_KEY: [
+            {
+                "id": "door",
+                "name": "Doorbell",
+                "chimes": ["bells"],
+                "offsets": {"bells": 250},
+            }
+        ]
+    }
+    helper = _ChimeSetFilesystemHelper()
+
+    preview_path = asyncio.run(helper.async_get_chime_path("Doorbell", False, data, None))
+    playback_path, offset = asyncio.run(
+        helper.async_get_chime_path_with_offset("Doorbell", False, data, None)
+    )
+
+    assert preview_path == "/tmp/bells.mp3"
+    assert playback_path == "/tmp/bells.mp3"
+    assert offset == 250
+
+
+def test_named_chime_set_member_is_used_for_cache_lookup(monkeypatch):
+    """Cache lookup uses the selected member, not the Chime Set reference."""
+    from custom_components.chime_tts.const import CROSSFADE_KEY, OFFSET_KEY
+
+    integration_module = importlib.import_module("custom_components.chime_tts.__init__")
+
+    resolved_paths = AsyncMock(side_effect=[("bells", None), (None, None)])
+    cache_lookup = AsyncMock(return_value={"cached": True})
+    monkeypatch.setattr(
+        integration_module.filesystem_helper,
+        "async_get_chime_path_with_offset",
+        resolved_paths,
+    )
+    monkeypatch.setattr(integration_module, "async_verify_cached_audio", cache_lookup)
+    monkeypatch.setattr(
+        integration_module.media_player_helper,
+        "get_alexa_media_players_count",
+        lambda: 0,
+    )
+    monkeypatch.setattr(integration_module, "_data", {OFFSET_KEY: 0, CROSSFADE_KEY: 0})
+
+    params = {
+        "hass": object(),
+        "message": "Hello",
+        "chime_path": "Doorbell",
+        "cache": True,
+        "entity_ids": ["media_player.office"],
+    }
+    assert asyncio.run(integration_module.async_get_playback_audio_path(params, {})) == {"cached": True}
+
+    cache_args = cache_lookup.await_args.args
+    assert params["chime_path"] == "bells"
+    assert cache_args[2]["chime_path"] == "bells"
+    assert cache_args[1] == integration_module.get_filename_hash_from_service_data(params, {})
+    assert cache_args[1] != integration_module.get_filename_hash_from_service_data(
+        {**params, "chime_path": "Doorbell"},
+        {},
+    )
 
 
 def test_issue_294_stale_structure_returns_none_not_crash():
@@ -251,6 +327,59 @@ def test_panel_title_displays_santa_hat_only_in_december():
     assert "filter: drop-shadow(0 0 1px #000);" in panel_source
     assert "PANEL_SANTA_HAT_URL" not in panel_backend
     assert "ChimeTTSPanelSantaHatView" not in panel_backend
+
+
+def test_panel_chapter_titles_use_shared_imported_icons():
+    """Top-level panel chapters should use one shared SVG module."""
+    root = Path(__file__).parents[1]
+    panel_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+    chapter_icons_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chapter-icons.js"
+    ).read_text(encoding="utf-8")
+    panel_backend = (
+        root / "custom_components" / "chime_tts" / "helpers" / "panel.py"
+    ).read_text(encoding="utf-8")
+
+    assert 'import { CHAPTER_ICONS } from "./chapter-icons.js";' in panel_source
+    assert 'class="chapter-hero-icon"' in panel_source
+    assert "export const CHAPTER_ICONS" in chapter_icons_source
+    for chapter in ("configuration", "chime_sets", "notify_profiles", "logs", "about"):
+        assert f"{chapter}:" in chapter_icons_source
+    assert "PANEL_CHAPTER_ICONS_URL" in panel_backend
+    assert "ChimeTTSChapterIconsView" in panel_backend
+
+
+def test_random_chime_set_name_editor_keeps_actions_in_one_row():
+    """Editing a Chime Set name must leave space for its action buttons."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert ".random-chime-set-card .notify-profile-header" in panel_source
+    assert "flex-wrap: nowrap;" in panel_source
+    assert ".random-chime-set-card .notify-profile-title-edit" in panel_source
+    assert "flex: 1 1 0;" in panel_source
+
+
+def test_log_row_toggle_uses_its_event_accent():
+    """Log-row chevrons must use each row's own color instead of the Logs palette."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert ".logs-workspace .log-event-row .log-event-toggle" in panel_source
+    assert "var(--log-row-accent-solid) 44%" in panel_source
+    assert "var(--log-row-accent-solid) 14%" in panel_source
 
 
 def test_mobile_pull_to_refresh_keeps_the_topbar_background_continuous():

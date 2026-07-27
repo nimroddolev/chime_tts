@@ -27,7 +27,7 @@ from ..const import (
     LOCAL_PATH_KEY,
     AUDIO_DURATION_KEY,
 )
-from ..chime_sets import choose_member, member_offset, set_id_from_reference
+from ..chime_sets import get_set_by_reference, choose_member, member_offset
 from .media_player_helper import MediaPlayerHelper
 media_player_helper = MediaPlayerHelper()
 
@@ -116,8 +116,9 @@ class FilesystemHelper:
         if not isinstance(chime_path, str):
             return None
 
-        random_set_id = set_id_from_reference(chime_path)
-        if random_set_id:
+        chime_set = get_set_by_reference(data, chime_path)
+        if chime_set:
+            random_set_id = chime_set["id"]
             attempted: set[str] = set()
             while member := choose_member(
                 data,
@@ -128,13 +129,12 @@ class FilesystemHelper:
                 # A set can contain unavailable custom files. Try each member
                 # once, without allowing a recursive set reference.
                 attempted.add(member)
-                if set_id_from_reference(member):
+                if get_set_by_reference(data, member):
                     _LOGGER.warning("Chime Set '%s' contains another set reference", random_set_id)
                     continue
                 resolved = await self.async_get_chime_path(member, cache, data, hass)
                 if resolved is not None:
                     self._chime_set_last_choices[random_set_id] = member
-                    _LOGGER.debug("Chime Set '%s' selected '%s'", random_set_id, member)
                     return resolved
                 _LOGGER.warning(
                     "Chime Set '%s' member is unavailable and was skipped: %s",
@@ -321,14 +321,15 @@ class FilesystemHelper:
 
     async def async_get_chime_path_with_offset(self, chime_path: str, cache, data: dict, hass: HomeAssistant):
         """Resolve a Chime Set and return its selected member offset."""
-        set_id = set_id_from_reference(chime_path)
-        if not set_id:
+        chime_set = get_set_by_reference(data, chime_path)
+        if not chime_set:
             return await self.async_get_chime_path(chime_path, cache, data, hass), None
 
+        set_id = chime_set["id"]
         attempted: set[str] = set()
         while member := choose_member(data, chime_path, self._chime_set_last_choices, excluded=attempted):
             attempted.add(member)
-            if set_id_from_reference(member):
+            if get_set_by_reference(data, member):
                 continue
             resolved = await self.async_get_chime_path(member, cache, data, hass)
             if resolved is not None:
@@ -611,6 +612,34 @@ class FilesystemHelper:
                 pool,
                 self._get_chime_options_from_path,
                 directory)
+
+    async def async_get_chime_directory_fingerprint(self, directory: str) -> tuple:
+        """Return a stable snapshot of custom chime files for change detection."""
+        return await asyncio.to_thread(self._get_chime_directory_fingerprint, directory)
+
+    def _get_chime_directory_fingerprint(self, directory: str) -> tuple:
+        """Build a fingerprint from each custom chime's relative path and metadata."""
+        if not directory or not os.path.isdir(directory):
+            return ()
+
+        fingerprint = []
+        for dirpath, _, filenames in os.walk(directory):
+            for filename in filenames:
+                file_path = os.path.join(dirpath, filename)
+                if os.path.splitext(filename)[1].lower() not in _AUDIO_EXTENSIONS:
+                    continue
+                try:
+                    stat = os.stat(file_path)
+                except OSError:
+                    continue
+                fingerprint.append(
+                    (
+                        os.path.relpath(file_path, directory),
+                        stat.st_mtime_ns,
+                        stat.st_size,
+                    )
+                )
+        return tuple(sorted(fingerprint))
 
     def _get_chime_options_from_path(self, directory):
         """Walk through a directory of chime audio files and return a formatted dictionary."""

@@ -68,9 +68,9 @@ from .const import (
 from .helpers.helpers import ChimeTTSHelper
 from .helpers.panel_logs import async_get_panel_log_events, get_panel_log_events
 from .chime_sets import (
+    is_set_reference,
     normalize_sets,
     selector_options,
-    set_id_from_reference,
 )
 
 helpers = ChimeTTSHelper()
@@ -161,15 +161,17 @@ PATH_BROWSABLE_FIELD_KEYS = {
     TEMP_PATH_KEY,
     WWW_PATH_KEY,
 }
-RESTART_REQUIRED_FIELD_KEYS = {
-    CUSTOM_CHIMES_PATH_KEY,
-}
+RESTART_REQUIRED_FIELD_KEYS: set[str] = set()
 CHIME_FILE_EXTENSIONS = {
     ".aac",
+    ".aif",
+    ".aiff",
+    ".ape",
     ".flac",
     ".m4a",
     ".mp3",
     ".ogg",
+    ".oga",
     ".wav",
     ".wma",
 }
@@ -792,7 +794,7 @@ SETTINGS_FIELDS: tuple[SettingsField, ...] = (
     SettingsField(
         key=CUSTOM_CHIMES_PATH_KEY,
         label="Custom chimes folder",
-        description="Folder containing your own chime audio files. Changing it requires a Home Assistant restart.",
+        description="Folder containing your own chime audio files.",
         field_type="text",
         section="paths",
         wide=True,
@@ -845,7 +847,7 @@ SETTINGS_SECTIONS = (
     },
     {
         "key": "voice",
-        "title": "TTS Provider Defaults & Fallback",
+        "title": "TTS Defaults & Fallback",
         "description": "Preferred TTS providers and their default language, voice, and dialect settings.",
         "fields": [
             TTS_PLATFORM_KEY,
@@ -1608,7 +1610,7 @@ def _build_panel_sections(
             "available_chimes": [
                 option
                 for option in chime_options
-                if option.get("value") and set_id_from_reference(option.get("value")) is None
+                if option.get("value") and not is_set_reference(values, option.get("value"))
             ],
         },
     ] + [
@@ -1780,7 +1782,7 @@ async def async_build_panel_payload(
         "panel_tone": panel_tone,
         "restart_alert_note": "Home Assistant needs to restart before newly installed TTS providers appear in Chime TTS.",
         "fallback_note": "The standard Configure dialog still works and remains available as a fallback.",
-        "restart_note": "Changing the custom chimes folder or adding/removing Chime Sets requires a Home Assistant restart.",
+        "restart_note": "Adding or removing Chime Sets requires a Home Assistant restart.",
         "message": message,
         "message_type": message_type,
         "restart_required": restart_required,
@@ -2937,16 +2939,13 @@ def validate_settings(
             if WWW_PATH_KEY not in allow_invalid_paths:
                 errors[WWW_PATH_KEY] = WWW_PATH_KEY
 
-    custom_chimes_restart_required = _normalize_string(
-        normalized[CUSTOM_CHIMES_PATH_KEY]
-    ) != _normalize_string(config_entry.options.get(CUSTOM_CHIMES_PATH_KEY))
     saved_set_ids = {
         chime_set["id"]
         for chime_set in normalize_sets(current_data.get(CHIME_SETS_KEY))
     }
     submitted_set_ids = {chime_set["id"] for chime_set in normalized_sets}
     chime_sets_restart_required = saved_set_ids != submitted_set_ids
-    restart_required = custom_chimes_restart_required or chime_sets_restart_required
+    restart_required = chime_sets_restart_required
 
     return ValidationResult(
         data=normalized,
@@ -2997,7 +2996,7 @@ def build_panel_payload(
         "panel_tone": panel_tone,
         "restart_alert_note": "Home Assistant needs to restart before newly installed TTS providers appear in Chime TTS.",
         "fallback_note": "The standard Configure dialog still works and remains available as a fallback.",
-        "restart_note": "Changing the custom chimes folder or adding/removing Chime Sets requires a Home Assistant restart.",
+        "restart_note": "Adding or removing Chime Sets requires a Home Assistant restart.",
         "message": message,
         "message_type": message_type,
         "restart_required": restart_required,

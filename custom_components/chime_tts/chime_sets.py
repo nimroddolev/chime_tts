@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 import random
 from typing import Any
 
 from .const import CHIME_SET_PREFIX, CHIME_SETS_KEY
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def set_reference(set_name: str) -> str:
@@ -109,7 +112,14 @@ def choose_member(
         return None
     previous = last_choices.get(set_id)
     candidates = [member for member in members if member != previous] or members
-    return random.choice(candidates)
+    member = random.choice(candidates)
+    _LOGGER.debug(
+        "Chime '%s' randomly selected from Chime Set '%s' ('%s')",
+        member,
+        chime_set["name"],
+        set_id,
+    )
+    return member
 
 
 def member_offset(data: dict[str, Any], reference: str, member: str) -> int | None:

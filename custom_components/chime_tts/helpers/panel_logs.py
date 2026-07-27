@@ -38,6 +38,10 @@ ISO_LOG_LINE_PATTERN = re.compile(
     r"(?P<logger>[^:]+):\s+"
     r"(?P<message>.*)$"
 )
+CHIME_TTS_TEXT_PATTERN = re.compile(r"chime(?:_tts|\s+tts)", re.IGNORECASE)
+CUSTOM_INTEGRATION_WARNING = (
+    "we found a custom integration chime_tts which has not been tested by home assistant"
+)
 
 
 def _utc_now() -> str:
@@ -124,6 +128,110 @@ def _log_key(log_entry: Mapping) -> tuple[str, str, str]:
     )
 
 
+def _is_fallback_warning_or_error_log(log_entry: Mapping) -> bool:
+    """Return whether a log line should become a fallback Warning/Error event."""
+    level = str(log_entry.get("level", "")).lower()
+    if level not in {"warning", "warn", "error", "critical", "fatal"}:
+        return False
+
+    logger = str(log_entry.get("logger", ""))
+    message = str(log_entry.get("message", ""))
+    if _is_generic_custom_integration_warning(logger, message):
+        return False
+    return bool(
+        CHIME_TTS_TEXT_PATTERN.search(logger)
+        or CHIME_TTS_TEXT_PATTERN.search(message)
+    )
+
+
+def _is_generic_custom_integration_warning(logger: str, message: str) -> bool:
+    """Return whether a line is Home Assistant's non-actionable custom warning."""
+    return (
+        logger.lower() == "homeassistant.loader"
+        and CUSTOM_INTEGRATION_WARNING in message.lower()
+    )
+
+
+def _fallback_event_type_for_log(log_entry: Mapping) -> str:
+    """Return the fallback event type for a log line."""
+    level = str(log_entry.get("level", "")).lower()
+    if level in {"warning", "warn"}:
+        return "warning"
+    return "error"
+
+
+def _build_fallback_grouped_event(log_entry: dict) -> dict:
+    """Create a grouped fallback Warning/Error event."""
+    event_type = _fallback_event_type_for_log(log_entry)
+    title = "Warning" if event_type == "warning" else "Error"
+    event = _new_grouped_event(
+        event_type,
+        title,
+        event_type,
+        log_entry,
+        summary=log_entry.get("logger", ""),
+    )
+    if event_type == "error":
+        event["has_error"] = True
+        event["error_count"] = max(1, int(event.get("error_count", 0)))
+    return event
+
+
+def _group_unmatched_fallback_events(entries: list[dict], covered_log_keys: Counter) -> list[dict]:
+    """Group uncovered Chime TTS warnings/errors into fallback log rows."""
+    grouped_events: list[dict] = []
+    current_event: dict | None = None
+
+    for log_entry in entries:
+        log_key = _log_key(log_entry)
+        if covered_log_keys.get(log_key, 0) > 0:
+            covered_log_keys[log_key] -= 1
+            continue
+        if not _is_fallback_warning_or_error_log(log_entry):
+            continue
+
+        event_type = _fallback_event_type_for_log(log_entry)
+        if (
+            current_event is not None
+            and current_event.get("type") == event_type
+            and _timestamps_within_window(
+                current_event.get("ended_at"),
+                log_entry.get("timestamp"),
+            )
+        ):
+            _append_grouped_log(current_event, log_entry)
+            continue
+
+        if current_event is not None:
+            grouped_events.append(current_event)
+        current_event = _build_fallback_grouped_event(log_entry)
+
+    if current_event is not None:
+        grouped_events.append(current_event)
+
+    return grouped_events
+
+
+def _append_or_merge_live_fallback_event(store: PanelLogStore, log_entry: dict) -> dict:
+    """Insert a live fallback Warning/Error event or merge into the latest one."""
+    event_type = _fallback_event_type_for_log(log_entry)
+    latest_event = store.events[0] if store.events else None
+    if (
+        latest_event is not None
+        and latest_event.get("type") == event_type
+        and _timestamps_within_window(
+            latest_event.get("ended_at"),
+            log_entry.get("timestamp"),
+        )
+    ):
+        _append_grouped_log(latest_event, log_entry)
+        return latest_event
+
+    event = _build_fallback_grouped_event(log_entry)
+    _append_event(store, event)
+    return event
+
+
 def _timestamps_within_window(
     first_value: str | None,
     second_value: str | None,
@@ -144,6 +252,9 @@ def _is_initialization_related_log(log_entry: Mapping) -> bool:
     message = str(log_entry.get("message", ""))
     logger_lower = logger.lower()
     message_lower = message.lower()
+
+    if _is_generic_custom_integration_warning(logger, message):
+        return False
 
     if logger.startswith(LOGGER_NAMESPACE):
         return True
@@ -202,6 +313,11 @@ class ChimeTTSPanelLogHandler(logging.Handler):
                         event["error_count"] = int(event.get("error_count", 0)) + 1
                     del raw_logs[:-MAX_RAW_LOG_LINES]
                 return
+
+            if _is_fallback_warning_or_error_log(log_entry):
+                event = _append_or_merge_live_fallback_event(store, log_entry)
+                _notify_panel_log_subscribers(store, event)
+                return
         except Exception:
             self.handleError(record)
 
@@ -209,6 +325,14 @@ class ChimeTTSPanelLogHandler(logging.Handler):
     def _should_capture(record: logging.LogRecord, store: PanelLogStore) -> bool:
         """Return True when the record belongs to Chime TTS."""
         if record.name == DOMAIN or record.name.startswith(LOGGER_NAMESPACE):
+            return True
+
+        fallback_entry = {
+            "level": record.levelname.lower(),
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if _is_fallback_warning_or_error_log(fallback_entry):
             return True
 
         related_timestamp = datetime.fromtimestamp(record.created, UTC).isoformat()
@@ -775,6 +899,13 @@ def _build_backfilled_grouped_events(entries: list[dict]) -> list[dict]:
             current_event = None
 
     _finalize_backfilled_event(temp_store, current_event)
+    covered_log_keys = Counter(
+        _log_key(log_entry)
+        for event in temp_store.events
+        for log_entry in event.get("raw_logs") or []
+    )
+    for fallback_event in _group_unmatched_fallback_events(entries, covered_log_keys):
+        _append_event(temp_store, fallback_event)
     return temp_store.events
 
 

@@ -73,6 +73,7 @@ DEFAULT_CHIME_OPTIONS = [
     {"label": "Classical", "value": "classical"},
     {"label": "Crickets", "value": "crickets"},
     {"label": "Ding Dong", "value": "ding_dong"},
+    {"label": "Doorbell", "value": "doorbell"},
     {"label": "Drum Roll", "value": "drumroll"},
     {"label": "Dun dun DUUUN!", "value": "dun_dun_dun"},
     {"label": "Error", "value": "error"},

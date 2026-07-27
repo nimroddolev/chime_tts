@@ -201,6 +201,7 @@
                 "classical": "Classical",
                 "crickets": "Crickets",
                 "ding_dong": "Ding Dong",
+                "doorbell": "Doorbell",
                 "drumroll": "Drum Roll",
                 "dun_dun_dun": "Dun dun DUUUN!",
                 "error": "Error",
@@ -237,7 +238,7 @@
         },
         "section": {
             "notify_profiles_title": "Notification Profiles",
-            "notify_profiles_description": "Create and manage notify services for Chime TTS to easily send Chime TTS notifications in automations and scripts. Saving changes requires a Home Assistant restart.",
+            "notify_profiles_description": "Create and manage notify services for Chime TTS to easily send Chime TTS notifications in automations and scripts.",
             "logs_title": "Logs",
             "logs_description": "Review Chime TTS events captured during this Home Assistant session, including actions, generated media, and raw log output.",
             "about_title": "Support & Info",

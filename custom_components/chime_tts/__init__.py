@@ -2,7 +2,7 @@
 
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import yaml
 
@@ -36,6 +36,7 @@ from .settings import get_root_path
 from homeassistant.const import CONF_ENTITY_ID, EVENT_HOMEASSISTANT_STARTED
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceResponse, SupportsResponse
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers import storage
 from homeassistant.exceptions import (
     HomeAssistantError,
@@ -95,7 +96,7 @@ from .const import (
     CROSSFADE_KEY,
     CHIME_SETS_KEY,
 )
-from .chime_sets import normalize_sets, set_id_from_reference
+from .chime_sets import is_set_reference, normalize_sets
 from .config import SONOS_SNAPSHOT_ENABLED
 
 _LOGGER = logging.getLogger(__name__)
@@ -106,6 +107,8 @@ ACTIVE_NOTIFY_LOG_EVENT_SUMMARY = "_active_notify_log_event_summary"
 INTERNAL_NOTIFY_LOG_EVENT_ID = "_chime_tts_notify_log_event_id"
 INTERNAL_NOTIFY_ORIGIN = "_chime_tts_notify_origin"
 INITIAL_TTS_PLATFORMS_KEY = "_initial_tts_platforms"
+CUSTOM_CHIMES_FINGERPRINT_KEY = "_custom_chimes_fingerprint"
+CUSTOM_CHIMES_WATCH_INTERVAL = timedelta(seconds=30)
 
 helpers = ChimeTTSHelper()
 tts_audio_helper = TTSAudioHelper()
@@ -124,6 +127,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     queue.set_timeout(_data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
     queue.start_queue_processor()
     await _async_schedule_services_yaml_refresh(hass, config_entry)
+    await _async_setup_custom_chimes_monitor(hass, config_entry)
+    _data["async_refresh_custom_chimes"] = _async_check_custom_chimes_folder
     init_event_id = _data.pop(ACTIVE_INIT_LOG_EVENT_ID, None)
     if init_event_id:
         finish_panel_log_event(hass, init_event_id)
@@ -534,7 +539,105 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     await async_refresh_stored_data(hass)
     await async_update_configuration(config_entry, hass)
     queue.set_timeout(_data.get(QUEUE_TIMEOUT_KEY, QUEUE_TIMEOUT_DEFAULT))
+    await _async_reset_custom_chimes_fingerprint()
     await _async_schedule_services_yaml_refresh(hass, config_entry)
+
+
+async def _async_reset_custom_chimes_fingerprint() -> None:
+    """Store the current custom-chimes folder snapshot as the monitor baseline."""
+    _data[CUSTOM_CHIMES_FINGERPRINT_KEY] = (
+        await filesystem_helper.async_get_chime_directory_fingerprint(
+            _data.get(CUSTOM_CHIMES_PATH_KEY, "")
+        )
+    )
+
+
+def _get_custom_chimes_changes(
+    previous_fingerprint: tuple,
+    fingerprint: tuple,
+) -> tuple[list[str], list[str], list[str]]:
+    """Return added, removed, and updated custom chime filenames."""
+    previous_files = {entry[0]: entry[1:] for entry in previous_fingerprint}
+    current_files = {entry[0]: entry[1:] for entry in fingerprint}
+    added = sorted(current_files.keys() - previous_files.keys())
+    removed = sorted(previous_files.keys() - current_files.keys())
+    updated = sorted(
+        filename
+        for filename in current_files.keys() & previous_files.keys()
+        if current_files[filename] != previous_files[filename]
+    )
+    return added, removed, updated
+
+
+async def _async_check_custom_chimes_folder(hass: HomeAssistant) -> bool:
+    """Refresh service metadata when the custom-chimes folder has changed."""
+    fingerprint = await filesystem_helper.async_get_chime_directory_fingerprint(
+        _data.get(CUSTOM_CHIMES_PATH_KEY, "")
+    )
+    previous_fingerprint = _data.get(CUSTOM_CHIMES_FINGERPRINT_KEY)
+    if previous_fingerprint is None:
+        _data[CUSTOM_CHIMES_FINGERPRINT_KEY] = fingerprint
+        return False
+    if fingerprint == previous_fingerprint:
+        return False
+
+    async_say = _data.get("async_say")
+    async_say_url = _data.get("async_say_url")
+    if async_say is None or async_say_url is None:
+        _LOGGER.debug("Skipping custom chimes refresh; service callbacks are unavailable.")
+        return False
+
+    added, removed, updated = _get_custom_chimes_changes(
+        previous_fingerprint,
+        fingerprint,
+    )
+    event_id = start_panel_log_event(
+        hass,
+        "custom_chimes_update",
+        "Custom Chimes Update",
+        row_color="configuration",
+    )
+    try:
+        helpers.debug_subtitle("Custom Chimes Update")
+        for filename in added:
+            _LOGGER.debug("- Added: %s", filename)
+        for filename in removed:
+            _LOGGER.debug("- Removed: %s", filename)
+        for filename in updated:
+            _LOGGER.debug("- Updated: %s", filename)
+        _LOGGER.debug("Custom chimes folder changed; refreshing Chime TTS service options.")
+        refreshed = await services_helper.async_update_services_yaml(
+            hass=hass,
+            say_service_func=async_say,
+            say_url_service_func=async_say_url,
+        )
+        if not refreshed:
+            _LOGGER.warning(
+                "Custom chimes refresh did not update service metadata; it will be retried."
+            )
+            return False
+    finally:
+        finish_panel_log_event(hass, event_id)
+    _data[CUSTOM_CHIMES_FINGERPRINT_KEY] = fingerprint
+    return True
+
+
+async def _async_setup_custom_chimes_monitor(
+    hass: HomeAssistant, config_entry: ConfigEntry
+) -> None:
+    """Monitor custom chime files and refresh service metadata when they change."""
+    await _async_reset_custom_chimes_fingerprint()
+
+    async def _async_handle_interval(_now: datetime) -> None:
+        await _async_check_custom_chimes_folder(hass)
+
+    config_entry.async_on_unload(
+        async_track_time_interval(
+            hass,
+            _async_handle_interval,
+            CUSTOM_CHIMES_WATCH_INTERVAL,
+        )
+    )
 
 
 async def _async_refresh_services_yaml_after_start(hass: HomeAssistant) -> None:
@@ -1078,7 +1181,7 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
         # Chime tag
         if segment_type == "chime":
             if len(segment.get("path", "")) > 0:
-                if set_id_from_reference(segment["path"]):
+                if is_set_reference(_data, segment["path"]):
                     resolved_path, chime_set_offset = await filesystem_helper.async_get_chime_path_with_offset(
                         segment["path"], segment_cache, _data, hass
                     )
