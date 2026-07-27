@@ -1,1 +1,12 @@
-<svg clip-rule="evenodd" fill-rule="evenodd" stroke-linejoin="round" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-width="3"><path d="m12 18h15l4 4h21v21c0 3-2 5-5 5h-30c-3 0-5-2-5-5z" stroke="#03a9f4"/><g stroke-linecap="round" transform="translate(0 -1)"><path d="m32 29v10" stroke="#d7edf8" stroke-linejoin="miter"/><path d="m27 35 5 5 5-5" stroke="#7dd3fc"/><path d="m25 43h14" stroke="#d7edf8" stroke-linejoin="miter"/></g></g></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 64 64" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;">
+    <g>
+        <path d="M12,18L27,18L31,22L52,22L52,43C52,46 50,48 47,48L17,48C14,48 12,46 12,43L12,18Z" style="fill:none;stroke:rgb(216,173,61);stroke-width:3px;"/>
+        <g transform="matrix(1,0,0,1,0,-1)">
+            <path d="M32,29L32,39" style="fill:none;stroke:rgb(249,193,46);stroke-width:3px;stroke-linecap:round;stroke-linejoin:miter;"/>
+            <path d="M27,35L32,40L37,35" style="fill:none;stroke:rgb(216,173,61);stroke-width:3px;stroke-linecap:round;"/>
+            <path d="M25,43L39,43" style="fill:none;stroke:rgb(252,206,87);stroke-width:3px;stroke-linecap:round;stroke-linejoin:miter;"/>
+        </g>
+    </g>
+</svg>

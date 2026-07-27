@@ -8,6 +8,9 @@ export const CHAPTER_ICONS = {
       <circle cx="16" cy="17" r="2" fill="currentColor"/>
     </svg>
   `,
+  chimes: `
+    <span class="chime-section-icon" aria-hidden="true"></span>
+  `,
   chime_sets: `
     <svg viewBox="0 0 150 150" fill="currentColor" aria-hidden="true" focusable="false" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round">
       <g transform="matrix(6.25,0,0,6.25,0,-1)"><path d="M12,2.3L20.2,6.55L12,10.9L3.8,6.55L12,2.3Z" fill-opacity=".34"/></g>

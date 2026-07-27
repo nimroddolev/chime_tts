@@ -29,6 +29,7 @@ from .const import (
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_POST_SCRIPT_KEY,
     DEFAULT_PRE_SCRIPT_KEY,
+    DEFAULT_CHIME_OFFSETS,
     DEFAULT_OFFSET_MS,
     DEFAULT_TLD_KEY,
     DEFAULT_VOICE_KEY,
@@ -52,6 +53,7 @@ from .const import (
     QUEUE_TIMEOUT_KEY,
     REMOVE_TEMP_FILE_DELAY_KEY,
     CHIME_SETS_KEY,
+    CHIME_OFFSETS_KEY,
     TEMP_CHIMES_PATH_DEFAULT,
     TEMP_CHIMES_PATH_KEY,
     TEMP_PATH_DEFAULT,
@@ -68,7 +70,6 @@ from .const import (
 from .helpers.helpers import ChimeTTSHelper
 from .helpers.panel_logs import async_get_panel_log_events, get_panel_log_events
 from .chime_sets import (
-    is_set_reference,
     normalize_sets,
     selector_options,
 )
@@ -362,6 +363,7 @@ NOTIFY_DOCS_URL = (
 CHIME_SETS_DOCS_URL = (
     "https://nimroddolev.github.io/chime_tts/docs/documentation/chime-sets/"
 )
+CHIMES_DOCS_URL = "https://nimroddolev.github.io/chime_tts/docs/documentation/chimes/"
 SAY_ACTION_PARAMS_DOCS_URL = (
     "https://nimroddolev.github.io/chime_tts/docs/documentation/actions/say-action/parameters/"
 )
@@ -700,7 +702,6 @@ SETTINGS_FIELDS: tuple[SettingsField, ...] = (
         description="Applied with the default TTS platform when supported.",
         field_type="text",
         section="voice",
-        advanced=True,
     ),
     SettingsField(
         key=DEFAULT_VOICE_KEY,
@@ -708,7 +709,6 @@ SETTINGS_FIELDS: tuple[SettingsField, ...] = (
         description="Applied with the default TTS platform when supported.",
         field_type="text",
         section="voice",
-        advanced=True,
     ),
     SettingsField(
         key=DEFAULT_TLD_KEY,
@@ -716,7 +716,6 @@ SETTINGS_FIELDS: tuple[SettingsField, ...] = (
         description="Google Translate TTS dialect fallback.",
         field_type="select",
         section="voice",
-        advanced=True,
     ),
     SettingsField(
         key=FALLBACK_TTS_PLATFORM_KEY,
@@ -807,27 +806,24 @@ SETTINGS_FIELDS: tuple[SettingsField, ...] = (
         section="paths",
         required=True,
         wide=True,
-        advanced=True,
     ),
     SettingsField(
         key=TEMP_PATH_KEY,
         label="Temporary audio folder",
         description="Must stay inside a configured media directory.",
         field_type="text",
-        section="paths",
+        section="audio_folders",
         required=True,
         wide=True,
-        advanced=True,
     ),
     SettingsField(
         key=WWW_PATH_KEY,
         label="say_url output folder",
         description="Must stay inside an allowlisted external directory, /media, or /config/www.",
         field_type="text",
-        section="paths",
+        section="audio_folders",
         required=True,
         wide=True,
-        advanced=True,
     ),
 )
 
@@ -837,12 +833,10 @@ SETTINGS_SECTIONS = (
     {
         "key": "paths",
         "title": "Folder Paths",
-        "description": "Folder paths for custom chimes, cache chimes and generated audio files.",
+        "description": "Folder paths for custom and downloaded chime audio files.",
         "fields": [
             CUSTOM_CHIMES_PATH_KEY,
             TEMP_CHIMES_PATH_KEY,
-            TEMP_PATH_KEY,
-            WWW_PATH_KEY,
         ],
     },
     {
@@ -851,10 +845,10 @@ SETTINGS_SECTIONS = (
         "description": "Preferred TTS providers and their default language, voice, and dialect settings.",
         "fields": [
             TTS_PLATFORM_KEY,
+            FALLBACK_TTS_PLATFORM_KEY,
             DEFAULT_LANGUAGE_KEY,
             DEFAULT_VOICE_KEY,
             DEFAULT_TLD_KEY,
-            FALLBACK_TTS_PLATFORM_KEY,
         ],
     },
     {
@@ -869,6 +863,15 @@ SETTINGS_SECTIONS = (
             FADE_TRANSITION_KEY,
             REMOVE_TEMP_FILE_DELAY_KEY,
             ADD_COVER_ART_KEY,
+        ],
+    },
+    {
+        "key": "audio_folders",
+        "title": "Audio Files Folders",
+        "description": "Folder paths for temporary and say_url generated audio files.",
+        "fields": [
+            TEMP_PATH_KEY,
+            WWW_PATH_KEY,
         ],
     },
     {
@@ -1174,10 +1177,20 @@ def get_settings_data(
     }
     source = (
         user_input
-        if user_input is not None and CHIME_SETS_KEY in user_input
+        if user_input is not None and (CHIME_SETS_KEY in user_input or CHIME_OFFSETS_KEY in user_input)
         else config_entry.options
     )
     values[CHIME_SETS_KEY] = normalize_sets(source.get(CHIME_SETS_KEY))
+    raw_offsets = source.get(CHIME_OFFSETS_KEY, {})
+    if not isinstance(raw_offsets, dict):
+        raw_offsets = {}
+    values[CHIME_OFFSETS_KEY] = {
+        **DEFAULT_CHIME_OFFSETS,
+        **{
+            str(key): int(value) for key, value in raw_offsets.items()
+            if str(key) and isinstance(value, int | float | str) and str(value).lstrip("-").isdigit()
+        },
+    }
     return values
 
 
@@ -1599,22 +1612,9 @@ def _build_panel_sections(
             field_key = field_key.removeprefix("default_")
         return field_key.removesuffix("_key")
 
-    sections = [
-        {
-            "key": CHIME_SETS_KEY,
-            "kind": "chime_sets",
-            "title": "Chime Sets",
-            "description": "Create purpose-specific chime sets and let Chime TTS randomly choose the sound each time.",
-            "docs_url": CHIME_SETS_DOCS_URL,
-            "sets": normalize_sets(values.get(CHIME_SETS_KEY)),
-            "available_chimes": [
-                option
-                for option in chime_options
-                if option.get("value") and not is_set_reference(values, option.get("value"))
-            ],
-        },
-    ] + [
-        {
+    def build_section(section: dict[str, Any]) -> dict[str, Any]:
+        """Build a configuration section with its field metadata."""
+        return {
             "key": section["key"],
             "title": section["title"],
             "description": section["description"],
@@ -1636,32 +1636,52 @@ def _build_panel_sections(
                     "placeholder": FIELD_PLACEHOLDERS.get(field.key),
                     "provider_hint": get_provider_hint(
                         field.key,
-                        fallback_provider
-                        if field.key == FALLBACK_TTS_PLATFORM_KEY
-                        else default_provider,
+                        fallback_provider if field.key == FALLBACK_TTS_PLATFORM_KEY else default_provider,
                     ),
                     "provider_hints": PROVIDER_HINTS_BY_FIELD.get(field.key, {}),
                     "can_browse": field.key in PATH_BROWSABLE_FIELD_KEYS,
                     "path_validation": (
-                        validate_path_field(
-                            hass,
-                            config_entry,
-                            field.key,
-                            _normalize_string(values.get(field.key)),
-                            values,
-                        )
-                        if include_path_validations
-                        and field.key in PATH_BROWSABLE_FIELD_KEYS
+                        validate_path_field(hass, config_entry, field.key, _normalize_string(values.get(field.key)), values)
+                        if include_path_validations and field.key in PATH_BROWSABLE_FIELD_KEYS
                         else None
                     ),
                     "options": field_options.get(field.key, []),
                 }
-                for field in (
-                    SETTINGS_FIELD_MAP[field_key] for field_key in section["fields"]
-                )
+                for field in (SETTINGS_FIELD_MAP[field_key] for field_key in section["fields"])
             ],
         }
+
+    paths_section = next(section for section in SETTINGS_SECTIONS if section["key"] == "paths")
+    sections = [
+        {
+            "key": "chimes",
+            "kind": "chimes",
+            "title": "Chimes",
+            "description": "Manage your custom chime folder and fine-tune the offset for each chime.",
+            "docs_url": CHIMES_DOCS_URL,
+            "folder_section": build_section(paths_section),
+            "available_chimes": [
+                option for option in chime_options
+                if option.get("value") and not str(option.get("label", "")).startswith("🎲 ")
+            ],
+        },
+        {
+            "key": CHIME_SETS_KEY,
+            "kind": "chime_sets",
+            "title": "Chime Sets",
+            "description": "Create purpose-specific chime sets and let Chime TTS randomly choose the sound each time.",
+            "docs_url": CHIME_SETS_DOCS_URL,
+            "sets": normalize_sets(values.get(CHIME_SETS_KEY)),
+            "available_chimes": [
+                option
+                for option in chime_options
+                if option.get("value") and not str(option.get("label", "")).startswith("🎲 ")
+            ],
+        },
+    ] + [
+        build_section(section)
         for section in SETTINGS_SECTIONS
+        if section["key"] != "paths"
     ]
 
     sections.extend(
@@ -2899,6 +2919,22 @@ def validate_settings(
     if len(names) != len(set(names)):
         errors[CHIME_SETS_KEY] = "duplicate_chime_set_name"
     normalized[CHIME_SETS_KEY] = normalized_sets
+    submitted_offsets = user_input.get(CHIME_OFFSETS_KEY, current_data[CHIME_OFFSETS_KEY])
+    if not isinstance(submitted_offsets, dict):
+        submitted_offsets = {}
+        errors[CHIME_OFFSETS_KEY] = "invalid_chime_offsets"
+    normalized_offsets = {
+        str(key): int(value) for key, value in (submitted_offsets or {}).items()
+        if str(key) and str(value).lstrip("-").isdigit()
+    }
+    # Store only deviations from the shipped tuning. This preserves a user's
+    # choices across restarts and upgrades while allowing future defaults to
+    # apply to chimes they have not customized.
+    normalized[CHIME_OFFSETS_KEY] = {
+        key: value
+        for key, value in normalized_offsets.items()
+        if DEFAULT_CHIME_OFFSETS.get(key) != value
+    }
 
     normalized[ADD_COVER_ART_KEY] = _normalize_bool(user_input.get(ADD_COVER_ART_KEY))
 

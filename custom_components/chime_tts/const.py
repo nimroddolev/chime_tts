@@ -94,6 +94,34 @@ DEFAULT_CHIME_OPTIONS = [
 MP3_PRESET_CUSTOM_PREFIX = "custom_chime_path_"
 MP3_PRESET_CUSTOM_KEY = "custom_paths"
 CHIME_SETS_KEY = "chime_sets"
+CHIME_OFFSETS_KEY = "chime_offsets"
+# Default start offsets tuned against the bundled Chime TTS audio files.  Chimes
+# not listed here continue to use the integration-wide default offset.
+DEFAULT_CHIME_OFFSETS = {
+    "airport": -540,
+    "ba_dum_tss": -1100,
+    "bells": 0,
+    "bells_2": -250,
+    "bright": 0,
+    "chirp": 0,
+    "choir": -1070,
+    "chord": 0,
+    "classical": -610,
+    "crickets": 0,
+    "ding_dong": -330,
+    "doorbell": -1720,
+    "drumroll": 0,
+    "dun_dun_dun": -590,
+    "error": -410,
+    "glockenspiel": -310,
+    "hail": 0,
+    "sad_trombone": -500,
+    "soft": -2300,
+    "tada": 0,
+    "toast": -420,
+    "twenty_four": -530,
+    "whistle": 0,
+}
 CHIME_SET_PREFIX = "chime_set:"
 QUEUE = "QUEUE"
 QUEUE_STATUS_KEY = "QUEUE_STATUS"

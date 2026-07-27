@@ -14,6 +14,7 @@ import yaml
 from custom_components.chime_tts.const import (
     GOOGLE_CLOUD,
     NABU_CASA_CLOUD_TTS,
+    CHIME_OFFSETS_KEY,
     CHIME_SETS_KEY,
 )
 from custom_components.chime_tts.helpers.helpers import ChimeTTSHelper
@@ -222,6 +223,26 @@ def test_named_chime_set_member_is_used_for_cache_lookup(monkeypatch):
     )
 
 
+def test_saved_chime_offset_is_used_unless_an_action_supplies_one(monkeypatch):
+    """Chime-list offsets affect start chimes but explicit action values win."""
+    from custom_components.chime_tts.const import CROSSFADE_KEY, OFFSET_KEY
+
+    integration_module = importlib.import_module("custom_components.chime_tts.__init__")
+    resolved_paths = AsyncMock(side_effect=[("bells", None), (None, None), ("bells", None), (None, None)])
+    monkeypatch.setattr(integration_module.filesystem_helper, "async_get_chime_path_with_offset", resolved_paths)
+    monkeypatch.setattr(integration_module, "async_verify_cached_audio", AsyncMock(return_value={"cached": True}))
+    monkeypatch.setattr(integration_module.media_player_helper, "get_alexa_media_players_count", lambda: 0)
+    monkeypatch.setattr(integration_module, "_data", {OFFSET_KEY: 0, CROSSFADE_KEY: 0, CHIME_OFFSETS_KEY: {"bells": 175}})
+
+    default_params = {"hass": object(), "message": "Hello", "chime_path": "bells", "cache": True, "entity_ids": ["media_player.office"]}
+    assert asyncio.run(integration_module.async_get_playback_audio_path(default_params, {})) == {"cached": True}
+    assert default_params["offset"] == 175
+
+    explicit_params = {"hass": object(), "message": "Hello", "chime_path": "bells", "offset": 0, "_offset_explicit": True, "cache": True, "entity_ids": ["media_player.office"]}
+    assert asyncio.run(integration_module.async_get_playback_audio_path(explicit_params, {})) == {"cached": True}
+    assert explicit_params["offset"] == 0
+
+
 def test_issue_294_stale_structure_returns_none_not_crash():
     """A services.yaml missing the expected nesting yields None rather than raising (#294)."""
     assert not isinstance(
@@ -347,10 +368,13 @@ def test_panel_chapter_titles_use_shared_imported_icons():
     assert ".chime-sets-workspace .chapter-hero-icon" in panel_source
     assert "width: 2.15rem;" in panel_source
     assert "export const CHAPTER_ICONS" in chapter_icons_source
-    for chapter in ("configuration", "chime_sets", "notify_profiles", "logs", "about"):
+    for chapter in ("configuration", "chimes", "chime_sets", "notify_profiles", "logs", "about"):
         assert f"{chapter}:" in chapter_icons_source
     assert "PANEL_CHAPTER_ICONS_URL" in panel_backend
     assert "ChimeTTSChapterIconsView" in panel_backend
+    assert "ChimeTTSChimeSectionIconView" in panel_backend
+    assert 'class="chime-section-icon"' in chapter_icons_source
+    assert 'mask: url("/api/chime_tts/panel/option_icons/chime_section.svg")' in panel_source
     assert '<svg viewBox="0 0 150 150" fill="currentColor" aria-hidden="true"' in chapter_icons_source
     assert 'stroke="currentColor" stroke-width="1.37"' in chapter_icons_source
 
@@ -387,6 +411,9 @@ def test_chime_set_offset_editor_has_preview_and_timing_guards():
     assert "Chime Offset" in panel_source
     assert "data-chime-set-offset-preview" in panel_source
     assert "data-chime-set-offset-reset" in panel_source
+    assert "data-chime-set-offset-close" in panel_source
+    assert 'this._saveChimeSetOffset();' in panel_source
+    assert "data-chime-set-offset-save" not in panel_source
     assert "chime-set-offset-playback-head" in panel_source
     assert "chime-set-offset-overlap-line" in panel_source
     assert "Math.max(-chimeDuration, requestedOffset)" in panel_source

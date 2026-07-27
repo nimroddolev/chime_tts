@@ -13,7 +13,11 @@ import yaml
 import pytest
 from homeassistant.components.notify.legacy import NOTIFY_SERVICES
 
-from custom_components.chime_tts.const import CUSTOM_CHIMES_PATH_KEY
+from custom_components.chime_tts.const import (
+    CHIME_OFFSETS_KEY,
+    CUSTOM_CHIMES_PATH_KEY,
+    DEFAULT_CHIME_OFFSETS,
+)
 from custom_components.chime_tts.const import TEMP_CHIMES_PATH_KEY
 from custom_components.chime_tts.const import TEMP_PATH_KEY
 from custom_components.chime_tts.const import TTS_PLATFORM_KEY
@@ -250,10 +254,11 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
     assert payload["logs_url"] == "/config/logs?filter=chime_tts"
     assert payload["restart_required_field_keys"] == []
     assert [section["key"] for section in payload["sections"]] == [
+        "chimes",
         "chime_sets",
-        "paths",
         "voice",
         "playback",
+        "audio_folders",
         "general",
         "notify_profiles",
         "logs",
@@ -266,17 +271,40 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
     )
     assert chime_sets_section["docs_url"].endswith("/chime-sets/")
 
+    chimes_section = next(section for section in payload["sections"] if section["key"] == "chimes")
+    assert chimes_section["kind"] == "chimes"
+    assert chimes_section["docs_url"].endswith("/chimes/")
+    assert chimes_section["folder_section"]["key"] == "paths"
+    assert [field["key"] for field in chimes_section["folder_section"]["fields"]] == [
+        CUSTOM_CHIMES_PATH_KEY,
+        TEMP_CHIMES_PATH_KEY,
+    ]
+    assert chimes_section["available_chimes"]
+
+    audio_folders_section = next(section for section in payload["sections"] if section["key"] == "audio_folders")
+    assert [field["key"] for field in audio_folders_section["fields"]] == [
+        TEMP_PATH_KEY,
+        WWW_PATH_KEY,
+    ]
+
     voice_section = next(section for section in payload["sections"] if section["key"] == "voice")
     language_field = next(
         field for field in voice_section["fields"] if field["key"] == "default_language_key"
     )
-    paths_section = next(section for section in payload["sections"] if section["key"] == "paths")
+    paths_section = chimes_section["folder_section"]
     custom_chimes_field = next(
         field for field in paths_section["fields"] if field["key"] == CUSTOM_CHIMES_PATH_KEY
     )
 
     assert language_field["provider_hint"]["tone"] == "info"
     assert "Google Translate" in language_field["provider_hint"]["message"]
+    assert language_field["advanced"] is False
+    assert next(
+        field for field in voice_section["fields"] if field["key"] == "default_voice_key"
+    )["advanced"] is False
+    assert next(
+        field for field in voice_section["fields"] if field["key"] == "default_tld_key"
+    )["advanced"] is False
     assert language_field["icon_url"].startswith(
         f"/api/{DOMAIN}/option_icons/language.svg"
     )
@@ -293,6 +321,51 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
     assert about_section["version"] == payload["version"]
     assert all(item["title"] != "Version" for item in about_section["about_items"])
     assert any(item["title"] == "Buy Me a Coffee" for item in about_section["about_items"])
+
+
+def test_chime_offsets_are_normalized_from_panel_values(tmp_path: Path) -> None:
+    """Per-chime offsets override the tuned defaults in panel configuration."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+    values = settings_module.get_settings_data(
+        hass,
+        config_entry,
+        {CHIME_OFFSETS_KEY: {"bells": "125", "custom/doorbell.mp3": -50}},
+    )
+
+    assert values[CHIME_OFFSETS_KEY] == {
+        **DEFAULT_CHIME_OFFSETS,
+        "bells": 125,
+        "custom/doorbell.mp3": -50,
+    }
+
+
+@pytest.mark.asyncio
+async def test_websocket_save_settings_persists_only_custom_chime_offset_overrides(
+    tmp_path: Path,
+) -> None:
+    """A changed per-chime offset survives restarts without pinning defaults."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+    values = settings_module.get_settings_data(hass, config_entry)
+    values[CHIME_OFFSETS_KEY]["bells"] = 125
+    connection = FakeConnection()
+
+    await save_settings_handler(
+        hass,
+        connection,
+        {
+            "id": 3,
+            "type": "chime_tts/save_settings",
+            "values": values,
+            "notify_profiles": [],
+        },
+    )
+
+    assert connection.errors == []
+    assert config_entry.options[CHIME_OFFSETS_KEY] == {"bells": 125}
+    assert settings_module.get_settings_data(hass, config_entry)[CHIME_OFFSETS_KEY] == {
+        **DEFAULT_CHIME_OFFSETS,
+        "bells": 125,
+    }
 
 
 @pytest.mark.asyncio

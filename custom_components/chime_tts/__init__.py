@@ -95,6 +95,8 @@ from .const import (
     OFFSET_KEY,
     CROSSFADE_KEY,
     CHIME_SETS_KEY,
+    CHIME_OFFSETS_KEY,
+    DEFAULT_CHIME_OFFSETS,
 )
 from .chime_sets import is_set_reference, normalize_sets
 from .config import SONOS_SNAPSHOT_ENABLED
@@ -249,6 +251,7 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
         )
         params = await helpers.async_parse_params(hass, service_data, is_say_url, media_player_helper)
         if params is not None:
+            params["_offset_explicit"] = "delay" in service_data or OFFSET_KEY in service_data
             options = helpers.parse_options_yaml(data=service_data, default_data=_data)
             media_players_array = params.get("media_players_array", None)
 
@@ -783,6 +786,10 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Update the services.yaml file with refreshed chimes options
     _data[CUSTOM_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(options.get(CUSTOM_CHIMES_PATH_KEY))
     _data[CHIME_SETS_KEY] = normalize_sets(options.get(CHIME_SETS_KEY))
+    _data[CHIME_OFFSETS_KEY] = {
+        **DEFAULT_CHIME_OFFSETS,
+        **dict(options.get(CHIME_OFFSETS_KEY) or {}),
+    }
 
     # Update _data in helper classes
     tts_audio_helper._data = _data
@@ -868,10 +875,15 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
     # Resolve sets before generating the cache key. This makes cache-enabled
     # calls unique to the actual chime selected rather than the set reference.
+    requested_chime_path = chime_path
     chime_path, chime_set_offset = await filesystem_helper.async_get_chime_path_with_offset(chime_path, cache, _data, hass)
     end_chime_path, end_chime_set_offset = await filesystem_helper.async_get_chime_path_with_offset(end_chime_path, cache, _data, hass)
     if chime_set_offset is not None:
         params["offset"] = chime_set_offset
+    elif not params.pop("_offset_explicit", False):
+        chime_offset = _data.get(CHIME_OFFSETS_KEY, {}).get(requested_chime_path)
+        if chime_offset is not None:
+            params["offset"] = chime_offset
     if end_chime_set_offset is not None:
         end_chime_offset = end_chime_set_offset
     else:

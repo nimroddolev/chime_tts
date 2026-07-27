@@ -231,7 +231,7 @@
         "chapter": {
             "settings": "Settings",
             "configuration": "Configuration",
-            "configuration_description": "Set default providers, folder paths, playback timing, and integration-wide behavior for Chime TTS.",
+            "configuration_description": "Set default providers, playback options, folder paths, and integration-wide behavior for Chime TTS.",
             "profiles": "Profiles",
             "session": "Session",
             "project": "Project"

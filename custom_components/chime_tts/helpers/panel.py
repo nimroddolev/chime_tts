@@ -64,6 +64,7 @@ PANEL_COMPONENT_NAME = "chime-tts-settings-panel"
 PANEL_URL_PATH = "chime-tts"
 PANEL_MODULE_URL = f"/api/{DOMAIN}/panel.js"
 PANEL_CHAPTER_ICONS_URL = f"/api/{DOMAIN}/chapter-icons.js"
+PANEL_CHIME_SECTION_ICON_URL = f"/api/{DOMAIN}/panel/option_icons/chime_section.svg"
 PANEL_ICON_URL = f"/api/{DOMAIN}/icon.svg"
 PANEL_FOOTER_LOGO_URL = f"/api/{DOMAIN}/footer_logo.svg"
 PANEL_ICONSET_URL = f"/api/{DOMAIN}/iconset.js"
@@ -74,6 +75,7 @@ PANEL_CHIME_SET_OFFSET_PREVIEW_URL = f"/api/{DOMAIN}/chime_set_offset_preview"
 PANEL_BROWSER_UPLOAD_URL = f"/api/{DOMAIN}/browser/upload"
 PANEL_VIEW_NAME = f"api:{DOMAIN}:panel"
 PANEL_CHAPTER_ICONS_VIEW_NAME = f"api:{DOMAIN}:chapter_icons"
+PANEL_CHIME_SECTION_ICON_VIEW_NAME = f"api:{DOMAIN}:chime_section_icon"
 PANEL_ICON_VIEW_NAME = f"api:{DOMAIN}:icon"
 PANEL_FOOTER_LOGO_VIEW_NAME = f"api:{DOMAIN}:footer_logo"
 PANEL_ICONSET_VIEW_NAME = f"api:{DOMAIN}:iconset"
@@ -149,6 +151,24 @@ class ChimeTTSChapterIconsView(HomeAssistantView):
         """Return the chapter icons JavaScript module."""
         response = web.FileResponse(self._panel_path / "chapter-icons.js")
         _set_panel_module_headers(response)
+        return response
+
+
+class ChimeTTSChimeSectionIconView(HomeAssistantView):
+    """Serve the Chimes chapter illustration."""
+
+    url = PANEL_CHIME_SECTION_ICON_URL
+    name = PANEL_CHIME_SECTION_ICON_VIEW_NAME
+    requires_auth = False
+
+    def __init__(self, integration_path: Path) -> None:
+        """Initialize the Chimes chapter illustration view."""
+        self._integration_path = integration_path
+
+    async def get(self, request) -> web.FileResponse:
+        """Return the supplied Chimes chapter SVG."""
+        response = web.FileResponse(self._integration_path / "panel/option_icons/chime_section.svg")
+        _set_cache_headers(response)
         return response
 
 
@@ -512,6 +532,7 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
     if not hass.data.get(PANEL_DATA_KEY):
         hass.http.register_view(ChimeTTSPanelView(panel_path))
         hass.http.register_view(ChimeTTSChapterIconsView(panel_path))
+        hass.http.register_view(ChimeTTSChimeSectionIconView(integration_path))
         hass.http.register_view(ChimeTTSPanelIconView(integration_path))
         hass.http.register_view(ChimeTTSPanelFooterLogoView(integration_path))
         hass.http.register_view(ChimeTTSPanelIconsetView(panel_path))
