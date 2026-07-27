@@ -44,6 +44,40 @@ def test_browser_upload_accepts_supported_audio_extensions_only() -> None:
     assert not panel_module._is_supported_audio_upload("doorbell.mp3.exe")
 
 
+def test_chime_set_offset_preview_combines_chime_and_sample(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The offset preview renders the selected chime with the bundled TTS sample."""
+    source_paths: list[str] = []
+    combine_calls: list[tuple[object, object, int]] = []
+
+    class FakeCombinedAudio:
+        def export(self, output, *, format: str) -> None:
+            assert format == "mp3"
+            output.write(b"preview-mp3")
+
+    class FakeAudioSegment:
+        @staticmethod
+        def from_file(path: str | Path) -> str:
+            source_paths.append(str(path))
+            return str(path)
+
+    class FakeHelper:
+        def combine_audio(self, chime: object, sample: object, offset: int) -> FakeCombinedAudio:
+            combine_calls.append((chime, sample, offset))
+            return FakeCombinedAudio()
+
+    monkeypatch.setattr(panel_module, "AudioSegment", FakeAudioSegment)
+    monkeypatch.setattr(panel_module, "ChimeTTSHelper", FakeHelper)
+    chime_path = tmp_path / "doorbell.mp3"
+    sample_path = tmp_path / "tts_audio.mp3"
+
+    assert panel_module._render_chime_set_offset_preview(chime_path, sample_path, -250) == b"preview-mp3"
+    assert source_paths == [str(chime_path), str(sample_path)]
+    assert combine_calls == [(str(chime_path), str(sample_path), -250)]
+
+
 class FakeConfigEntries:
     """Simple config entries manager for sidebar tests."""
 

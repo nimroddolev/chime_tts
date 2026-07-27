@@ -9,11 +9,24 @@ export const CHAPTER_ICONS = {
     </svg>
   `,
   chime_sets: `
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M9 18V6l10-2v12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M9 9l10-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-      <circle cx="6" cy="18" r="3" fill="currentColor"/>
-      <circle cx="16" cy="16" r="3" fill="currentColor"/>
+    <svg viewBox="0 0 150 150" fill="currentColor" aria-hidden="true" focusable="false" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round">
+      <g transform="matrix(6.25,0,0,6.25,0,-1)"><path d="M12,2.3L20.2,6.55L12,10.9L3.8,6.55L12,2.3Z" fill-opacity=".34"/></g>
+      <g transform="matrix(6.25,0,0,6.25,-1,1)"><path d="M3.8,6.55L12,10.9L12,21.1L3.8,16.8L3.8,6.55Z" fill-opacity=".16"/></g>
+      <g transform="matrix(6.25,0,0,6.25,1,1)"><path d="M12,10.9L20.2,6.55L20.2,16.8L12,21.1L12,10.9Z" fill-opacity=".25"/></g>
+      <g transform="matrix(6.914894,0,0,6.914894,-7.978723,-7.779255)"><path d="M12,2.3L20.2,6.55L12,10.9L3.8,6.55L12,2.3ZM3.8,6.55L12,10.9L12,21.1L3.8,16.8L3.8,6.55ZM20.2,6.55L12,10.9L12,21.1L20.2,16.8L20.2,6.55Z" fill="none" stroke="currentColor" stroke-width="1.37"/></g>
+      <g transform="matrix(6.25,0,0,6.25,-6.25,12.5)">
+        <g transform="matrix(1,0,0,1.023969,0,-2.409279)"><path d="M8,11.1C8,11.1 8,15.208 8,15.212C8,16.227 6.628,14.409 6.85,14.5L6.85,9.775L11.2,12L11.2,16.35C10.2,18.354 9.828,15.559 10.05,15.65L10.05,12.77L8,11.707L8,11.1Z"/></g>
+        <g transform="matrix(1.359693,-.494888,.34202,.939693,-2.858075,-4.359272)"><circle cx="2" cy="20" r="1"/></g>
+        <g transform="matrix(1.409539,-.51303,.34202,.939693,.092078,-3.34113)"><circle cx="2" cy="20" r="1"/></g>
+      </g>
+      <g transform="matrix(6.155048,-1.085301,1.085301,6.155048,32.815003,8.941252)">
+        <path d="M12.685,12.044L11.994,12.869C11.994,12.869 11.237,12.508 11.144,12.315C11.077,12.174 11.2,16.35 11.2,16.35C10.2,18.354 9.828,15.559 10.05,15.65L10.05,12.77L10.184,10.714L12.685,12.044Z" transform="translate(-1)"/>
+        <g transform="matrix(1.409539,-.51303,.34202,.939693,-.907922,-1.34113)"><circle cx="2" cy="20" r="1"/></g>
+      </g>
+      <g transform="matrix(3.053384,-3.919841,3.463766,2.698122,-2.177338,35.058841)">
+        <path d="M12.4,12.34L11.763,13.018C11.763,13.018 10.902,12.525 11.006,12.46C11.062,12.424 11.2,16.35 11.2,16.35C10.2,18.354 9.828,15.559 10.05,15.65L10.05,12.77L10.184,10.714L12.4,12.34Z" transform="translate(-1)"/>
+        <g transform="matrix(1.409539,-.51303,.34202,.939693,-.907922,-1.34113)"><circle cx="2" cy="20" r="1"/></g>
+      </g>
     </svg>
   `,
   notify_profiles: `

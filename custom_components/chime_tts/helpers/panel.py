@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import mimetypes
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
 from aiohttp import web
+from pydub import AudioSegment
 from homeassistant.components.frontend import (
     add_extra_js_url,
     async_register_built_in_panel,
@@ -30,6 +32,7 @@ from ..const import (
     SERVICE_SAY_URL,
 )
 from ..helpers.filesystem import FilesystemHelper
+from ..helpers.helpers import ChimeTTSHelper
 from .panel_logs import (
     async_get_panel_log_events,
     async_setup_panel_log_store,
@@ -67,6 +70,7 @@ PANEL_ICONSET_URL = f"/api/{DOMAIN}/iconset.js"
 PANEL_OPTION_ICON_URL = f"/api/{DOMAIN}/option_icons/{{icon_name}}"
 PANEL_BROWSER_AUDIO_URL = f"/api/{DOMAIN}/browser/audio"
 PANEL_CHIME_PREVIEW_URL = f"/api/{DOMAIN}/chime_preview"
+PANEL_CHIME_SET_OFFSET_PREVIEW_URL = f"/api/{DOMAIN}/chime_set_offset_preview"
 PANEL_BROWSER_UPLOAD_URL = f"/api/{DOMAIN}/browser/upload"
 PANEL_VIEW_NAME = f"api:{DOMAIN}:panel"
 PANEL_CHAPTER_ICONS_VIEW_NAME = f"api:{DOMAIN}:chapter_icons"
@@ -76,6 +80,7 @@ PANEL_ICONSET_VIEW_NAME = f"api:{DOMAIN}:iconset"
 PANEL_OPTION_ICON_VIEW_NAME = f"api:{DOMAIN}:option_icon"
 PANEL_BROWSER_AUDIO_VIEW_NAME = f"api:{DOMAIN}:browser_audio"
 PANEL_CHIME_PREVIEW_VIEW_NAME = f"api:{DOMAIN}:chime_preview"
+PANEL_CHIME_SET_OFFSET_PREVIEW_VIEW_NAME = f"api:{DOMAIN}:chime_set_offset_preview"
 PANEL_BROWSER_UPLOAD_VIEW_NAME = f"api:{DOMAIN}:browser_upload"
 PANEL_DATA_KEY = f"{DOMAIN}_panel_view_registered"
 WS_DATA_KEY = f"{DOMAIN}_panel_ws_registered"
@@ -442,6 +447,57 @@ class ChimeTTSPanelChimePreviewView(HomeAssistantView):
         return response
 
 
+class ChimeTTSPanelChimeSetOffsetPreviewView(HomeAssistantView):
+    """Render a chime and the bundled TTS sample with a selected offset."""
+
+    url = PANEL_CHIME_SET_OFFSET_PREVIEW_URL
+    name = PANEL_CHIME_SET_OFFSET_PREVIEW_VIEW_NAME
+    requires_auth = True
+
+    async def get(self, request) -> web.StreamResponse:
+        hass: HomeAssistant = request.app["hass"]
+        config_entry = _get_config_entry(hass)
+        if config_entry is None:
+            raise web.HTTPNotFound(text="Chime TTS is not configured yet.")
+        chime_value = str(request.query.get("value", "")).strip()
+        try:
+            offset = int(str(request.query.get("offset", "0")))
+        except ValueError as error:
+            raise web.HTTPBadRequest(text="A valid offset is required.") from error
+        if not chime_value:
+            raise web.HTTPBadRequest(text="A chime value is required for preview playback.")
+
+        settings_data = get_settings_data(hass, config_entry)
+        try:
+            resolved = await filesystem_helper.async_get_chime_path(chime_value, True, settings_data, hass)
+            if isinstance(resolved, dict):
+                audio_dict = resolved.get("audio_dict", {})
+                chime_path = audio_dict.get(LOCAL_PATH_KEY) or filesystem_helper.get_local_path(hass, audio_dict.get(PUBLIC_PATH_KEY, ""))
+            else:
+                chime_path = resolved
+            chime_path = await filesystem_helper.async_validate_path(hass, chime_path)
+            if not chime_path:
+                raise FileNotFoundError(chime_value)
+            sample_path = Path(__file__).resolve().parent.parent / "panel" / "tts_audio.mp3"
+            audio_bytes = await hass.async_add_executor_job(
+                _render_chime_set_offset_preview, chime_path, sample_path, offset
+            )
+        except Exception as error:
+            raise web.HTTPBadRequest(text=f"Unable to create chime offset preview: {error}") from error
+
+        return web.Response(body=audio_bytes, content_type="audio/mpeg", headers={"Cache-Control": "no-cache"})
+
+
+def _render_chime_set_offset_preview(chime_path: str, sample_path: Path, offset: int) -> bytes:
+    """Use FFmpeg through pydub to combine preview source audio."""
+    chime = AudioSegment.from_file(chime_path)
+    tts_sample = AudioSegment.from_file(sample_path)
+    combined = ChimeTTSHelper().combine_audio(chime, tts_sample, offset)
+    output = BytesIO()
+    combined.export(output, format="mp3")
+    return output.getvalue()
+
+
 async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
     """Register the custom settings panel and its backend APIs."""
     integration_path = Path(__file__).resolve().parent.parent
@@ -462,6 +518,7 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
         hass.http.register_view(ChimeTTSPanelOptionIconView(panel_path))
         hass.http.register_view(ChimeTTSPanelBrowserAudioView())
         hass.http.register_view(ChimeTTSPanelChimePreviewView())
+        hass.http.register_view(ChimeTTSPanelChimeSetOffsetPreviewView())
         hass.http.register_view(ChimeTTSPanelBrowserUploadView())
         add_extra_js_url(hass, panel_iconset_resource_url)
         hass.data[PANEL_DATA_KEY] = True

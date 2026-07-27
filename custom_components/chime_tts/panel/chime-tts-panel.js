@@ -229,6 +229,11 @@ const ICONS = {
       <path d="M8 6h3v12H8zm5 0h3v12h-3z" fill="currentColor"/>
     </svg>
   `,
+  stop: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="7" y="7" width="10" height="10" rx="1" fill="currentColor"/>
+    </svg>
+  `,
 };
 const OPTION_ICON_DATA_URLS = {
   "add_cover_art": "data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%20fill=%22none%22%3E%0A%20%20%3Crect%20x=%2214%22%20y=%2216%22%20width=%2222%22%20height=%2222%22%20rx=%226%22%20fill=%22%2303a9f4%22/%3E%0A%20%20%3Ccircle%20cx=%2225%22%20cy=%2227%22%20r=%224%22%20fill=%22%23fff%22/%3E%0A%20%20%3Cpath%20d=%22M42%2022h8M42%2030h10M42%2038h6%22%20stroke=%22%23d7edf8%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%20%20%3Cpath%20d=%22M18%2044c3-3%205-4%207-4s4%201%207%204%22%20stroke=%22%237dd3fc%22%20stroke-width=%223%22%20stroke-linecap=%22round%22/%3E%0A%3C/svg%3E",
@@ -1026,6 +1031,11 @@ template.innerHTML = `
       display: block;
       width: 100%;
       height: 100%;
+    }
+
+    .chime-sets-workspace .chapter-hero-icon {
+      width: 2.15rem;
+      height: 2.15rem;
     }
 
     .chapter-hero-title {
@@ -1833,11 +1843,202 @@ template.innerHTML = `
       gap: 12px;
       flex-wrap: wrap;
     }
+    .chime-set-offset-dialog { position: relative; }
+    .chime-set-offset-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 36px;
+      min-width: 36px;
+      min-height: 36px;
+      padding: 0;
+      border-radius: 999px;
+    }
+    .chime-set-offset-close svg { width: 18px; height: 18px; }
+    [data-chime-set-offset-reset]:disabled {
+      border-color: var(--divider-color);
+      color: var(--divider-color);
+    }
+    .chime-set-offset-dialog .confirm-actions > :is([data-chime-set-offset-reset], [data-chime-set-offset-save]) {
+      width: 112px;
+    }
     .chime-set-offset-control .field-label { flex: 0 0 auto; }
     .chime-set-offset-input.control {
       width: 14ch;
       min-width: 14ch;
       text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .chime-set-offset-timeline {
+      position: relative;
+      height: 140px;
+      overflow: hidden;
+      border: 1px solid color-mix(in srgb, var(--divider-color) 80%, transparent);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--card-background-color) 72%, var(--primary-color) 4%);
+      touch-action: none;
+      user-select: none;
+    }
+    .chime-set-offset-axis {
+      position: relative;
+      height: 14px;
+      margin-bottom: 2px;
+      color: var(--secondary-text-color);
+      font-size: .72rem;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .chime-set-offset-axis-label {
+      position: absolute;
+      top: 0;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+    .chime-set-offset-grid-line {
+      position: absolute;
+      z-index: 0;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: color-mix(in srgb, var(--primary-text-color) 14%, transparent);
+      pointer-events: none;
+    }
+    .chime-set-offset-timeline::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--primary-text-color) 5%, transparent), transparent);
+    }
+    .chime-set-offset-audio {
+      position: absolute;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      padding: 8px 12px;
+      border: 1px solid currentColor;
+      border-radius: 10px;
+      cursor: ew-resize;
+      opacity: .68;
+      transition: left 80ms linear, width 80ms linear;
+      outline-offset: 3px;
+    }
+    .chime-set-offset-timeline.initializing :is(.chime-set-offset-audio, .chime-set-offset-overlap-line, .chime-set-offset-playback-head) {
+      visibility: hidden;
+    }
+    .chime-set-offset-tts { top: 76px; }
+    .chime-set-offset-waveform { top: 30px; }
+    .chime-set-offset-audio:focus-visible {
+      outline: 2px solid var(--primary-color);
+    }
+    .chime-set-offset-waveform {
+      z-index: 2;
+      padding-right: 0;
+      padding-left: 0;
+      color: var(--primary-color);
+      background: color-mix(in srgb, var(--primary-color) 35%, transparent);
+    }
+    .chime-set-offset-waveform svg {
+      width: 100%;
+      min-width: 0;
+      height: 22px;
+      pointer-events: none;
+    }
+    .chime-set-offset-waveform .chime-set-offset-audio-label {
+      top: -15px;
+      bottom: auto;
+    }
+    .chime-set-offset-tts {
+      z-index: 1;
+      color: var(--accent-color, #ff9800);
+      background: color-mix(in srgb, var(--accent-color, #ff9800) 38%, transparent);
+    }
+    .chime-set-offset-audio-label {
+      position: absolute;
+      bottom: -23px;
+      left: 50%;
+      max-width: 100%;
+      overflow: hidden;
+      color: var(--secondary-text-color);
+      font-size: .72rem;
+      font-weight: 600;
+      line-height: 1;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      white-space: nowrap;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+    .chime-set-offset-tts .chime-set-offset-audio-label {
+      top: 50%;
+      bottom: auto;
+      transform: translate(-50%, -50%);
+    }
+    .chime-set-offset-overlap-line {
+      position: absolute;
+      z-index: 3;
+      top: 30px;
+      height: 74px;
+      width: 2px;
+      display: none;
+      background: var(--error-color, #d32f2f);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--error-color, #d32f2f) 25%, transparent);
+      transition: left 80ms linear;
+      pointer-events: none;
+    }
+    .chime-set-offset-playback-head {
+      position: absolute;
+      z-index: 4;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 2px;
+      display: none;
+      background: #000;
+      pointer-events: none;
+    }
+    .chime-set-offset-playback-head.playing {
+      display: block;
+      animation: chimeSetOffsetPlayback var(--chime-set-preview-duration, 1s) linear forwards;
+    }
+    @keyframes chimeSetOffsetPlayback { to { left: calc(100% - 2px); } }
+    .chime-set-offset-timeline-hint {
+      margin: -6px 0 0;
+      color: var(--secondary-text-color);
+      font-size: .95rem;
+      line-height: 1.4;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .chime-set-offset-hint-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: -6px;
+    }
+    .chime-set-offset-hint-row .chime-set-offset-timeline-hint { margin: 0; }
+    .chime-set-offset-preview-button {
+      width: 108px;
+      min-width: 108px;
+      min-height: 30px;
+      padding: 0 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border-color: var(--success-color, #2e7d32);
+      color: var(--success-color, #2e7d32);
+    }
+    .chime-set-offset-preview-button.stop {
+      border-color: var(--error-color, #d32f2f);
+      color: var(--error-color, #d32f2f);
+    }
+    .chime-set-offset-preview-button svg { width: 18px; height: 18px; }
+    .chime-set-offset-timeline-status {
+      color: var(--primary-text-color);
       font-variant-numeric: tabular-nums;
     }
     .random-chime-member input[type="checkbox"] {
@@ -3897,6 +4098,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._pickerAudioLoadToken = 0;
     this._pickerAudioLoadingPath = "";
     this._pickerPlayingPath = "";
+    this._chimeSetWaveformCache = new Map();
+    this._chimeSetDurationCache = new Map();
+    this._chimeSetWaveformAudioContext = null;
+    this._chimeSetWaveformLoadToken = 0;
+    this._chimeSetOffsetPreviewAudio = null;
+    this._chimeSetOffsetPreviewObjectUrl = "";
+    this._chimeSetOffsetPreviewToken = 0;
     this._pickerPreviewDuration = 0;
     this._fieldPreviewAudio = null;
     this._fieldPreviewAudioObjectUrl = "";
@@ -3990,6 +4198,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._stopPickerAudio();
     this._stopFieldPreviewAudio();
     this._stopNotifyPreviewAudio();
+    this._chimeSetWaveformLoadToken += 1;
+    this._chimeSetWaveformAudioContext?.close?.();
+    this._chimeSetWaveformAudioContext = null;
     this._modalResizeObserver?.disconnect();
     this._modalResizeObserver = null;
   }
@@ -4437,11 +4648,17 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-edit-chime-set-offset]").forEach((button) => {
       button.addEventListener("click", (event) => this._openChimeSetOffsetEditor(Number(event.currentTarget.dataset.editChimeSetOffset), event.currentTarget.dataset.chimeSetMember, event.currentTarget.dataset.chimeSetMemberLabel));
     });
-    this.shadowRoot.querySelectorAll("[data-chime-set-offset-input]").forEach((field) => {
-      field.addEventListener("input", (event) => { if (this._chimeSetOffsetEditor) this._chimeSetOffsetEditor.offset = event.currentTarget.value; });
+    this.shadowRoot.querySelectorAll("[data-chime-set-offset-reset]").forEach((button) => button.addEventListener("click", () => this._resetChimeSetOffsetEditor()));
+    this.shadowRoot.querySelectorAll("[data-chime-set-offset-timeline]").forEach((timeline) => {
+      this._positionChimeSetOffsetTimeline(timeline);
+      timeline.querySelectorAll("[data-chime-set-offset-audio]").forEach((audio) => {
+        audio.addEventListener("pointerdown", (event) => this._startChimeSetOffsetDrag(event));
+        audio.addEventListener("keydown", (event) => this._handleChimeSetOffsetAudioKeydown(event));
+      });
     });
     this.shadowRoot.querySelectorAll("[data-chime-set-offset-cancel]").forEach((button) => button.addEventListener("click", () => this._closeChimeSetOffsetEditor()));
     this.shadowRoot.querySelectorAll("[data-chime-set-offset-save]").forEach((button) => button.addEventListener("click", () => this._saveChimeSetOffset()));
+    this.shadowRoot.querySelectorAll("[data-chime-set-offset-preview]").forEach((button) => button.addEventListener("click", () => this._toggleChimeSetOffsetPreview()));
     this.shadowRoot.querySelectorAll("[data-delete-random-chime-set]").forEach((button) => {
       button.addEventListener("click", (event) => this._requestRandomChimeSetDelete(Number(event.currentTarget.dataset.deleteRandomChimeSet)));
     });
@@ -4874,6 +5091,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this.style.setProperty("--modal-top", `${top}px`);
     this.style.setProperty("--modal-width", `${width}px`);
     this.style.setProperty("--modal-height", `${height}px`);
+    const timeline = this.shadowRoot?.querySelector("[data-chime-set-offset-timeline]");
+    if (timeline) this._positionChimeSetOffsetTimeline(timeline);
   }
 
   _renderPanelAlerts(alerts) {
@@ -6619,14 +6838,29 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _renderChimeSetOffsetEditor() {
     const editor = this._chimeSetOffsetEditor;
     if (!editor) return "";
-    return `<div class="confirm-overlay"><div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="Edit chime offset">
-      <h3 class="confirm-title">Chime offset</h3>
+    const waveform = this._renderChimeSetWaveform(editor.waveform);
+    const resetDisabled = Number(editor.offset) === Number(editor.initialOffset);
+    return `<div class="confirm-overlay"><div class="confirm-dialog chime-set-offset-dialog" role="dialog" aria-modal="true" aria-label="Edit chime offset">
+      <button class="button-secondary chime-set-offset-close" type="button" data-chime-set-offset-cancel="1" aria-label="${this._escapeAttribute(this._t("action.close"))}" title="${this._escapeAttribute(this._t("action.close"))}">${ICONS.close}</button>
+      <h3 class="confirm-title">${this._escapeHtml(editor.label)} Chime Offset</h3>
       <p class="confirm-copy">
-        Set the offset for “<b>${this._escapeHtml(editor.label)}</b>”.<br />
         This will replace the offset when this chime is selected.
       </p>
-      <div class="chime-set-offset-control"><span class="field-label">Offset (milliseconds)</span><input class="control chime-set-offset-input" type="number" step="1" data-chime-set-offset-input="1" value="${this._escapeAttribute(editor.offset)}" /></div>
-      <div class="confirm-actions"><button class="button-secondary" type="button" data-chime-set-offset-cancel="1">${this._escapeHtml(this._t("action.cancel"))}</button><button class="button-primary" type="button" data-chime-set-offset-save="1">${this._escapeHtml(this._t("action.save"))}</button></div>
+      <div class="chime-set-offset-axis" data-chime-set-offset-axis="1" aria-hidden="true"></div>
+      <div class="chime-set-offset-timeline ${editor.timelineReady ? "" : "initializing"}" data-chime-set-offset-timeline="1" aria-label="Chime and TTS audio timing">
+        <div class="chime-set-offset-audio chime-set-offset-tts" data-chime-set-offset-audio="tts" role="slider" tabindex="0" aria-label="TTS audio position" aria-valuemin="-10000" aria-valuemax="10000" aria-valuenow="${this._escapeAttribute(editor.offset)}">
+          <span class="chime-set-offset-audio-label">TTS audio</span>
+        </div>
+        <div class="chime-set-offset-audio chime-set-offset-waveform" data-chime-set-offset-audio="chime" role="slider" tabindex="0" aria-label="Chime waveform position" aria-valuemin="-10000" aria-valuemax="10000" aria-valuenow="${this._escapeAttribute(editor.offset)}">
+          <svg data-chime-set-waveform="1" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true">${waveform}</svg>
+          <span class="chime-set-offset-audio-label">Chime</span>
+        </div>
+        <span class="chime-set-offset-overlap-line" data-chime-set-offset-overlap="start"></span>
+        <span class="chime-set-offset-overlap-line" data-chime-set-offset-overlap="end"></span>
+        <span class="chime-set-offset-playback-head ${editor.previewStarted ? "playing" : ""}" style="--chime-set-preview-duration: ${Number(editor.previewDuration) || 1}s"></span>
+      </div>
+      <div class="chime-set-offset-hint-row"><p class="chime-set-offset-timeline-hint">Drag either audio block. <span class="chime-set-offset-timeline-status" data-chime-set-offset-status="1" aria-live="polite"></span></p><button class="button-secondary chime-set-offset-preview-button ${editor.previewPlaying ? "stop" : ""}" type="button" data-chime-set-offset-preview="1">${editor.previewPlaying ? ICONS.stop : ICONS.play}<span>${editor.previewPlaying ? "Stop" : "Preview"}</span></button></div>
+      <div class="confirm-actions"><button class="button-secondary" type="button" data-chime-set-offset-reset="1" ${resetDisabled ? "disabled" : ""}>${this._escapeHtml(this._t("action.reset"))}</button><button class="button-primary" type="button" data-chime-set-offset-save="1">${this._escapeHtml(this._t("action.save"))}</button></div>
     </div></div>`;
   }
 
@@ -7963,11 +8197,234 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _openChimeSetOffsetEditor(index, member, label = member) {
     const chimeSet = this._randomChimeSetsDraft()[index];
     if (!chimeSet || !chimeSet.chimes?.includes(member)) return;
-    this._chimeSetOffsetEditor = { index, member, label, offset: String(chimeSet.offsets?.[member] ?? 0) };
+    this._chimeSetOffsetEditor = {
+      index,
+      member,
+      label,
+      offset: String(chimeSet.offsets?.[member] ?? 0),
+      initialOffset: String(chimeSet.offsets?.[member] ?? 0),
+      waveform: this._chimeSetWaveformCache.get(member),
+      chimeDuration: this._chimeSetDurationCache.get(member) || 1000,
+      timelineReady: this._chimeSetDurationCache.has(member),
+    };
     this._render();
+    this._loadChimeSetWaveform(member);
+  }
+
+  _renderChimeSetWaveform(samples) {
+    if (!Array.isArray(samples)) {
+      return '<text x="100" y="24" fill="currentColor" text-anchor="middle" font-size="11">Loading waveform…</text>';
+    }
+    if (samples.length === 0) {
+      return '<text x="100" y="24" fill="currentColor" text-anchor="middle" font-size="11">Waveform unavailable</text>';
+    }
+    const step = 200 / Math.max(1, samples.length - 1);
+    const points = samples.map((sample, index) => {
+      const x = (index * step).toFixed(2);
+      const amplitude = Math.max(0, Math.min(1, Number(sample) || 0)) * 18;
+      return `M${x} ${(20 - amplitude).toFixed(2)}V${(20 + amplitude).toFixed(2)}`;
+    }).join("");
+    return `<path d="${points}" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" />`;
+  }
+
+  async _loadChimeSetWaveform(member) {
+    if (!member || this._chimeSetWaveformCache.has(member)) return;
+    const loadToken = ++this._chimeSetWaveformLoadToken;
+    try {
+      const response = await this._fetchPickerWithAuth(this._buildChimePreviewUrl("chime_path", member));
+      if (!response.ok) throw new Error(`Chime waveform request failed with status ${response.status}`);
+      const audioData = await response.arrayBuffer();
+      const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextConstructor) throw new Error("Web Audio is unavailable");
+      this._chimeSetWaveformAudioContext ||= new AudioContextConstructor();
+      const audioBuffer = await this._chimeSetWaveformAudioContext.decodeAudioData(audioData.slice(0));
+      const samples = this._extractChimeSetWaveformSamples(audioBuffer);
+      this._chimeSetWaveformCache.set(member, samples);
+      this._chimeSetDurationCache.set(member, audioBuffer.duration * 1000);
+      if (loadToken !== this._chimeSetWaveformLoadToken || this._chimeSetOffsetEditor?.member !== member) return;
+      this._chimeSetOffsetEditor.waveform = samples;
+      this._chimeSetOffsetEditor.chimeDuration = audioBuffer.duration * 1000;
+      this._chimeSetOffsetEditor.timelineReady = true;
+      this._render();
+    } catch (_error) {
+      // Keep the offset editor usable when a browser cannot decode a source format.
+      this._chimeSetWaveformCache.set(member, []);
+      if (loadToken !== this._chimeSetWaveformLoadToken || this._chimeSetOffsetEditor?.member !== member) return;
+      this._chimeSetOffsetEditor.waveform = [];
+      this._chimeSetOffsetEditor.timelineReady = true;
+      this._render();
+    }
+  }
+
+  _extractChimeSetWaveformSamples(audioBuffer) {
+    const sampleCount = 96;
+    const samples = Array(sampleCount).fill(0);
+    const bucketSize = Math.max(1, Math.ceil(audioBuffer.length / sampleCount));
+    for (let channel = 0; channel < audioBuffer.numberOfChannels; channel += 1) {
+      const channelData = audioBuffer.getChannelData(channel);
+      for (let bucket = 0; bucket < sampleCount; bucket += 1) {
+        const start = bucket * bucketSize;
+        const end = Math.min(channelData.length, start + bucketSize);
+        const stride = Math.max(1, Math.floor((end - start) / 80));
+        for (let index = start; index < end; index += stride) {
+          samples[bucket] = Math.max(samples[bucket], Math.abs(channelData[index]));
+        }
+      }
+    }
+    const peak = Math.max(...samples, 0.01);
+    return samples.map((sample) => sample / peak);
+  }
+
+  _setChimeSetOffsetEditorValue(value) {
+    if (!this._chimeSetOffsetEditor) return;
+    const requestedOffset = String(value).trim() === "" ? Number.NaN : Number(value);
+    const chimeDuration = Number(this._chimeSetOffsetEditor.chimeDuration) || 1000;
+    const offset = Number.isFinite(requestedOffset)
+      ? Math.max(-chimeDuration, requestedOffset)
+      : requestedOffset;
+    this._chimeSetOffsetEditor.offset = Number.isFinite(offset) ? String(Math.round(offset)) : String(value);
+    if (!Number.isFinite(offset)) return;
+    this._stopChimeSetOffsetPreview();
+    const timeline = this.shadowRoot.querySelector("[data-chime-set-offset-timeline]");
+    const resetButton = this.shadowRoot.querySelector("[data-chime-set-offset-reset]");
+    if (resetButton) {
+      resetButton.disabled = Number(this._chimeSetOffsetEditor.offset)
+        === Number(this._chimeSetOffsetEditor.initialOffset);
+    }
+    if (timeline) this._positionChimeSetOffsetTimeline(timeline);
+  }
+
+  _resetChimeSetOffsetEditor() {
+    if (!this._chimeSetOffsetEditor) return;
+    this._setChimeSetOffsetEditorValue(this._chimeSetOffsetEditor.initialOffset);
+  }
+
+  _positionChimeSetOffsetTimeline(timeline) {
+    if (!timeline) return;
+    const offset = Number(this._chimeSetOffsetEditor?.offset);
+    if (!Number.isFinite(offset)) return;
+    const width = timeline.clientWidth;
+    if (!width) return;
+
+    // The TTS block begins at the end of the chime at zero. A positive offset
+    // adds a gap; a negative one moves it back over (or before) the chime.
+    const chimeWidth = Math.max(1, Number(this._chimeSetOffsetEditor?.chimeDuration) || 1000);
+    const ttsWidth = 1560;
+    const ttsStart = chimeWidth + offset;
+    const contentStart = Math.min(0, ttsStart);
+    const contentEnd = Math.max(chimeWidth, ttsStart + ttsWidth);
+    const contentWidth = Math.max(1, contentEnd - contentStart);
+    const scale = width / contentWidth;
+    const left = -(contentStart * scale);
+    const axis = timeline.parentElement?.querySelector("[data-chime-set-offset-axis]");
+    if (axis) {
+      const minimumTick = 10;
+      const intervals = [];
+      for (let magnitude = minimumTick; magnitude <= contentWidth * 10; magnitude *= 10) {
+        [1, 2, 5].forEach((multiplier) => intervals.push(multiplier * magnitude));
+      }
+      const tickOptions = intervals.map((interval) => {
+        const firstTick = Math.ceil(contentStart / interval) * interval;
+        return {
+          interval,
+          firstTick,
+          count: Math.floor((contentEnd - firstTick) / interval) + 1,
+        };
+      }).filter((option) => option.count > 0);
+      const targetTickCount = 8;
+      const matchingOptions = tickOptions.filter((option) => option.count >= 7 && option.count <= 10);
+      const selectedOption = (matchingOptions.length ? matchingOptions : tickOptions)
+        .sort((leftOption, rightOption) => (
+          Math.abs(leftOption.count - targetTickCount) - Math.abs(rightOption.count - targetTickCount)
+        ))[0];
+      const { interval, firstTick } = selectedOption;
+      const ticks = [];
+      for (let tick = firstTick; tick <= contentEnd; tick += interval) {
+        const position = (tick - contentStart) * scale;
+        ticks.push({ value: Math.round(tick / 10) * 10, position });
+      }
+      axis.innerHTML = ticks.map(({ value, position }) => (
+        `<span class="chime-set-offset-axis-label" style="left:${position}px">${value} ms</span>`
+      )).join("");
+      timeline.querySelectorAll("[data-chime-set-offset-grid]").forEach((line) => line.remove());
+      ticks.forEach(({ position }) => {
+        const line = document.createElement("span");
+        line.className = "chime-set-offset-grid-line";
+        line.dataset.chimeSetOffsetGrid = "1";
+        line.style.left = `${position}px`;
+        timeline.prepend(line);
+      });
+    }
+    const chime = timeline.querySelector('[data-chime-set-offset-audio="chime"]');
+    const tts = timeline.querySelector('[data-chime-set-offset-audio="tts"]');
+
+    if (chime) {
+      chime.style.left = `${left}px`;
+      chime.style.width = `${chimeWidth * scale}px`;
+      chime.setAttribute("aria-valuenow", String(offset));
+    }
+    if (tts) {
+      tts.style.left = `${left + (ttsStart * scale)}px`;
+      tts.style.width = `${ttsWidth * scale}px`;
+      tts.setAttribute("aria-valuenow", String(offset));
+    }
+    const chimeStart = left;
+    const chimeEnd = left + (chimeWidth * scale);
+    const ttsStartPosition = left + (ttsStart * scale);
+    const ttsEndPosition = ttsStartPosition + (ttsWidth * scale);
+    const overlapLines = {
+      start: ttsStartPosition > chimeStart && ttsStartPosition < chimeEnd ? ttsStartPosition : null,
+      end: ttsEndPosition > chimeStart && ttsEndPosition < chimeEnd ? ttsEndPosition : null,
+    };
+    timeline.querySelectorAll("[data-chime-set-offset-overlap]").forEach((line) => {
+      const position = overlapLines[line.dataset.chimeSetOffsetOverlap];
+      line.style.display = position === null ? "none" : "block";
+      if (position !== null) line.style.left = `${position}px`;
+    });
+    const status = timeline.parentElement?.querySelector("[data-chime-set-offset-status]");
+    if (status) {
+      status.textContent = offset === 0
+        ? "Touching at 0 ms."
+        : `${Math.abs(offset)} ms ${offset < 0 ? "overlap." : "gap."}`;
+    }
+  }
+
+  _startChimeSetOffsetDrag(event) {
+    if (event.button !== 0 || !this._chimeSetOffsetEditor) return;
+    event.preventDefault();
+    const audio = event.currentTarget;
+    const timeline = audio.closest("[data-chime-set-offset-timeline]");
+    const initialOffset = Number(this._chimeSetOffsetEditor.offset);
+    if (!timeline || !Number.isFinite(initialOffset)) return;
+    const direction = audio.dataset.chimeSetOffsetAudio === "chime" ? -1 : 1;
+    const startX = event.clientX;
+    audio.setPointerCapture?.(event.pointerId);
+    const onMove = (moveEvent) => {
+      if (moveEvent.pointerId !== event.pointerId) return;
+      this._setChimeSetOffsetEditorValue(initialOffset + (Math.round(moveEvent.clientX - startX) * direction * 10));
+    };
+    const onEnd = (endEvent) => {
+      if (endEvent.pointerId !== event.pointerId) return;
+      audio.removeEventListener("pointermove", onMove);
+      audio.removeEventListener("pointerup", onEnd);
+      audio.removeEventListener("pointercancel", onEnd);
+    };
+    audio.addEventListener("pointermove", onMove);
+    audio.addEventListener("pointerup", onEnd);
+    audio.addEventListener("pointercancel", onEnd);
+  }
+
+  _handleChimeSetOffsetAudioKeydown(event) {
+    if (!this._chimeSetOffsetEditor || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+    const direction = event.key === "ArrowRight" ? 1 : -1;
+    const audioDirection = event.currentTarget.dataset.chimeSetOffsetAudio === "chime" ? -1 : 1;
+    const step = event.shiftKey ? 100 : 10;
+    this._setChimeSetOffsetEditorValue(Number(this._chimeSetOffsetEditor.offset) + (direction * audioDirection * step));
   }
 
   _closeChimeSetOffsetEditor() {
+    this._stopChimeSetOffsetPreview();
     this._chimeSetOffsetEditor = null;
     this._render();
   }
@@ -7980,7 +8437,83 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (!sets[editor.index]) return;
     sets[editor.index].offsets = { ...(sets[editor.index].offsets || {}), [editor.member]: offset };
     this._chimeSetOffsetEditor = null;
+    this._stopChimeSetOffsetPreview();
     this._setRandomChimeSetsDraft(sets);
+  }
+
+  _buildChimeSetOffsetPreviewUrl(member, offset) {
+    return `/api/chime_tts/chime_set_offset_preview?value=${encodeURIComponent(member)}&offset=${encodeURIComponent(offset)}`;
+  }
+
+  _stopChimeSetOffsetPreview() {
+    this._chimeSetOffsetPreviewToken += 1;
+    if (this._chimeSetOffsetPreviewAudio) {
+      this._chimeSetOffsetPreviewAudio.pause();
+      this._chimeSetOffsetPreviewAudio.src = "";
+      this._chimeSetOffsetPreviewAudio.load();
+      this._chimeSetOffsetPreviewAudio = null;
+    }
+    if (this._chimeSetOffsetPreviewObjectUrl) URL.revokeObjectURL(this._chimeSetOffsetPreviewObjectUrl);
+    this._chimeSetOffsetPreviewObjectUrl = "";
+    if (this._chimeSetOffsetEditor) {
+      this._chimeSetOffsetEditor.previewPlaying = false;
+      this._chimeSetOffsetEditor.previewStarted = false;
+    }
+    const button = this.shadowRoot?.querySelector("[data-chime-set-offset-preview]");
+    if (button) {
+      button.classList.remove("stop");
+      button.innerHTML = `${ICONS.play}<span>Preview</span>`;
+    }
+    const playbackHead = this.shadowRoot?.querySelector(".chime-set-offset-playback-head");
+    if (playbackHead) playbackHead.classList.remove("playing");
+  }
+
+  async _toggleChimeSetOffsetPreview() {
+    const editor = this._chimeSetOffsetEditor;
+    if (!editor) return;
+    if (editor.previewPlaying) {
+      this._stopChimeSetOffsetPreview();
+      this._render();
+      return;
+    }
+    const token = ++this._chimeSetOffsetPreviewToken;
+    editor.previewPlaying = true;
+    editor.previewStarted = false;
+    this._render();
+    try {
+      const objectUrl = await this._fetchPickerAudioObjectUrl(this._buildChimeSetOffsetPreviewUrl(editor.member, editor.offset));
+      if (token !== this._chimeSetOffsetPreviewToken) {
+        URL.revokeObjectURL(objectUrl);
+        return;
+      }
+      const audio = new Audio(objectUrl);
+      this._chimeSetOffsetPreviewAudio = audio;
+      this._chimeSetOffsetPreviewObjectUrl = objectUrl;
+      audio.addEventListener("loadedmetadata", () => {
+        if (this._chimeSetOffsetPreviewAudio === audio && this._chimeSetOffsetEditor) {
+          this._chimeSetOffsetEditor.previewDuration = audio.duration;
+          this._render();
+        }
+      });
+      audio.addEventListener("play", () => {
+        if (this._chimeSetOffsetPreviewAudio === audio && this._chimeSetOffsetEditor) {
+          this._chimeSetOffsetEditor.previewStarted = true;
+          this._render();
+        }
+      });
+      audio.addEventListener("ended", () => {
+        if (this._chimeSetOffsetPreviewAudio === audio) {
+          this._stopChimeSetOffsetPreview();
+          this._render();
+        }
+      });
+      await audio.play();
+    } catch (_error) {
+      if (token === this._chimeSetOffsetPreviewToken) {
+        this._stopChimeSetOffsetPreview();
+        this._render();
+      }
+    }
   }
 
   _requestRandomChimeSetDelete(index) {

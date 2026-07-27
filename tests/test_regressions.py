@@ -344,11 +344,15 @@ def test_panel_chapter_titles_use_shared_imported_icons():
 
     assert 'import { CHAPTER_ICONS } from "./chapter-icons.js";' in panel_source
     assert 'class="chapter-hero-icon"' in panel_source
+    assert ".chime-sets-workspace .chapter-hero-icon" in panel_source
+    assert "width: 2.15rem;" in panel_source
     assert "export const CHAPTER_ICONS" in chapter_icons_source
     for chapter in ("configuration", "chime_sets", "notify_profiles", "logs", "about"):
         assert f"{chapter}:" in chapter_icons_source
     assert "PANEL_CHAPTER_ICONS_URL" in panel_backend
     assert "ChimeTTSChapterIconsView" in panel_backend
+    assert '<svg viewBox="0 0 150 150" fill="currentColor" aria-hidden="true"' in chapter_icons_source
+    assert 'stroke="currentColor" stroke-width="1.37"' in chapter_icons_source
 
 
 def test_random_chime_set_name_editor_keeps_actions_in_one_row():
@@ -365,6 +369,28 @@ def test_random_chime_set_name_editor_keeps_actions_in_one_row():
     assert "flex-wrap: nowrap;" in panel_source
     assert ".random-chime-set-card .notify-profile-title-edit" in panel_source
     assert "flex: 1 1 0;" in panel_source
+
+
+def test_chime_set_offset_editor_has_preview_and_timing_guards():
+    """The visual offset editor keeps preview, reset, and timing safeguards intact."""
+    root = Path(__file__).parents[1]
+    panel_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+    panel_backend = (
+        root / "custom_components" / "chime_tts" / "helpers" / "panel.py"
+    ).read_text(encoding="utf-8")
+
+    assert 'PANEL_CHIME_SET_OFFSET_PREVIEW_URL = f"/api/{DOMAIN}/chime_set_offset_preview"' in panel_backend
+    assert "ChimeTTSPanelChimeSetOffsetPreviewView" in panel_backend
+    assert "tts_audio.mp3" in panel_backend
+    assert "Chime Offset" in panel_source
+    assert "data-chime-set-offset-preview" in panel_source
+    assert "data-chime-set-offset-reset" in panel_source
+    assert "chime-set-offset-playback-head" in panel_source
+    assert "chime-set-offset-overlap-line" in panel_source
+    assert "Math.max(-chimeDuration, requestedOffset)" in panel_source
+    assert "option.count >= 7 && option.count <= 10" in panel_source
 
 
 def test_log_row_toggle_uses_its_event_accent():
