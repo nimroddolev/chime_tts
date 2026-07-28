@@ -276,3 +276,23 @@ async def test_media_helper_wait_volume_and_group_edge_cases(
     assert await helper.async_join_media_players(hass) is None
     player.join_supported = True
     assert await helper.async_join_media_players(hass) is None
+
+
+@pytest.mark.asyncio
+async def test_resume_handles_player_removed_while_paused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A vanished player state should not abort the restoration workflow."""
+    helper = MediaPlayerHelper()
+    hass = Hass()
+    player = Player("media_player.gone", playing=True)
+    helper.media_players = [player]
+    helper.fade_audio = True
+    hass.states = SimpleNamespace(get=lambda entity_id: None)
+    monkeypatch.setattr(
+        helper, "async_wait_until_media_players_state_is", AsyncMock(return_value=True)
+    )
+    monkeypatch.setattr(helper, "async_sonos_restore", AsyncMock())
+    monkeypatch.setattr(helper, "async_set_volume_for_media_players", AsyncMock())
+
+    await helper.async_resume_playback(hass, 0)

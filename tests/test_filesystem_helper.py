@@ -35,6 +35,8 @@ def test_path_helpers_and_chime_discovery(tmp_path: Path) -> None:
     folder.mkdir()
     audio = folder / "Bell.mp3"
     audio.write_bytes(b"audio")
+    uppercase_audio = folder / "Reminder.MP3"
+    uppercase_audio.write_bytes(b"audio")
     (folder / "readme.txt").write_text("not audio")
 
     assert helper.path_exists(str(audio)) is True
@@ -50,10 +52,11 @@ def test_path_helpers_and_chime_discovery(tmp_path: Path) -> None:
     assert helper.make_folder_path_safe("") == ""
     assert len(helper.get_hash_for_string("same")) == 64
     assert helper._get_chime_options_from_path(str(folder)) == [
-        {"label": "Bell", "value": str(audio)}
+        {"label": "Bell", "value": str(audio)},
+        {"label": "Reminder", "value": str(uppercase_audio)},
     ]
     fingerprint = helper._get_chime_directory_fingerprint(str(folder))
-    assert fingerprint[0][0] == "Bell.mp3"
+    assert {entry[0] for entry in fingerprint} == {"Bell.mp3", "Reminder.MP3"}
 
 
 @pytest.mark.asyncio
@@ -72,6 +75,16 @@ async def test_async_path_url_and_file_operations(
     public_file.write_bytes(b"audio")
 
     assert await helper.async_validate_path(hass, str(source)) == str(source)
+    queried_paths: list[str] = []
+    with monkeypatch.context() as context:
+        context.setattr(
+            helper, "path_exists", lambda path: queried_paths.append(path) or True
+        )
+        assert (
+            await helper.async_validate_path(hass, "/config/www/sound.mp3")
+            == "/config/www/sound.mp3"
+        )
+    assert queried_paths == ["/config/www/sound.mp3"]
     assert await helper.async_create_folder(hass, str(target_dir)) is True
     assert await helper.async_copy_file(hass, str(source), str(target_dir)) == str(
         target_dir / "source.mp3"

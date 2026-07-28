@@ -29,10 +29,24 @@ from ..const import (
 )
 from ..chime_sets import get_set_by_reference, choose_member, member_offset
 from .media_player_helper import MediaPlayerHelper
+
 media_player_helper = MediaPlayerHelper()
 
 _LOGGER = logging.getLogger(__name__)
-_AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.aiff', '.aif', '.ape', '.oga']
+_AUDIO_EXTENSIONS = [
+    ".mp3",
+    ".wav",
+    ".flac",
+    ".aac",
+    ".ogg",
+    ".wma",
+    ".m4a",
+    ".aiff",
+    ".aif",
+    ".ape",
+    ".oga",
+]
+
 
 class FilesystemHelper:
     """Filesystem helper functions for Chime TTS."""
@@ -78,24 +92,28 @@ class FilesystemHelper:
 
     async def async_validate_path(self, hass: HomeAssistant, p_filepath: str = ""):
         """Return a valid file path string."""
-        ret_value = None
         if p_filepath is None:
-            return ret_value
+            return None
 
         filepaths = [p_filepath]
 
         # Test for docker/virtual instances filepath
         root_path = hass.config.path("")
-        absolute_path = (root_path + p_filepath).replace("/config", "").replace("//", "/")
-        if p_filepath is not absolute_path:
-            filepaths.append(absolute_path)
+        # Only construct the host-visible variant for a container-style path.
+        # Appending the root to an already absolute path (such as /config/www)
+        # can produce a different valid path and incorrectly override the
+        # original match below.
+        if p_filepath.startswith("/config/") and root_path:
+            absolute_path = p_filepath.removeprefix("/config") or "/"
+            if absolute_path != p_filepath:
+                filepaths.append(absolute_path)
 
         # Test each filepath
         for filepath in filepaths:
             if await hass.async_add_executor_job(self.path_exists, filepath) is True:
-                ret_value = filepath
+                return filepath
 
-        return ret_value
+        return None
 
     def path_to_parent_folder(self, folder):
         """Absolute path to a parent folder."""
@@ -110,7 +128,9 @@ class FilesystemHelper:
             count = count + 1
         return current_dir
 
-    async def async_get_chime_path(self, chime_path: str, cache, data: dict, hass: HomeAssistant):
+    async def async_get_chime_path(
+        self, chime_path: str, cache, data: dict, hass: HomeAssistant
+    ):
         """Retrieve preset chime path if selected."""
 
         if not isinstance(chime_path, str):
@@ -130,7 +150,9 @@ class FilesystemHelper:
                 # once, without allowing a recursive set reference.
                 attempted.add(member)
                 if get_set_by_reference(data, member):
-                    _LOGGER.warning("Chime Set '%s' contains another set reference", random_set_id)
+                    _LOGGER.warning(
+                        "Chime Set '%s' contains another set reference", random_set_id
+                    )
                     continue
                 resolved = await self.async_get_chime_path(member, cache, data, hass)
                 if resolved is not None:
@@ -155,23 +177,31 @@ class FilesystemHelper:
             if option.get("value") == chime_path:
                 # Validate MP3 preset path before use
                 mp3_path = MP3_PRESET_PATH
-                absolute_custom_comopnents_dir = self.path_to_parent_folder('custom_components')
+                absolute_custom_comopnents_dir = self.path_to_parent_folder(
+                    "custom_components"
+                )
                 if absolute_custom_comopnents_dir:
-                    mp3_path = MP3_PRESET_PATH.replace("custom_components", absolute_custom_comopnents_dir)
+                    mp3_path = MP3_PRESET_PATH.replace(
+                        "custom_components", absolute_custom_comopnents_dir
+                    )
                 final_chime_path = mp3_path + chime_path + ".mp3"
-                if await hass.async_add_executor_job(self.path_exists, final_chime_path):
+                if await hass.async_add_executor_job(
+                    self.path_exists, final_chime_path
+                ):
                     _LOGGER.debug("Local path to chime: %s", final_chime_path)
                     return final_chime_path
 
         # Custom chime from chimes folder?
-        custom_chimes_folder_options = await self.async_get_chime_options_from_path(data.get(CUSTOM_CHIMES_PATH_KEY, ""))
+        custom_chimes_folder_options = await self.async_get_chime_options_from_path(
+            data.get(CUSTOM_CHIMES_PATH_KEY, "")
+        )
         for option_dict in custom_chimes_folder_options:
             p_chime_name = str(option_dict.get("label", "")).lower()
             p_chime_path = option_dict.get("value")
             chime_path_clean = chime_path.lower()
             for ext in _AUDIO_EXTENSIONS:
                 chime_path_clean = chime_path_clean.replace(ext, "")
-            if (p_chime_name and p_chime_path and chime_path_clean == p_chime_name):
+            if p_chime_name and p_chime_path and chime_path_clean == p_chime_name:
                 return option_dict.get("value")
 
         # Custom chime mp3 path? DEPRECATED since v1.1.0
@@ -180,7 +210,10 @@ class FilesystemHelper:
             index = chime_path.replace(MP3_PRESET_CUSTOM_PREFIX, "")
             chime_path = custom_chime_paths_dict.get(chime_path, "")
             if chime_path == "":
-                _LOGGER.warning("MP3 file path missing for custom chime path `Custom #%s`", str(index))
+                _LOGGER.warning(
+                    "MP3 file path missing for custom chime path `Custom #%s`",
+                    str(index),
+                )
                 return None
             elif await hass.async_add_executor_job(self.path_exists, chime_path):
                 return chime_path
@@ -193,21 +226,24 @@ class FilesystemHelper:
             temp_chimes_path = data.get(TEMP_CHIMES_PATH_KEY, "")
             # Use cached version?
             if cache is True:
-                local_file = self.get_downloaded_chime_path(folder=temp_chimes_path, url=chime_path)
-                if local_file is not None and await hass.async_add_executor_job(self.path_exists, local_file):
+                local_file = self.get_downloaded_chime_path(
+                    folder=temp_chimes_path, url=chime_path
+                )
+                if local_file is not None and await hass.async_add_executor_job(
+                    self.path_exists, local_file
+                ):
                     _LOGGER.debug("Chime found in cache")
                     return local_file
                 _LOGGER.debug("External chime not found in cache")
 
             # Download from URL
-            audio_dict = await self.async_download_file(hass, chime_path, temp_chimes_path)
+            audio_dict = await self.async_download_file(
+                hass, chime_path, temp_chimes_path
+            )
             if audio_dict is not None:
                 _LOGGER.debug("Chime downloaded successfully")
                 file_hash = self.get_hash_for_string(chime_path)
-                return {
-                    "audio_dict": audio_dict,
-                    "file_hash": file_hash
-                }
+                return {"audio_dict": audio_dict, "file_hash": file_hash}
 
             _LOGGER.warning("Unable to downloaded chime from URL: %s", chime_path)
             return None
@@ -217,9 +253,17 @@ class FilesystemHelper:
 
     def get_downloaded_chime_path(self, folder: str, url: str):
         """Local file path string for chime URL in local folder."""
-        return folder + ("" if folder.endswith("/") else "/") + re.sub(r'[\/:*?"<>|]', '_', url.replace("https://", "").replace("http://", ""))
+        return (
+            folder
+            + ("" if folder.endswith("/") else "/")
+            + re.sub(
+                r'[\/:*?"<>|]', "_", url.replace("https://", "").replace("http://", "")
+            )
+        )
 
-    async def async_save_audio_to_folder(self, hass: HomeAssistant, audio: AudioSegment, folder, file_name: str = None):
+    async def async_save_audio_to_folder(
+        self, hass: HomeAssistant, audio: AudioSegment, folder, file_name: str = None
+    ):
         """Save audio to local folder."""
 
         folder_exists = await self.async_create_folder(hass, folder)
@@ -247,9 +291,13 @@ class FilesystemHelper:
         else:
             try:
                 # Make file name safe
-                audio_full_path = self.get_downloaded_chime_path(url=file_name, folder=folder)
+                audio_full_path = self.get_downloaded_chime_path(
+                    url=file_name, folder=folder
+                )
                 if audio_full_path and isinstance(audio_full_path, str):
-                    if await hass.async_add_executor_job(self.path_exists, audio_full_path):
+                    if await hass.async_add_executor_job(
+                        self.path_exists, audio_full_path
+                    ):
                         os.remove(audio_full_path)
                     await self.async_export_audio(audio, audio_full_path)
             except Exception as error:
@@ -261,7 +309,10 @@ class FilesystemHelper:
         if await hass.async_add_executor_job(self.path_exists, audio_full_path):
             _LOGGER.debug("File saved to path: %s", audio_full_path)
         else:
-            _LOGGER.error("Saved file inaccessible, something went wrong. Path = %s", audio_full_path)
+            _LOGGER.error(
+                "Saved file inaccessible, something went wrong. Path = %s",
+                audio_full_path,
+            )
 
         return audio_full_path
 
@@ -270,7 +321,7 @@ class FilesystemHelper:
         try:
             _LOGGER.debug("Downloading chime at URL: %s", url)
             response = await hass.async_add_executor_job(requests.get, url)
-            response.raise_for_status() # Raise an HTTPError for bad responses (4xx and 5xx status codes)
+            response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx status codes)
         except requests.exceptions.HTTPError as errh:
             _LOGGER.warning("HTTP Error: %s", str(errh))
             return None
@@ -291,35 +342,41 @@ class FilesystemHelper:
             _LOGGER.warning("Received an invalid response")
             return None
 
-        content_type = response.headers.get('Content-Type', '')
-        if 'audio' in content_type or 'octet-stream' in content_type:
+        content_type = response.headers.get("Content-Type", "")
+        if "audio" in content_type or "octet-stream" in content_type:
             _LOGGER.debug("Audio downloaded successfully")
             _, file_extension = os.path.splitext(url)
             try:
                 audio_content = await self.async_load_audio(
-                    BytesIO(response.content))#,
-                    #format=file_extension.replace(".", ""))
+                    BytesIO(response.content)
+                )  # ,
+            # format=file_extension.replace(".", ""))
             except Exception as error:
-                _LOGGER.warning("Error when loading audio from downloaded file: %s", str(error))
+                _LOGGER.warning(
+                    "Error when loading audio from downloaded file: %s", str(error)
+                )
                 return None
             if audio_content is not None:
-                audio_file_path = await self.async_save_audio_to_folder(hass=hass,
-                                                                        audio=audio_content,
-                                                                        folder=folder,
-                                                                        file_name=url)
+                audio_file_path = await self.async_save_audio_to_folder(
+                    hass=hass, audio=audio_content, folder=folder, file_name=url
+                )
                 audio_duration = float(len(audio_content) / 1000)
                 return {
                     LOCAL_PATH_KEY: audio_file_path,
-                    AUDIO_DURATION_KEY: audio_duration
+                    AUDIO_DURATION_KEY: audio_duration,
                 }
             else:
                 _LOGGER.warning("Downloaded file did not contain audio: %s", url)
         else:
-            _LOGGER.warning("Unable to extract audio from URL with content-type '%s'",
-                            str(content_type))
+            _LOGGER.warning(
+                "Unable to extract audio from URL with content-type '%s'",
+                str(content_type),
+            )
         return None
 
-    async def async_get_chime_path_with_offset(self, chime_path: str, cache, data: dict, hass: HomeAssistant):
+    async def async_get_chime_path_with_offset(
+        self, chime_path: str, cache, data: dict, hass: HomeAssistant
+    ):
         """Resolve a Chime Set and return its selected member offset."""
         chime_set = get_set_by_reference(data, chime_path)
         if not chime_set:
@@ -327,7 +384,9 @@ class FilesystemHelper:
 
         set_id = chime_set["id"]
         attempted: set[str] = set()
-        while member := choose_member(data, chime_path, self._chime_set_last_choices, excluded=attempted):
+        while member := choose_member(
+            data, chime_path, self._chime_set_last_choices, excluded=attempted
+        ):
             attempted.add(member)
             if get_set_by_reference(data, member):
                 continue
@@ -347,15 +406,21 @@ class FilesystemHelper:
             except OSError as error:
                 _LOGGER.warning(
                     "An OSError occurred while creating the folder '%s': %s",
-                    folder, error)
+                    folder,
+                    error,
+                )
             except Exception as error:
                 _LOGGER.warning(
                     "An error occurred while creating the folder '%s': %s",
-                    folder, error)
+                    folder,
+                    error,
+                )
             return False
         return True
 
-    async def async_copy_file(self, hass: HomeAssistant, source_file: str, destination_folder: str):
+    async def async_copy_file(
+        self, hass: HomeAssistant, source_file: str, destination_folder: str
+    ):
         """Copy a file to a folder."""
         if not destination_folder:
             _LOGGER.warning("Unable to copy file: No destination folder path provided")
@@ -365,9 +430,13 @@ class FilesystemHelper:
                 copied_file_path = shutil.copy(source_file, destination_folder)
                 return copied_file_path
             except FileNotFoundError:
-                _LOGGER.warning("Unable to copy file: Source file %s not found.", source_file)
+                _LOGGER.warning(
+                    "Unable to copy file: Source file %s not found.", source_file
+                )
             except PermissionError:
-                _LOGGER.warning("Unable to copy file: Permission denied. Check if you have sufficient permissions.")
+                _LOGGER.warning(
+                    "Unable to copy file: Permission denied. Check if you have sufficient permissions."
+                )
             except Exception as e:
                 if str(e).find("are the same file") != -1:
                     return source_file
@@ -379,10 +448,8 @@ class FilesystemHelper:
         loop = asyncio.get_running_loop()
         with ThreadPoolExecutor() as pool:
             return await loop.run_in_executor(
-                pool,
-                self._file_exists_in_directory,
-                file_path,
-                directory)
+                pool, self._file_exists_in_directory, file_path, directory
+            )
 
     def _file_exists_in_directory(self, file_path, directory):
         """Determine whether a file path exists within a given directory."""
@@ -411,9 +478,11 @@ class FilesystemHelper:
             return file_path
 
         # Return local path if file not in www folder
-        public_dir = hass.config.path('www')
+        public_dir = hass.config.path("www")
         if public_dir is None:
-            _LOGGER.warning("Unable to locate public 'www' folder. Please check that the folder: /config/www exists.")
+            _LOGGER.warning(
+                "Unable to locate public 'www' folder. Please check that the folder: /config/www exists."
+            )
             return None
 
         if await self.async_file_exists_in_directory(file_path, public_dir) is False:
@@ -428,8 +497,9 @@ class FilesystemHelper:
             .replace(instance_url + "//", instance_url + "/")
         )
 
-
-    async def async_is_audio_alexa_compatible(self, hass: HomeAssistant, file_path: str) -> bool:
+    async def async_is_audio_alexa_compatible(
+        self, hass: HomeAssistant, file_path: str
+    ) -> bool:
         """Determine whether a given audio file is Alexa Media Player compatible.
 
         Args:
@@ -443,52 +513,69 @@ class FilesystemHelper:
         try:
             # Validate file path
             file_path = await self.async_get_local_path(hass=hass, file_path=file_path)
-            if not file_path or not await hass.async_add_executor_job(os.path.isfile, file_path):
+            if not file_path or not await hass.async_add_executor_job(
+                os.path.isfile, file_path
+            ):
                 _LOGGER.debug("Unable to convert audio. File not found: %s", file_path)
                 return False
 
             try:
                 # Create and run async subprocess
                 process = await create_subprocess_exec(
-                    'ffmpeg', '-i', file_path,
-                    stdout=PIPE,
-                    stderr=PIPE
+                    "ffmpeg", "-i", file_path, stdout=PIPE, stderr=PIPE
                 )
 
                 try:
                     # Wait for the process to complete with timeout
                     stdout, stderr = await asyncio.wait_for(
                         process.communicate(),
-                        timeout=30.0  # 30 second timeout
+                        timeout=30.0,  # 30 second timeout
                     )
 
                     # Convert bytes to string and combine outputs for checking
                     try:
-                        output = (stderr.decode('utf-8', errors='replace').lower() if stderr else '') + \
-                                (stdout.decode('utf-8', errors='replace').lower() if stdout else '')
+                        output = (
+                            stderr.decode("utf-8", errors="replace").lower()
+                            if stderr
+                            else ""
+                        ) + (
+                            stdout.decode("utf-8", errors="replace").lower()
+                            if stdout
+                            else ""
+                        )
 
                         # More robust pattern matching
                         requirements = [
-                            'mp3' in output,
-                            any(rate in output for rate in ['24000 hz', '24khz', '24000hz']),
-                            any(ch in output for ch in ['stereo', '2 channels', '2ch']),
-                            any(rate in output for rate in ['48 kb/s', '48k', '48000']),
-                            'xing' not in output  # Check for absence of Xing header
+                            "mp3" in output,
+                            any(
+                                rate in output
+                                for rate in ["24000 hz", "24khz", "24000hz"]
+                            ),
+                            any(ch in output for ch in ["stereo", "2 channels", "2ch"]),
+                            any(rate in output for rate in ["48 kb/s", "48k", "48000"]),
+                            "xing" not in output,  # Check for absence of Xing header
                         ]
 
                         # File failed Alexa Media Player compatibility test
                         if not all(requirements):
-                            _LOGGER.debug("File is not Alexa Media Player compatibile: %s", file_path)
+                            _LOGGER.debug(
+                                "File is not Alexa Media Player compatibile: %s",
+                                file_path,
+                            )
                             return False
 
                         return True
 
                     except UnicodeDecodeError as decode_error:
-                        _LOGGER.error("Failed to decode FFmpeg output: %s", decode_error)
+                        _LOGGER.error(
+                            "Failed to decode FFmpeg output: %s", decode_error
+                        )
                         return False
 
                 except asyncio.TimeoutError:
-                    _LOGGER.error("FFmpeg process timed out while analyzing: %s", file_path)
+                    _LOGGER.error(
+                        "FFmpeg process timed out while analyzing: %s", file_path
+                    )
                     # Ensure we clean up the process
                     try:
                         process.kill()
@@ -498,7 +585,9 @@ class FilesystemHelper:
                     return False
 
             except FileNotFoundError:
-                _LOGGER.error("FFmpeg executable not found. Please ensure FFmpeg is installed")
+                _LOGGER.error(
+                    "FFmpeg executable not found. Please ensure FFmpeg is installed"
+                )
                 return False
             except PermissionError:
                 _LOGGER.error("Permission denied when trying to execute FFmpeg")
@@ -507,16 +596,19 @@ class FilesystemHelper:
                 _LOGGER.debug("Audio analysis cancelled for: %s", file_path)
                 raise  # Re-raise CancelledError to properly handle task cancellation
             except Exception as subprocess_error:
-                _LOGGER.error("Subprocess error during FFmpeg execution: %s", subprocess_error)
+                _LOGGER.error(
+                    "Subprocess error during FFmpeg execution: %s", subprocess_error
+                )
                 return False
 
         except OSError as os_error:
             _LOGGER.error("OS error while processing file %s: %s", file_path, os_error)
             return False
         except Exception as general_error:
-            _LOGGER.error("Unexpected error while checking audio compatibility: %s", general_error)
+            _LOGGER.error(
+                "Unexpected error while checking audio compatibility: %s", general_error
+            )
             return False
-
 
     def delete_file(self, hass: HomeAssistant, file_path) -> None:
         """Delete local / public-facing file in filesystem."""
@@ -527,8 +619,7 @@ class FilesystemHelper:
         instance_url = self.get_external_address(hass)
         if f"{file_path}".startswith(instance_url):
             file_path = (
-                file_path
-                .replace(f"{instance_url}/", "")
+                file_path.replace(f"{instance_url}/", "")
                 .replace(f"{instance_url}", "")
                 .replace("local/", "/config/www/")
                 .replace("//", "/")
@@ -558,12 +649,16 @@ class FilesystemHelper:
         instance_url = f"{instance_url}"
         if instance_url.endswith("/"):
             instance_url = instance_url[:-1]
-        public_dir = hass.config.path('www')
+        public_dir = hass.config.path("www")
 
-        local_file_path = file_path.replace(instance_url, public_dir).replace('/www/local/', '/www/')
+        local_file_path = file_path.replace(instance_url, public_dir).replace(
+            "/www/local/", "/www/"
+        )
         if self.path_exists(local_file_path) and os.path.isfile(local_file_path):
             if local_file_path != file_path:
-                _LOGGER.debug("Local file path for external URL is '%s'", local_file_path)
+                _LOGGER.debug(
+                    "Local file path for external URL is '%s'", local_file_path
+                )
             return local_file_path
         return None
 
@@ -609,9 +704,8 @@ class FilesystemHelper:
         loop = asyncio.get_running_loop()
         with ThreadPoolExecutor() as pool:
             return await loop.run_in_executor(
-                pool,
-                self._get_chime_options_from_path,
-                directory)
+                pool, self._get_chime_options_from_path, directory
+            )
 
     async def async_get_chime_directory_fingerprint(self, directory: str) -> tuple:
         """Return a stable snapshot of custom chime files for change detection."""
@@ -654,8 +748,10 @@ class FilesystemHelper:
 
                     # Separte the file extension from the label
                     label = os.path.splitext(filename)[0]
-                    ext = os.path.splitext(filename)[1]
+                    ext = os.path.splitext(filename)[1].lower()
                     if ext in _AUDIO_EXTENSIONS:
                         # Append the dictionary to the list
-                        chime_options.append({"label": label, "value": absolute_file_path})
+                        chime_options.append(
+                            {"label": label, "value": absolute_file_path}
+                        )
         return chime_options
