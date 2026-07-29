@@ -64,7 +64,7 @@ PANEL_COMPONENT_NAME = "chime-tts-settings-panel"
 PANEL_URL_PATH = "chime-tts"
 PANEL_MODULE_URL = f"/api/{DOMAIN}/panel.js"
 PANEL_CHAPTER_ICONS_URL = f"/api/{DOMAIN}/chapter-icons.js"
-PANEL_SLOT_MACHINE_URL = f"/api/{DOMAIN}/empty-chime-set-slot-machine.js"
+PANEL_SLOT_MACHINE_URL = f"/api/{DOMAIN}/chime-set-slot-machine.js"
 PANEL_CHIME_SECTION_ICON_URL = f"/api/{DOMAIN}/panel/option_icons/chime_section.svg"
 PANEL_ICON_URL = f"/api/{DOMAIN}/icon.svg"
 PANEL_FOOTER_LOGO_URL = f"/api/{DOMAIN}/footer_logo.svg"
@@ -168,7 +168,7 @@ class ChimeTTSEmptyChimeSetSlotMachineView(HomeAssistantView):
         self._panel_path = panel_path
 
     async def get(self, request) -> web.FileResponse:
-        response = web.FileResponse(self._panel_path / "empty-chime-set-slot-machine.js")
+        response = web.FileResponse(self._panel_path / "chime-set-slot-machine.js")
         _set_panel_module_headers(response)
         return response
 

@@ -2,7 +2,7 @@ import { CHAPTER_ICONS } from "./chapter-icons.js";
 import {
   EMPTY_CHIME_SET_SLOT_MACHINE_STYLES,
   renderEmptyChimeSetSlotMachine,
-} from "./empty-chime-set-slot-machine.js";
+} from "/api/chime_tts/chime-set-slot-machine.js";
 
 const PANEL_TAG = "chime-tts-settings-panel";
 const AUDIO_FILE_ACCEPT = ".aac,.aif,.aiff,.ape,.flac,.m4a,.mp3,.ogg,.oga,.wav,.wma";
