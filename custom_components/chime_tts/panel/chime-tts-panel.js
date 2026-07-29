@@ -349,6 +349,7 @@ template.innerHTML = `
       top: 0;
       z-index: 10;
       width: 100%;
+      overflow: hidden;
       padding-top: var(--panel-safe-area-top);
       backdrop-filter: blur(14px);
       background: var(--topbar-background);
@@ -369,6 +370,7 @@ template.innerHTML = `
     }
 
     .topbar {
+      position: relative;
       width: 100%;
       margin: 0;
       height: 56px;
@@ -517,6 +519,82 @@ template.innerHTML = `
       font-weight: 700;
       letter-spacing: 0.08em;
       line-height: 1;
+      user-select: none;
+    }
+
+    .topbar-beta-badge:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 3px;
+    }
+
+    .topbar-beta-badge.is-shaking {
+      animation: beta-badge-shake 200ms ease-in-out;
+    }
+
+    .topbar-beta-bug {
+      position: fixed;
+      z-index: 20;
+      left: var(--beta-bug-left);
+      top: var(--beta-bug-top);
+      width: 22px;
+      height: 14px;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      transform-origin: center;
+      animation:
+        beta-bug-fall 120ms ease-in forwards,
+        beta-bug-land 180ms linear 120ms forwards,
+        beta-bug-crawl 2200ms linear 300ms forwards,
+        beta-bug-wiggle 180ms ease-in-out 300ms infinite;
+    }
+
+    .topbar-beta-bug svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      transform-origin: center;
+      animation: beta-bug-run-turn 300ms ease-in-out 300ms infinite;
+    }
+
+    @keyframes beta-badge-shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-2px) rotate(-3deg); }
+      75% { transform: translateX(2px) rotate(3deg); }
+    }
+
+    @keyframes beta-bug-fall {
+      from { transform: translateY(0); }
+      to { transform: translateY(var(--beta-bug-drop)); }
+    }
+
+    @keyframes beta-bug-land {
+      0% {
+        transform: translateY(var(--beta-bug-drop));
+        animation-timing-function: ease-out;
+      }
+      50% {
+        transform: translateY(calc(var(--beta-bug-drop) - 3px));
+        animation-timing-function: ease-in;
+      }
+      100% { transform: translateY(var(--beta-bug-drop)); }
+    }
+
+    @keyframes beta-bug-crawl {
+      0% { transform: translateY(var(--beta-bug-drop)); }
+      100% { transform: translate(var(--beta-bug-crawl), var(--beta-bug-drop)); }
+    }
+
+    @keyframes beta-bug-wiggle {
+      0%, 100% { width: 22px; }
+      50% { width: 20.9px; }
+    }
+
+    @keyframes beta-bug-run-turn {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-10deg); }
+      50% { transform: rotate(0deg); }
+      75% { transform: rotate(10deg); }
     }
 
     .section {
@@ -4478,6 +4556,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._messageTimeout = null;
     this._scheduledMessageKey = "";
     this._saveResultTimeout = null;
+    this._betaClickTimestamp = 0;
+    this._betaClickCount = 0;
+    this._betaBugTimers = new Set();
     this._picker = null;
     this._pickerLoading = false;
     this._pickerNativeFileDialogOpen = false;
@@ -4604,6 +4685,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._chimeSetWaveformLoadToken += 1;
     this._chimeSetWaveformAudioContext?.close?.();
     this._chimeSetWaveformAudioContext = null;
+    for (const timer of this._betaBugTimers) {
+      window.clearTimeout(timer);
+    }
+    this._betaBugTimers.clear();
     this._modalResizeObserver?.disconnect();
     this._modalResizeObserver = null;
   }
@@ -5601,7 +5686,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           <div class="topbar-main">
             <div class="topbar-text">
               <p class="topbar-title">
-                <span class="topbar-title-brand">${IS_DECEMBER ? `<span class="topbar-santa-hat">${SANTA_HAT_SVG}</span>` : ""}Chime TTS${isBetaVersion ? '<span class="topbar-beta-badge">BETA</span>' : ""}</span>
+                <span class="topbar-title-brand">${IS_DECEMBER ? `<span class="topbar-santa-hat">${SANTA_HAT_SVG}</span>` : ""}Chime TTS${isBetaVersion ? '<span class="topbar-beta-badge" role="button" tabindex="0" aria-label="BETA easter egg">BETA</span>' : ""}</span>
               </p>
             </div>
           </div>
@@ -5641,6 +5726,62 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-reset-all]").forEach((button) => {
       button.addEventListener("click", () => this._requestResetAllChanges());
     });
+    const betaBadge = this.shadowRoot.querySelector(".topbar-beta-badge");
+    betaBadge?.addEventListener("click", (event) => this._handleBetaBadgeClick(event));
+    betaBadge?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        this._handleBetaBadgeClick(event);
+      }
+    });
+  }
+
+  _handleBetaBadgeClick(event) {
+    const badge = event.currentTarget;
+    if (!(badge instanceof HTMLElement)) {
+      return;
+    }
+
+    const timestamp = Date.now();
+    this._betaClickCount = timestamp - this._betaClickTimestamp <= 250
+      ? this._betaClickCount + 1
+      : 1;
+    this._betaClickTimestamp = timestamp;
+
+    badge.classList.remove("is-shaking");
+    void badge.offsetWidth;
+    badge.classList.add("is-shaking");
+
+    if (this._betaClickCount >= 5) {
+      this._betaClickCount = 0;
+      this._releaseBetaBug(badge);
+    }
+  }
+
+  _releaseBetaBug(badge) {
+    const topbar = badge.closest(".topbar");
+    if (!(topbar instanceof HTMLElement)) {
+      return;
+    }
+
+    const badgeRect = badge.getBoundingClientRect();
+    const bug = document.createElement("span");
+    bug.className = "topbar-beta-bug";
+    bug.setAttribute("aria-hidden", "true");
+    bug.innerHTML = '<svg viewBox="0 0 22 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 5.5 1 3.5M4 8.5 1.5 10.5M9 4 7.5 1.5M9 10 7.5 12.5M15 4 16.5 1.5M15 10 16.5 12.5M19 5.5 21 3.5M19 8.5 21 10.5" stroke="#1f2937" stroke-width="1.4" stroke-linecap="round"/><ellipse cx="6" cy="7" rx="3.5" ry="3.1" fill="#4b5563"/><ellipse cx="12" cy="7" rx="3.7" ry="3.2" fill="#374151"/><ellipse cx="17.5" cy="7" rx="3" ry="3.1" fill="#111827"/><circle cx="18.5" cy="6" r=".55" fill="#f8fafc"/></svg>';
+    const bugLeft = badgeRect.left + (badgeRect.width - 22) / 2;
+    bug.style.setProperty("--beta-bug-left", `${bugLeft}px`);
+    bug.style.setProperty("--beta-bug-top", `${badgeRect.bottom}px`);
+    bug.style.setProperty("--beta-bug-drop", "0px");
+    const crawlDistance = Math.max(0, window.innerWidth - bugLeft + 48);
+    bug.style.setProperty("--beta-bug-crawl", `${crawlDistance}px`);
+    this.shadowRoot.appendChild(bug);
+
+    const cleanupTimer = window.setTimeout(() => {
+      bug.remove();
+      this._betaBugTimers.delete(cleanupTimer);
+    }, 2600);
+    this._betaBugTimers.add(cleanupTimer);
   }
 
   _restoreTransientFocus() {
@@ -9018,6 +9159,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (!timeline || !Number.isFinite(initialOffset)) return;
     const direction = audio.dataset.chimeSetOffsetAudio === "chime" ? -1 : 1;
     const startX = event.clientX;
+    timeline.classList.add("dragging");
     audio.setPointerCapture?.(event.pointerId);
     const onMove = (moveEvent) => {
       if (moveEvent.pointerId !== event.pointerId) return;
@@ -9028,6 +9170,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       audio.removeEventListener("pointermove", onMove);
       audio.removeEventListener("pointerup", onEnd);
       audio.removeEventListener("pointercancel", onEnd);
+      timeline.classList.remove("dragging");
     };
     audio.addEventListener("pointermove", onMove);
     audio.addEventListener("pointerup", onEnd);
