@@ -75,3 +75,28 @@ async def test_notify_service_forwards_configured_playback_scripts() -> None:
 
     assert recorded_calls[0]["service_data"]["pre_script"] == "script.prepare_speakers"
     assert recorded_calls[0]["service_data"]["post_script"] == "script.restore_speakers"
+
+
+@pytest.mark.asyncio
+async def test_notify_service_forwards_chime_set_reference_to_say() -> None:
+    """Notify delegates Chime Set resolution to the shared say pipeline."""
+    recorded_calls: list[dict] = []
+
+    async def async_call(domain, service, service_data, blocking):
+        recorded_calls.append({"domain": domain, "service": service, "service_data": dict(service_data)})
+
+    hass = SimpleNamespace(
+        services=SimpleNamespace(async_call=async_call),
+        data={DOMAIN: {}},
+    )
+    service = ChimeTTSNotificationService(
+        hass,
+        {"entity_id": "media_player.office", "chime_path": "Quiet Set"},
+    )
+
+    await service.async_send_message("hello")
+
+    assert len(recorded_calls) == 1
+    assert recorded_calls[0]["domain"] == DOMAIN
+    assert recorded_calls[0]["service"] == "say"
+    assert recorded_calls[0]["service_data"]["chime_path"] == "Quiet Set"

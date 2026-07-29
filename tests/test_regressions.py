@@ -158,8 +158,8 @@ def test_chime_set_names_resolve_for_preview_and_playback():
         async def async_get_chime_path(self, chime_path, cache, data, hass):
             if chime_path == "Doorbell":
                 return await super().async_get_chime_path(chime_path, cache, data, hass)
-            assert chime_path == "bells"
-            return "/tmp/bells.mp3"
+            assert chime_path in {"bells", "soft"}
+            return f"/tmp/{chime_path}.mp3"
 
     data = {
         CHIME_SETS_KEY: [
@@ -168,8 +168,10 @@ def test_chime_set_names_resolve_for_preview_and_playback():
                 "name": "Doorbell",
                 "chimes": ["bells"],
                 "offsets": {"bells": 250},
-            }
-        ]
+            },
+            {"id": "quiet", "name": "Quiet", "chimes": ["soft"]},
+        ],
+        CHIME_OFFSETS_KEY: {"soft": -540},
     }
     helper = _ChimeSetFilesystemHelper()
 
@@ -177,10 +179,15 @@ def test_chime_set_names_resolve_for_preview_and_playback():
     playback_path, offset = asyncio.run(
         helper.async_get_chime_path_with_offset("Doorbell", False, data, None)
     )
+    soft_path, soft_offset = asyncio.run(
+        helper.async_get_chime_path_with_offset("Quiet", False, data, None)
+    )
 
     assert preview_path == "/tmp/bells.mp3"
     assert playback_path == "/tmp/bells.mp3"
     assert offset == 250
+    assert soft_path == "/tmp/soft.mp3"
+    assert soft_offset == -540
 
 
 def test_named_chime_set_member_is_used_for_cache_lookup(monkeypatch):
@@ -241,6 +248,45 @@ def test_saved_chime_offset_is_used_unless_an_action_supplies_one(monkeypatch):
     explicit_params = {"hass": object(), "message": "Hello", "chime_path": "bells", "offset": 0, "_offset_explicit": True, "cache": True, "entity_ids": ["media_player.office"]}
     assert asyncio.run(integration_module.async_get_playback_audio_path(explicit_params, {})) == {"cached": True}
     assert explicit_params["offset"] == 0
+
+
+def test_chime_set_member_offset_is_used_by_shared_say_audio_pipeline(monkeypatch):
+    """Both say variants use the selected Chime Set member's effective offset."""
+    from custom_components.chime_tts.const import CROSSFADE_KEY, OFFSET_KEY
+
+    integration_module = importlib.import_module("custom_components.chime_tts.__init__")
+    monkeypatch.setattr(
+        integration_module.filesystem_helper,
+        "async_get_chime_path_with_offset",
+        AsyncMock(side_effect=[("soft", -540), (None, None), ("soft", -540), (None, None)]),
+    )
+    monkeypatch.setattr(
+        integration_module,
+        "async_verify_cached_audio",
+        AsyncMock(return_value={"cached": True}),
+    )
+    monkeypatch.setattr(
+        integration_module.media_player_helper,
+        "get_alexa_media_players_count",
+        lambda: 0,
+    )
+    monkeypatch.setattr(
+        integration_module,
+        "_data",
+        {OFFSET_KEY: 0, CROSSFADE_KEY: 0, CHIME_OFFSETS_KEY: {"soft": -540}},
+    )
+
+    for service_name in ("say", "say_url"):
+        params = {
+            "hass": object(),
+            "message": "Hello",
+            "chime_path": "Quiet Set",
+            "cache": True,
+            "entity_ids": ["media_player.office"],
+        }
+        assert asyncio.run(integration_module.async_get_playback_audio_path(params, {})) == {"cached": True}
+        assert params["chime_path"] == "soft", service_name
+        assert params["offset"] == -540, service_name
 
 
 def test_issue_294_stale_structure_returns_none_not_crash():
@@ -412,12 +458,117 @@ def test_chime_set_offset_editor_has_preview_and_timing_guards():
     assert "data-chime-set-offset-preview" in panel_source
     assert "data-chime-set-offset-reset" in panel_source
     assert "data-chime-set-offset-close" in panel_source
+    assert "data-chime-set-offset-value" in panel_source
+    assert "data-chime-set-offset-input" in panel_source
+    assert "Enter a whole number of milliseconds." in panel_source
+    assert "Chime Offset: ${offsetValue}" in panel_source
+    assert 'changed ? "Done"' in panel_source
+    assert 'const valueInput = this.shadowRoot.querySelector("[data-chime-set-offset-input]");' in panel_source
+    assert "valueInput.value = editorValue;" in panel_source
+    assert "valueInput.defaultValue = editorValue;" in panel_source
+    assert 'this._setChimeSetOffsetEditorValue(offset, { syncInput: false });' in panel_source
+    assert '<p class="chime-set-offset-title-hint">Drag either audio block.</p>' in panel_source
+    assert ".chime-set-offset-title-hint {" in panel_source
+    assert "data-chime-set-offset-status" not in panel_source
     assert 'this._saveChimeSetOffset();' in panel_source
     assert "data-chime-set-offset-save" not in panel_source
     assert "chime-set-offset-playback-head" in panel_source
     assert "chime-set-offset-overlap-line" in panel_source
     assert "Math.max(-chimeDuration, requestedOffset)" in panel_source
     assert "option.count >= 7 && option.count <= 10" in panel_source
+
+
+def test_restart_with_unsaved_changes_uses_the_discard_confirmation():
+    """Restart requests must offer Save or Discard before opening the restart dialog."""
+    root = Path(__file__).parents[1]
+    panel_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert "this._pendingRestartReason = restartReason;" in panel_source
+    assert "this._discardChangesConfirmOpen = true;" in panel_source
+    assert "this._resetAllChanges({ preserveRestart: Boolean(restartReason) });" in panel_source
+    assert "this._openRestartConfirmation(restartReason);" in panel_source
+
+
+def test_browser_refresh_with_unsaved_changes_requests_confirmation():
+    """The beforeunload guard must trigger the browser's native confirmation."""
+    root = Path(__file__).parents[1]
+    panel_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert "event.returnValue = true;" in panel_source
+    assert "return event.returnValue;" in panel_source
+
+
+def test_notification_profile_structure_changes_offer_save_and_restart():
+    """Adding or removing profiles must surface the restart action above the list."""
+    root = Path(__file__).parents[1]
+    panel_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert "_hasNotifyProfileStructureChanges()" in panel_source
+    assert "notify-profiles-restart-banner" in panel_source
+    assert "Save &amp; Restart" in panel_source
+    assert 'data-restart-open="notify-profiles"' in panel_source
+    assert 'this._saveAndRestart("notify-profiles")' in panel_source
+
+
+def test_single_notify_field_reset_is_not_a_navigation_link():
+    """Resetting one profile field must not be caught by the unsaved-navigation guard."""
+    root = Path(__file__).parents[1]
+    panel_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert 'type="button"\n                          class="field-reset-link"' in panel_source
+    assert 'href="#"\n                          class="field-reset-link"' not in panel_source
+
+
+def test_mobile_log_rows_wrap_actions_only_when_needed():
+    """Mobile log actions share a row until the natural flex layout wraps."""
+    root = Path(__file__).parents[1]
+    panel_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert ":host([narrow]) .log-event-row-content {\n      display: flex;" in panel_source
+    assert ":host([narrow]) .log-event-toggle-wrap {\n      align-self: start;" in panel_source
+    assert ".log-event-row.actions-wrapped .log-event-actions {\n      flex: 0 0 100%;\n      width: 100%;\n      margin-left: 0;\n      justify-content: flex-start;" in panel_source
+    assert 'row.classList.remove("actions-wrapped");\n      const wrapped = actions.offsetTop > main.offsetTop + 2;' in panel_source
+
+
+def test_workspace_section_accents_follow_the_requested_color_order():
+    """Section accents map Configuration to green, Chimes to blue, and Logs to orange."""
+    root = Path(__file__).parents[1]
+    panel_source = (
+        root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert ".configuration-workspace .chapter-content { --workspace-accent: color-mix(in srgb, #49b675 82%, white 18%); }" in panel_source
+    assert ".chimes-workspace .chapter-content { --workspace-accent: var(--primary-color); }" in panel_source
+    assert ".logs-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #f97316 86%, white 14%); }" in panel_source
+    assert ".chime-sets-workspace .chapter-content { --workspace-accent: #7c3aed; }" in panel_source
+    assert ".notify-workspace .chapter-content { --workspace-accent: #b91c1c; }" in panel_source
+    assert ".about-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #a16207 88%, white 12%); }" in panel_source
+    assert ".logs-workspace .logs-list-actions > a.button-secondary" in panel_source
+    assert "color: color-mix(in srgb, #f97316 86%, white 14%);" in panel_source
+    assert "background: color-mix(in srgb, #7c3aed 18%, var(--card-background-color));" in panel_source
+    assert "background: color-mix(in srgb, #dc2626 18%, var(--card-background-color));" in panel_source
+    assert ".chapter-hero-icon :is(svg, .chime-section-icon) {\n      color: var(--chapter-hero-copy-color);" in panel_source
+    assert ".chapter-hero-icon {\n      display: inline-grid;" in panel_source
+    assert "filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.42));" in panel_source
+    assert ".chapter-workspace .chapter-content .field-help-link {\n      color: var(--section-help-color);" in panel_source
+    assert "color-mix(in srgb, #b8860b 42%, var(--divider-color))" not in panel_source
+    assert ".chapter-workspace .field:not(.error) {\n      border-color: var(--section-help-border);" in panel_source
+    assert ".chapter-workspace .field:not(.error) input[type=\"range\"] {\n      accent-color: var(--section-help-color);" in panel_source
+    assert ".chapter-workspace .control-checkbox {\n      color: var(--section-help-color);" in panel_source
+    assert ".control-range::-webkit-slider-runnable-track" in panel_source
+    assert "var(--card-background-color) var(--range-progress, 0%) 100%" in panel_source
+    assert "color-mix(in srgb, var(--section-help-color) 84%, black 16%)" in panel_source
+    assert "_updateNotifyRangeProgress(rangeInput);" in panel_source
 
 
 def test_log_row_toggle_uses_its_event_accent():

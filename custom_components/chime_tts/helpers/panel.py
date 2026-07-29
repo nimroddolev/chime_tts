@@ -64,6 +64,7 @@ PANEL_COMPONENT_NAME = "chime-tts-settings-panel"
 PANEL_URL_PATH = "chime-tts"
 PANEL_MODULE_URL = f"/api/{DOMAIN}/panel.js"
 PANEL_CHAPTER_ICONS_URL = f"/api/{DOMAIN}/chapter-icons.js"
+PANEL_SLOT_MACHINE_URL = f"/api/{DOMAIN}/empty-chime-set-slot-machine.js"
 PANEL_CHIME_SECTION_ICON_URL = f"/api/{DOMAIN}/panel/option_icons/chime_section.svg"
 PANEL_ICON_URL = f"/api/{DOMAIN}/icon.svg"
 PANEL_FOOTER_LOGO_URL = f"/api/{DOMAIN}/footer_logo.svg"
@@ -75,6 +76,7 @@ PANEL_CHIME_SET_OFFSET_PREVIEW_URL = f"/api/{DOMAIN}/chime_set_offset_preview"
 PANEL_BROWSER_UPLOAD_URL = f"/api/{DOMAIN}/browser/upload"
 PANEL_VIEW_NAME = f"api:{DOMAIN}:panel"
 PANEL_CHAPTER_ICONS_VIEW_NAME = f"api:{DOMAIN}:chapter_icons"
+PANEL_SLOT_MACHINE_VIEW_NAME = f"api:{DOMAIN}:empty_chime_set_slot_machine"
 PANEL_CHIME_SECTION_ICON_VIEW_NAME = f"api:{DOMAIN}:chime_section_icon"
 PANEL_ICON_VIEW_NAME = f"api:{DOMAIN}:icon"
 PANEL_FOOTER_LOGO_VIEW_NAME = f"api:{DOMAIN}:footer_logo"
@@ -85,6 +87,7 @@ PANEL_CHIME_PREVIEW_VIEW_NAME = f"api:{DOMAIN}:chime_preview"
 PANEL_CHIME_SET_OFFSET_PREVIEW_VIEW_NAME = f"api:{DOMAIN}:chime_set_offset_preview"
 PANEL_BROWSER_UPLOAD_VIEW_NAME = f"api:{DOMAIN}:browser_upload"
 PANEL_DATA_KEY = f"{DOMAIN}_panel_view_registered"
+PANEL_SLOT_MACHINE_DATA_KEY = f"{DOMAIN}_slot_machine_view_registered"
 WS_DATA_KEY = f"{DOMAIN}_panel_ws_registered"
 ENTRY_DATA_KEY = f"{DOMAIN}_panel_entry_id"
 CHIME_PREVIEW_FIELD_KEYS = {"chime_path", "end_chime_path"}
@@ -150,6 +153,22 @@ class ChimeTTSChapterIconsView(HomeAssistantView):
     async def get(self, request) -> web.FileResponse:
         """Return the chapter icons JavaScript module."""
         response = web.FileResponse(self._panel_path / "chapter-icons.js")
+        _set_panel_module_headers(response)
+        return response
+
+
+class ChimeTTSEmptyChimeSetSlotMachineView(HomeAssistantView):
+    """Serve the empty Chime Sets slot-machine JavaScript module."""
+
+    url = PANEL_SLOT_MACHINE_URL
+    name = PANEL_SLOT_MACHINE_VIEW_NAME
+    requires_auth = False
+
+    def __init__(self, panel_path: Path) -> None:
+        self._panel_path = panel_path
+
+    async def get(self, request) -> web.FileResponse:
+        response = web.FileResponse(self._panel_path / "empty-chime-set-slot-machine.js")
         _set_panel_module_headers(response)
         return response
 
@@ -546,6 +565,12 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
         LOGGER.debug(
             "Registered Chime TTS panel module view at %s", panel_module_resource_url
         )
+
+    # Kept separate so an integration reload can add this new module route to a
+    # running instance that already registered the original panel views.
+    if not hass.data.get(PANEL_SLOT_MACHINE_DATA_KEY):
+        hass.http.register_view(ChimeTTSEmptyChimeSetSlotMachineView(panel_path))
+        hass.data[PANEL_SLOT_MACHINE_DATA_KEY] = True
 
     if not hass.data.get(WS_DATA_KEY):
         async_setup_panel_log_store(hass)

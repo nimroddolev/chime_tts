@@ -23,6 +23,7 @@ from ..const import (
     MP3_PRESET_CUSTOM_PREFIX,
     MP3_PRESET_CUSTOM_KEY,
     CUSTOM_CHIMES_PATH_KEY,
+    CHIME_OFFSETS_KEY,
     TEMP_CHIMES_PATH_KEY,
     LOCAL_PATH_KEY,
     AUDIO_DURATION_KEY,
@@ -393,7 +394,13 @@ class FilesystemHelper:
             resolved = await self.async_get_chime_path(member, cache, data, hass)
             if resolved is not None:
                 self._chime_set_last_choices[set_id] = member
-                return resolved, member_offset(data, chime_path, member)
+                # A Chime Set member may have a set-specific offset. When it
+                # does not, retain the selected chime's persistent default
+                # rather than looking up the set reference itself.
+                offset = member_offset(data, chime_path, member)
+                if offset is None:
+                    offset = (data.get(CHIME_OFFSETS_KEY) or {}).get(member)
+                return resolved, offset
         return None, None
 
     async def async_create_folder(self, hass: HomeAssistant, folder):

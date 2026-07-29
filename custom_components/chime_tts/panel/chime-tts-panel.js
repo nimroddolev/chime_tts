@@ -1,9 +1,13 @@
 import { CHAPTER_ICONS } from "./chapter-icons.js";
+import {
+  EMPTY_CHIME_SET_SLOT_MACHINE_STYLES,
+  renderEmptyChimeSetSlotMachine,
+} from "./empty-chime-set-slot-machine.js";
 
 const PANEL_TAG = "chime-tts-settings-panel";
 const AUDIO_FILE_ACCEPT = ".aac,.aif,.aiff,.ape,.flac,.m4a,.mp3,.ogg,.oga,.wav,.wma";
 const AUDIO_FILE_EXTENSIONS = new Set(AUDIO_FILE_ACCEPT.split(","));
-const PANEL_TRANSLATION_FALLBACKS = {"loading.settings":"Loading Chime TTS settings","loading.profiles":"Loading notification profiles...","loading.logs":"Loading Chime TTS log events...","loading.items":"Loading items...","chapter.settings":"Settings","chapter.configuration":"Configuration","chapter.configuration_description":"Set default providers, playback options, folder paths, and integration-wide behavior for Chime TTS.","chapter.profiles":"Profiles","chapter.session":"Session","chapter.project":"Project","section.notify_profiles_title":"Notification Profiles","section.notify_profiles_description":"Create and manage notify services for Chime TTS to easily send Chime TTS notifications in automations and scripts.","section.logs_title":"Logs","section.logs_description":"Review Chime TTS events captured during this Home Assistant session, including actions, generated media, and raw log output.","section.about_title":"Support & Info","section.about_description":"Find documentation, support, bug reporting, feature request, and project support links for Chime TTS.","action.reload":"Reload","action.reset":"Reset","action.reset_section":"Reset Section","action.save":"Save","action.restart":"Restart","action.restart_home_assistant":"Restart Home Assistant","action.cancel":"Cancel","action.discard":"Discard","action.close":"Close","action.open":"Open","action.browse":"Browse","action.use_anyway":"Use Anyway","action.expand":"Expand","action.collapse":"Collapse","action.expand_all":"Expand All","action.collapse_all":"Collapse All","action.show_advanced":"Show Advanced","action.hide_advanced":"Hide Advanced","action.add_profile":"+ Add Profile","action.raw_logs":"Raw Logs","action.copy_logs":"Copy Logs","action.copy_yaml":"Copy YAML","action.repeat":"Repeat","action.send":"Send","action.test":"Test","action.delete":"Delete","action.rename":"Rename","action.refresh":"Refresh","action.new_folder":"New Folder","action.upload":"Upload","action.upload_files":"Upload Files","action.upload_folder":"Upload Folder","action.create_folder":"Create Folder","action.overwrite_existing":"Overwrite Existing","action.upload_non_existing":"Upload {count} Non-Existing","action.select_folder":"Select folder","action.play_preview":"Play preview","action.pause_preview":"Pause preview","action.loading_preview":"Loading preview","aria.collapse_section":"Collapse section","aria.expand_section":"Expand section","aria.collapse_named":"Collapse {title}","aria.expand_named":"Expand {title}","aria.collapse_profile":"Collapse profile","aria.expand_profile":"Expand profile","aria.open_help":"Open help for {title}","aria.open_raw_logs":"Open the raw Home Assistant logs filtered to Chime TTS","aria.play_logo_animation":"Play Chime TTS logo animation","aria.logo":"Chime TTS logo","aria.collapse_log":"Collapse log row","aria.expand_log":"Expand log row","aria.close_test":"Close test input","aria.test_profile":"Test profile","aria.delete_profile":"Delete profile","aria.close_folder_browser":"Close folder browser","aria.more_actions":"More actions","aria.open_named":"Open {title}","aria.pause_named":"Pause {title}","aria.play_named":"Play {title}","aria.rename_named":"Rename {title}","aria.delete_named":"Delete {title}","aria.close_overwrite":"Close overwrite dialog","aria.confirm_restart":"Confirm Home Assistant restart","aria.unsaved_changes":"Unsaved changes","label.required":"Required","label.enabled":"Enabled","label.target_media_players":"Target media players","label.locations":"Locations","label.current_folder":"Current folder","label.version":"Version {version}","label.profile":"Profile {number}","label.log_event":"Log event","label.audio_file":"audio file","label.item":"item","label.this_item":"this item","label.selected_folder":"selected folder","label.new_name":"New name","label.folder_name":"Folder name","label.add_media_player":"Add media player","placeholder.service_name":"Service name","placeholder.tts_text":"Enter TTS text","placeholder.search_folder":"Search current folder","placeholder.new_folder_name":"New folder name","placeholder.auto":"Auto{unit}","description.target_media_players":"Select one or more media_player entities to play the notification.","description.add_media_player":"Choose a media_player entity to append","title.restart":"Restart Home Assistant?","title.save_changes":"Save your changes?","title.reset_changes":"Reset Changes","title.rename_item":"Rename item","title.delete_item":"Delete item","title.overwrite_files":"Overwrite Existing Files?","notice.restart_required_title":"Restart Required","notice.restart_required":"Any changes to the folder path or its contents will require a restart to take effect.","notice.restart_providers":"Home Assistant needs to restart before newly installed TTS providers appear in Chime TTS.","notice.restart_saved":"Your changes have been saved, but they will not take effect until Home Assistant restarts.","notice.unsaved_changes":"You have unsaved changes. Save them before leaving this page?","notice.discard_changes":"Discarding your unsaved edits?","notice.rename_item":"Choose a new name for {name}.","notice.delete_item":"Delete {name}? This action cannot be undone.","notice.upload_folder":"Upload {count} file(s) from \"{source}\" into folder \"{destination}\"?","notice.upload_conflicts_all":"Those files already exist in the folder \"{destination}\".","notice.upload_conflicts":"{count} file(s) already exist in the folder \"{destination}\".","status.changed":"Changed","status.copied":"Copied","status.sent":"Sent","status.restarting":"Restarting...","status.restart_requested":"Home Assistant restart requested.","empty.profiles":"No Chime TTS notify profiles are configured yet.","empty.logs":"No Chime TTS logs have been captured in this Home Assistant session yet.","empty.raw_logs":"No raw logs were captured for this event.","empty.media_players":"No media players selected yet.","empty.folder":"No files or folders match this location.","picker.audio_files_found":"{count} audio file(s) found","picker.no_audio_files":"No audio files were found in this folder.","log.integration_initiation":"Integration initiation","log.notification":"Notification","log.configuration_update":"Configuration update","log.action_call":"Action call","log.warning":"Warning","log.error":"Error","validation.required":"This field is required.","validation.invalid_number":"Enter a valid number.","validation.invalid_yaml":"Enter valid YAML.","validation.timeout":"The timeout value is invalid.","validation.timeout_sub":"Enter a valid timeout duration.","validation.tts_platform_none":"No TTS platforms were detected. Add at least one TTS integration first.","validation.tts_platform_select":"The selected TTS platform was not found.","validation.temp_path":"The temp folder must be inside a configured media directory.","validation.www_path":"The say_url output folder must be inside an external directory, /media, or /config/www.","error.load_panel":"Unable to load Chime TTS panel.","error.load_profiles":"Unable to load notification profiles.","error.validate_folder":"Unable to validate this folder path right now.","error.restart":"Unable to request a Home Assistant restart.","error.copy_logs":"Unable to copy logs to the clipboard.","error.copy_yaml":"Unable to copy YAML to the clipboard.","error.repeat":"Unable to repeat this action.","error.save":"Unable to save Chime TTS settings.","error.browse_folders":"Unable to browse folders.","error.play_chime_preview":"Unable to play this chime preview.","error.play_audio_preview":"Unable to play this audio preview.","error.browser_action":"Unable to complete that browser action.","error.upload_files":"Unable to upload the selected files.","error.folder_name_required":"Enter a folder name.","error.new_name_required":"Enter a new name.","error.folder_not_selectable":"That folder cannot be selected for this field.","error.send_notification":"Unable to send notify.{service}."};
+const PANEL_TRANSLATION_FALLBACKS = {"loading.settings":"Loading Chime TTS settings","loading.profiles":"Loading notification profiles...","loading.logs":"Loading Chime TTS log events...","loading.items":"Loading items...","chapter.settings":"Settings","chapter.configuration":"Configuration","chapter.configuration_description":"Set default providers, playback options, folder paths, and integration-wide behavior for Chime TTS.","chapter.profiles":"Profiles","chapter.session":"Session","chapter.project":"Project","section.notify_profiles_title":"Notification Profiles","section.notify_profiles_description":"Create custom chime services to easily send Chime TTS notifications in automations and scripts.","section.logs_title":"Logs","section.logs_description":"Review Chime TTS events captured during this Home Assistant session, including actions, generated media, and raw log output.","section.about_title":"Support & Info","section.about_description":"Find documentation, support, bug reporting, feature request, and project support links for Chime TTS.","action.reload":"Reload","action.reset":"Reset","action.reset_section":"Reset Section","action.save":"Save","action.restart":"Restart","action.restart_home_assistant":"Restart Home Assistant","action.cancel":"Cancel","action.discard":"Discard","action.close":"Close","action.open":"Open","action.browse":"Browse","action.use_anyway":"Use Anyway","action.expand":"Expand","action.collapse":"Collapse","action.expand_all":"Expand All","action.collapse_all":"Collapse All","action.show_advanced":"Show Advanced","action.hide_advanced":"Hide Advanced","action.add_profile":"+ Add Profile","action.raw_logs":"Raw Logs","action.copy_logs":"Copy Logs","action.copy_yaml":"Copy YAML","action.repeat":"Repeat","action.send":"Send","action.test":"Test","action.delete":"Delete","action.rename":"Rename","action.refresh":"Refresh","action.new_folder":"New Folder","action.upload":"Upload","action.upload_files":"Upload Files","action.upload_folder":"Upload Folder","action.create_folder":"Create Folder","action.overwrite_existing":"Overwrite Existing","action.upload_non_existing":"Upload {count} Non-Existing","action.select_folder":"Select folder","action.play_preview":"Play preview","action.pause_preview":"Pause preview","action.loading_preview":"Loading preview","aria.collapse_section":"Collapse section","aria.expand_section":"Expand section","aria.collapse_named":"Collapse {title}","aria.expand_named":"Expand {title}","aria.collapse_profile":"Collapse profile","aria.expand_profile":"Expand profile","aria.open_help":"Open help for {title}","aria.open_raw_logs":"Open the raw Home Assistant logs filtered to Chime TTS","aria.play_logo_animation":"Play Chime TTS logo animation","aria.logo":"Chime TTS logo","aria.collapse_log":"Collapse log row","aria.expand_log":"Expand log row","aria.close_test":"Close test input","aria.test_profile":"Test profile","aria.delete_profile":"Delete profile","aria.close_folder_browser":"Close folder browser","aria.more_actions":"More actions","aria.open_named":"Open {title}","aria.pause_named":"Pause {title}","aria.play_named":"Play {title}","aria.rename_named":"Rename {title}","aria.delete_named":"Delete {title}","aria.close_overwrite":"Close overwrite dialog","aria.confirm_restart":"Confirm Home Assistant restart","aria.unsaved_changes":"Unsaved changes","label.required":"Required","label.enabled":"Enabled","label.target_media_players":"Target media players","label.locations":"Locations","label.current_folder":"Current folder","label.version":"Version {version}","label.profile":"Profile {number}","label.log_event":"Log event","label.audio_file":"audio file","label.item":"item","label.this_item":"this item","label.selected_folder":"selected folder","label.new_name":"New name","label.folder_name":"Folder name","label.add_media_player":"Add media player","placeholder.service_name":"Service name","placeholder.tts_text":"Enter TTS text","placeholder.search_folder":"Search current folder","placeholder.new_folder_name":"New folder name","placeholder.auto":"Auto{unit}","description.target_media_players":"Select one or more media_player entities to play the notification.","description.add_media_player":"Choose a media_player entity to append","title.restart":"Restart Home Assistant?","title.save_changes":"Save your changes?","title.reset_changes":"Reset Changes","title.rename_item":"Rename item","title.delete_item":"Delete item","title.overwrite_files":"Overwrite Existing Files?","notice.restart_required_title":"Restart Required","notice.restart_required":"Any changes to the folder path or its contents will require a restart to take effect.","notice.restart_providers":"Home Assistant needs to restart before newly installed TTS providers appear in Chime TTS.","notice.restart_saved":"Your changes have been saved, but they will not take effect until Home Assistant restarts.","notice.unsaved_changes":"You have unsaved changes. Save them before leaving this page?","notice.discard_changes":"Discarding your unsaved edits?","notice.rename_item":"Choose a new name for {name}.","notice.delete_item":"Delete {name}? This action cannot be undone.","notice.upload_folder":"Upload {count} file(s) from \"{source}\" into folder \"{destination}\"?","notice.upload_conflicts_all":"Those files already exist in the folder \"{destination}\".","notice.upload_conflicts":"{count} file(s) already exist in the folder \"{destination}\".","status.changed":"Changed","status.copied":"Copied","status.sent":"Sent","status.restarting":"Restarting...","status.restart_requested":"Home Assistant restart requested.","empty.profiles":"No Chime TTS notify profiles are configured yet.","empty.logs":"No Chime TTS logs have been captured in this Home Assistant session yet.","empty.raw_logs":"No raw logs were captured for this event.","empty.media_players":"No media players selected yet.","empty.folder":"No files or folders match this location.","picker.audio_files_found":"{count} audio file(s) found","picker.no_audio_files":"No audio files were found in this folder.","log.integration_initiation":"Integration initiation","log.notification":"Notification","log.configuration_update":"Configuration update","log.action_call":"Action call","log.warning":"Warning","log.error":"Error","validation.required":"This field is required.","validation.invalid_number":"Enter a valid number.","validation.invalid_yaml":"Enter valid YAML.","validation.timeout":"The timeout value is invalid.","validation.timeout_sub":"Enter a valid timeout duration.","validation.tts_platform_none":"No TTS platforms were detected. Add at least one TTS integration first.","validation.tts_platform_select":"The selected TTS platform was not found.","validation.temp_path":"The temp folder must be inside a configured media directory.","validation.www_path":"The say_url output folder must be inside an external directory, /media, or /config/www.","error.load_panel":"Unable to load Chime TTS panel.","error.load_profiles":"Unable to load notification profiles.","error.validate_folder":"Unable to validate this folder path right now.","error.restart":"Unable to request a Home Assistant restart.","error.copy_logs":"Unable to copy logs to the clipboard.","error.copy_yaml":"Unable to copy YAML to the clipboard.","error.repeat":"Unable to repeat this action.","error.save":"Unable to save Chime TTS settings.","error.browse_folders":"Unable to browse folders.","error.play_chime_preview":"Unable to play this chime preview.","error.play_audio_preview":"Unable to play this audio preview.","error.browser_action":"Unable to complete that browser action.","error.upload_files":"Unable to upload the selected files.","error.folder_name_required":"Enter a folder name.","error.new_name_required":"Enter a new name.","error.folder_not_selectable":"That folder cannot be selected for this field.","error.send_notification":"Unable to send notify.{service}."};
 const IS_DECEMBER = new Date().getMonth() === 11;
 const SNOWFLAKE_SVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2v20M3.34 7l17.32 10M3.34 17L20.66 7M12 2l-2.2 2.2M12 2l2.2 2.2M12 22l-2.2-2.2M12 22l2.2-2.2M3.34 7l3 .8M3.34 7l.8 3M20.66 17l-3-.8M20.66 17l-.8-3M3.34 17l.8-3M3.34 17l3-.8M20.66 7l-.8 3M20.66 7l-3 .8" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const SANTA_HAT_SVG = `<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://web.resource.org/cc/" xmlns:dc="http://purl.org/dc/elements/1.1/" id="svg2" viewBox="0 0 410.44 285.17" version="1.0">
@@ -165,6 +169,11 @@ const ICONS = {
       <circle cx="14.9" cy="11.45" r="0.58" fill="#bbf7d0"/>
     </svg>
   `,
+  run: `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M14.5 4.2a1.9 1.9 0 1 1-3.8 0 1.9 1.9 0 0 1 3.8 0Zm-2.8 4.35 2.05.55 1.45-1.5a1.15 1.15 0 1 1 1.65 1.6l-1.95 2a1.15 1.15 0 0 1-1.12.3l-1.28-.34-1.25 2.2 1.82 1.56 2.16-.02a1.15 1.15 0 1 1 .02 2.3l-2.58.03a1.15 1.15 0 0 1-.76-.28l-2.72-2.33a1.15 1.15 0 0 1-.26-1.42l1.57-2.78-1.7-.46-1.37 1.1a1.15 1.15 0 0 1-1.44-1.8l1.83-1.47a1.15 1.15 0 0 1 1.04-.22l2.25.6a1.2 1.2 0 0 1 .28.12Zm-2.05 8.3a1.15 1.15 0 0 1 1.6.26l1.65 2.35a1.15 1.15 0 1 1-1.88 1.32l-1.65-2.34a1.15 1.15 0 0 1 .28-1.6Z"/>
+    </svg>
+  `,
   folder: `
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M10 4l2 2h8a2 2 0 0 1 2 2v8.5A3.5 3.5 0 0 1 18.5 20h-13A3.5 3.5 0 0 1 2 16.5V7a3 3 0 0 1 3-3h5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
@@ -257,6 +266,7 @@ const OPTION_ICON_DATA_URLS = {
 const template = document.createElement("template");
 template.innerHTML = `
   <style>
+    ${EMPTY_CHIME_SET_SLOT_MACHINE_STYLES}
     :host {
       box-sizing: border-box;
       display: block;
@@ -874,14 +884,14 @@ template.innerHTML = `
 
       .notify-workspace .chapter-hero {
         background:
-          radial-gradient(circle at top right, color-mix(in srgb, #e56b6f 12%, transparent), transparent 44%),
+          radial-gradient(circle at top right, color-mix(in srgb, #dc2626 12%, transparent), transparent 44%),
           linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, white 90%, #fff5f6 10%));
       }
 
       .logs-workspace .chapter-hero {
         background:
-          radial-gradient(circle at top right, color-mix(in srgb, #4dd0e1 12%, transparent), transparent 44%),
-          linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, white 90%, #f2fdff 10%));
+          radial-gradient(circle at top right, color-mix(in srgb, #f97316 12%, transparent), transparent 44%),
+          linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 98%, white 2%), color-mix(in srgb, white 90%, #fff8de 10%));
       }
 
       .chapter-hero .section,
@@ -914,10 +924,21 @@ template.innerHTML = `
 
     .configuration-workspace .chapter-hero {
       background:
-        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 14%, transparent), transparent 42%),
+        radial-gradient(circle at top right, color-mix(in srgb, var(--configuration-accent) 12%, transparent), transparent 44%),
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 92%, white 8%), color-mix(in srgb, var(--secondary-background-color) 84%, transparent));
-      border-color: color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
+      border-color: color-mix(in srgb, var(--configuration-accent) 32%, var(--divider-color));
+      --chapter-hero-help-border-color: color-mix(in srgb, var(--configuration-accent) 32%, var(--divider-color));
+      --chapter-hero-help-background: color-mix(in srgb, var(--configuration-accent) 12%, var(--card-background-color));
+      --chapter-hero-help-background-hover: color-mix(in srgb, var(--configuration-accent) 18%, var(--card-background-color));
       box-shadow: 0 20px 44px rgba(0, 0, 0, 0.14);
+    }
+    .configuration-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, var(--configuration-accent) 82%, white 18%); }
+    .configuration-workspace {
+      --configuration-accent: #3f9e63;
+      --section-help-color: color-mix(in srgb, var(--configuration-accent) 82%, white 18%);
+      --section-help-border: color-mix(in srgb, var(--configuration-accent) 32%, var(--divider-color));
+      --section-help-background: color-mix(in srgb, var(--configuration-accent) 12%, var(--card-background-color));
+      --section-help-background-hover: color-mix(in srgb, var(--configuration-accent) 18%, var(--card-background-color));
     }
 
     .chapter-hero-toggle {
@@ -936,17 +957,23 @@ template.innerHTML = `
     }
 
     .notify-workspace .chapter-hero {
-      border-color: color-mix(in srgb, #e56b6f 24%, var(--divider-color));
-      --chapter-hero-help-border-color: color-mix(in srgb, #e56b6f 24%, var(--divider-color));
-      --chapter-hero-help-background: color-mix(in srgb, #e56b6f 12%, var(--card-background-color));
-      --chapter-hero-help-background-hover: color-mix(in srgb, #e56b6f 18%, var(--card-background-color));
+      border-color: color-mix(in srgb, #dc2626 28%, var(--divider-color));
+      --chapter-hero-help-border-color: color-mix(in srgb, #dc2626 28%, var(--divider-color));
+      --chapter-hero-help-background: color-mix(in srgb, #dc2626 12%, var(--card-background-color));
+      --chapter-hero-help-background-hover: color-mix(in srgb, #dc2626 18%, var(--card-background-color));
       background:
-        radial-gradient(circle at top right, color-mix(in srgb, #e56b6f 12%, transparent), transparent 44%),
+        radial-gradient(circle at top right, color-mix(in srgb, #dc2626 12%, transparent), transparent 44%),
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff4f5 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fff7f8 8%));
       box-shadow: 0 22px 48px rgba(0, 0, 0, 0.18);
     }
 
-    .notify-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #f08a8d 78%, white 22%); }
+    .notify-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #dc2626 82%, white 18%); }
+    .notify-workspace {
+      --section-help-color: color-mix(in srgb, #dc2626 82%, white 18%);
+      --section-help-border: color-mix(in srgb, #dc2626 28%, var(--divider-color));
+      --section-help-background: color-mix(in srgb, #dc2626 12%, var(--card-background-color));
+      --section-help-background-hover: color-mix(in srgb, #dc2626 18%, var(--card-background-color));
+    }
 
     .chime-sets-workspace .chapter-hero {
       border-color: color-mix(in srgb, #7c3aed 32%, var(--divider-color));
@@ -958,6 +985,12 @@ template.innerHTML = `
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 92%, white 8%), color-mix(in srgb, var(--secondary-background-color) 84%, transparent));
     }
     .chime-sets-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #7c3aed 82%, white 18%); }
+    .chime-sets-workspace {
+      --section-help-color: color-mix(in srgb, #7c3aed 82%, white 18%);
+      --section-help-border: color-mix(in srgb, #7c3aed 32%, var(--divider-color));
+      --section-help-background: color-mix(in srgb, #7c3aed 16%, var(--card-background-color));
+      --section-help-background-hover: color-mix(in srgb, #7c3aed 22%, var(--card-background-color));
+    }
     .chime-sets-workspace .chime-sets-chapter-toggle {
       width: 42px;
       min-width: 42px;
@@ -970,39 +1003,57 @@ template.innerHTML = `
     }
 
     .chimes-workspace .chapter-hero {
-      border-color: color-mix(in srgb, #7a5700 38%, var(--divider-color));
-      --chapter-hero-help-border-color: color-mix(in srgb, #7a5700 38%, var(--divider-color));
-      --chapter-hero-help-background: color-mix(in srgb, #7a5700 12%, var(--card-background-color));
-      --chapter-hero-help-background-hover: color-mix(in srgb, #7a5700 18%, var(--card-background-color));
+      border-color: color-mix(in srgb, var(--primary-color) 32%, var(--divider-color));
+      --chapter-hero-help-border-color: color-mix(in srgb, var(--primary-color) 32%, var(--divider-color));
+      --chapter-hero-help-background: color-mix(in srgb, var(--primary-color) 12%, var(--card-background-color));
+      --chapter-hero-help-background-hover: color-mix(in srgb, var(--primary-color) 18%, var(--card-background-color));
       background:
-        radial-gradient(circle at top right, color-mix(in srgb, #f5c542 8%, transparent), transparent 44%),
-        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff8de 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fffaf0 8%));
+        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 12%, transparent), transparent 44%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 94%, white 6%), color-mix(in srgb, var(--secondary-background-color) 78%, transparent));
     }
-    .chimes-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #6c4c00 90%, black 10%); }
+    .chimes-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, var(--primary-color) 82%, white 18%); }
+    .chimes-workspace {
+      --section-help-color: color-mix(in srgb, var(--primary-color) 82%, white 18%);
+      --section-help-border: color-mix(in srgb, var(--primary-color) 32%, var(--divider-color));
+      --section-help-background: color-mix(in srgb, var(--primary-color) 12%, var(--card-background-color));
+      --section-help-background-hover: color-mix(in srgb, var(--primary-color) 18%, var(--card-background-color));
+    }
 
     .logs-workspace .chapter-hero {
-      border-color: color-mix(in srgb, #49b675 32%, var(--divider-color));
-      --chapter-hero-help-border-color: color-mix(in srgb, #49b675 32%, var(--divider-color));
-      --chapter-hero-help-background: color-mix(in srgb, #49b675 12%, var(--card-background-color));
-      --chapter-hero-help-background-hover: color-mix(in srgb, #49b675 18%, var(--card-background-color));
+      border-color: color-mix(in srgb, #f97316 32%, var(--divider-color));
+      --chapter-hero-help-border-color: color-mix(in srgb, #f97316 32%, var(--divider-color));
+      --chapter-hero-help-background: color-mix(in srgb, #f97316 12%, var(--card-background-color));
+      --chapter-hero-help-background-hover: color-mix(in srgb, #f97316 18%, var(--card-background-color));
       background:
-        radial-gradient(circle at top right, color-mix(in srgb, #49b675 12%, transparent), transparent 44%),
-        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #effaf3 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #f4fcf7 8%));
-    }
-
-    .logs-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #49b675 82%, white 18%); }
-
-    .about-workspace .chapter-hero {
-      border-color: color-mix(in srgb, #f5c542 34%, var(--divider-color));
-      --chapter-hero-help-border-color: color-mix(in srgb, #f5c542 34%, var(--divider-color));
-      --chapter-hero-help-background: color-mix(in srgb, #f5c542 15%, var(--card-background-color));
-      --chapter-hero-help-background-hover: color-mix(in srgb, #f5c542 21%, var(--card-background-color));
-      background:
-        radial-gradient(circle at top right, color-mix(in srgb, #f5c542 8%, transparent), transparent 44%),
+        radial-gradient(circle at top right, color-mix(in srgb, #f97316 12%, transparent), transparent 44%),
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff8de 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fffaf0 8%));
     }
 
-    .about-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #d4a514 86%, white 14%); }
+    .logs-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #f97316 86%, white 14%); }
+    .logs-workspace {
+      --section-help-color: color-mix(in srgb, #f97316 86%, white 14%);
+      --section-help-border: color-mix(in srgb, #f97316 32%, var(--divider-color));
+      --section-help-background: color-mix(in srgb, #f97316 12%, var(--card-background-color));
+      --section-help-background-hover: color-mix(in srgb, #f97316 18%, var(--card-background-color));
+    }
+
+    .about-workspace .chapter-hero {
+      border-color: color-mix(in srgb, #eab308 36%, var(--divider-color));
+      --chapter-hero-help-border-color: color-mix(in srgb, #eab308 36%, var(--divider-color));
+      --chapter-hero-help-background: color-mix(in srgb, #eab308 15%, var(--card-background-color));
+      --chapter-hero-help-background-hover: color-mix(in srgb, #eab308 21%, var(--card-background-color));
+      background:
+        radial-gradient(circle at top right, color-mix(in srgb, #eab308 10%, transparent), transparent 44%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff8de 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fffaf0 8%));
+    }
+
+    .about-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #a16207 88%, white 12%); }
+    .about-workspace {
+      --section-help-color: color-mix(in srgb, #a16207 88%, white 12%);
+      --section-help-border: color-mix(in srgb, #eab308 36%, var(--divider-color));
+      --section-help-background: color-mix(in srgb, #eab308 15%, var(--card-background-color));
+      --section-help-background-hover: color-mix(in srgb, #eab308 21%, var(--card-background-color));
+    }
 
     .chapter-workspace.collapsed .chapter-hero {
       margin: 0;
@@ -1036,6 +1087,12 @@ template.innerHTML = `
       height: 1.5rem;
       place-items: center;
       color: var(--chapter-hero-copy-color);
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.42));
+    }
+
+    /* Chapter SVGs and the masked Chimes icon share their title's section accent. */
+    .chapter-hero-icon :is(svg, .chime-section-icon) {
+      color: var(--chapter-hero-copy-color);
     }
 
     .chapter-hero-icon :is(svg, img) {
@@ -1065,9 +1122,9 @@ template.innerHTML = `
     }
 
     .chimes-workspace .chapter-chevron {
-      border-color: color-mix(in srgb, #7a5700 38%, var(--divider-color));
-      background: color-mix(in srgb, #7a5700 14%, var(--card-background-color));
-      color: color-mix(in srgb, #6c4c00 90%, black 10%);
+      border-color: color-mix(in srgb, var(--primary-color) 26%, var(--divider-color));
+      background: color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color));
+      color: color-mix(in srgb, var(--primary-color) 42%, black 58%);
     }
 
     .chapter-hero-title {
@@ -1093,6 +1150,16 @@ template.innerHTML = `
 
     .chapter-hero-title-row .field-help-link:hover {
       background: var(--chapter-hero-help-background-hover);
+    }
+
+    .chapter-workspace .chapter-content .field-help-link {
+      color: var(--section-help-color);
+      border-color: var(--section-help-border);
+      background: var(--section-help-background);
+    }
+
+    .chapter-workspace .chapter-content .field-help-link:hover {
+      background: var(--section-help-background-hover);
     }
 
     .chapter-hero-actions {
@@ -1127,27 +1194,27 @@ template.innerHTML = `
     }
 
     .configuration-workspace .chapter-chevron {
-      border-color: color-mix(in srgb, var(--primary-color) 26%, var(--divider-color));
-      background: color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color));
-      color: color-mix(in srgb, var(--primary-color) 42%, black 58%);
+      border-color: color-mix(in srgb, var(--configuration-accent) 30%, var(--divider-color));
+      background: color-mix(in srgb, var(--configuration-accent) 16%, var(--card-background-color));
+      color: color-mix(in srgb, var(--configuration-accent) 86%, black 14%);
     }
 
     .notify-workspace .chapter-chevron {
-      border-color: color-mix(in srgb, #e56b6f 30%, var(--divider-color));
-      background: color-mix(in srgb, #e56b6f 16%, var(--card-background-color));
-      color: color-mix(in srgb, #8f2832 82%, black 18%);
+      border-color: color-mix(in srgb, #dc2626 32%, var(--divider-color));
+      background: color-mix(in srgb, #dc2626 16%, var(--card-background-color));
+      color: color-mix(in srgb, #991b1b 86%, black 14%);
     }
 
     .logs-workspace .chapter-chevron {
-      border-color: color-mix(in srgb, #22c55e 30%, var(--divider-color));
-      background: color-mix(in srgb, #22c55e 16%, var(--card-background-color));
-      color: color-mix(in srgb, #166534 86%, black 14%);
+      border-color: color-mix(in srgb, #f97316 34%, var(--divider-color));
+      background: color-mix(in srgb, #f97316 18%, var(--card-background-color));
+      color: color-mix(in srgb, #9a3412 86%, black 14%);
     }
 
     .about-workspace .chapter-chevron {
-      border-color: color-mix(in srgb, #f5c542 36%, var(--divider-color));
-      background: color-mix(in srgb, #f5c542 20%, var(--card-background-color));
-      color: color-mix(in srgb, #8a5a00 84%, black 16%);
+      border-color: color-mix(in srgb, #eab308 38%, var(--divider-color));
+      background: color-mix(in srgb, #eab308 20%, var(--card-background-color));
+      color: color-mix(in srgb, #854d0e 86%, black 14%);
     }
 
     @media (prefers-color-scheme: dark) {
@@ -1163,27 +1230,27 @@ template.innerHTML = `
       }
 
       .configuration-workspace .chapter-chevron {
-        border-color: color-mix(in srgb, var(--primary-color) 42%, transparent);
-        background: color-mix(in srgb, var(--primary-color) 10%, var(--card-background-color));
-        color: color-mix(in srgb, var(--primary-color) 78%, white 22%);
+        border-color: color-mix(in srgb, var(--configuration-accent) 46%, transparent);
+        background: color-mix(in srgb, var(--configuration-accent) 10%, var(--card-background-color));
+        color: color-mix(in srgb, var(--configuration-accent) 82%, white 18%);
       }
 
       .notify-workspace .chapter-chevron {
-        border-color: color-mix(in srgb, #f08a8d 46%, transparent);
-        background: color-mix(in srgb, #e56b6f 10%, var(--card-background-color));
-        color: color-mix(in srgb, #f08a8d 78%, white 22%);
+        border-color: color-mix(in srgb, #f87171 46%, transparent);
+        background: color-mix(in srgb, #dc2626 10%, var(--card-background-color));
+        color: color-mix(in srgb, #f87171 78%, white 22%);
       }
 
       .logs-workspace .chapter-chevron {
-        border-color: color-mix(in srgb, #49b675 46%, transparent);
-        background: color-mix(in srgb, #22c55e 10%, var(--card-background-color));
-        color: color-mix(in srgb, #49b675 82%, white 18%);
+        border-color: color-mix(in srgb, #f97316 48%, transparent);
+        background: color-mix(in srgb, #f97316 12%, var(--card-background-color));
+        color: color-mix(in srgb, #fb923c 86%, white 14%);
       }
 
       .about-workspace .chapter-chevron {
-        border-color: color-mix(in srgb, #d4a514 48%, transparent);
-        background: color-mix(in srgb, #f5c542 14%, var(--card-background-color));
-        color: color-mix(in srgb, #d4a514 86%, white 14%);
+        border-color: color-mix(in srgb, #eab308 48%, transparent);
+        background: color-mix(in srgb, #eab308 14%, var(--card-background-color));
+        color: color-mix(in srgb, #facc15 86%, white 14%);
       }
     }
 
@@ -1576,7 +1643,7 @@ template.innerHTML = `
       flex: 0 0 100%;
       width: 100%;
       margin-left: 0;
-      justify-content: center;
+      justify-content: flex-start;
     }
 
     .log-event-toggle-wrap {
@@ -1588,15 +1655,16 @@ template.innerHTML = `
 
     :host([narrow]) .log-event-row-header {
       grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
+      gap: 12px;
+      align-items: start;
     }
 
-    :host([narrow]) .log-event-actions {
-      justify-content: flex-end;
+    :host([narrow]) .log-event-row-content {
+      display: flex;
     }
 
-    :host([narrow]) .log-event-row.actions-wrapped .log-event-actions {
-      justify-content: center;
+    :host([narrow]) .log-event-toggle-wrap {
+      align-self: start;
     }
 
     :host([narrow]) .log-event-raw {
@@ -1718,16 +1786,16 @@ template.innerHTML = `
     }
 
     .configuration-workspace .chapter-hero .section {
-      border-color: color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
+      border-color: color-mix(in srgb, var(--configuration-accent) 32%, var(--divider-color));
       background:
-        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 14%, transparent), transparent 42%),
+        radial-gradient(circle at top right, color-mix(in srgb, var(--configuration-accent) 12%, transparent), transparent 44%),
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 92%, white 8%), color-mix(in srgb, var(--secondary-background-color) 84%, transparent));
       box-shadow: none;
     }
 
     .notify-workspace .chapter-hero .section {
       background: color-mix(in srgb, var(--card-background-color) 76%, black 24%);
-      border-color: color-mix(in srgb, #e56b6f 14%, var(--divider-color));
+      border-color: color-mix(in srgb, #dc2626 18%, var(--divider-color));
     }
 
     .notify-workspace .chapter-body,
@@ -1812,21 +1880,11 @@ template.innerHTML = `
     }
 
     .chimes-workspace .chapter-hero :is(.section, .config-section, .field) {
-      border-color: color-mix(in srgb, #7a5700 38%, var(--divider-color));
+      border-color: color-mix(in srgb, var(--primary-color) 32%, var(--divider-color));
       background:
-        radial-gradient(circle at top right, color-mix(in srgb, #f5c542 8%, transparent), transparent 44%),
-        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff8de 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fffaf0 8%));
+        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 12%, transparent), transparent 44%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 94%, white 6%), color-mix(in srgb, var(--secondary-background-color) 78%, transparent));
       box-shadow: none;
-    }
-
-    .chimes-workspace :is([data-field-key="custom_chimes_path"], [data-field-key="temp_chimes_path"]) .field-help-link {
-      border-color: var(--chapter-hero-help-border-color);
-      background: var(--chapter-hero-help-background);
-      color: var(--chapter-hero-copy-color);
-    }
-
-    .chimes-workspace :is([data-field-key="custom_chimes_path"], [data-field-key="temp_chimes_path"]) .field-help-link:hover {
-      background: var(--chapter-hero-help-background-hover);
     }
 
     .chimes-workspace .chime-list-section {
@@ -1849,7 +1907,7 @@ template.innerHTML = `
     @container chime-list (min-width: 700px) {
       .chimes-workspace .chime-list-grid {
         column-count: 2;
-        background: linear-gradient(to right, transparent calc(50% - 0.5px), color-mix(in srgb, #b8860b 42%, var(--divider-color)) calc(50% - 0.5px), color-mix(in srgb, #b8860b 42%, var(--divider-color)) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+        background: linear-gradient(to right, transparent calc(50% - 0.5px), color-mix(in srgb, var(--primary-color) 42%, var(--divider-color)) calc(50% - 0.5px), color-mix(in srgb, var(--primary-color) 42%, var(--divider-color)) calc(50% + 0.5px), transparent calc(50% + 0.5px));
       }
     }
 
@@ -1857,15 +1915,15 @@ template.innerHTML = `
       .chimes-workspace .chime-list-grid {
         column-count: 3;
         background:
-          linear-gradient(to right, transparent calc(33.333% - 0.5px), color-mix(in srgb, #b8860b 42%, var(--divider-color)) calc(33.333% - 0.5px), color-mix(in srgb, #b8860b 42%, var(--divider-color)) calc(33.333% + 0.5px), transparent calc(33.333% + 0.5px)),
-          linear-gradient(to right, transparent calc(66.667% - 0.5px), color-mix(in srgb, #b8860b 42%, var(--divider-color)) calc(66.667% - 0.5px), color-mix(in srgb, #b8860b 42%, var(--divider-color)) calc(66.667% + 0.5px), transparent calc(66.667% + 0.5px));
+          linear-gradient(to right, transparent calc(33.333% - 0.5px), color-mix(in srgb, var(--primary-color) 42%, var(--divider-color)) calc(33.333% - 0.5px), color-mix(in srgb, var(--primary-color) 42%, var(--divider-color)) calc(33.333% + 0.5px), transparent calc(33.333% + 0.5px)),
+          linear-gradient(to right, transparent calc(66.667% - 0.5px), color-mix(in srgb, var(--primary-color) 42%, var(--divider-color)) calc(66.667% - 0.5px), color-mix(in srgb, var(--primary-color) 42%, var(--divider-color)) calc(66.667% + 0.5px), transparent calc(66.667% + 0.5px));
       }
     }
 
     @media (min-width: 560px) {
       .chimes-workspace .chime-list-grid {
         column-count: 2;
-        background: linear-gradient(to right, transparent calc(50% - 0.5px), color-mix(in srgb, #b8860b 42%, var(--divider-color)) calc(50% - 0.5px), color-mix(in srgb, #b8860b 42%, var(--divider-color)) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+        background: linear-gradient(to right, transparent calc(50% - 0.5px), color-mix(in srgb, var(--primary-color) 42%, var(--divider-color)) calc(50% - 0.5px), color-mix(in srgb, var(--primary-color) 42%, var(--divider-color)) calc(50% + 0.5px), transparent calc(50% + 0.5px));
       }
     }
 
@@ -1873,8 +1931,8 @@ template.innerHTML = `
       .chimes-workspace .chime-list-grid {
         column-count: 3;
         background:
-          linear-gradient(to right, transparent calc(33.333% - 0.5px), color-mix(in srgb, #b8860b 42%, var(--divider-color)) calc(33.333% - 0.5px), color-mix(in srgb, #b8860b 42%, var(--divider-color)) calc(33.333% + 0.5px), transparent calc(33.333% + 0.5px)),
-          linear-gradient(to right, transparent calc(66.667% - 0.5px), color-mix(in srgb, #b8860b 42%, var(--divider-color)) calc(66.667% - 0.5px), color-mix(in srgb, #b8860b 42%, var(--divider-color)) calc(66.667% + 0.5px), transparent calc(66.667% + 0.5px));
+          linear-gradient(to right, transparent calc(33.333% - 0.5px), color-mix(in srgb, var(--primary-color) 42%, var(--divider-color)) calc(33.333% - 0.5px), color-mix(in srgb, var(--primary-color) 42%, var(--divider-color)) calc(33.333% + 0.5px), transparent calc(33.333% + 0.5px)),
+          linear-gradient(to right, transparent calc(66.667% - 0.5px), color-mix(in srgb, var(--primary-color) 42%, var(--divider-color)) calc(66.667% - 0.5px), color-mix(in srgb, var(--primary-color) 42%, var(--divider-color)) calc(66.667% + 0.5px), transparent calc(66.667% + 0.5px));
       }
     }
 
@@ -2018,6 +2076,33 @@ template.innerHTML = `
     }
     .chime-set-offset-dialog .confirm-actions > :is([data-chime-set-offset-reset], [data-chime-set-offset-close]) {
       width: 112px;
+    }
+    .chime-set-offset-value {
+      appearance: none;
+      padding: 0;
+      border: 0;
+      border-bottom: 1px dashed currentColor;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+    .chime-set-offset-value:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--primary-color) 55%, transparent);
+      outline-offset: 3px;
+    }
+    .chime-set-offset-title-input {
+      width: 8ch;
+      min-width: 8ch;
+      padding: 2px 4px;
+      border: 1px solid var(--accent-color, var(--primary-color));
+      border-radius: 6px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
     }
     .chime-set-offset-control .field-label { flex: 0 0 auto; }
     .chime-set-offset-input.control {
@@ -2164,22 +2249,20 @@ template.innerHTML = `
       animation: chimeSetOffsetPlayback var(--chime-set-preview-duration, 1s) linear forwards;
     }
     @keyframes chimeSetOffsetPlayback { to { left: calc(100% - 2px); } }
-    .chime-set-offset-timeline-hint {
-      margin: -6px 0 0;
+    .chime-set-offset-title-hint {
+      margin: 0px;
       color: var(--secondary-text-color);
       font-size: .95rem;
       line-height: 1.4;
       text-align: center;
-      white-space: nowrap;
     }
     .chime-set-offset-hint-row {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 12px;
-      margin-top: -6px;
+      margin-top: 0;
     }
-    .chime-set-offset-hint-row .chime-set-offset-timeline-hint { margin: 0; }
     .chime-set-offset-preview-button {
       width: 108px;
       min-width: 108px;
@@ -2267,9 +2350,9 @@ template.innerHTML = `
     }
 
     .configuration-workspace .field {
-      border: 1px solid color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
+      border: 1px solid color-mix(in srgb, var(--configuration-accent) 32%, var(--divider-color));
       background:
-        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 14%, transparent), transparent 42%),
+        radial-gradient(circle at top right, color-mix(in srgb, var(--configuration-accent) 12%, transparent), transparent 44%),
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 92%, white 8%), color-mix(in srgb, var(--secondary-background-color) 84%, transparent));
       box-shadow: none;
     }
@@ -2341,7 +2424,7 @@ template.innerHTML = `
     }
 
     @media (prefers-color-scheme: light) {
-      .field-icon {
+      :is(.field-icon, .chapter-hero-icon) {
         filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.22));
       }
     }
@@ -2397,7 +2480,12 @@ template.innerHTML = `
     }
 
     .field-reset-link {
+      appearance: none;
+      padding: 0;
+      border: 0;
+      background: transparent;
       color: var(--primary-color);
+      font: inherit;
       font-size: 0.84rem;
       font-weight: 600;
       text-decoration: none;
@@ -2544,9 +2632,9 @@ template.innerHTML = `
     }
 
     .configuration-workspace .field .browse-button {
-      border-color: color-mix(in srgb, var(--primary-color) 12%, var(--divider-color));
+      border-color: color-mix(in srgb, var(--configuration-accent) 12%, var(--divider-color));
       background:
-        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 14%, transparent), transparent 42%),
+        radial-gradient(circle at top right, color-mix(in srgb, var(--configuration-accent) 14%, transparent), transparent 42%),
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 92%, white 8%), color-mix(in srgb, var(--secondary-background-color) 84%, transparent));
       color: var(--primary-text-color);
       box-shadow: none;
@@ -2554,9 +2642,9 @@ template.innerHTML = `
 
     .configuration-workspace .field .browse-button:hover,
     .configuration-workspace .field .browse-button:focus-visible {
-      border-color: color-mix(in srgb, var(--primary-color) 22%, var(--divider-color));
+      border-color: color-mix(in srgb, var(--configuration-accent) 22%, var(--divider-color));
       background:
-        radial-gradient(circle at top right, color-mix(in srgb, var(--primary-color) 18%, transparent), transparent 42%),
+        radial-gradient(circle at top right, color-mix(in srgb, var(--configuration-accent) 18%, transparent), transparent 42%),
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 94%, white 6%), color-mix(in srgb, var(--secondary-background-color) 86%, transparent));
     }
 
@@ -3526,9 +3614,9 @@ template.innerHTML = `
     }
 
     .notify-workspace .notify-profile-card {
-      border-color: color-mix(in srgb, #e56b6f 24%, var(--divider-color));
+      border-color: color-mix(in srgb, #dc2626 28%, var(--divider-color));
       background:
-        radial-gradient(circle at top right, color-mix(in srgb, #e56b6f 12%, transparent), transparent 44%),
+        radial-gradient(circle at top right, color-mix(in srgb, #dc2626 12%, transparent), transparent 44%),
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff4f5 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fff7f8 8%));
     }
 
@@ -3660,15 +3748,15 @@ template.innerHTML = `
     }
 
     .configuration-workspace .config-section-toggle {
-      border-color: color-mix(in srgb, var(--primary-color) 26%, var(--divider-color));
-      background: color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color));
-      color: color-mix(in srgb, var(--primary-color) 42%, black 58%);
+      border-color: color-mix(in srgb, var(--configuration-accent) 30%, var(--divider-color));
+      background: color-mix(in srgb, var(--configuration-accent) 16%, var(--card-background-color));
+      color: color-mix(in srgb, var(--configuration-accent) 86%, black 14%);
     }
 
-    .configuration-workspace .chapter-content { --workspace-accent: var(--primary-color); }
+    .configuration-workspace .chapter-content { --workspace-accent: color-mix(in srgb, var(--configuration-accent) 82%, white 18%); }
     .chime-sets-workspace .chapter-content { --workspace-accent: #7c3aed; }
-    .chimes-workspace .chapter-content { --workspace-accent: #6c4c00; }
-    .notify-workspace .chapter-content { --workspace-accent: #b83d48; }
+    .chimes-workspace .chapter-content { --workspace-accent: var(--primary-color); }
+    .notify-workspace .chapter-content { --workspace-accent: #b91c1c; }
 
     :is(.configuration-workspace, .chime-sets-workspace, .chimes-workspace, .notify-workspace) .chapter-content :is(
       .section-header h2,
@@ -3690,21 +3778,21 @@ template.innerHTML = `
     }
 
     .logs-workspace .logs-list-actions > a.button-secondary {
-      border-color: color-mix(in srgb, #22c55e 30%, var(--divider-color));
-      background: color-mix(in srgb, #22c55e 16%, var(--card-background-color));
-      color: color-mix(in srgb, #166534 86%, black 14%);
+      border-color: color-mix(in srgb, #f97316 34%, var(--divider-color));
+      background: color-mix(in srgb, #f97316 18%, var(--card-background-color));
+      color: color-mix(in srgb, #f97316 86%, white 14%);
     }
 
     .chime-sets-workspace .notify-profile-list-actions .button-primary {
-      border: 1px solid #7c3aed;
-      background: #7c3aed;
-      color: #fff;
+      border-color: color-mix(in srgb, #7c3aed 34%, var(--divider-color));
+      background: color-mix(in srgb, #7c3aed 18%, var(--card-background-color));
+      color: color-mix(in srgb, #5b21b6 82%, white 18%);
     }
 
     .notify-workspace .notify-profile-list-actions .button-primary {
-      border: 1px solid #e56b6f;
-      background: #e56b6f;
-      color: #fff;
+      border-color: color-mix(in srgb, #dc2626 34%, var(--divider-color));
+      background: color-mix(in srgb, #dc2626 18%, var(--card-background-color));
+      color: color-mix(in srgb, #dc2626 82%, white 18%);
     }
 
     .chime-sets-workspace :is(.config-section-toggle, .log-event-toggle) {
@@ -3714,48 +3802,50 @@ template.innerHTML = `
     }
 
     .chimes-workspace :is(.config-section-toggle, .log-event-toggle) {
-      border-color: color-mix(in srgb, #7a5700 38%, var(--divider-color));
-      background: color-mix(in srgb, #7a5700 14%, var(--card-background-color));
-      color: color-mix(in srgb, #6c4c00 90%, black 10%);
+      border-color: color-mix(in srgb, var(--primary-color) 26%, var(--divider-color));
+      background: color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color));
+      color: color-mix(in srgb, var(--primary-color) 42%, black 58%);
     }
 
     .notify-workspace :is(.log-event-toggle, .notify-profile-actions [data-toggle-notify-profile]) {
-      border-color: color-mix(in srgb, #e56b6f 30%, var(--divider-color));
-      background: color-mix(in srgb, #e56b6f 16%, var(--card-background-color));
-      color: color-mix(in srgb, #8f2832 82%, black 18%);
+      border-color: color-mix(in srgb, #dc2626 32%, var(--divider-color));
+      background: color-mix(in srgb, #dc2626 16%, var(--card-background-color));
+      color: color-mix(in srgb, #991b1b 86%, black 14%);
     }
 
     .logs-workspace .log-event-toggle {
-      border-color: color-mix(in srgb, #22c55e 30%, var(--divider-color));
-      background: color-mix(in srgb, #22c55e 16%, var(--card-background-color));
-      color: color-mix(in srgb, #166534 86%, black 14%);
+      border-color: color-mix(in srgb, #f97316 34%, var(--divider-color));
+      background: color-mix(in srgb, #f97316 18%, var(--card-background-color));
+      color: color-mix(in srgb, #9a3412 86%, black 14%);
     }
 
     @media (prefers-color-scheme: dark) {
       .configuration-workspace .config-section-toggle {
-        border-color: color-mix(in srgb, var(--primary-color) 42%, transparent);
-        background: color-mix(in srgb, var(--primary-color) 10%, var(--card-background-color));
-        color: color-mix(in srgb, var(--primary-color) 78%, white 22%);
+        border-color: color-mix(in srgb, var(--configuration-accent) 46%, transparent);
+        background: color-mix(in srgb, var(--configuration-accent) 10%, var(--card-background-color));
+        color: color-mix(in srgb, var(--configuration-accent) 82%, white 18%);
       }
 
       .chime-sets-workspace .chapter-content { --workspace-accent: #a78bfa; }
-      .chimes-workspace .chapter-content { --workspace-accent: #d8ad3d; }
-      .notify-workspace .chapter-content { --workspace-accent: #f08a8d; }
+      .chimes-workspace .chapter-content { --workspace-accent: var(--primary-color); }
+      .notify-workspace .chapter-content { --workspace-accent: #f87171; }
 
       .chime-sets-workspace .notify-profile-list-actions .button-primary {
-        border-color: #8b5cf6;
-        background: #8b5cf6;
+        border-color: color-mix(in srgb, #7c3aed 48%, transparent);
+        background: color-mix(in srgb, #7c3aed 12%, var(--card-background-color));
+        color: color-mix(in srgb, #7c3aed 82%, white 18%);
       }
 
       .notify-workspace .notify-profile-list-actions .button-primary {
-        border-color: #e56b6f;
-        background: #e56b6f;
+        border-color: color-mix(in srgb, #dc2626 48%, transparent);
+        background: color-mix(in srgb, #dc2626 12%, var(--card-background-color));
+        color: color-mix(in srgb, #dc2626 82%, white 18%);
       }
 
       .logs-workspace .logs-list-actions > a.button-secondary {
-        border-color: color-mix(in srgb, #49b675 46%, transparent);
-        background: color-mix(in srgb, #22c55e 10%, var(--card-background-color));
-        color: color-mix(in srgb, #49b675 82%, white 18%);
+        border-color: color-mix(in srgb, #f97316 48%, transparent);
+        background: color-mix(in srgb, #f97316 12%, var(--card-background-color));
+        color: color-mix(in srgb, #f97316 86%, white 14%);
       }
 
       .chime-sets-workspace :is(.config-section-toggle, .log-event-toggle) {
@@ -3764,42 +3854,45 @@ template.innerHTML = `
         color: #a78bfa;
       }
 
-      .chimes-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #d8ad3d 84%, white 16%); }
+      .chimes-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, var(--primary-color) 78%, white 22%); }
 
       .chimes-workspace .chapter-chevron {
-        border-color: color-mix(in srgb, #d8ad3d 46%, transparent);
-        background: color-mix(in srgb, #b8860b 10%, var(--card-background-color));
-        color: color-mix(in srgb, #d8ad3d 82%, white 18%);
+        border-color: color-mix(in srgb, var(--primary-color) 42%, transparent);
+        background: color-mix(in srgb, var(--primary-color) 10%, var(--card-background-color));
+        color: color-mix(in srgb, var(--primary-color) 78%, white 22%);
       }
 
-      .chimes-workspace .chapter-hero :is(.section, .config-section) { border-color: color-mix(in srgb, #d8ad3d 38%, transparent); }
+      .chimes-workspace .chapter-hero :is(.section, .config-section) { border-color: color-mix(in srgb, var(--primary-color) 38%, transparent); }
 
 
       .chimes-workspace :is(.config-section-toggle, .log-event-toggle) {
-        border-color: color-mix(in srgb, #d8ad3d 46%, transparent);
-        background: color-mix(in srgb, #b8860b 10%, var(--card-background-color));
-        color: color-mix(in srgb, #d8ad3d 78%, white 22%);
+        border-color: color-mix(in srgb, var(--primary-color) 42%, transparent);
+        background: color-mix(in srgb, var(--primary-color) 10%, var(--card-background-color));
+        color: color-mix(in srgb, var(--primary-color) 78%, white 22%);
       }
 
       .notify-workspace :is(.log-event-toggle, .notify-profile-actions [data-toggle-notify-profile]) {
-        border-color: color-mix(in srgb, #f08a8d 46%, transparent);
-        background: color-mix(in srgb, #e56b6f 10%, var(--card-background-color));
-        color: color-mix(in srgb, #f08a8d 78%, white 22%);
+        border-color: color-mix(in srgb, #f87171 46%, transparent);
+        background: color-mix(in srgb, #dc2626 10%, var(--card-background-color));
+        color: color-mix(in srgb, #f87171 78%, white 22%);
       }
 
       .logs-workspace .log-event-toggle {
-        border-color: color-mix(in srgb, #49b675 46%, transparent);
-        background: color-mix(in srgb, #22c55e 10%, var(--card-background-color));
-        color: color-mix(in srgb, #49b675 82%, white 18%);
+        border-color: color-mix(in srgb, #f97316 48%, transparent);
+        background: color-mix(in srgb, #f97316 12%, var(--card-background-color));
+        color: color-mix(in srgb, #fb923c 86%, white 14%);
       }
     }
 
     .notify-profile-actions [data-open-notify-test] {
-      width: 42px;
       min-width: 42px;
       min-height: 42px;
-      padding: 0;
+      padding: 0 14px;
       border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
       color: #dcfce7;
       background: linear-gradient(180deg, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.18));
       border-color: rgba(34, 197, 94, 0.5);
@@ -3816,6 +3909,12 @@ template.innerHTML = `
       height: 20px;
       display: block;
       fill: none;
+    }
+
+    .notify-profile-actions [data-open-notify-test] svg path:first-child {
+      stroke: #fff;
+      stroke-width: 1.7;
+      filter: drop-shadow(0 0 0.7px #000);
     }
 
     @media (prefers-color-scheme: light) {
@@ -3879,6 +3978,13 @@ template.innerHTML = `
       padding: 0;
     }
 
+    .select-preview-row .icon-only-button {
+      width: 40px;
+      min-width: 40px;
+      min-height: 40px;
+      border-radius: 50%;
+    }
+
     .icon-only-button svg {
       width: 18px;
       height: 18px;
@@ -3911,6 +4017,25 @@ template.innerHTML = `
       gap: 4px;
       padding: 10px 12px;
       border-radius: 14px;
+      background: transparent;
+      border-color: var(--accent-color, var(--primary-color));
+    }
+
+    /* Every field follows its workspace accent; validation errors retain red. */
+    .chapter-workspace .field:not(.error) {
+      border-color: var(--section-help-border);
+    }
+
+    .chapter-workspace .field:not(.error) input[type="range"] {
+      accent-color: var(--section-help-color);
+    }
+
+    .chapter-workspace .control-checkbox {
+      color: var(--section-help-color);
+    }
+
+    .chapter-workspace .control-checkbox input {
+      accent-color: var(--section-help-color);
     }
 
     .notify-profile-flags {
@@ -4066,6 +4191,28 @@ template.innerHTML = `
     .control-range {
       width: 100%;
       margin: 0;
+    }
+
+    .control-range::-webkit-slider-runnable-track {
+      min-height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(
+        to right,
+        color-mix(in srgb, var(--section-help-color) 84%, black 16%) 0 var(--range-progress, 0%),
+        var(--card-background-color) var(--range-progress, 0%) 100%
+      );
+    }
+
+    .control-range::-moz-range-track {
+      min-height: 6px;
+      border-radius: 999px;
+      background: var(--card-background-color);
+    }
+
+    .control-range::-moz-range-progress {
+      min-height: 6px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--section-help-color) 84%, black 16%);
     }
 
     .notify-test-grid {
@@ -4378,6 +4525,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._expandedNotifyProfiles = {};
     this._notifyProfileTests = {};
     this._notifyProfileTestTimers = {};
+    this._emptyChimeSetSelection = Math.floor(Math.random() * 3);
+    this._emptyChimeSetNextSelection = (this._emptyChimeSetSelection + 1 + Math.floor(Math.random() * 2)) % 3;
     this._expandedLogEvents = {};
     this._logCopyState = {};
     this._logCopyTimers = {};
@@ -4403,11 +4552,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._pathValidationTimers = {};
     this._invalidPathOverrides = {};
     this._restartPending = false;
+    this._notifyProfilesRestartPending = false;
     this._restartConfirmOpen = false;
     this._discardChangesConfirmOpen = false;
     this._randomChimeSetDeleteTarget = null;
     this._chimeSetOffsetEditor = null;
     this._pendingNavigationUrl = "";
+    this._pendingRestartReason = null;
     this._allowUnload = false;
     this._restarting = false;
     this._restartContext = null;
@@ -4556,6 +4707,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._pathValidationState = this._buildInitialPathValidationState();
       this._invalidPathOverrides = {};
       this._restartPending = false;
+      this._notifyProfilesRestartPending = false;
       this._restartConfirmOpen = false;
       this._restarting = false;
       this._restartContext = null;
@@ -4594,6 +4746,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._pathValidationState = {};
       this._invalidPathOverrides = {};
       this._restartPending = false;
+      this._notifyProfilesRestartPending = false;
       this._restartConfirmOpen = false;
       this._restarting = false;
       this._restartContext = null;
@@ -4891,6 +5044,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-add-random-chime-set]").forEach((button) => {
       button.addEventListener("click", () => this._addRandomChimeSet());
     });
+    this.shadowRoot.querySelectorAll(".slot-reel-strip").forEach((reel) => {
+      reel.addEventListener("animationiteration", () => {
+        this._emptyChimeSetSelection = this._emptyChimeSetNextSelection;
+        this._emptyChimeSetNextSelection = (this._emptyChimeSetSelection + 1 + Math.floor(Math.random() * 2)) % 3;
+        this._render();
+      }, { once: true });
+    });
     this.shadowRoot.querySelectorAll("[data-random-set-name]").forEach((field) => {
       field.addEventListener("change", (event) => this._updateRandomChimeSetName(Number(event.currentTarget.dataset.randomSetName), event.currentTarget.value));
     });
@@ -4904,6 +5064,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       button.addEventListener("click", (event) => this._openChimeOffsetEditor(event.currentTarget.dataset.editChimeOffset, event.currentTarget.dataset.chimeOffsetLabel));
     });
     this.shadowRoot.querySelectorAll("[data-chime-set-offset-reset]").forEach((button) => button.addEventListener("click", () => this._resetChimeSetOffsetEditor()));
+    this.shadowRoot.querySelectorAll("[data-chime-set-offset-value]").forEach((button) => {
+      button.addEventListener("click", () => this._editChimeSetOffsetValue());
+    });
+    this.shadowRoot.querySelectorAll("[data-chime-set-offset-input]").forEach((input) => {
+      input.addEventListener("input", (event) => this._handleChimeSetOffsetInput(event));
+      input.addEventListener("change", (event) => this._handleChimeSetOffsetInput(event));
+    });
     this.shadowRoot.querySelectorAll("[data-chime-set-offset-timeline]").forEach((timeline) => {
       this._positionChimeSetOffsetTimeline(timeline);
       timeline.querySelectorAll("[data-chime-set-offset-audio]").forEach((audio) => {
@@ -4971,6 +5138,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-reset-notify-field]").forEach((link) => {
       link.addEventListener("click", (event) => {
         event.preventDefault();
+        event.stopPropagation();
         this._resetNotifyProfileField(
           Number(event.currentTarget.dataset.notifyIndex),
           event.currentTarget.dataset.resetNotifyField,
@@ -5235,6 +5403,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     });
     this.shadowRoot.querySelectorAll("[data-restart-open]").forEach((button) => {
       button.addEventListener("click", (event) => this._openRestartConfirmation(event.currentTarget.dataset.restartOpen));
+    });
+    this.shadowRoot.querySelectorAll("[data-save-and-restart-notify-profiles]").forEach((button) => {
+      button.addEventListener("click", () => this._saveAndRestart("notify-profiles"));
     });
     this.shadowRoot.querySelectorAll("[data-restart-cancel]").forEach((button) => {
       button.addEventListener("click", () => this._closeRestartConfirmation());
@@ -5510,6 +5681,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         continue;
       }
 
+      // Measure the natural flex layout before applying the full-width wrapped style.
+      row.classList.remove("actions-wrapped");
       const wrapped = actions.offsetTop > main.offsetTop + 2;
       row.classList.toggle("actions-wrapped", wrapped);
     }
@@ -5720,12 +5893,55 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             ${restartRequired ? '<div class="field-note">ℹ️ <strong>Restart Required</strong><br />Adding or removing a Chime Set takes effect after Home Assistant restarts. Changing selected chimes does not require a restart.</div>' : ""}
             ${error ? `<div class="error-text">${this._escapeHtml(this._formatError(error))}</div>` : ""}
             ${sets.length === 0
-              ? '<p class="hint">No Chime Sets yet. Add one to mix up your notifications.</p>'
+              ? this._renderEmptyChimeSetsIllustration()
               : sets.map((chimeSet, index) => this._renderRandomChimeSetCard(chimeSet, index, available)).join("")}
           </div>`,
         })}
       </div>
     `;
+  }
+
+  _renderEmptyChimeSetsIllustration() {
+    return renderEmptyChimeSetSlotMachine(
+      this._emptyChimeSetSelection,
+      this._emptyChimeSetNextSelection,
+    );
+  }
+
+  _renderLegacyEmptyChimeSetsIllustration() {
+    const chimeIcons = ["bell", "note", "waves"];
+    const selectedIndex = this._emptyChimeSetSelection % chimeIcons.length;
+    const stripIcons = Array.from({ length: 31 }, (_, index) => {
+      const offset = index - 15;
+      return chimeIcons[(selectedIndex + offset + 12 + chimeIcons.length) % chimeIcons.length];
+    });
+    const strip = stripIcons.map((icon, index) =>
+      `<g transform="translate(0 ${(index - 15) * 70})">${this._renderEmptyChimeIcon(icon)}</g>`,
+    ).join("");
+    return `
+      <div class="chime-sets-empty-state">
+        <div class="chime-slot-machine">
+          <svg viewBox="0 0 300 270" role="img" aria-label="An animated single-reel chime slot machine" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="slot-gold" x1="0" x2="1"><stop stop-color="#b96900"/><stop offset=".42" stop-color="#ffd36a"/><stop offset="1" stop-color="#bd7308"/></linearGradient><linearGradient id="slot-pink" x1="0" x2="0" y2="1"><stop stop-color="#e90061"/><stop offset="1" stop-color="#a90050"/></linearGradient><clipPath id="chime-slot-window"><rect x="84" y="63" width="117" height="75" rx="13" /></clipPath></defs>
+            <path d="M61 43h166v24H61z" fill="url(#slot-gold)" stroke="#9a5100" stroke-width="4"/><path d="M68 28h152v15H68z" fill="#e90061" stroke="#a90050" stroke-width="4"/>
+            <g fill="#ffe15c">${[80, 102, 124, 146, 168, 190, 212].map((cx) => `<circle cx="${cx}" cy="35" r="3"/>`).join("")}</g>
+            <path d="M57 68c0-17 14-29 31-29h110c17 0 31 12 31 29v65c0 13-10 23-23 23H80c-13 0-23-10-23-23Z" fill="url(#slot-gold)" stroke="#9a5100" stroke-width="5"/>
+            <path d="M79 61h126v82H79z" fill="#fff8fa" stroke="#d7c5ca" stroke-width="4"/><rect x="84" y="63" width="117" height="75" rx="13" fill="#fff"/>
+            <g clip-path="url(#chime-slot-window)"><g class="slot-reel-strip">${strip}</g></g>
+            <path d="M62 151h164v72H62z" fill="url(#slot-pink)" stroke="#9e0050" stroke-width="5"/><path d="M72 170h143v43H72z" fill="none" stroke="#ffc43d" stroke-width="4"/>
+            <g fill="#ffe15c">${[78, 96, 114, 132, 150, 168, 186, 204].map((cx) => `<circle cx="${cx}" cy="161" r="3"/>`).join("")}</g>
+            <g class="slot-handle"><path d="M226 112 248 57" fill="none" stroke="#873c00" stroke-width="8" stroke-linecap="round"/><path d="M226 112 248 57" fill="none" stroke="#ffc64e" stroke-width="4" stroke-linecap="round"/><circle cx="251" cy="50" r="12" fill="#d90055" stroke="#9e0050" stroke-width="4"/></g>
+          </svg>
+        </div>
+        <blockquote class="chime-slot-message">“Move the washing to the dryer”</blockquote>
+      </div>
+    `;
+  }
+
+  _renderEmptyChimeIcon(icon) {
+    if (icon === "bell") return '<path d="M142 82c-12 0-21 10-21 22v14l-7 9h56l-7-9v-14c0-12-9-22-21-22Z" fill="#ffd83d" stroke="#153f71" stroke-width="5" stroke-linejoin="round"/><path d="M134 130c2 8 14 8 16 0" fill="none" stroke="#153f71" stroke-width="5" stroke-linecap="round"/>';
+    if (icon === "note") return '<path d="M153 84v34c-4-4-15-3-19 4-5 10 6 16 15 11 5-3 6-8 6-13v-21l22-5v26c-4-4-15-3-19 4-5 10 6 16 15 11 5-3 6-8 6-13V87l-25 6Z" fill="#4b83dc" stroke="#153f71" stroke-width="5" stroke-linejoin="round"/>';
+    return '<path d="M118 105v10m12-20v30m12-37v44m12-37v30m12-20v10" fill="none" stroke="#4b83dc" stroke-width="7" stroke-linecap="round"/>';
   }
 
   _renderRandomChimeSetCard(chimeSet, index, available) {
@@ -5894,6 +6110,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _renderNotifyProfilesSection(section) {
     const profiles = this._draftNotifyProfiles || [];
     const sectionDirty = this._isSectionDirty(section);
+    const profileStructureChanged = this._hasNotifyProfileStructureChanges();
+    const notifyProfilesRestartRequired = this._notifyProfilesRestartPending || profileStructureChanged;
     const notifyExpanded = this._isChapterExpanded("notify_profiles");
     const notifyProfilesHydrated = this._data?.notify_profiles_hydrated !== false;
     const notifyProfilesPending = !notifyProfilesHydrated;
@@ -5922,6 +6140,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                     >${this._escapeHtml(this._t("action.reset_section"))}</button>
                   ` : ""}
                 </div>
+                ${notifyProfilesRestartRequired ? `
+                  <div class="field-note notify-profiles-restart-banner" role="status">
+                    ℹ️ <strong>Restart Required</strong><br />Creating or deleting a Notification Profile takes effect after Home Assistant restarts.
+                    ${this._isDirty
+                      ? `<button class="button-primary" type="button" data-save-and-restart-notify-profiles="1" ${this._saving || this._hasInvalidPathChanges() ? "disabled" : ""}>Save &amp; Restart</button>`
+                      : `<button class="button-restart" type="button" data-restart-open="notify-profiles" ${this._restarting ? "disabled" : ""}>${this._escapeHtml(this._t("action.restart"))}</button>`
+                    }
+                  </div>
+                ` : ""}
                 ${notifyProfilesPending
                   ? `<p class="hint">${this._escapeHtml(this._t("loading.profiles"))}</p>`
                   : profiles.length === 0
@@ -6390,9 +6617,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                       class="button-secondary"
                       type="button"
                       data-open-notify-test="${this._escapeAttribute(String(index))}"
-                      aria-label="${this._escapeAttribute(this._t("aria.test_profile"))}"
-                      title="${this._escapeAttribute(this._t("action.test"))}"
-                    >${ICONS.beaker}</button>`
+                      aria-label="Run"
+                      title="Run"
+                    >${ICONS.run}<span>Run</span></button>`
                 }
                 <button
                   class="button-danger icon-only-button"
@@ -6551,6 +6778,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       }
     } else if (field.type === "range") {
       const normalizedValue = value === null || value === undefined || value === "" ? "" : String(value);
+      const minimum = Number(field.min ?? 0);
+      const maximum = Number(field.max ?? 100);
+      const rangeValue = Number(normalizedValue === "" ? minimum : normalizedValue);
+      const rangeProgress = maximum === minimum
+        ? 0
+        : Math.min(100, Math.max(0, ((rangeValue - minimum) / (maximum - minimum)) * 100));
       control = `
         <div class="notify-range">
           <input
@@ -6562,6 +6795,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             max="${this._escapeAttribute(String(field.max ?? 100))}"
             step="${this._escapeAttribute(String(field.step ?? 1))}"
             value="${this._escapeAttribute(normalizedValue === "" ? String(field.min ?? 0) : normalizedValue)}"
+            style="--range-progress: ${this._escapeAttribute(String(rangeProgress))}%"
           />
           <input
             class="control notify-range-number"
@@ -6614,12 +6848,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                     ${this._isNotifyProfileFieldChanged(index, field.key)
                       ? `
                         <span class="spacer"></span>
-                        <a
-                          href="#"
+                        <button
+                          type="button"
                           class="field-reset-link"
                           data-reset-notify-field="${this._escapeAttribute(field.key)}"
                           data-notify-index="${this._escapeAttribute(String(index))}"
-                        >${this._escapeHtml(this._t("action.reset"))}</a>
+                        >${this._escapeHtml(this._t("action.reset"))}</button>
                       `
                       : ""
                     }
@@ -7090,7 +7324,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return "";
     }
 
-    const isNavigating = Boolean(this._pendingNavigationUrl);
+    const isNavigating = Boolean(this._pendingNavigationUrl || this._pendingRestartReason);
 
     return `
       <div class="confirm-overlay">
@@ -7135,11 +7369,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (!editor) return "";
     const waveform = this._renderChimeSetWaveform(editor.waveform);
     const resetDisabled = Number(editor.offset) === Number(editor.initialOffset);
+    const offsetValue = editor.editingOffset
+      ? `<input class="chime-set-offset-title-input" data-chime-set-offset-input="1" type="number" step="1" inputmode="numeric" value="${this._escapeAttribute(editor.offset)}" aria-label="Chime offset in milliseconds" />`
+      : `<button class="chime-set-offset-value" type="button" data-chime-set-offset-value="1" aria-label="Edit chime offset">${this._escapeHtml(editor.offset)} ms</button>`;
     return `<div class="confirm-overlay"><div class="confirm-dialog chime-set-offset-dialog" role="dialog" aria-modal="true" aria-label="Edit chime offset">
-      <h3 class="confirm-title">${this._escapeHtml(editor.label)} Chime Offset</h3>
-      <p class="confirm-copy">
-        This will replace the offset when this chime is selected.
-      </p>
+      <h3 class="confirm-title">${this._escapeHtml(editor.label)} Chime Offset: ${offsetValue}</h3>
+      <p class="chime-set-offset-title-hint">Drag either audio block.</p>
       <div class="chime-set-offset-axis" data-chime-set-offset-axis="1" aria-hidden="true"></div>
       <div class="chime-set-offset-timeline ${editor.timelineReady ? "" : "initializing"}" data-chime-set-offset-timeline="1" aria-label="Chime and TTS audio timing">
         <div class="chime-set-offset-audio chime-set-offset-tts" data-chime-set-offset-audio="tts" role="slider" tabindex="0" aria-label="TTS audio position" aria-valuemin="-10000" aria-valuemax="10000" aria-valuenow="${this._escapeAttribute(editor.offset)}">
@@ -7153,8 +7388,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         <span class="chime-set-offset-overlap-line" data-chime-set-offset-overlap="end"></span>
         <span class="chime-set-offset-playback-head ${editor.previewStarted ? "playing" : ""}" style="--chime-set-preview-duration: ${Number(editor.previewDuration) || 1}s"></span>
       </div>
-      <div class="chime-set-offset-hint-row"><p class="chime-set-offset-timeline-hint">Drag either audio block. <span class="chime-set-offset-timeline-status" data-chime-set-offset-status="1" aria-live="polite"></span></p><button class="button-secondary chime-set-offset-preview-button ${editor.previewPlaying ? "stop" : ""}" type="button" data-chime-set-offset-preview="1">${editor.previewPlaying ? ICONS.stop : ICONS.play}<span>${editor.previewPlaying ? "Stop" : "Preview"}</span></button></div>
-      <div class="confirm-actions"><button class="button-secondary" type="button" data-chime-set-offset-reset="1" ${resetDisabled ? "disabled" : ""}>${this._escapeHtml(this._t("action.reset"))}</button><button class="button-primary" type="button" data-chime-set-offset-close="1">${this._escapeHtml(this._t("action.close"))}</button></div>
+      <div class="chime-set-offset-hint-row"><button class="button-secondary chime-set-offset-preview-button ${editor.previewPlaying ? "stop" : ""}" type="button" data-chime-set-offset-preview="1">${editor.previewPlaying ? ICONS.stop : ICONS.play}<span>${editor.previewPlaying ? "Stop" : "Preview"}</span></button></div>
+      <div class="confirm-actions"><button class="button-secondary" type="button" data-chime-set-offset-reset="1" ${resetDisabled ? "disabled" : ""}>${this._escapeHtml(this._t("action.reset"))}</button><button class="button-primary" type="button" data-chime-set-offset-close="1">${resetDisabled ? this._escapeHtml(this._t("action.close")) : "Done"}</button></div>
     </div></div>`;
   }
 
@@ -7510,8 +7745,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
   _openRestartConfirmation(reason = "pending") {
     const restartReason = reason || "pending";
-    const canRestartForReason = restartReason === "provider-refresh" || this._restartPending;
+    const canRestartForReason = restartReason === "provider-refresh"
+      || restartReason === "notify-profiles"
+      || this._restartPending;
     if (!canRestartForReason || this._restarting) {
+      return;
+    }
+    if (this._isDirty) {
+      this._pendingRestartReason = restartReason;
+      this._discardChangesConfirmOpen = true;
+      this._render();
       return;
     }
     this._restartContext = restartReason;
@@ -7530,7 +7773,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
   async _confirmRestart() {
     const restartContext = this._restartContext || "pending";
-    const canRestartForReason = restartContext === "provider-refresh" || this._restartPending;
+    const canRestartForReason = restartContext === "provider-refresh"
+      || restartContext === "notify-profiles"
+      || this._restartPending;
     if (!canRestartForReason || this._restarting) {
       return;
     }
@@ -7541,6 +7786,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     try {
       await this._hass.callService("homeassistant", "restart");
       this._restartPending = false;
+      this._notifyProfilesRestartPending = false;
       this._restartConfirmOpen = false;
       this._restartContext = null;
       this._data = {
@@ -7567,7 +7813,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return;
     }
     event.preventDefault();
-    event.returnValue = "";
+    // Browsers ignore custom wording. `true` is the most broadly supported
+    // native-confirmation signal for reloads and other page-unload attempts.
+    event.returnValue = true;
+    return event.returnValue;
   }
 
   _handleNavigationClick(event) {
@@ -7619,32 +7868,54 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _closeDiscardChangesConfirmation() {
     this._discardChangesConfirmOpen = false;
     this._pendingNavigationUrl = "";
+    this._pendingRestartReason = null;
     this._render();
   }
 
   _confirmResetAllChanges() {
     const navigationUrl = this._pendingNavigationUrl;
+    const restartReason = this._pendingRestartReason;
     this._discardChangesConfirmOpen = false;
     this._pendingNavigationUrl = "";
+    this._pendingRestartReason = null;
     if (navigationUrl) {
       this._navigateAfterDiscard(navigationUrl);
       return;
     }
-    this._resetAllChanges();
+    this._resetAllChanges({ preserveRestart: Boolean(restartReason) });
+    if (restartReason) {
+      this._openRestartConfirmation(restartReason);
+    }
   }
 
   async _saveUnsavedChanges() {
     await this._submit();
     if (!this._isDirty) {
       const navigationUrl = this._pendingNavigationUrl;
+      const restartReason = this._pendingRestartReason;
       this._discardChangesConfirmOpen = false;
       this._pendingNavigationUrl = "";
+      this._pendingRestartReason = null;
       if (navigationUrl) {
         this._navigateAfterDiscard(navigationUrl);
+      } else if (restartReason) {
+        this._openRestartConfirmation(restartReason);
       } else {
         this._render();
       }
     }
+  }
+
+  async _saveAndRestart(reason) {
+    if (this._saving || this._hasInvalidPathChanges()) {
+      return;
+    }
+    if (!this._isDirty) {
+      this._openRestartConfirmation(reason);
+      return;
+    }
+    this._pendingRestartReason = reason;
+    await this._saveUnsavedChanges();
   }
 
   _navigateAfterDiscard(url) {
@@ -7652,7 +7923,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     window.location.assign(url);
   }
 
-  _resetAllChanges() {
+  _resetAllChanges({ preserveRestart = false } = {}) {
+    const restartPending = this._restartPending;
     this._draftValues = { ...(this._data?.values || {}) };
     this._draftNotifyProfiles = this._cloneNotifyProfiles(this._data?.notify_profiles || []);
     this._clientErrors = {};
@@ -7661,10 +7933,11 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._isDirty = false;
     this._pathValidationState = this._buildInitialPathValidationState();
     this._invalidPathOverrides = {};
-    this._restartPending = false;
+    this._restartPending = preserveRestart ? restartPending : false;
     this._restartConfirmOpen = false;
     this._discardChangesConfirmOpen = false;
     this._pendingNavigationUrl = "";
+    this._pendingRestartReason = null;
     this._restartContext = null;
     this._clearSaveResult();
     this._rerenderPreservingInputState();
@@ -8343,6 +8616,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
     const values = { ...this._draftValues };
     const notifyProfiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
+    const notifyProfileStructureChanged = this._hasNotifyProfileStructureChanges();
     this._saving = true;
     this._clearSaveResult();
     this._render();
@@ -8363,6 +8637,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._notifyProfileTests = {};
       this._pathValidationState = this._buildInitialPathValidationState();
       this._invalidPathOverrides = {};
+      this._notifyProfilesRestartPending = this._notifyProfilesRestartPending || notifyProfileStructureChanged;
       this._restartPending = Boolean(this._data?.restart_required);
       this._restartConfirmOpen = this._restartPending;
       if (this._restartPending) {
@@ -8586,7 +8861,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     return samples.map((sample) => sample / peak);
   }
 
-  _setChimeSetOffsetEditorValue(value) {
+  _setChimeSetOffsetEditorValue(value, { syncInput = true } = {}) {
     if (!this._chimeSetOffsetEditor) return;
     const requestedOffset = String(value).trim() === "" ? Number.NaN : Number(value);
     const chimeDuration = Number(this._chimeSetOffsetEditor.chimeDuration) || 1000;
@@ -8598,9 +8873,25 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._stopChimeSetOffsetPreview();
     const timeline = this.shadowRoot.querySelector("[data-chime-set-offset-timeline]");
     const resetButton = this.shadowRoot.querySelector("[data-chime-set-offset-reset]");
+    const closeButton = this.shadowRoot.querySelector("[data-chime-set-offset-close]");
+    const valueButton = this.shadowRoot.querySelector("[data-chime-set-offset-value]");
+    const valueInput = this.shadowRoot.querySelector("[data-chime-set-offset-input]");
+    const changed = Number(this._chimeSetOffsetEditor.offset)
+      !== Number(this._chimeSetOffsetEditor.initialOffset);
     if (resetButton) {
-      resetButton.disabled = Number(this._chimeSetOffsetEditor.offset)
-        === Number(this._chimeSetOffsetEditor.initialOffset);
+      resetButton.disabled = !changed;
+    }
+    if (closeButton) closeButton.textContent = changed ? "Done" : this._t("action.close");
+    if (valueButton) valueButton.textContent = `${this._chimeSetOffsetEditor.offset} ms`;
+    if (valueInput && syncInput) {
+      const editorValue = this._chimeSetOffsetEditor.offset;
+      // Keep the live number control in sync after dragging. Updating its
+      // default value too prevents a previous manual edit from retaining a
+      // stale browser-controlled value.
+      valueInput.value = editorValue;
+      valueInput.defaultValue = editorValue;
+      valueInput.setAttribute("value", editorValue);
+      valueInput.setCustomValidity("");
     }
     if (timeline) this._positionChimeSetOffsetTimeline(timeline);
   }
@@ -8608,6 +8899,30 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _resetChimeSetOffsetEditor() {
     if (!this._chimeSetOffsetEditor) return;
     this._setChimeSetOffsetEditorValue(this._chimeSetOffsetEditor.initialOffset);
+    const input = this.shadowRoot?.querySelector("[data-chime-set-offset-input]");
+    if (input) {
+      input.value = this._chimeSetOffsetEditor.offset;
+      input.setCustomValidity("");
+    }
+  }
+
+  _editChimeSetOffsetValue() {
+    if (!this._chimeSetOffsetEditor) return;
+    this._chimeSetOffsetEditor.editingOffset = true;
+    this._render();
+    this.shadowRoot?.querySelector("[data-chime-set-offset-input]")?.focus();
+  }
+
+  _handleChimeSetOffsetInput(event) {
+    const input = event.currentTarget;
+    const value = String(input.value).trim();
+    const offset = Number(value);
+    const isValid = value !== "" && Number.isFinite(offset) && Number.isInteger(offset);
+    input.setCustomValidity(isValid ? "" : "Enter a whole number of milliseconds.");
+    if (!isValid) return;
+    // Do not write to the input while its own input event is being handled.
+    // Drag and keyboard updates still synchronize it through the default path.
+    this._setChimeSetOffsetEditorValue(offset, { syncInput: false });
   }
 
   _positionChimeSetOffsetTimeline(timeline) {
@@ -8692,12 +9007,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       line.style.display = position === null ? "none" : "block";
       if (position !== null) line.style.left = `${position}px`;
     });
-    const status = timeline.parentElement?.querySelector("[data-chime-set-offset-status]");
-    if (status) {
-      status.textContent = offset === 0
-        ? "Touching at 0 ms."
-        : `${Math.abs(offset)} ms ${offset < 0 ? "overlap." : "gap."}`;
-    }
   }
 
   _startChimeSetOffsetDrag(event) {
@@ -9033,8 +9342,11 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       : String(rawValue);
     const rangeInput = this.shadowRoot.querySelector(`[data-notify-range="${CSS.escape(key)}"][data-notify-index="${CSS.escape(String(index))}"]`);
     const numberInput = this.shadowRoot.querySelector(`[data-notify-range-number="${CSS.escape(key)}"][data-notify-index="${CSS.escape(String(index))}"]`);
-    if (rangeInput && value !== "" && !Number.isNaN(Number(value))) {
-      rangeInput.value = value === "" ? String(field?.min ?? 0) : value;
+    if (rangeInput) {
+      rangeInput.value = value !== "" && !Number.isNaN(Number(value))
+        ? value
+        : String(field?.min ?? 0);
+      this._updateNotifyRangeProgress(rangeInput);
     }
     if (numberInput && document.activeElement !== numberInput) {
       numberInput.value = value;
@@ -9042,6 +9354,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ? this._t("placeholder.auto", { unit: field?.unit ? ` ${field.unit}` : "" })
         : "";
     }
+  }
+
+  _updateNotifyRangeProgress(rangeInput) {
+    const min = Number(rangeInput?.min);
+    const max = Number(rangeInput?.max);
+    const value = Number(rangeInput?.value);
+    const progress = Number.isFinite(min) && Number.isFinite(max) && max !== min && Number.isFinite(value)
+      ? Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100))
+      : 0;
+    rangeInput?.style.setProperty("--range-progress", `${progress}%`);
   }
 
   _resetNotifyProfileField(index, key) {
@@ -10667,6 +10989,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return true;
     }
     return draftProfiles.some((_, index) => this._isNotifyProfileDirty(index));
+  }
+
+  _hasNotifyProfileStructureChanges() {
+    return (this._draftNotifyProfiles || []).length !== (this._data?.notify_profiles || []).length;
   }
 
   _renderTransientMessage(data, sectionCount = 0) {

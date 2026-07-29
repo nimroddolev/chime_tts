@@ -308,8 +308,16 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
     assert language_field["icon_url"].startswith(
         f"/api/{DOMAIN}/option_icons/language.svg"
     )
+    assert (
+        f"?v={settings_module.VERSION.lstrip('v') or settings_module.VERSION}&asset="
+        in language_field["icon_url"]
+    )
     assert custom_chimes_field["icon_url"].startswith(
         f"/api/{DOMAIN}/option_icons/{CUSTOM_CHIMES_PATH_KEY}.svg"
+    )
+    assert (
+        f"?v={settings_module.VERSION.lstrip('v') or settings_module.VERSION}&asset="
+        in custom_chimes_field["icon_url"]
     )
     assert custom_chimes_field["can_browse"] is True
     assert (

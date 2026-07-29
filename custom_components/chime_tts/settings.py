@@ -78,6 +78,7 @@ helpers = ChimeTTSHelper()
 
 _INTEGRATION_ROOT = Path(__file__).resolve().parent
 _FOOTER_LOGO_PATH = _INTEGRATION_ROOT / "panel" / "chime_tts.svg"
+_OPTION_ICONS_PATH = _INTEGRATION_ROOT / "panel" / "option_icons"
 
 
 def _footer_logo_url() -> str:
@@ -691,7 +692,7 @@ SETTINGS_FIELDS: tuple[SettingsField, ...] = (
     SettingsField(
         key=TTS_PLATFORM_KEY,
         label="Default TTS platform",
-        description="Used when a service call does not specify a TTS platform.",
+        description="Used when no TTS platform was specified",
         field_type="select",
         section="voice",
         allow_custom_value=True,
@@ -1604,13 +1605,25 @@ def _build_panel_sections(
     icon_versioned: bool,
 ) -> list[dict[str, Any]]:
     """Build the shared panel sections payload used by both panel builders."""
-    icon_suffix = f"?v={VERSION.lstrip('v') or VERSION}" if icon_versioned else ""
+    integration_version = VERSION.lstrip("v") or VERSION
 
     def icon_name(field_key: str) -> str:
         """Return the concise SVG filename for a configuration field."""
         if field_key.startswith("default_"):
             field_key = field_key.removeprefix("default_")
         return field_key.removesuffix("_key")
+
+    def icon_url(field_key: str) -> str:
+        """Return a versioned URL that also changes when the SVG asset changes."""
+        filename = f"{icon_name(field_key)}.svg"
+        url = f"/api/{DOMAIN}/option_icons/{filename}"
+        if not icon_versioned:
+            return url
+        try:
+            asset_version = _OPTION_ICONS_PATH.joinpath(filename).stat().st_mtime_ns
+        except OSError:
+            asset_version = integration_version
+        return f"{url}?v={integration_version}&asset={asset_version}"
 
     def build_section(section: dict[str, Any]) -> dict[str, Any]:
         """Build a configuration section with its field metadata."""
@@ -1624,7 +1637,7 @@ def _build_panel_sections(
                     "label": field.label,
                     "description": field.description,
                     "docs_url": FIELD_DOCUMENTATION_URLS.get(field.key),
-                    "icon_url": f"/api/{DOMAIN}/option_icons/{icon_name(field.key)}.svg{icon_suffix}",
+                    "icon_url": icon_url(field.key),
                     "type": field.field_type,
                     "required": field.required,
                     "allow_custom_value": field.allow_custom_value,
@@ -1669,7 +1682,7 @@ def _build_panel_sections(
             "key": CHIME_SETS_KEY,
             "kind": "chime_sets",
             "title": "Chime Sets",
-            "description": "Create purpose-specific chime sets and let Chime TTS randomly choose the sound each time.",
+            "description": "Create your own custom chime sets that Chime TTS will randomly choose from each time.",
             "docs_url": CHIME_SETS_DOCS_URL,
             "sets": normalize_sets(values.get(CHIME_SETS_KEY)),
             "available_chimes": [
@@ -3053,7 +3066,7 @@ def build_panel_payload(
             default_provider=default_provider,
             fallback_provider=fallback_provider,
             include_path_validations=True,
-            icon_versioned=False,
+            icon_versioned=True,
         ),
         "notify_profile_template": dict(NOTIFY_PROFILE_DEFAULTS),
         "notify_chime_options": chime_options,
