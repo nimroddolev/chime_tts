@@ -39,6 +39,23 @@ Or:
 
 6. Restart Home Assistant.
 
+## First run
+
+After restart, add Chime TTS in **Settings → Devices & services → Add integration**. Open **Settings → Devices & services → Chime TTS → Configure** to select TTS defaults and manage chimes, [Chime Sets](../documentation/chime-sets), and [Notification Profiles](../documentation/notify/).
+
+Try a first announcement from Developer Tools:
+
+```yaml
+action: chime_tts.say
+target:
+  entity_id: media_player.kitchen
+data:
+  chime_path: bells
+  message: "Welcome home"
+```
+
+Continue with [Configuration](../documentation/configuration) and [Chimes](../documentation/chimes).
+
 ---
 
 ## Beta Versions

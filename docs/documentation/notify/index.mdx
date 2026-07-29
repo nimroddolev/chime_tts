@@ -90,3 +90,47 @@ The panel is the recommended workflow. You can still [add profiles directly in Y
 This generated reference covers the current panel and YAML profile fields.
 
 <ReferenceTable type="notifyProfiles" />
+
+## Defaults, overrides, and restarts
+
+Profiles can define start and end chimes (including [Chime Sets](../chime-sets)), timing, TTS provider, language, voice, TLD, player targets, volume, cache, announcement and fade controls, audio conversion, and pre/post scripts. A value supplied under an action's `data` overrides the profile default; an omitted value uses the profile default.
+
+```yaml
+action: notify.door_alert
+data:
+  message: "The front door is open."
+  chime_path: Door alerts
+  volume_level: 0.7
+```
+
+Adding, removing, or renaming a profile requires a Home Assistant restart because it changes the registered `notify.*` service. Editing an existing profile without changing its service name can be re-registered from the panel.
+
+```yaml
+alias: Washer complete
+trigger:
+  - platform: state
+    entity_id: sensor.washer_status
+    to: complete
+action:
+  - action: notify.house_announcement
+    data:
+      message: "The washing machine has finished."
+      announce: true
+      fade_audio: true
+```
+
+```yaml
+alias: Night security alert
+trigger:
+  - platform: state
+    entity_id: binary_sensor.garage_motion
+    to: "on"
+action:
+  - action: notify.security_alert
+    data:
+      message: "Motion detected in the garage."
+      chime_path: alarm chimes
+      tts_platform: edge_tts
+      voice: en-US-AriaNeural
+      cache: false
+```

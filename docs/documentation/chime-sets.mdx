@@ -11,13 +11,13 @@ For example, create a `Reminder` set with ear-catching chimes, and then use that
 
 ## Create and manage sets from the sidebar panel
 
-1. In Home Assistant, open **Chime TTS** from the sidebar.
-2. Expand **Chime Sets**.
+1. In Home Assistant, open **Settings → Devices & services → Chime TTS → Configure**.
+2. Open **Chime Sets**.
 3. Select **Add Set**.
 4. Enter a name, select one or more chimes, and optionally set an offset for each selected chime.
 5. Save the changes.
 
-Saved sets appear in the **Start Chime** and **End Chime** selectors in the panel, prefixed with the 🎲 icon. They can also be used by notification profiles.
+Saved sets appear wherever a chime can be selected, including **Start Chime** and **End Chime**, prefixed with the 🎲 icon. They can also be used by notification profiles. The name is required, must be unique (case-insensitively), and a set must contain at least one chime.
 
 ## Use a set in an action
 
@@ -54,7 +54,13 @@ For instance, a long doorbell chime can use a negative offset so the spoken anno
 
 ## Restart behavior
 
-Adding or removing a Chime Set requires a Home Assistant restart before the change is available to Chime TTS actions. Editing the chimes selected within an existing set, including their per-chime offsets, does not require a restart.
+Adding, removing, or renaming a Chime Set requires a Home Assistant restart before the change is available to Chime TTS actions. Editing the chimes selected within an existing set, including their per-chime offsets, does not require a restart.
+
+## Empty state
+
+The slot-machine displayed when no sets exist is an illustrative animation only. It does not create or configure a Chime Set.
+
+See [Chimes](./chimes) for custom files and individual offsets, and [Notification Profiles](./notify/) for reusable notification services.
 
 :::tip
 

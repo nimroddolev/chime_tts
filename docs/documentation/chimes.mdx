@@ -1,0 +1,24 @@
+---
+sidebar_position: 1
+title: Chimes
+---
+
+# Chimes
+
+Chimes are individual audio files played before or after speech. Chime TTS includes preset chimes and can discover audio files in a custom chime folder.
+
+## Custom chime folder
+
+Open **Settings → Devices & services → Chime TTS → Configure** and set **Custom chimes folder** under Audio file folders. In the Chimes section you can browse the folder, upload files, create folders, rename or delete files, and preview a chime. Supported files include MP3, WAV, OGG, FLAC, M4A, AAC, AIFF, APE, and WMA.
+
+Changing the folder path or its contents requires a Home Assistant restart before the selector inventory refreshes. After restart, custom files appear in chime selectors alongside presets.
+
+## Preview and offsets
+
+Use the preview control in the panel to audition a chime. Individual chimes can have an offset: positive milliseconds add silence before the following segment; negative values overlap it. A [Chime Set](./chime-sets) member can supply its own per-member offset instead.
+
+## Individual chimes and sets
+
+Choose an individual chime for a fixed sound such as `bells`. Choose a 🎲 [Chime Set](./chime-sets) to randomly select one member. A Chime Set is a reference, not an audio file, and cannot contain another set.
+
+See [Say parameters](./actions/say-action/parameters#chime_path) for `chime_path` and `end_chime_path`.
