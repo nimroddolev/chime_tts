@@ -237,7 +237,9 @@ say:
           custom_value: true
           mode: dropdown
           multiple: false
-          options: null
+          options:
+          - label: google_translate
+            value: google_translate
     tts_speed:
       description: Set the speed of the TTS audio to between 1% and 500% of the original
       example: 125
@@ -609,7 +611,9 @@ say_url:
           custom_value: true
           mode: dropdown
           multiple: false
-          options: null
+          options:
+          - label: google_translate
+            value: google_translate
     tts_speed:
       description: Set the speed of the TTS audio to between 1% and 500% of the original
       example: 125
