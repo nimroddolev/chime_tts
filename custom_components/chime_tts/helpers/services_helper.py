@@ -129,13 +129,6 @@ class ChimeTTSServicesHelper:
             if isinstance(o, dict) and o.get("label") is not None and o.get("value") is not None
         ]
         options.sort(key=lambda x: x["label"].lower())
-        if not custom_chime_options:
-            options.append(
-                {
-                    "label": "*** Add a local folder path in the configuration for your own custom chimes ***",
-                    "value": "",
-                }
-            )
         return options
 
     @staticmethod

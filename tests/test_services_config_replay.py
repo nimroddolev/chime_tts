@@ -283,23 +283,6 @@ async def test_custom_chimes_monitor_retries_after_metadata_refresh_failure(
     )
 
 
-@pytest.mark.asyncio
-async def test_async_update_chime_lists_adds_placeholder_when_no_custom_options(monkeypatch: pytest.MonkeyPatch) -> None:
-    """An empty custom-chime list should append the placeholder guidance option."""
-    helper = services_helper_module.ChimeTTSServicesHelper()
-    save_yaml = AsyncMock()
-
-    monkeypatch.setattr(helper, "_async_parse_services_yaml", AsyncMock(return_value=make_services_yaml([])))
-    monkeypatch.setattr(helper, "_async_save_services_yaml", save_yaml)
-
-    await helper._async_update_chime_lists(FakeHass(), custom_chime_options=[])
-
-    saved_options = save_yaml.await_args.args[0]["say"]["fields"]["chime_path"]["selector"]["select"]["options"]
-    assert saved_options[-1] == {
-        "label": "*** Add a local folder path in the configuration for your own custom chimes ***",
-        "value": "",
-    }
-
 
 def test_build_tts_platform_options_returns_every_installed_provider() -> None:
     """Installed provider ids should be preserved exactly in dropdown options."""

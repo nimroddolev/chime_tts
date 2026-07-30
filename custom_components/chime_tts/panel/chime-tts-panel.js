@@ -1746,7 +1746,12 @@ template.innerHTML = `
     }
 
     :host([narrow]) .log-event-raw {
-      font-size: 0.75rem;
+      font-size: 0.68rem;
+      line-height: 1.4;
+    }
+
+    :host([narrow]) .log-event-summary {
+      font-size: 0.82rem;
       line-height: 1.45;
     }
 
@@ -1968,6 +1973,19 @@ template.innerHTML = `
     .chimes-workspace .chime-list-section {
       container-type: inline-size;
       container-name: chime-list;
+      /* The list expands after its toggle animation begins. On mobile, scroll
+       * anchoring can otherwise pull the viewport back to this header once
+       * that layout shift completes. */
+      overflow-anchor: none;
+    }
+
+    /* A long, single-column list changes the document height substantially on
+     * narrow screens. Do not animate that change while a touch scroll may be
+     * in progress, otherwise mobile browsers can clamp the page back to this
+     * section when the animation ends. */
+    .chime-list-section > .row-collapse,
+    .chime-list-section > .row-collapse > .row-collapse-inner {
+      transition: none;
     }
 
     .chimes-workspace .chime-list-grid {
@@ -2442,6 +2460,12 @@ template.innerHTML = `
     .field.error {
       border-color: rgba(211, 47, 47, 0.45);
       background: rgba(211, 47, 47, 0.05);
+    }
+
+    .field.error .control,
+    .field.error .control-select {
+      border-color: color-mix(in srgb, var(--error-color, #d32f2f) 68%, var(--divider-color));
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--error-color, #d32f2f) 22%, transparent);
     }
 
     .field.changed {
@@ -3698,6 +3722,39 @@ template.innerHTML = `
         linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff4f5 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fff7f8 8%));
     }
 
+    .notify-profile-card.error {
+      border-color: color-mix(in srgb, var(--error-color, #d32f2f) 62%, var(--divider-color));
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--error-color, #d32f2f) 18%, transparent);
+    }
+
+    .notify-profile-validation-error {
+      width: 100%;
+      margin: -2px 0 2px;
+      color: #ff0000;
+      font-size: 0.86rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .notify-profile-validation-error.validation-flash {
+      animation: validationErrorFlash 170ms ease-in-out 3;
+    }
+
+    @keyframes validationErrorFlash {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.2;
+      }
+    }
+
+    .notify-profile-title-input.error {
+      border: 1px solid color-mix(in srgb, var(--error-color, #d32f2f) 68%, var(--divider-color));
+      border-radius: 10px;
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--error-color, #d32f2f) 22%, transparent);
+    }
+
     .notify-profile-header {
       display: flex;
       align-items: center;
@@ -3971,49 +4028,47 @@ template.innerHTML = `
       align-items: center;
       justify-content: center;
       gap: 7px;
-      color: #dcfce7;
-      background: linear-gradient(180deg, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.18));
-      border-color: rgba(34, 197, 94, 0.5);
+      color: #ecfdf5;
+      background: linear-gradient(180deg, rgba(21, 128, 61, 0.5), rgba(20, 83, 45, 0.42));
+      border-color: rgba(22, 101, 52, 0.72);
     }
 
     .notify-profile-actions [data-open-notify-test]:hover,
     .notify-profile-actions [data-open-notify-test]:focus-visible {
-      background: linear-gradient(180deg, rgba(34, 197, 94, 0.38), rgba(22, 163, 74, 0.26));
-      border-color: rgba(74, 222, 128, 0.7);
+      background: linear-gradient(180deg, rgba(22, 163, 74, 0.6), rgba(20, 83, 45, 0.55));
+      border-color: rgba(34, 197, 94, 0.78);
     }
 
     .notify-profile-actions [data-open-notify-test] svg {
       width: 20px;
       height: 20px;
       display: block;
-      fill: none;
-    }
-
-    .notify-profile-actions [data-open-notify-test] svg path:first-child {
-      stroke: #fff;
-      stroke-width: 1.7;
-      filter: drop-shadow(0 0 0.7px #000);
+      fill: currentColor;
     }
 
     @media (prefers-color-scheme: light) {
       .notify-profile-actions [data-open-notify-test] {
-        color: #14532d;
-        background: linear-gradient(180deg, rgba(134, 239, 172, 0.88), rgba(74, 222, 128, 0.62));
-        border-color: rgba(22, 163, 74, 0.72);
+        color: #ffffff;
+        background: linear-gradient(180deg, #15803d, #166534);
+        border-color: #14532d;
         box-shadow:
           inset 0 1px 0 rgba(255, 255, 255, 0.72),
-          0 0 0 1px rgba(34, 197, 94, 0.14);
+          0 0 0 1px rgba(22, 163, 74, 0.14);
       }
 
       .notify-profile-actions [data-open-notify-test]:hover,
       .notify-profile-actions [data-open-notify-test]:focus-visible {
-        background: linear-gradient(180deg, rgba(110, 231, 183, 0.96), rgba(34, 197, 94, 0.74));
-        border-color: rgba(21, 128, 61, 0.84);
+        background: linear-gradient(180deg, #16a34a, #14532d);
+        border-color: #14532d;
       }
 
       .notify-profile-actions [data-open-notify-test] svg {
         filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.45));
       }
+    }
+
+    .notify-profile-actions [data-run-notify-inline-test]:disabled {
+      border: 1px solid color-mix(in srgb, var(--divider-color) 82%, var(--primary-text-color) 18%);
     }
 
     .notify-profile-actions [data-remove-notify-profile] {
@@ -4607,7 +4662,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._notifyProfileTests = {};
     this._notifyProfileTestTimers = {};
     this._emptyChimeSetSelection = Math.floor(Math.random() * 3);
-    this._emptyChimeSetNextSelection = (this._emptyChimeSetSelection + 1 + Math.floor(Math.random() * 2)) % 3;
+    this._emptyChimeSetNextSelection = this._randomEmptyChimeSetSelection(
+      this._emptyChimeSetSelection,
+    );
+    this._emptyChimeSetSpinTimer = null;
     this._expandedLogEvents = {};
     this._logCopyState = {};
     this._logCopyTimers = {};
@@ -4633,7 +4691,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._pathValidationTimers = {};
     this._invalidPathOverrides = {};
     this._restartPending = false;
-    this._notifyProfilesRestartPending = false;
     this._restartConfirmOpen = false;
     this._discardChangesConfirmOpen = false;
     this._randomChimeSetDeleteTarget = null;
@@ -4663,6 +4720,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     window.addEventListener("resize", this._boundResizeRefresh);
     window.addEventListener("beforeunload", this._boundBeforeUnload);
     document.addEventListener("click", this._boundNavigationClick, true);
+    this._scheduleEmptyChimeSetReelSpin();
   }
 
   disconnectedCallback() {
@@ -4679,6 +4737,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._clearLogsRefreshTimer();
     this._clearAllNotifyProfileTestTimers();
     this._clearAllLogCopyTimers();
+    this._clearEmptyChimeSetReelSpinTimer();
     this._stopPickerAudio();
     this._stopFieldPreviewAudio();
     this._stopNotifyPreviewAudio();
@@ -4792,7 +4851,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._pathValidationState = this._buildInitialPathValidationState();
       this._invalidPathOverrides = {};
       this._restartPending = false;
-      this._notifyProfilesRestartPending = false;
       this._restartConfirmOpen = false;
       this._restarting = false;
       this._restartContext = null;
@@ -4831,7 +4889,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._pathValidationState = {};
       this._invalidPathOverrides = {};
       this._restartPending = false;
-      this._notifyProfilesRestartPending = false;
       this._restartConfirmOpen = false;
       this._restarting = false;
       this._restartContext = null;
@@ -4878,7 +4935,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       if (canAdoptHydratedProfiles) {
         this._draftNotifyProfiles = this._cloneNotifyProfiles(nextProfiles);
       }
-      this._render();
+      this._renderPreservingScrollPosition();
     } catch (error) {
       if (requestId !== this._notifyProfilesHydrationRequestId) {
         return;
@@ -4888,7 +4945,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         notify_profiles_hydrated: true,
         notify_profiles_load_error: error?.message || this._t("error.load_profiles"),
       };
-      this._render();
+      this._renderPreservingScrollPosition();
     }
   }
 
@@ -5128,13 +5185,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     });
     this.shadowRoot.querySelectorAll("[data-add-random-chime-set]").forEach((button) => {
       button.addEventListener("click", () => this._addRandomChimeSet());
-    });
-    this.shadowRoot.querySelectorAll(".slot-reel-strip").forEach((reel) => {
-      reel.addEventListener("animationiteration", () => {
-        this._emptyChimeSetSelection = this._emptyChimeSetNextSelection;
-        this._emptyChimeSetNextSelection = (this._emptyChimeSetSelection + 1 + Math.floor(Math.random() * 2)) % 3;
-        this._render();
-      }, { once: true });
     });
     this.shadowRoot.querySelectorAll("[data-random-set-name]").forEach((field) => {
       field.addEventListener("change", (event) => this._updateRandomChimeSetName(Number(event.currentTarget.dataset.randomSetName), event.currentTarget.value));
@@ -5488,9 +5538,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     });
     this.shadowRoot.querySelectorAll("[data-restart-open]").forEach((button) => {
       button.addEventListener("click", (event) => this._openRestartConfirmation(event.currentTarget.dataset.restartOpen));
-    });
-    this.shadowRoot.querySelectorAll("[data-save-and-restart-notify-profiles]").forEach((button) => {
-      button.addEventListener("click", () => this._saveAndRestart("notify-profiles"));
     });
     this.shadowRoot.querySelectorAll("[data-restart-cancel]").forEach((button) => {
       button.addEventListener("click", () => this._closeRestartConfirmation());
@@ -5951,9 +5998,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         class="section config-section-card ${expanded ? "expanded" : "collapsed"}"
         data-section-key="${this._escapeAttribute(section.key)}"
         data-config-section-card="${this._escapeAttribute(section.key)}"
-        role="button"
-        tabindex="0"
-        aria-expanded="${expanded ? "true" : "false"}"
       >
         <div class="section-header">
           <div class="section-header-copy">
@@ -6049,6 +6093,37 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     );
   }
 
+  _randomEmptyChimeSetSelection(excludeSelection) {
+    const currentSelection = Number(excludeSelection) % 3;
+    return (currentSelection + 1 + Math.floor(Math.random() * 2)) % 3;
+  }
+
+  _scheduleEmptyChimeSetReelSpin() {
+    if (this._emptyChimeSetSpinTimer !== null) {
+      return;
+    }
+    this._emptyChimeSetSpinTimer = window.setTimeout(() => {
+      this._emptyChimeSetSpinTimer = null;
+      const chimeSets = this._draftValues?.chime_sets;
+      if (Array.isArray(chimeSets) && chimeSets.length === 0) {
+        this._emptyChimeSetSelection = this._emptyChimeSetNextSelection;
+        this._emptyChimeSetNextSelection = this._randomEmptyChimeSetSelection(
+          this._emptyChimeSetSelection,
+        );
+        this._render();
+      }
+      this._scheduleEmptyChimeSetReelSpin();
+    }, 2970);
+  }
+
+  _clearEmptyChimeSetReelSpinTimer() {
+    if (this._emptyChimeSetSpinTimer === null) {
+      return;
+    }
+    window.clearTimeout(this._emptyChimeSetSpinTimer);
+    this._emptyChimeSetSpinTimer = null;
+  }
+
   _renderLegacyEmptyChimeSetsIllustration() {
     const chimeIcons = ["bell", "note", "waves"];
     const selectedIndex = this._emptyChimeSetSelection % chimeIcons.length;
@@ -6132,7 +6207,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           docsUrl: section.docs_url,
           bodyMarkup: `<div class="chapter-content">
             ${folderSection ? this._renderSection(folderSection, values, errors) : ""}
-            <section class="section config-section chime-list-section ${listExpanded ? "expanded" : "collapsed"}" data-config-section-card="chime_list" role="button" tabindex="0" aria-expanded="${listExpanded ? "true" : "false"}">
+            <section class="section config-section chime-list-section ${listExpanded ? "expanded" : "collapsed"}" data-config-section-card="chime_list">
               <div class="section-header">
                 <div>
                   <h2>Chime List</h2>
@@ -6251,8 +6326,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _renderNotifyProfilesSection(section) {
     const profiles = this._draftNotifyProfiles || [];
     const sectionDirty = this._isSectionDirty(section);
-    const profileStructureChanged = this._hasNotifyProfileStructureChanges();
-    const notifyProfilesRestartRequired = this._notifyProfilesRestartPending || profileStructureChanged;
     const notifyExpanded = this._isChapterExpanded("notify_profiles");
     const notifyProfilesHydrated = this._data?.notify_profiles_hydrated !== false;
     const notifyProfilesPending = !notifyProfilesHydrated;
@@ -6281,15 +6354,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                     >${this._escapeHtml(this._t("action.reset_section"))}</button>
                   ` : ""}
                 </div>
-                ${notifyProfilesRestartRequired ? `
-                  <div class="field-note notify-profiles-restart-banner" role="status">
-                    ℹ️ <strong>Restart Required</strong><br />Creating or deleting a Notification Profile takes effect after Home Assistant restarts.
-                    ${this._isDirty
-                      ? `<button class="button-primary" type="button" data-save-and-restart-notify-profiles="1" ${this._saving || this._hasInvalidPathChanges() ? "disabled" : ""}>Save &amp; Restart</button>`
-                      : `<button class="button-restart" type="button" data-restart-open="notify-profiles" ${this._restarting ? "disabled" : ""}>${this._escapeHtml(this._t("action.restart"))}</button>`
-                    }
-                  </div>
-                ` : ""}
                 ${notifyProfilesPending
                   ? `<p class="hint">${this._escapeHtml(this._t("loading.profiles"))}</p>`
                   : profiles.length === 0
@@ -6663,6 +6727,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _renderNotifyProfileCard(section, profile, index) {
     const schemaFields = section.profile_fields || [];
     const errors = this._getNotifyProfileErrors(index);
+    const validationMessages = [];
+    if (errors?.name) {
+      validationMessages.push("Enter a profile name.");
+    }
+    if (errors?.entity_id) {
+      validationMessages.push("Select at least one media player.");
+    }
+    const hasValidationErrors = validationMessages.length > 0;
     const expanded = this._isNotifyProfileExpanded(index);
     const testState = this._getNotifyProfileTestState(index);
     const hasUnsavedChanges = this._isNotifyProfileDirty(index);
@@ -6689,7 +6761,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
     return `
       <article
-        class="notify-profile-card ${expanded ? "expanded" : "collapsed"}"
+        class="notify-profile-card ${expanded ? "expanded" : "collapsed"} ${hasValidationErrors ? "error" : ""}"
         data-notify-profile-card="${this._escapeAttribute(String(index))}"
         role="button"
         tabindex="0"
@@ -6705,12 +6777,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                 </div>
                 <div class="notify-profile-title-edit">
                   <input
-                    class="notify-profile-title-input"
+                    class="notify-profile-title-input ${errors?.name ? "error" : ""}"
                     data-notify-field="name"
                     data-notify-index="${this._escapeAttribute(String(index))}"
                     type="text"
                     value="${this._escapeAttribute(String(profile?.name ?? ""))}"
                     placeholder="${this._escapeAttribute(this._t("placeholder.service_name"))}"
+                    ${errors?.name ? 'aria-invalid="true"' : ""}
                   />
                 </div>
               `
@@ -6760,7 +6833,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                       data-open-notify-test="${this._escapeAttribute(String(index))}"
                       aria-label="Run"
                       title="Run"
-                    >${ICONS.run}<span>Run</span></button>`
+                    >${ICONS.play}<span>Run</span></button>`
                 }
                 <button
                   class="button-danger icon-only-button"
@@ -6780,6 +6853,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             }
           </div>
         </div>
+        ${hasValidationErrors
+          ? `<p class="notify-profile-validation-error" role="alert">Cannot save this profile: ${this._escapeHtml(validationMessages.join(" "))}</p>`
+          : ""
+        }
         <div class="row-collapse ${expanded ? "expanded" : "collapsed"}">
           <div class="row-collapse-inner">
             ${notifyProfileBody}
@@ -7025,7 +7102,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (field.wide) {
       fieldClasses.push("wide");
     }
-    if (error) {
+    if (error || this._hasBlockingPathValidationError(field, value)) {
       fieldClasses.push("error");
     }
     const isChanged = this._isFieldChanged(field.key);
@@ -7100,6 +7177,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       && String(normalizedValue).trim() !== ""
       && !this._invalidPathOverrides?.[field.key]
     );
+    const ariaInvalid = this._hasBlockingPathValidationError(field, normalizedValue)
+      ? ' aria-invalid="true"'
+      : "";
 
     const inputMarkup = field.type === "textarea"
       ? `
@@ -7118,6 +7198,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ${minAttr}
         ${stepAttr}
         ${placeholderAttr}
+        ${ariaInvalid}
       />
     `;
 
@@ -7798,7 +7879,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       if (preserveInputState) {
         this._rerenderPreservingInputState();
       } else {
-        this._render();
+        this._renderPreservingScrollPosition();
       }
     } catch (error) {
       this._pathValidationState = {
@@ -7814,7 +7895,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       if (preserveInputState) {
         this._rerenderPreservingInputState();
       } else {
-        this._render();
+        this._renderPreservingScrollPosition();
       }
     }
   }
@@ -7887,7 +7968,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _openRestartConfirmation(reason = "pending") {
     const restartReason = reason || "pending";
     const canRestartForReason = restartReason === "provider-refresh"
-      || restartReason === "notify-profiles"
       || this._restartPending;
     if (!canRestartForReason || this._restarting) {
       return;
@@ -7915,7 +7995,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   async _confirmRestart() {
     const restartContext = this._restartContext || "pending";
     const canRestartForReason = restartContext === "provider-refresh"
-      || restartContext === "notify-profiles"
       || this._restartPending;
     if (!canRestartForReason || this._restarting) {
       return;
@@ -7927,7 +8006,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     try {
       await this._hass.callService("homeassistant", "restart");
       this._restartPending = false;
-      this._notifyProfilesRestartPending = false;
       this._restartConfirmOpen = false;
       this._restartContext = null;
       this._data = {
@@ -8047,18 +8125,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
   }
 
-  async _saveAndRestart(reason) {
-    if (this._saving || this._hasInvalidPathChanges()) {
-      return;
-    }
-    if (!this._isDirty) {
-      this._openRestartConfirmation(reason);
-      return;
-    }
-    this._pendingRestartReason = reason;
-    await this._saveUnsavedChanges();
-  }
-
   _navigateAfterDiscard(url) {
     this._allowUnload = true;
     window.location.assign(url);
@@ -8174,20 +8240,53 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     return this._expandedConfigSections?.[sectionKey] === true;
   }
 
+  _renderPreservingScrollPosition() {
+    const scrollElement = document.scrollingElement;
+    const scrollTop = scrollElement?.scrollTop ?? window.scrollY ?? 0;
+
+    this._render();
+
+    const restoreScrollPosition = () => {
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollTop;
+      } else {
+        window.scrollTo(0, scrollTop);
+      }
+    };
+
+    // Mobile browsers can apply scroll anchoring after the panel's new layout
+    // has been measured. Restore again on the following frame so collapsing a
+    // section does not move the viewport when the Chimes list is open.
+    window.requestAnimationFrame(() => {
+      restoreScrollPosition();
+      window.requestAnimationFrame(restoreScrollPosition);
+    });
+  }
+
   _toggleConfigSection(sectionKey) {
     if (!sectionKey) {
       return;
     }
+    const updateSectionState = () => {
+      const expanded = !this._isConfigSectionExpanded(sectionKey);
+      this._expandedConfigSections = {
+        ...(this._expandedConfigSections || {}),
+        [sectionKey]: expanded,
+      };
+      this._renderPreservingScrollPosition();
+    };
+
+    // The Chime List can be much taller than the viewport on mobile. Rendering
+    // it immediately avoids a second height transition that can reset a touch
+    // scroll once momentum ends.
+    if (sectionKey === "chime_list") {
+      updateSectionState();
+      return;
+    }
+
     this._animateHeightTransition(
       `[data-config-section-card="${this._escapeSelectorValue(sectionKey)}"]`,
-      () => {
-        const expanded = !this._isConfigSectionExpanded(sectionKey);
-        this._expandedConfigSections = {
-          ...(this._expandedConfigSections || {}),
-          [sectionKey]: expanded,
-        };
-        this._render();
-      },
+      updateSectionState,
     );
   }
 
@@ -8246,7 +8345,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           ...(this._expandedChapters || {}),
           [chapterKey]: expanded,
         };
-        this._render();
+        this._renderPreservingScrollPosition();
         if (chapterKey === "logs" && !wasExpanded) {
           this._refreshLogs({ force: true });
         }
@@ -8752,12 +8851,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       || this._notifyProfileClientErrors.some((profileErrors) => Object.keys(profileErrors || {}).length > 0)
     ) {
       this._render();
+      this._scrollToFirstValidationError();
       return;
     }
 
     const values = { ...this._draftValues };
     const notifyProfiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
-    const notifyProfileStructureChanged = this._hasNotifyProfileStructureChanges();
     this._saving = true;
     this._clearSaveResult();
     this._render();
@@ -8770,15 +8869,19 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         allow_invalid_paths: Object.keys(this._invalidPathOverrides || {}).filter((fieldKey) => this._invalidPathOverrides[fieldKey]),
       });
       await this._reloadSettingsMetadata();
-      this._draftValues = { ...(this._data?.values || {}) };
-      this._draftNotifyProfiles = this._cloneNotifyProfiles(this._data?.notify_profiles || []);
-      this._isDirty = false;
+      const hasValidationErrors = Object.keys(this._data?.errors || {}).length > 0;
+      this._draftValues = hasValidationErrors
+        ? values
+        : { ...(this._data?.values || {}) };
+      this._draftNotifyProfiles = hasValidationErrors
+        ? this._cloneNotifyProfiles(notifyProfiles)
+        : this._cloneNotifyProfiles(this._data?.notify_profiles || []);
+      this._isDirty = hasValidationErrors;
       this._clientErrors = {};
       this._notifyProfileClientErrors = [];
       this._notifyProfileTests = {};
       this._pathValidationState = this._buildInitialPathValidationState();
       this._invalidPathOverrides = {};
-      this._notifyProfilesRestartPending = this._notifyProfilesRestartPending || notifyProfileStructureChanged;
       this._restartPending = Boolean(this._data?.restart_required);
       this._restartConfirmOpen = this._restartPending;
       if (this._restartPending) {
@@ -9572,7 +9675,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._expandedNotifyProfiles = this._reindexNotifyProfileState(this._expandedNotifyProfiles, index);
     this._notifyProfileTests = this._reindexNotifyProfileState(this._notifyProfileTests, index);
     this._isDirty = this._hasValueChanges();
-    this._render();
+    this._renderPreservingScrollPosition();
   }
 
   _toggleNotifyProfile(index) {
@@ -10824,21 +10927,49 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const sections = this._data?.sections || [];
     for (const section of sections) {
       for (const field of section.fields || []) {
-        if (
-          !field.can_browse
-          || !this._isFieldChanged(field.key)
-          || this._invalidPathOverrides?.[field.key]
-        ) {
-          continue;
-        }
-        const validation = this._getPathValidationState(field);
-        const value = String(this._draftValues?.[field.key] ?? "").trim();
-        if (value !== "" && validation?.valid === false) {
+        if (this._hasBlockingPathValidationError(field)) {
           return true;
         }
       }
     }
     return false;
+  }
+
+  _hasBlockingPathValidationError(field, value = this._draftValues?.[field?.key]) {
+    if (
+      !field?.can_browse
+      || !this._isFieldChanged(field.key)
+      || this._invalidPathOverrides?.[field.key]
+      || String(value ?? "").trim() === ""
+    ) {
+      return false;
+    }
+    return this._getPathValidationState(field)?.valid === false;
+  }
+
+  _scrollToFirstValidationError() {
+    window.requestAnimationFrame(() => {
+      const error = this.shadowRoot?.querySelector(
+        ".notify-profile-validation-error, .field.error",
+      );
+      if (!error) {
+        return;
+      }
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      error.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "center",
+      });
+      if (reduceMotion) {
+        return;
+      }
+      error.classList.remove("validation-flash");
+      void error.offsetWidth;
+      error.classList.add("validation-flash");
+      error.addEventListener("animationend", () => {
+        error.classList.remove("validation-flash");
+      }, { once: true });
+    });
   }
 
   _hasValueChanges() {
@@ -10901,6 +11032,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       }
     }
 
+    const randomChimeSets = this._randomChimeSetsDraft();
+    if (randomChimeSets.some((chimeSet) => (
+      !String(chimeSet?.name || "").trim()
+      || !Array.isArray(chimeSet?.chimes)
+      || chimeSet.chimes.length === 0
+    ))) {
+      errors.chime_sets = "invalid_chime_sets";
+      this._expandedChapters = { ...(this._expandedChapters || {}), chime_sets: true };
+    }
+
     const notifyProfileErrors = this._cloneNotifyProfileErrors(this._notifyProfileClientErrors || []);
     for (let index = 0; index < (this._draftNotifyProfiles || []).length; index += 1) {
       const profile = this._draftNotifyProfiles[index] || {};
@@ -10909,6 +11050,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       }
       if (!String(profile.entity_id ?? "").trim()) {
         notifyProfileErrors[index] = { ...(notifyProfileErrors[index] || {}), entity_id: "required" };
+      }
+      if (Object.keys(notifyProfileErrors[index] || {}).length > 0) {
+        this._expandedNotifyProfiles = {
+          ...(this._expandedNotifyProfiles || {}),
+          [index]: true,
+        };
       }
     }
     this._notifyProfileClientErrors = notifyProfileErrors;
@@ -11132,10 +11279,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return true;
     }
     return draftProfiles.some((_, index) => this._isNotifyProfileDirty(index));
-  }
-
-  _hasNotifyProfileStructureChanges() {
-    return (this._draftNotifyProfiles || []).length !== (this._data?.notify_profiles || []).length;
   }
 
   _renderTransientMessage(data, sectionCount = 0) {

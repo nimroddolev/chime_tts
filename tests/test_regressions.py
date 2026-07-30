@@ -502,18 +502,16 @@ def test_browser_refresh_with_unsaved_changes_requests_confirmation():
     assert "return event.returnValue;" in panel_source
 
 
-def test_notification_profile_structure_changes_offer_save_and_restart():
-    """Adding or removing profiles must surface the restart action above the list."""
+def test_notification_profile_structure_changes_rely_on_save_confirmation():
+    """Saving profiles opens the existing restart confirmation without an inline banner."""
     root = Path(__file__).parents[1]
     panel_source = (
         root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
     ).read_text(encoding="utf-8")
 
-    assert "_hasNotifyProfileStructureChanges()" in panel_source
-    assert "notify-profiles-restart-banner" in panel_source
-    assert "Save &amp; Restart" in panel_source
-    assert 'data-restart-open="notify-profiles"' in panel_source
-    assert 'this._saveAndRestart("notify-profiles")' in panel_source
+    assert "notify-profiles-restart-banner" not in panel_source
+    assert "Creating or deleting a Notification Profile takes effect" not in panel_source
+    assert "this._restartConfirmOpen = this._restartPending;" in panel_source
 
 
 def test_single_notify_field_reset_is_not_a_navigation_link():
@@ -547,7 +545,7 @@ def test_workspace_section_accents_follow_the_requested_color_order():
         root / "custom_components" / "chime_tts" / "panel" / "chime-tts-panel.js"
     ).read_text(encoding="utf-8")
 
-    assert ".configuration-workspace .chapter-content { --workspace-accent: color-mix(in srgb, #49b675 82%, white 18%); }" in panel_source
+    assert ".configuration-workspace .chapter-content { --workspace-accent: color-mix(in srgb, var(--configuration-accent) 82%, white 18%); }" in panel_source
     assert ".chimes-workspace .chapter-content { --workspace-accent: var(--primary-color); }" in panel_source
     assert ".logs-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #f97316 86%, white 14%); }" in panel_source
     assert ".chime-sets-workspace .chapter-content { --workspace-accent: #7c3aed; }" in panel_source
@@ -1000,3 +998,51 @@ data:
     await async_run_script(hass, "light.kitchen")
     await async_run_script(hass, None)
     assert calls == []
+
+
+def test_notification_profile_run_button_has_a_clean_darker_green_treatment():
+    """The Run icon stays crisp while its notification action is less bright."""
+    panel_source = Path(
+        "custom_components/chime_tts/panel/chime-tts-panel.js"
+    ).read_text()
+    run_button_css = panel_source.split(
+        ".notify-profile-actions [data-open-notify-test] {", 1
+    )[1].split(".notify-profile-actions [data-remove-notify-profile]", 1)[0]
+
+    assert "rgba(21, 128, 61, 0.5)" in run_button_css
+    assert "rgba(20, 83, 45, 0.42)" in run_button_css
+    assert "filter: drop-shadow(0 0 0.7px #000);" not in run_button_css
+
+
+def test_chime_set_slot_machine_loops_with_a_new_random_winning_symbol():
+    """Each seamless reel cycle promotes its winner and selects another one."""
+    slot_machine_source = Path(
+        "custom_components/chime_tts/panel/chime-set-slot-machine.js"
+    ).read_text()
+    panel_source = Path(
+        "custom_components/chime_tts/panel/chime-tts-panel.js"
+    ).read_text()
+
+    assert "animation:chimeSlotReelSpin 2.97s both;" in slot_machine_source
+    assert "animation:chimeSlotReelSpin 2.97s infinite both;" not in slot_machine_source
+    assert "this._scheduleEmptyChimeSetReelSpin();" in panel_source
+    assert "this._emptyChimeSetSelection = this._emptyChimeSetNextSelection;" in panel_source
+    assert "this._randomEmptyChimeSetSelection(" in panel_source
+    assert "chime-slot-message-copy" in slot_machine_source
+    assert "chime-slot-winner-question" in slot_machine_source
+    assert "translate:-50% -50%" in slot_machine_source
+    assert "WINNER_ICON_VIEW_BOXES" in slot_machine_source
+    assert "chimeSlotWinnerFadeOut" in slot_machine_source
+    assert "chimeSlotWinnerQuestion" in slot_machine_source
+    assert "chimeSlotWinnerFadeIn" in slot_machine_source
+
+
+def test_unnamed_chime_set_validation_preserves_the_draft():
+    """An invalid Chime Set remains editable instead of being discarded on save."""
+    panel_source = Path(
+        "custom_components/chime_tts/panel/chime-tts-panel.js"
+    ).read_text()
+
+    assert 'errors.chime_sets = "invalid_chime_sets";' in panel_source
+    assert "this._draftValues = hasValidationErrors" in panel_source
+    assert "? values" in panel_source
