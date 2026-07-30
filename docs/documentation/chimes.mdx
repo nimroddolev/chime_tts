@@ -13,11 +13,19 @@ Panel-based chime management is currently in beta and may change between release
 
 :::
 
-## Custom chime folder
+## Custom Chimes Folder
 
-Open **Settings → Devices & services → Chime TTS → Configure** and set **Custom chimes folder** under Audio file folders. In the Chimes section you can browse the folder, upload files, create folders, rename or delete files, and preview a chime. Supported files include MP3, WAV, OGG, FLAC, M4A, AAC, AIFF, APE, and WMA.
+Open **Settings → Devices & services → Chime TTS → Configure → Chimes** and set **Custom chimes folder**. In the Chimes section you can browse the folder, upload files or an entire folder, create folders, rename or delete files, and preview a chime. Supported files include MP3, WAV, OGG, FLAC, M4A, AAC, AIFF, APE, and WMA.
 
 Changing the folder path or its contents requires a Home Assistant restart before the selector inventory refreshes. After restart, custom files appear in chime selectors alongside presets.
+
+## Uploading chimes
+
+Select **Upload Files** to add individual audio files, or **Upload Folder** to add all supported audio files from a folder while preserving its subfolder structure. If files with the same name already exist at the destination, choose whether to overwrite them or upload only the files that do not conflict.
+
+## Downloaded Chimes Folder
+
+This required folder stores downloaded chime MP3 files. Its default path is `{root}/media/sounds/temp/chime_tts/chimes/`.
 
 ## Preview and offsets
 

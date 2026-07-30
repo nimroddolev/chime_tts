@@ -4,6 +4,7 @@ sidebar_position: 1
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import ReferenceTable from '@site/src/components/ReferenceTable';
+import LegacyConfigurationRedirect from '@site/src/components/LegacyConfigurationRedirect';
 
 # Configuration
 
@@ -21,269 +22,54 @@ Open **Settings → Devices & services → Chime TTS → Configure**. The panel 
 
 Restart Home Assistant after adding a TTS provider, changing custom-chime folder paths or contents, adding/removing/renaming a Chime Set, or adding/removing/renaming a Notification Profile. Changing members of an existing Chime Set does not require a restart.
 
+<LegacyConfigurationRedirect />
 
-You can configure the following options for the [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) and [`chime_tts.say_url`](/chime_tts/docs/documentation/actions/say_url-action) actions through the integration's configuration page:
+You can configure the following options for the [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) and [`chime_tts.say_url`](/chime_tts/docs/documentation/actions/say_url-action) actions through the integration's configuration panel:
 
 <a href="https://my.home-assistant.io/redirect/integration/?domain=chime_tts" alt="Chime TTS integration" target="_blank"><img src={useBaseUrl('/img/documentation/show_chime_tts_on_my.png')} /></a>
 
-### Timeout
+## Configuration sections
 
-The duration (in seconds) to wait before cancelling the [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) or [`chime_tts.say_url`](/chime_tts/docs/documentation/actions/say_url-action) action calls.
+- [TTS Defaults & Fallback](./configuration/tts-defaults-fallback): Choose the default TTS provider, language, voice, dialect, and fallback provider.
+- [Playback Options](./configuration/playback-options): Set default chimes, audio timing, transitions, cleanup, and MP3 cover art.
+- [Audio Files Folders](./configuration/audio-files-folders): Configure generated audio and `chime_tts.say_url` output locations.
+- [Action & Script Options](./configuration/action-script-options): Configure action timeouts and default pre- and post-playback scripts.
 
-<table>
-<tr><td><b>Default Value:</b></td><td>`60`</td></tr>
-<tr><td><b>Required:</b></td><td>Yes</td></tr>
-</table>
+## Chimes
 
-:::tip
+Manage custom and downloaded chime audio in the panel's **Chimes** section. See [Chimes](./chimes) for chime previews and per-chime offsets.
 
-Increase the timeout duration intend to generate audio longer than 60 seconds in length.
+## Chime Sets
 
-:::
+Create reusable groups of chimes and randomly select a member for an action. See [Chime Sets](./chime-sets) for setup, selection, and restart behaviour.
 
----
+## Notification Profiles
 
-### TTS Audio Generation Timeout
+Create reusable Chime TTS notify services for automations and scripts. See [Notification Profiles](./notify/) for configuration and YAML examples.
 
-The duration (in seconds) to wait before canceling a TTS audio generation attempt.
+## Logs
 
-<table>
-<tr><td><b>Default Value:</b></td><td>`30`</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
+Review Chime TTS events and raw logs captured during the current Home Assistant session. See [Logs](./logs) for details.
 
----
+## Support & Info
 
-### Default TTS Platform
+Use the panel's **Support & Info** section for documentation, community support, bug reports, feature requests, and project support links.
 
-The default [`tts_platform`](/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) value to use when not specified.
+## Legacy field links
 
-<table>
-<tr><td><b>Default Value:</b></td><td>None</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
----
-
-### Default Language
-
-The default [`language`](/chime_tts/docs/documentation/actions/say-action/parameters#language) value to use if the [`tts_platform`](/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) is set to the default TTS platform.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>None</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
----
-
-### Default Voice
-
-The default [`voice`](/chime_tts/docs/documentation/actions/say-action/parameters#voice) value to use if the [`tts_platform`](/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) is set to the default TTS platform.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>None</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
----
-
-### Default Dialect
-
-The default dialect domain ([`tld`](/chime_tts/docs/documentation/actions/say-action/parameters#tld)) value if the [`tts_platform`](/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) is set to Google Translate.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>None</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
----
-
-### Fallback TTS Platform
-
-The [TTS platform](/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) to retry generating TTS audio if the specified/default platform failed.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>None</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
----
-
-### Default Offset
-
-The default [offset](/chime_tts/docs/documentation/actions/say-action/parameters#offset) duration (in milliseconds) between chimes and TTS audio.<br />
-Positive values introduce a delay, while negative values overlap the audio segments.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>`450`</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
----
-
-### Default Start Chime
-
-Set an optional chime to play before generated speech. An action can override this default.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>None</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
----
-
-### Default End Chime
-
-Set an optional chime to play after generated speech. An action can override this default.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>None</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
----
-
-### Default Crossfade
-
-Set the default crossfade duration between audio segments. An action can override this value. A negative offset overlays segments; crossfade controls how one segment fades into the next.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>`0`</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
----
-
-### Fade Transition
-
-The duration (in milliseconds) to fade out the now playing audio _before_ an announcement, and then fade it back in _after_ the announcement is completed.
-
-_This applies to [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) action calls when the [`announce`](/chime_tts/docs/documentation/actions/say-action/parameters#announce) or [`fade_audio`](/chime_tts/docs/documentation/actions/say-action/parameters#fade_audio) parameters are used._
-
-<table>
-<tr><td><b>Default Value:</b></td><td>`500`</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
----
-
-### Delay Before Removing Temporary Files
-
-The delay duaration after [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) playback is completed (in milliseconds), before removing the generated temporary audio file.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>None</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
----
-
-### Default Playback Scripts
-
-Use a pre-playback script to prepare a player or environment before playback, and a post-playback script for cleanup. An action or notification profile can override either configured default.
-
-#### `pre_script`
-
-Runs before playback unless an action or notification profile specifies its own `pre_script` value.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>None</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
-#### `post_script`
-
-Runs after playback unless an action or notification profile specifies its own `post_script` value.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>None</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
-Simple script entity:
-
-```yaml
-pre_script: script.front_door_prepare
-post_script: script.front_door_restore
-```
-
-Script with data:
-
-```yaml
-pre_script:
-  script: script.front_door_prepare
-  data:
-    volume: 0.5
-```
-
----
+The following legacy links redirect to their new locations. They are retained for existing bookmarks, automations, and links from older documentation.
 
 ### Custom Chimes Folder
 
-The local folder path containing custom audio files. Please [read here](/chime_tts/docs/documentation/actions/say-action/#custom-chimes-folder) for more information.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>None</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
-:::warning[Restart Requierd]
-
-Any changes to the folder path or its contents will require a restart to take effect.
-
-:::
-
----
+This setting is now documented in [Chimes](./chimes#custom-chimes-folder).
 
 ### Downloaded Chimes Folder
 
-The local folder path where downloaded chime MP3 files will be stored.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>`{root}/media/sounds/temp/chime_tts/chimes/`</td></tr>
-<tr><td><b>Required:</b></td><td>Yes</td></tr>
-</table>
-
----
-
-### Temporary MP3 Folder
-
-The local folder path where generated MP3 files will be stored.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>`{root}/media/sounds/temp/chime_tts/`</td></tr>
-<tr><td><b>Required:</b></td><td>Yes</td></tr>
-</table>
-
-:::warning[Please Note]
-
-Make sure the temporary folder path is inside a [media folder](https://www.home-assistant.io/integrations/media_source/) of your Home Assistant, otherwise the [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) action will not be able to play the generated MP3 on your media_players.
-
-:::
-
----
+This setting is now documented in [Chimes](./chimes#downloaded-chimes-folder).
 
 ### `chime_tts.say_url` Folder
 
-The publicly facing folder path where MP3 files generated by the [`chime_tts.say_url`](/chime_tts/docs/documentation/actions/say_url-action) action will be stored.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>`{root}/config/www/chime_tts/`</td></tr>
-<tr><td><b>Required:</b></td><td>Yes</td></tr>
-</table>
-
----
-
-### MP3 Cover Art
-
-When enabled, adds the Chime TTS logo as the cover art in generated MP3 files.
-
-<table>
-<tr><td><b>Default Value:</b></td><td>`false`</td></tr>
-<tr><td><b>Required:</b></td><td>No</td></tr>
-</table>
-
----
+This setting is now documented in [Audio Files Folders](./configuration/audio-files-folders#chime_ttssay_url-folder).
 
 ## Configuration reference
 

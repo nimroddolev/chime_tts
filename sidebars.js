@@ -16,7 +16,17 @@ const sidebars = {
   // By default, Docusaurus generates a sidebar from the docs folder structure
   tutorialSidebar: [
     {type: 'category', label: 'Quick Start', items: ['quick-start/installing-chime-tts', 'quick-start/adding-the-integration', 'quick-start/additional-requirements']},
-    {type: 'doc', id: 'documentation/configuration', label: 'Configuration (Settings Panel Beta)'},
+    {
+      type: 'category',
+      label: 'Configuration (Settings Panel Beta)',
+      link: {type: 'doc', id: 'documentation/configuration'},
+      items: [
+        'documentation/configuration/tts-defaults-fallback',
+        'documentation/configuration/playback-options',
+        'documentation/configuration/audio-files-folders',
+        'documentation/configuration/action-script-options',
+      ],
+    },
     {type: 'doc', id: 'documentation/chimes', label: 'Chimes'},
     {type: 'doc', id: 'documentation/chime-sets', label: 'Chime Sets (Beta)'},
     {type: 'category', label: 'Notification Profiles', link: {type: 'doc', id: 'documentation/notify/index'}, items: ['documentation/notify/adding', 'documentation/notify/sending']},

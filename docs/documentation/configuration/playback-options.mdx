@@ -1,0 +1,64 @@
+---
+sidebar_position: 2
+title: Playback Options
+---
+
+# Playback Options
+
+Set the default chimes, audio timing, transitions, cleanup behaviour, and MP3 cover art used for announcements.
+
+### Default Offset
+
+The default [offset](/chime_tts/docs/documentation/actions/say-action/parameters#offset) duration (in milliseconds) between chimes and TTS audio. Positive values introduce a delay, while negative values overlap the audio segments.
+
+<table><tr><td><b>Default Value:</b></td><td>`450`</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+---
+
+### Default Start Chime
+
+Set an optional chime to play before generated speech. An action can override this default.
+
+<table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+---
+
+### Default End Chime
+
+Set an optional chime to play after generated speech. An action can override this default.
+
+<table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+---
+
+### Default Crossfade
+
+Set the default crossfade duration between audio segments. An action can override this value. A negative offset overlays segments; crossfade controls how one segment fades into the next.
+
+<table><tr><td><b>Default Value:</b></td><td>`0`</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+---
+
+### Fade Transition
+
+The duration (in milliseconds) to fade out the now playing audio _before_ an announcement, and then fade it back in _after_ the announcement is completed.
+
+_This applies to [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) action calls when the [`announce`](/chime_tts/docs/documentation/actions/say-action/parameters#announce) or [`fade_audio`](/chime_tts/docs/documentation/actions/say-action/parameters#fade_audio) parameters are used._
+
+<table><tr><td><b>Default Value:</b></td><td>`500`</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+---
+
+### Delay Before Removing Temporary Files
+
+The delay duration after [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) playback is completed (in milliseconds), before removing the generated temporary audio file.
+
+<table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+---
+
+### MP3 Cover Art
+
+When enabled, adds the Chime TTS logo as the cover art in generated MP3 files.
+
+<table><tr><td><b>Default Value:</b></td><td>`false`</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>

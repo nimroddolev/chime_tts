@@ -1,0 +1,46 @@
+---
+sidebar_position: 1
+title: TTS Defaults & Fallback
+---
+
+# TTS Defaults & Fallback
+
+Choose the default TTS provider and its language, voice, dialect, and fallback provider.
+
+### Default TTS Platform
+
+The default [`tts_platform`](/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) value to use when not specified.
+
+<table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+---
+
+### Default Language
+
+The default [`language`](/chime_tts/docs/documentation/actions/say-action/parameters#language) value to use if the [`tts_platform`](/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) is set to the default TTS platform.
+
+<table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+---
+
+### Default Voice
+
+The default [`voice`](/chime_tts/docs/documentation/actions/say-action/parameters#voice) value to use if the [`tts_platform`](/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) is set to the default TTS platform.
+
+<table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+---
+
+### Default Dialect
+
+The default dialect domain ([`tld`](/chime_tts/docs/documentation/actions/say-action/parameters#tld)) value if the [`tts_platform`](/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) is set to Google Translate.
+
+<table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+---
+
+### Fallback TTS Platform
+
+The [TTS platform](/chime_tts/docs/documentation/actions/say-action/parameters#tts_platform) to retry generating TTS audio if the specified/default platform failed.
+
+<table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>

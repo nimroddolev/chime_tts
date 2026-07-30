@@ -1,0 +1,62 @@
+---
+sidebar_position: 4
+title: Action & Script Options
+---
+
+# Action & Script Options
+
+Configure action timeouts and the default scripts that run before and after playback.
+
+### Timeout
+
+The duration (in seconds) to wait before cancelling the [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) or [`chime_tts.say_url`](/chime_tts/docs/documentation/actions/say_url-action) action calls.
+
+<table><tr><td><b>Default Value:</b></td><td>`60`</td></tr><tr><td><b>Required:</b></td><td>Yes</td></tr></table>
+
+:::tip
+
+Increase the timeout duration if you intend to generate audio longer than 60 seconds.
+
+:::
+
+---
+
+### TTS Audio Generation Timeout
+
+The duration (in seconds) to wait before canceling a TTS audio generation attempt.
+
+<table><tr><td><b>Default Value:</b></td><td>`30`</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+---
+
+### Default Playback Scripts
+
+Use a pre-playback script to prepare a player or environment before playback, and a post-playback script for cleanup. An action or notification profile can override either configured default.
+
+#### `pre_script`
+
+Runs before playback unless an action or notification profile specifies its own `pre_script` value.
+
+<table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+#### `post_script`
+
+Runs after playback unless an action or notification profile specifies its own `post_script` value.
+
+<table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
+
+Simple script entity:
+
+```yaml
+pre_script: script.front_door_prepare
+post_script: script.front_door_restore
+```
+
+Script with data:
+
+```yaml
+pre_script:
+  script: script.front_door_prepare
+  data:
+    volume: 0.5
+```
