@@ -13,6 +13,7 @@ from ..const import (
     TTS_TIMEOUT_DEFAULT,
     TTS_PLATFORM_KEY,
      FALLBACK_TTS_PLATFORM_KEY,
+    FALLBACK_TTS_CACHE_KEY,
     AMAZON_POLLY,
     BAIDU,
     ELEVENLABS,
@@ -202,12 +203,16 @@ class TTSAudioHelper:
             _LOGGER.debug(
                 "Retrying TTS audio generation with fallback platform '%s'", fallback_platform
             )
+            # Caching the fallback platform's own audio is opt-in (off by
+            # default) - otherwise a clip generated during a primary platform
+            # outage keeps being served from cache after it recovers.
+            fallback_cache = cache and bool(self._data.get(FALLBACK_TTS_CACHE_KEY, False))
             return await self.async_request_tts_audio(
                 hass=hass,
                 tts_platform=fallback_platform,
                 message=message,
                 language=language,
-                cache=cache,
+                cache=fallback_cache,
                 options=options,
             )
         _LOGGER.error("...audio_data generation failed")
