@@ -4,15 +4,23 @@ import io
 from datetime import datetime
 from homeassistant.core import HomeAssistant
 from homeassistant.components import tts
+from homeassistant.components.persistent_notification import async_create as async_create_notification
+from homeassistant.helpers import issue_registry as ir
 from hass_nabucasa import voice as nabu_voices
 import logging
 from .filesystem import FilesystemHelper
 from .helpers import ChimeTTSHelper
 from ..const import (
+    DOMAIN,
     TTS_TIMEOUT_KEY,
     TTS_TIMEOUT_DEFAULT,
     TTS_PLATFORM_KEY,
      FALLBACK_TTS_PLATFORM_KEY,
+    FALLBACK_TTS_REPORT_KEY,
+    FALLBACK_TTS_REPORT_DEFAULT,
+    FALLBACK_TTS_REPORT_WARNING,
+    FALLBACK_TTS_REPORT_NOTIFICATION,
+    FALLBACK_TTS_REPORT_REPAIR,
     AMAZON_POLLY,
     BAIDU,
     ELEVENLABS,
@@ -58,6 +66,8 @@ class TTSAudioHelper:
         # Step 3: Process the audio data
         audio = await self._process_audio_data(hass, media_source_id, audio_data, start_time)
         if audio:
+            # Primary platform succeeded - clear any previously-raised fallback repair issue
+            ir.async_delete_issue(hass, DOMAIN, "fallback_tts_in_use")
             return audio
 
         # Step 4: Retry with fallback platform if needed
@@ -199,9 +209,7 @@ class TTSAudioHelper:
     async def _retry_with_fallback(self, hass: HomeAssistant, tts_platform, message, language, cache, options):
         fallback_platform = self._data.get(FALLBACK_TTS_PLATFORM_KEY)
         if tts_platform != fallback_platform and fallback_platform:
-            _LOGGER.debug(
-                "Retrying TTS audio generation with fallback platform '%s'", fallback_platform
-            )
+            self._report_fallback_used(hass, tts_platform, fallback_platform)
             return await self.async_request_tts_audio(
                 hass=hass,
                 tts_platform=fallback_platform,
@@ -212,6 +220,47 @@ class TTSAudioHelper:
             )
         _LOGGER.error("...audio_data generation failed")
         return None
+
+    def _report_fallback_used(self, hass: HomeAssistant, primary_platform, fallback_platform):
+        """Surface use of the fallback TTS platform via the configured report mode."""
+        message = (
+            f"Retrying TTS audio generation with fallback platform '{fallback_platform}' "
+            f"(primary platform '{primary_platform}' failed)"
+        )
+        report_mode = self._data.get(FALLBACK_TTS_REPORT_KEY, FALLBACK_TTS_REPORT_DEFAULT)
+
+        if report_mode == FALLBACK_TTS_REPORT_WARNING:
+            _LOGGER.warning(message)
+            return
+
+        if report_mode == FALLBACK_TTS_REPORT_NOTIFICATION:
+            _LOGGER.debug(message)
+            async_create_notification(
+                hass,
+                message,
+                title="Chime TTS: fallback platform in use",
+                notification_id="chime_tts_fallback_in_use",
+            )
+            return
+
+        if report_mode == FALLBACK_TTS_REPORT_REPAIR:
+            _LOGGER.debug(message)
+            ir.async_create_issue(
+                hass,
+                DOMAIN,
+                "fallback_tts_in_use",
+                is_fixable=False,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key="fallback_tts_in_use",
+                translation_placeholders={
+                    "primary_platform": primary_platform,
+                    "fallback_platform": fallback_platform,
+                },
+            )
+            return
+
+        # FALLBACK_TTS_REPORT_DEBUG (default) - matches pre-existing behavior
+        _LOGGER.debug(message)
 
     def _handle_generation_error(self, error, tts_platform, media_source_id):
         if str(error) == "Invalid TTS provider selected":
