@@ -589,7 +589,10 @@ FIELD_DOCUMENTATION_URLS = {
     DEFAULT_POST_SCRIPT_KEY: f"{SAY_ACTION_PARAMS_DOCS_URL}#post_script",
     FALLBACK_TTS_PLATFORM_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#fallback-tts-platform",
     OFFSET_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#default-offset",
-    CROSSFADE_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#crossfade",
+    CROSSFADE_KEY: (
+        "https://nimroddolev.github.io/chime_tts/docs/documentation/"
+        "configuration/playback-options/#default-crossfade"
+    ),
     FADE_TRANSITION_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#fade-transition",
     REMOVE_TEMP_FILE_DELAY_KEY: (
         f"{CONFIGURATION_DOCS_BASE_URL}#delay-before-removing-temporary-files"

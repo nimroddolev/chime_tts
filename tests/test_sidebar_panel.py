@@ -324,6 +324,15 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
         custom_chimes_field["path_validation"]["message"]
         == "Folder path is valid for this setting."
     )
+    playback_section = next(
+        section for section in payload["sections"] if section["key"] == "playback"
+    )
+    crossfade_field = next(
+        field for field in playback_section["fields"] if field["key"] == "crossfade"
+    )
+    assert crossfade_field["docs_url"].endswith(
+        "/documentation/configuration/playback-options/#default-crossfade"
+    )
     about_section = next(section for section in payload["sections"] if section["key"] == "about")
     assert about_section["kind"] == "about"
     assert about_section["version"] == payload["version"]
