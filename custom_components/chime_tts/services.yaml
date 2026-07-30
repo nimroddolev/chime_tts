@@ -373,6 +373,7 @@ say:
       required: false
       selector:
         select:
+          custom_value: true
           options:
           - label: com
             value: com
@@ -673,6 +674,7 @@ say_url:
       required: false
       selector:
         select:
+          custom_value: true
           options:
           - label: com
             value: com

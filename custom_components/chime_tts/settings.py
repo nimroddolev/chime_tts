@@ -142,19 +142,36 @@ def _represent_tagged_yaml_value(
 _ChimeTTSYamlLoader.add_multi_constructor("", _construct_tagged_yaml_value)
 _ChimeTTSYamlDumper.add_representer(_TaggedYamlValue, _represent_tagged_yaml_value)
 
-TLD_OPTIONS = [
-    {"value": "", "label": "Provider default"},
-    {"value": "com", "label": "com"},
-    {"value": "co.uk", "label": "co.uk"},
-    {"value": "com.au", "label": "com.au"},
-    {"value": "ca", "label": "ca"},
-    {"value": "co.in", "label": "co.in"},
-    {"value": "ie", "label": "ie"},
-    {"value": "co.za", "label": "co.za"},
-    {"value": "fr", "label": "fr"},
-    {"value": "com.br", "label": "com.br"},
-    {"value": "pt", "label": "pt"},
-    {"value": "es", "label": "es"},
+# Keep this aligned with Home Assistant's google_translate.SUPPORT_TLD list.
+GOOGLE_TRANSLATE_TLDS = """
+ad ae al am as at az ba be bf bg bi
+bj bs bt by ca cat cd cf cg ch ci cl
+cm cn co.ao co.bw co.ck co.cr co.id co.il co.in co.jp co.ke co.kr
+co.ls co.ma co.mz co.nz co.th co.tz co.ug co.uk co.uz co.ve co.vi co.za
+co.zm co.zw com com.af com.ag com.ai com.ar com.au com.bd com.bh com.bn com.bo
+com.br com.bz com.co com.cu com.cy com.do com.ec com.eg com.et com.fj com.gh com.gi
+com.gt com.hk com.jm com.kh com.kw com.lb com.ly com.mm com.mt com.mx com.my com.na
+com.ng com.ni com.np com.om com.pa com.pe com.pg com.ph com.pk com.pr com.py com.qa
+com.sa com.sb com.sg com.sl com.sv com.tj com.tr com.tw com.ua com.uy com.vc com.vn
+cv cz de dj dk dm dz ee es fi fm fr
+ga ge gg gl gm gr gy hn hr ht hu ie
+im iq is it je jo kg ki kz la li lk
+lt lu lv md me mg mk ml mn ms mu mv
+mw ne nl no nr nu pl pn ps pt ro rs
+ru rw sc se sh si sk sm sn so sr st
+td tg tl tm tn to tt vg vu ws
+""".split()
+
+GOOGLE_TRANSLATE_TLD_NAMES = {
+    "ad": "Andorra", "ae": "United Arab Emirates", "al": "Albania", "am": "Armenia", "as": "American Samoa", "at": "Austria", "az": "Azerbaijan", "ba": "Bosnia and Herzegovina", "be": "Belgium", "bf": "Burkina Faso", "bg": "Bulgaria", "bi": "Burundi", "bj": "Benin", "bs": "Bahamas", "bt": "Bhutan", "by": "Belarus", "ca": "Canada", "cat": "Catalan", "cd": "Democratic Republic of the Congo", "cf": "Central African Republic", "cg": "Republic of the Congo", "ch": "Switzerland", "ci": "Côte d’Ivoire", "cl": "Chile", "cm": "Cameroon", "cn": "China",
+    "co.ao": "Angola", "co.bw": "Botswana", "co.ck": "Cook Islands", "co.cr": "Costa Rica", "co.id": "Indonesia", "co.il": "Israel", "co.in": "India", "co.jp": "Japan", "co.ke": "Kenya", "co.kr": "South Korea", "co.ls": "Lesotho", "co.ma": "Morocco", "co.mz": "Mozambique", "co.nz": "New Zealand", "co.th": "Thailand", "co.tz": "Tanzania", "co.ug": "Uganda", "co.uk": "United Kingdom", "co.uz": "Uzbekistan", "co.ve": "Venezuela", "co.vi": "U.S. Virgin Islands", "co.za": "South Africa", "co.zm": "Zambia", "co.zw": "Zimbabwe",
+    "com": "Global", "com.af": "Afghanistan", "com.ag": "Antigua and Barbuda", "com.ai": "Anguilla", "com.ar": "Argentina", "com.au": "Australia", "com.bd": "Bangladesh", "com.bh": "Bahrain", "com.bn": "Brunei", "com.bo": "Bolivia", "com.br": "Brazil", "com.bz": "Belize", "com.co": "Colombia", "com.cu": "Cuba", "com.cy": "Cyprus", "com.do": "Dominican Republic", "com.ec": "Ecuador", "com.eg": "Egypt", "com.et": "Ethiopia", "com.fj": "Fiji", "com.gh": "Ghana", "com.gi": "Gibraltar", "com.gt": "Guatemala", "com.hk": "Hong Kong", "com.jm": "Jamaica", "com.kh": "Cambodia", "com.kw": "Kuwait", "com.lb": "Lebanon", "com.ly": "Libya", "com.mm": "Myanmar", "com.mt": "Malta", "com.mx": "Mexico", "com.my": "Malaysia", "com.na": "Namibia", "com.ng": "Nigeria", "com.ni": "Nicaragua", "com.np": "Nepal", "com.om": "Oman", "com.pa": "Panama", "com.pe": "Peru", "com.pg": "Papua New Guinea", "com.ph": "Philippines", "com.pk": "Pakistan", "com.pr": "Puerto Rico", "com.py": "Paraguay", "com.qa": "Qatar", "com.sa": "Saudi Arabia", "com.sb": "Solomon Islands", "com.sg": "Singapore", "com.sl": "Sierra Leone", "com.sv": "El Salvador", "com.tj": "Tajikistan", "com.tr": "Türkiye", "com.tw": "Taiwan", "com.ua": "Ukraine", "com.uy": "Uruguay", "com.vc": "Saint Vincent and the Grenadines", "com.vn": "Vietnam",
+    "cv": "Cape Verde", "cz": "Czech Republic", "de": "Germany", "dj": "Djibouti", "dk": "Denmark", "dm": "Dominica", "dz": "Algeria", "ee": "Estonia", "es": "Spain", "fi": "Finland", "fm": "Micronesia", "fr": "France", "ga": "Gabon", "ge": "Georgia", "gg": "Guernsey", "gl": "Greenland", "gm": "Gambia", "gr": "Greece", "gy": "Guyana", "hn": "Honduras", "hr": "Croatia", "ht": "Haiti", "hu": "Hungary", "ie": "Ireland", "im": "Isle of Man", "iq": "Iraq", "is": "Iceland", "it": "Italy", "je": "Jersey", "jo": "Jordan", "kg": "Kyrgyzstan", "ki": "Kiribati", "kz": "Kazakhstan", "la": "Laos", "li": "Liechtenstein", "lk": "Sri Lanka", "lt": "Lithuania", "lu": "Luxembourg", "lv": "Latvia", "md": "Moldova", "me": "Montenegro", "mg": "Madagascar", "mk": "North Macedonia", "ml": "Mali", "mn": "Mongolia", "ms": "Montserrat", "mu": "Mauritius", "mv": "Maldives", "mw": "Malawi", "ne": "Niger", "nl": "Netherlands", "no": "Norway", "nr": "Nauru", "nu": "Niue", "pl": "Poland", "pn": "Pitcairn", "ps": "Palestine", "pt": "Portugal", "ro": "Romania", "rs": "Serbia", "ru": "Russia", "rw": "Rwanda", "sc": "Seychelles", "se": "Sweden", "sh": "Saint Helena", "si": "Slovenia", "sk": "Slovakia", "sm": "San Marino", "sn": "Senegal", "so": "Somalia", "sr": "Suriname", "st": "São Tomé and Príncipe", "td": "Chad", "tg": "Togo", "tl": "Timor-Leste", "tm": "Turkmenistan", "tn": "Tunisia", "to": "Tonga", "tt": "Trinidad and Tobago", "vg": "British Virgin Islands", "vu": "Vanuatu", "ws": "Samoa",
+}
+
+TLD_OPTIONS = [{"value": "", "label": "Provider default"}] + [
+    {"value": tld, "label": f"{tld} — {GOOGLE_TRANSLATE_TLD_NAMES[tld]}"}
+    for tld in GOOGLE_TRANSLATE_TLDS
 ]
 
 PATH_BROWSABLE_FIELD_KEYS = {

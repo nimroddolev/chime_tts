@@ -6268,6 +6268,19 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     `;
   }
 
+  _documentationUrl(url) {
+    if (!url) {
+      return url;
+    }
+    try {
+      const documentationUrl = new URL(url, window.location.origin);
+      documentationUrl.searchParams.set("theme", this._hass?.themes?.darkMode ? "dark" : "light");
+      return documentationUrl.toString();
+    } catch (_error) {
+      return url;
+    }
+  }
+
   _renderChapterHero({ chapterKey, expanded, title, description, docsUrl, actionsMarkup = "", bodyMarkup = "", showToggleButton = false }) {
     return `
       <section
@@ -6290,7 +6303,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                   ${docsUrl
                     ? `<a
                         class="field-help-link"
-                        href="${this._escapeAttribute(docsUrl)}"
+                        href="${this._escapeAttribute(this._documentationUrl(docsUrl))}"
                         target="_blank"
                         rel="noreferrer"
                         aria-label="${this._escapeAttribute(this._t("aria.open_help", { title }))}"
@@ -6872,7 +6885,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const helpLink = entityField?.docs_url
       ? `<a
           class="field-help-link"
-          href="${this._escapeAttribute(entityField.docs_url)}"
+          href="${this._escapeAttribute(this._documentationUrl(entityField.docs_url))}"
           target="_blank"
           rel="noreferrer"
           aria-label="${this._escapeAttribute(this._t("aria.open_help", { title: entityField.label }))}"
@@ -6933,7 +6946,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const helpLink = field.docs_url
       ? `<a
           class="field-help-link"
-          href="${this._escapeAttribute(field.docs_url)}"
+          href="${this._escapeAttribute(this._documentationUrl(field.docs_url))}"
           target="_blank"
           rel="noreferrer"
           aria-label="${this._escapeAttribute(this._t("aria.open_help", { title: field.label }))}"
@@ -7129,7 +7142,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const helpLink = field.docs_url
       ? `<a
           class="field-help-link"
-          href="${this._escapeAttribute(field.docs_url)}"
+          href="${this._escapeAttribute(this._documentationUrl(field.docs_url))}"
           target="_blank"
           rel="noreferrer"
           aria-label="${this._escapeAttribute(this._t("aria.open_help", { title: field.label }))}"
