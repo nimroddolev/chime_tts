@@ -45,8 +45,6 @@ say:
   target:
     entity:
       domain: media_player
-      supported_features:
-      - media_player.MediaPlayerEntityFeature.PLAY_MEDIA
   fields:
     chime_path:
       description: A preset or custom audio file to be played before TTS audio
