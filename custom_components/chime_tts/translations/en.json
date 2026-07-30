@@ -268,7 +268,7 @@
         "step": {
             "init": {
                 "title": "Chime TTS Configuration",
-                "description": "## Recommended\r\n\r\n### Open the [Chime TTS configuration panel](/chime-tts) for the best experience.\r\n\r\nThe configuration panel includes the richer visual settings UI and is the recommended way to manage Chime TTS settings. This native dialog is kept as a basic fallback.\r\n\r\nConfigurable options for the `chime_tts.say` and `chime_tts.say_url` actions are available below.\r\n\r\nPlease review the [documentation](https://nimroddolev.github.io/chime_tts/docs/documentation/configuration/) for more details",
+                "description": "## Recommended\r\n\r\n### Open the [Chime TTS configuration panel]({panel_url}) for the best experience.\r\n\r\nThe configuration panel includes the richer visual settings UI and is the recommended way to manage Chime TTS settings. This native dialog is kept as a basic fallback.\r\n\r\nConfigurable options for the `chime_tts.say` and `chime_tts.say_url` actions are available below.\r\n\r\nPlease review the [documentation]({documentation_url}) for more details",
                 "data": {
                     "queue_timeout": "Action timeout (in seconds)",
                     "tts_timeout": "TTS audio generation timeout (in seconds)",

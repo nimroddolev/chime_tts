@@ -11,6 +11,10 @@ from .settings import build_options_schema, validate_settings
 
 LOGGER = logging.getLogger(__name__)
 helpers = ChimeTTSHelper()
+OPTIONS_DESCRIPTION_PLACEHOLDERS = {
+    "panel_url": "/chime-tts",
+    "documentation_url": "https://nimroddolev.github.io/chime_tts/docs/documentation/configuration/",
+}
 
 @config_entries.HANDLERS.register(DOMAIN)
 class ChimeTTSFlowHandler(config_entries.ConfigFlow):
@@ -65,7 +69,7 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_show_form(
                 step_id="init",
                 data_schema=options_schema,
-                description_placeholders=user_input,
+                description_placeholders=OPTIONS_DESCRIPTION_PLACEHOLDERS,
                 last_step=True,
             )
 
@@ -74,7 +78,10 @@ class ChimeTTSOptionsFlowHandler(config_entries.OptionsFlow):
 
         if validation.errors:
             return self.async_show_form(
-                step_id="init", data_schema=options_schema, errors=validation.errors
+                step_id="init",
+                data_schema=options_schema,
+                errors=validation.errors,
+                description_placeholders=OPTIONS_DESCRIPTION_PLACEHOLDERS,
             )
 
         # 1st time Custom Chimes Folder path modified

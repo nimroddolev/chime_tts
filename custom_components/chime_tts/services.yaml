@@ -415,6 +415,7 @@ say:
           multiline: true
 say_url:
   name: Say URL
+  target: {}
   description: Generates an audio file with the `chime_tts.say` service and returns
     either an external URL or a local file path, depending on the folder set in the
     configuration

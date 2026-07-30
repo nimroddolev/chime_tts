@@ -3,6 +3,7 @@
   "name": "Test Support Player",
   "version": "1.0.0",
   "documentation": "https://example.invalid/chime-tts-e2e",
+  "iot_class": "local_push",
   "dependencies": [],
   "codeowners": []
 }

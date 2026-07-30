@@ -37,7 +37,7 @@ from homeassistant.const import CONF_ENTITY_ID, EVENT_HOMEASSISTANT_STARTED
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceResponse, SupportsResponse
 from homeassistant.helpers.event import async_track_time_interval
-from homeassistant.helpers import storage
+from homeassistant.helpers import config_validation as cv, storage
 from homeassistant.exceptions import (
     HomeAssistantError,
     ServiceNotFound,
@@ -111,6 +111,8 @@ INTERNAL_NOTIFY_ORIGIN = "_chime_tts_notify_origin"
 INITIAL_TTS_PLATFORMS_KEY = "_initial_tts_platforms"
 CUSTOM_CHIMES_FINGERPRINT_KEY = "_custom_chimes_fingerprint"
 CUSTOM_CHIMES_WATCH_INTERVAL = timedelta(seconds=30)
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 helpers = ChimeTTSHelper()
 tts_audio_helper = TTSAudioHelper()
