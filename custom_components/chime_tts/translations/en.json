@@ -232,6 +232,7 @@
                     "default_voice_key": "Default voice (when using default TTS platform)",
                     "default_tld_key": "Default dialect (when using the Google Translate TTS platform)",
                     "fallback_tts_platform_key": "Fallback TTS platform",
+                    "fallback_tts_report_key": "Report use of fallback TTS platform as: 'debug' (log only, default), 'warning' (log at warning level), 'notification' (persistent_notification), or 'repair' (Settings > System > Repairs issue, auto-clears once the primary platform succeeds again)",
                     "offset": "Default offset value (in milliseconds) between chimes & TTS audio",
                     "fade_transition_key": "Fade transition (in milliseconds) when fading currently playing audio for `announce` and `fade_audio`",
                     "remove_temp_file_delay": "Delay (in milliseconds) before removing temporary files",
@@ -256,6 +257,12 @@
             "invalid_chime_paths": "Invalid custom chime path detected",
             "temp_path": "The temp folder must be a subfolder of a media directory",
             "www_path": "The chime_tts.say_url folder must be a subfolder of an external directory, eg: /config/www/chime_tts"
+        }
+    },
+    "issues": {
+        "fallback_tts_in_use": {
+            "title": "Chime TTS is using the fallback TTS platform",
+            "description": "The primary TTS platform '{primary_platform}' failed to generate audio, so the fallback platform '{fallback_platform}' was used instead. This issue clears automatically once '{primary_platform}' succeeds again."
         }
     }
 }
