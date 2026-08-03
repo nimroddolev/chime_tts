@@ -605,16 +605,39 @@ async def test_say_url_returns_unsuccessful_payload_when_parse_fails(monkeypatch
 
 
 @pytest.mark.asyncio
-async def test_say_url_rejects_playback_scripts() -> None:
-    """say_url must not accept scripts because it does not perform playback."""
+async def test_say_url_accepts_scripts(monkeypatch: pytest.MonkeyPatch) -> None:
+    """say_url passes scripts through to media preparation."""
     hass = FakeHass()
+
+    async def run_immediately(func, timeout, service, is_say_url):
+        del timeout
+        return await func(service, is_say_url)
+
+    params = {
+        "message": "Hello",
+        "chime_path": "",
+        "end_chime_path": "",
+        "media_players_array": [],
+    }
+    prepare_media = AsyncMock(return_value={"url": "https://example.test/out.mp3", "success": True})
+    monkeypatch.setattr(integration_module.helpers, "async_parse_params", AsyncMock(return_value=params))
+    monkeypatch.setattr(integration_module.helpers, "parse_options_yaml", lambda data, default_data: {})
+    monkeypatch.setattr(integration_module, "async_prepare_media", prepare_media)
+    monkeypatch.setattr(integration_module.queue, "add_to_queue", AsyncMock(side_effect=run_immediately))
     await integration_module.async_setup(hass, SimpleNamespace())
 
     say_url_handler = hass.services.registered[(DOMAIN, SERVICE_SAY_URL)][0]
 
-    with pytest.raises(HomeAssistantError, match="supported only by chime_tts.say"):
-        await say_url_handler(
-            SimpleNamespace(
-                data={"message": "Hello", "pre_script": "script.prepare_speakers"}
-            )
+    await say_url_handler(
+        SimpleNamespace(
+            data={
+                "message": "Hello",
+                "pre_script": "script.prepare_speakers",
+                "post_script": "script.restore_speakers",
+            }
         )
+    )
+
+    assert integration_module.helpers.async_parse_params.await_args.args[1]["pre_script"] == "script.prepare_speakers"
+    assert integration_module.helpers.async_parse_params.await_args.args[1]["post_script"] == "script.restore_speakers"
+    assert prepare_media.await_args.args[4] is True

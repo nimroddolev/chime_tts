@@ -91,6 +91,11 @@ from .const import (
     DEFAULT_TLD_KEY,
     DEFAULT_PRE_SCRIPT_KEY,
     DEFAULT_POST_SCRIPT_KEY,
+    DEFAULT_SCRIPTS_SHARED_KEY,
+    DEFAULT_PRE_SCRIPT_SHARED_KEY,
+    DEFAULT_POST_SCRIPT_SHARED_KEY,
+    DEFAULT_PRE_SCRIPT_SAY_URL_KEY,
+    DEFAULT_POST_SCRIPT_SAY_URL_KEY,
     FALLBACK_TTS_PLATFORM_KEY,
     OFFSET_KEY,
     CROSSFADE_KEY,
@@ -191,15 +196,6 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
                 ),
             )
             created_event = True
-        if is_say_url and service_data and {
-            "pre_script",
-            "post_script",
-        }.intersection(service_data):
-            if created_event:
-                finish_panel_log_event(hass, event_id)
-            raise HomeAssistantError(
-                "pre_script and post_script are supported only by chime_tts.say."
-            )
         if is_say_url is False:
             if service is None:
                 helpers.debug_title(f"Chime TTS Replay Called. Version {VERSION}")
@@ -246,10 +242,8 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
             _data["service"] = service
 
         # Parse service parameters & TTS options
-        service_data = (
-            dict(service.data)
-            if is_say_url
-            else apply_configured_script_defaults(service.data, _data)
+        service_data = apply_configured_script_defaults(
+            service.data, _data, is_say_url=is_say_url
         )
         params = await helpers.async_parse_params(hass, service_data, is_say_url, media_player_helper)
         if params is not None:
@@ -445,12 +439,24 @@ async def async_run_script(hass: HomeAssistant, script):
         _LOGGER.warning("chime_tts: error running script '%s': %s", script_entity_id, error)
 
 
-def apply_configured_script_defaults(service_data, default_data: dict) -> dict:
+def apply_configured_script_defaults(
+    service_data, default_data: dict, *, is_say_url: bool = False
+) -> dict:
     """Apply configured playback scripts only when a service call omits them."""
     data = dict(service_data or {})
+    default_keys = (DEFAULT_PRE_SCRIPT_KEY, DEFAULT_POST_SCRIPT_KEY)
+    if is_say_url:
+        default_keys = (
+            DEFAULT_PRE_SCRIPT_KEY
+            if default_data.get(DEFAULT_PRE_SCRIPT_SHARED_KEY, default_data.get(DEFAULT_SCRIPTS_SHARED_KEY, True))
+            else DEFAULT_PRE_SCRIPT_SAY_URL_KEY,
+            DEFAULT_POST_SCRIPT_KEY
+            if default_data.get(DEFAULT_POST_SCRIPT_SHARED_KEY, default_data.get(DEFAULT_SCRIPTS_SHARED_KEY, True))
+            else DEFAULT_POST_SCRIPT_SAY_URL_KEY,
+        )
     for service_key, default_key in (
-        ("pre_script", DEFAULT_PRE_SCRIPT_KEY),
-        ("post_script", DEFAULT_POST_SCRIPT_KEY),
+        ("pre_script", default_keys[0]),
+        ("post_script", default_keys[1]),
     ):
         if service_key not in data and default_data.get(default_key):
             data[service_key] = default_data[default_key]
@@ -466,6 +472,8 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
     public_path = None
     media_content_id = None
     audio_duration = 0
+    if is_say_url:
+        await async_run_script(hass, params.get("pre_script"))
     audio_dict = await async_get_playback_audio_path(params, options)
     if audio_dict is not None:
         local_path = audio_dict.get(LOCAL_PATH_KEY, None)
@@ -506,6 +514,8 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
                     _LOGGER.debug("Removing temporary file%s:", "s" if local_path and public_path else "")
                 filesystem_helper.delete_file(hass, local_path)
                 filesystem_helper.delete_file(hass, public_path)
+        else:
+            await async_run_script(hass, params.get("post_script"))
 
 
     end_time = datetime.now()
@@ -744,6 +754,17 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Default playback scripts
     _data[DEFAULT_PRE_SCRIPT_KEY] = options.get(DEFAULT_PRE_SCRIPT_KEY, "")
     _data[DEFAULT_POST_SCRIPT_KEY] = options.get(DEFAULT_POST_SCRIPT_KEY, "")
+    _data[DEFAULT_SCRIPTS_SHARED_KEY] = options.get(DEFAULT_SCRIPTS_SHARED_KEY, True)
+    _data[DEFAULT_PRE_SCRIPT_SHARED_KEY] = options.get(
+        DEFAULT_PRE_SCRIPT_SHARED_KEY,
+        options.get(DEFAULT_SCRIPTS_SHARED_KEY, True),
+    )
+    _data[DEFAULT_POST_SCRIPT_SHARED_KEY] = options.get(
+        DEFAULT_POST_SCRIPT_SHARED_KEY,
+        options.get(DEFAULT_SCRIPTS_SHARED_KEY, True),
+    )
+    _data[DEFAULT_PRE_SCRIPT_SAY_URL_KEY] = options.get(DEFAULT_PRE_SCRIPT_SAY_URL_KEY, "")
+    _data[DEFAULT_POST_SCRIPT_SAY_URL_KEY] = options.get(DEFAULT_POST_SCRIPT_SAY_URL_KEY, "")
 
     # Fallback TTS Platform
     _data[FALLBACK_TTS_PLATFORM_KEY] = options.get(FALLBACK_TTS_PLATFORM_KEY, "")
@@ -823,6 +844,11 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         DEFAULT_TLD_KEY,
         DEFAULT_PRE_SCRIPT_KEY,
         DEFAULT_POST_SCRIPT_KEY,
+        DEFAULT_SCRIPTS_SHARED_KEY,
+        DEFAULT_PRE_SCRIPT_SHARED_KEY,
+        DEFAULT_POST_SCRIPT_SHARED_KEY,
+        DEFAULT_PRE_SCRIPT_SAY_URL_KEY,
+        DEFAULT_POST_SCRIPT_SAY_URL_KEY,
         FALLBACK_TTS_PLATFORM_KEY,
         OFFSET_KEY,
         CROSSFADE_KEY,

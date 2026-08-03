@@ -1041,6 +1041,73 @@ def test_sidebar_exposes_default_playback_script_fields(tmp_path: Path) -> None:
     assert hass.states.get("script.restore_speakers") is not None
 
 
+def test_sidebar_keeps_action_scripts_shared_by_default_and_clears_url_scripts(
+    tmp_path: Path,
+) -> None:
+    """The panel supports action-specific scripts without preserving stale URL values."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+    config_entry.options.update(
+        {
+            "default_pre_script_key": "script.say_pre",
+            "default_post_script_key": "script.say_post",
+            "default_scripts_shared_key": False,
+            "default_pre_script_say_url_key": "script.url_pre",
+            "default_post_script_say_url_key": "script.url_post",
+        }
+    )
+
+    values = settings_module.get_settings_data(hass, config_entry)
+    assert values["default_pre_script_shared_key"] is False
+    assert values["default_post_script_shared_key"] is False
+    assert values["default_pre_script_say_url_key"] == "script.url_pre"
+
+    validation = settings_module.validate_settings(
+        hass,
+        config_entry,
+        {
+            **values,
+            "default_pre_script_shared_key": True,
+            "default_post_script_shared_key": False,
+        },
+    )
+    assert validation.errors == {}
+    assert validation.data["default_pre_script_say_url_key"] == ""
+    assert validation.data["default_post_script_say_url_key"] == "script.url_post"
+
+    payload = settings_module.build_panel_payload(hass, config_entry)
+    general = next(section for section in payload["sections"] if section["key"] == "general")
+    fields = {field["key"]: field for field in general["fields"]}
+    assert fields["default_pre_script_shared_key"]["type"] == "boolean"
+    assert fields["default_post_script_shared_key"]["type"] == "boolean"
+    assert fields["default_pre_script_shared_key"]["label"] == (
+        "Use for both chime_tts.say & chime_tts.say_url actions"
+    )
+    assert fields["default_pre_script_say_url_key"]["type"] == "textarea"
+    assert fields["default_post_script_say_url_key"]["type"] == "textarea"
+
+
+def test_sidebar_renders_action_specific_script_controls_with_section_accent() -> None:
+    """The panel labels both actions and clears URL scripts when sharing is re-enabled."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert 'class="script-action-label">chime_tts.say</p>' in panel_source
+    assert 'class="script-action-label">chime_tts.say_url</p>' in panel_source
+    assert "var(--section-help-color)" in panel_source
+    assert 'key === "default_pre_script_shared_key" && nextValue' in panel_source
+    assert 'key === "default_post_script_shared_key" && nextValue' in panel_source
+    assert "_captureAncestorScrollPositions(activeElement)" in panel_source
+    assert 'activeElement?.type !== "checkbox"' in panel_source
+    assert ".layout {" in panel_source
+    assert "overflow-anchor: none;" in panel_source
+    assert "window.setTimeout(restoreScrollPosition, 100);" in panel_source
+
+
 def test_build_panel_payload_exposes_docs_urls_for_all_notify_profile_fields(
     tmp_path: Path,
 ) -> None:

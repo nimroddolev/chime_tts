@@ -29,6 +29,11 @@ from .const import (
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_POST_SCRIPT_KEY,
     DEFAULT_PRE_SCRIPT_KEY,
+    DEFAULT_SCRIPTS_SHARED_KEY,
+    DEFAULT_PRE_SCRIPT_SHARED_KEY,
+    DEFAULT_POST_SCRIPT_SHARED_KEY,
+    DEFAULT_PRE_SCRIPT_SAY_URL_KEY,
+    DEFAULT_POST_SCRIPT_SAY_URL_KEY,
     DEFAULT_CHIME_OFFSETS,
     DEFAULT_OFFSET_MS,
     DEFAULT_TLD_KEY,
@@ -604,6 +609,8 @@ FIELD_DOCUMENTATION_URLS = {
     DEFAULT_TLD_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#default-dialect",
     DEFAULT_PRE_SCRIPT_KEY: f"{SAY_ACTION_PARAMS_DOCS_URL}#pre_script",
     DEFAULT_POST_SCRIPT_KEY: f"{SAY_ACTION_PARAMS_DOCS_URL}#post_script",
+    DEFAULT_PRE_SCRIPT_SAY_URL_KEY: f"{SAY_ACTION_PARAMS_DOCS_URL}#pre_script",
+    DEFAULT_POST_SCRIPT_SAY_URL_KEY: f"{SAY_ACTION_PARAMS_DOCS_URL}#post_script",
     FALLBACK_TTS_PLATFORM_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#fallback-tts-platform",
     OFFSET_KEY: f"{CONFIGURATION_DOCS_BASE_URL}#default-offset",
     CROSSFADE_KEY: (
@@ -761,6 +768,34 @@ SETTINGS_FIELDS: tuple[SettingsField, ...] = (
         section="general",
     ),
     SettingsField(
+        key=DEFAULT_PRE_SCRIPT_SHARED_KEY,
+        label="Use for both chime_tts.say & chime_tts.say_url actions",
+        description="",
+        field_type="boolean",
+        section="general",
+    ),
+    SettingsField(
+        key=DEFAULT_POST_SCRIPT_SHARED_KEY,
+        label="Use for both chime_tts.say & chime_tts.say_url actions",
+        description="",
+        field_type="boolean",
+        section="general",
+    ),
+    SettingsField(
+        key=DEFAULT_PRE_SCRIPT_SAY_URL_KEY,
+        label="Default pre-playback script for chime_tts.say_url",
+        description="Runs before chime_tts.say_url generates audio.",
+        field_type="textarea",
+        section="general",
+    ),
+    SettingsField(
+        key=DEFAULT_POST_SCRIPT_SAY_URL_KEY,
+        label="Default post-playback script for chime_tts.say_url",
+        description="Runs after chime_tts.say_url generates audio.",
+        field_type="textarea",
+        section="general",
+    ),
+    SettingsField(
         key="chime_path",
         label="Start chime",
         description="Optional chime to play before generated speech.",
@@ -904,6 +939,10 @@ SETTINGS_SECTIONS = (
             TTS_TIMEOUT_KEY,
             DEFAULT_PRE_SCRIPT_KEY,
             DEFAULT_POST_SCRIPT_KEY,
+            DEFAULT_PRE_SCRIPT_SHARED_KEY,
+            DEFAULT_POST_SCRIPT_SHARED_KEY,
+            DEFAULT_PRE_SCRIPT_SAY_URL_KEY,
+            DEFAULT_POST_SCRIPT_SAY_URL_KEY,
         ],
     },
 )
@@ -1153,6 +1192,11 @@ def _field_default_value(field_key: str, hass) -> Any:
         DEFAULT_TLD_KEY: "",
         DEFAULT_PRE_SCRIPT_KEY: "",
         DEFAULT_POST_SCRIPT_KEY: "",
+        DEFAULT_SCRIPTS_SHARED_KEY: True,
+        DEFAULT_PRE_SCRIPT_SHARED_KEY: True,
+        DEFAULT_POST_SCRIPT_SHARED_KEY: True,
+        DEFAULT_PRE_SCRIPT_SAY_URL_KEY: "",
+        DEFAULT_POST_SCRIPT_SAY_URL_KEY: "",
         FALLBACK_TTS_PLATFORM_KEY: "",
         "chime_path": "",
         "end_chime_path": "",
@@ -1182,6 +1226,9 @@ def _get_entry_value(
     for source in (dict(config_entry.options), dict(config_entry.data)):
         if key in source:
             return source[key]
+        if key in {DEFAULT_PRE_SCRIPT_SHARED_KEY, DEFAULT_POST_SCRIPT_SHARED_KEY}:
+            if DEFAULT_SCRIPTS_SHARED_KEY in source:
+                return source[DEFAULT_SCRIPTS_SHARED_KEY]
 
     return _field_default_value(key, hass)
 
@@ -1930,6 +1977,22 @@ def build_options_schema(
             vol.Optional(
                 DEFAULT_POST_SCRIPT_KEY,
                 description={"suggested_value": data[DEFAULT_POST_SCRIPT_KEY]},
+            ): str,
+            vol.Optional(
+                DEFAULT_PRE_SCRIPT_SHARED_KEY,
+                default=data[DEFAULT_PRE_SCRIPT_SHARED_KEY],
+            ): bool,
+            vol.Optional(
+                DEFAULT_POST_SCRIPT_SHARED_KEY,
+                default=data[DEFAULT_POST_SCRIPT_SHARED_KEY],
+            ): bool,
+            vol.Optional(
+                DEFAULT_PRE_SCRIPT_SAY_URL_KEY,
+                description={"suggested_value": data[DEFAULT_PRE_SCRIPT_SAY_URL_KEY]},
+            ): str,
+            vol.Optional(
+                DEFAULT_POST_SCRIPT_SAY_URL_KEY,
+                description={"suggested_value": data[DEFAULT_POST_SCRIPT_SAY_URL_KEY]},
             ): str,
             vol.Optional(
                 "chime_path",
@@ -2933,6 +2996,8 @@ def validate_settings(
         DEFAULT_TLD_KEY,
         DEFAULT_PRE_SCRIPT_KEY,
         DEFAULT_POST_SCRIPT_KEY,
+        DEFAULT_PRE_SCRIPT_SAY_URL_KEY,
+        DEFAULT_POST_SCRIPT_SAY_URL_KEY,
         "chime_path",
         "end_chime_path",
         CUSTOM_CHIMES_PATH_KEY,
@@ -2970,6 +3035,8 @@ def validate_settings(
     }
 
     normalized[ADD_COVER_ART_KEY] = _normalize_bool(user_input.get(ADD_COVER_ART_KEY))
+    _normalize_shared_script_settings(normalized, user_input, current_data)
+    _clear_shared_action_script_values(normalized)
 
     installed_tts_platforms = get_tts_platforms(hass)
     for field_key in (TTS_PLATFORM_KEY, FALLBACK_TTS_PLATFORM_KEY):
@@ -3021,6 +3088,24 @@ def validate_settings(
         errors=errors,
         restart_required=restart_required,
     )
+
+
+def _clear_shared_action_script_values(values: dict[str, Any]) -> None:
+    """Erase action-specific defaults whenever the shared mode is selected."""
+    values[DEFAULT_PRE_SCRIPT_SAY_URL_KEY] *= not values[DEFAULT_PRE_SCRIPT_SHARED_KEY]
+    values[DEFAULT_POST_SCRIPT_SAY_URL_KEY] *= not values[DEFAULT_POST_SCRIPT_SHARED_KEY]
+
+
+def _normalize_shared_script_settings(
+    normalized: dict[str, Any],
+    user_input: dict[str, Any],
+    current_data: dict[str, Any],
+) -> None:
+    """Normalize the independent pre- and post-script sharing controls."""
+    for field_key in (DEFAULT_PRE_SCRIPT_SHARED_KEY, DEFAULT_POST_SCRIPT_SHARED_KEY):
+        normalized[field_key] = _normalize_bool(
+            user_input.get(field_key, current_data[field_key])
+        )
 
 
 def build_panel_payload(

@@ -144,6 +144,12 @@ DEFAULT_VOICE_KEY = "default_voice_key"
 DEFAULT_TLD_KEY = "default_tld_key"
 DEFAULT_PRE_SCRIPT_KEY = "default_pre_script_key"
 DEFAULT_POST_SCRIPT_KEY = "default_post_script_key"
+# Deprecated shared setting retained only to migrate existing configurations.
+DEFAULT_SCRIPTS_SHARED_KEY = "default_scripts_shared_key"
+DEFAULT_PRE_SCRIPT_SHARED_KEY = "default_pre_script_shared_key"
+DEFAULT_POST_SCRIPT_SHARED_KEY = "default_post_script_shared_key"
+DEFAULT_PRE_SCRIPT_SAY_URL_KEY = "default_pre_script_say_url_key"
+DEFAULT_POST_SCRIPT_SAY_URL_KEY = "default_post_script_say_url_key"
 
 # FFmpeg Arguments
 FFMPEG_ARGS_ALEXA = "-y -ac 2 -codec:a libmp3lame -b:a 48k -ar 24000 -write_xing 0"

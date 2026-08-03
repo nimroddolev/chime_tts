@@ -739,7 +739,8 @@ async def test_async_verify_cached_audio_skips_non_alexa_reconversion(monkeypatc
 
 @pytest.mark.asyncio
 async def test_async_prepare_media_returns_say_url_payload(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`say_url` should return the generated public URL and metadata without playback work."""
+    """`say_url` should run its scripts around generation and return public metadata."""
+    run_script = AsyncMock()
     monkeypatch.setattr(
         integration_module,
         "async_get_playback_audio_path",
@@ -752,10 +753,15 @@ async def test_async_prepare_media_returns_say_url_payload(monkeypatch: pytest.M
             }
         ),
     )
+    monkeypatch.setattr(integration_module, "async_run_script", run_script)
 
     result = await integration_module.async_prepare_media(
         hass=FakeHass(),
-        params={"cache": True},
+        params={
+            "cache": True,
+            "pre_script": "script.prepare_url",
+            "post_script": "script.finish_url",
+        },
         options={},
         media_players_array=[],
         is_say_url=True,
@@ -768,6 +774,10 @@ async def test_async_prepare_media_returns_say_url_payload(monkeypatch: pytest.M
         "duration": 3.25,
         "success": True,
     }
+    assert [call.args[1] for call in run_script.await_args_list] == [
+        "script.prepare_url",
+        "script.finish_url",
+    ]
 
 
 @pytest.mark.asyncio

@@ -113,6 +113,8 @@ say:
             value: twenty_four
           - label: Whistle
             value: whistle
+          - label: "\U0001F3B2 G"
+            value: G
           translation_key: chime_paths
     end_chime_path:
       description: A preset or custom audio file to be played after TTS audio
@@ -181,6 +183,8 @@ say:
             value: twenty_four
           - label: Whistle
             value: whistle
+          - label: "\U0001F3B2 G"
+            value: G
           translation_key: chime_paths
     offset:
       description: Adds a delay between audio segments when value > 0, or overlays
@@ -236,8 +240,14 @@ say:
           mode: dropdown
           multiple: false
           options:
+          - label: cloud
+            value: cloud
           - label: google_translate
             value: google_translate
+          - label: test_support_tts
+            value: test_support_tts
+          - label: tts.google_translate_en_com
+            value: tts.google_translate_en_com
     tts_speed:
       description: Set the speed of the TTS audio to between 1% and 500% of the original
       example: 125
@@ -486,6 +496,8 @@ say_url:
             value: twenty_four
           - label: Whistle
             value: whistle
+          - label: "\U0001F3B2 G"
+            value: G
           translation_key: chime_paths
     end_chime_path:
       description: A preset or custom audio file to be played after TTS audio
@@ -554,6 +566,8 @@ say_url:
             value: twenty_four
           - label: Whistle
             value: whistle
+          - label: "\U0001F3B2 G"
+            value: G
           translation_key: chime_paths
     offset:
       description: Adds a delay between audio segments when value > 0, or overlays
@@ -609,8 +623,14 @@ say_url:
           mode: dropdown
           multiple: false
           options:
+          - label: cloud
+            value: cloud
           - label: google_translate
             value: google_translate
+          - label: test_support_tts
+            value: test_support_tts
+          - label: tts.google_translate_en_com
+            value: tts.google_translate_en_com
     tts_speed:
       description: Set the speed of the TTS audio to between 1% and 500% of the original
       example: 125
@@ -636,6 +656,24 @@ say_url:
           mode: slider
           step: 1
           unit_of_measurement: semitones
+    pre_script:
+      description: A script entity to run before the audio is generated, or YAML containing
+        a script entity and parameter values
+      example: "script: script.front_door\ndata:\n  volume: 0.5"
+      name: Pre-generation Script
+      required: false
+      selector:
+        text:
+          multiline: true
+    post_script:
+      description: A script entity to run after the audio is generated, or YAML containing
+        a script entity and parameter values
+      example: "script: script.front_door\ndata:\n  volume: 0.5"
+      name: Post-generation Script
+      required: false
+      selector:
+        text:
+          multiline: true
     cache:
       description: Whether or not to save/reuse the generated audio file in a local
         cache

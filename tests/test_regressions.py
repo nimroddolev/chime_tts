@@ -109,6 +109,37 @@ def test_configured_playback_scripts_apply_only_when_service_omits_them():
     ) == {"pre_script": "script.custom_prepare", "post_script": ""}
 
 
+def test_configured_say_url_scripts_can_be_action_specific():
+    """say_url uses its own defaults only when script sharing is disabled."""
+    from custom_components.chime_tts import apply_configured_script_defaults
+    from custom_components.chime_tts.const import (
+        DEFAULT_POST_SCRIPT_KEY,
+        DEFAULT_POST_SCRIPT_SAY_URL_KEY,
+        DEFAULT_POST_SCRIPT_SHARED_KEY,
+        DEFAULT_PRE_SCRIPT_KEY,
+        DEFAULT_PRE_SCRIPT_SAY_URL_KEY,
+        DEFAULT_PRE_SCRIPT_SHARED_KEY,
+    )
+
+    defaults = {
+        DEFAULT_PRE_SCRIPT_KEY: "script.say_pre",
+        DEFAULT_POST_SCRIPT_KEY: "script.say_post",
+        DEFAULT_PRE_SCRIPT_SHARED_KEY: False,
+        DEFAULT_POST_SCRIPT_SHARED_KEY: False,
+        DEFAULT_PRE_SCRIPT_SAY_URL_KEY: "script.url_pre",
+        DEFAULT_POST_SCRIPT_SAY_URL_KEY: "script.url_post",
+    }
+    assert apply_configured_script_defaults({}, defaults, is_say_url=True) == {
+        "pre_script": "script.url_pre",
+        "post_script": "script.url_post",
+    }
+    defaults[DEFAULT_PRE_SCRIPT_SHARED_KEY] = True
+    assert apply_configured_script_defaults({}, defaults, is_say_url=True) == {
+        "pre_script": "script.say_pre",
+        "post_script": "script.url_post",
+    }
+
+
 def test_issue_294_round_trips_through_yaml_as_str():
     """Options survive a YAML dump/load with their values intact as str (#294)."""
     options = ChimeTTSServicesHelper._build_chime_options(
@@ -302,8 +333,8 @@ def test_issue_294_stale_structure_returns_none_not_crash():
     )
 
 
-def test_services_yaml_exposes_scripts_only_for_say_action():
-    """Scripts are playback-only and must not be accepted by say_url."""
+def test_services_yaml_exposes_scripts_for_both_say_actions():
+    """Both actions expose pre- and post-script service fields."""
     from custom_components.chime_tts.settings import _load_services_yaml
 
     services_yaml = _load_services_yaml()
@@ -312,8 +343,8 @@ def test_services_yaml_exposes_scripts_only_for_say_action():
     say_url_fields = services_yaml["say_url"]["fields"]
     assert "pre_script" in say_fields
     assert "post_script" in say_fields
-    assert "pre_script" not in say_url_fields
-    assert "post_script" not in say_url_fields
+    assert "pre_script" in say_url_fields
+    assert "post_script" in say_url_fields
 
 
 def test_panel_uploads_use_home_assistants_authenticated_fetch_helper():
@@ -666,7 +697,7 @@ def test_panel_does_not_refocus_native_selects_after_rendering():
         / "chime-tts-panel.js"
     ).read_text(encoding="utf-8")
 
-    assert 'const shouldRestoreFocus = activeElement?.tagName !== "SELECT";' in panel_source
+    assert 'const shouldRestoreFocus = activeElement?.tagName !== "SELECT"' in panel_source
     assert "!shouldRestoreFocus" in panel_source
 
 

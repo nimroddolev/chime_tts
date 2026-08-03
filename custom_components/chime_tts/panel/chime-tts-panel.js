@@ -331,6 +331,9 @@ template.innerHTML = `
     .layout {
       position: relative;
       z-index: 1;
+      /* Field variants can add a textarea after the browser has selected an
+       * anchor below this panel. Keep that layout growth from moving the page. */
+      overflow-anchor: none;
       max-width: 1180px;
       margin: 0 auto;
       padding:
@@ -4367,6 +4370,15 @@ template.innerHTML = `
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
+    .script-action-label {
+      margin: 14px 0 6px;
+      color: color-mix(in srgb, var(--section-help-color) 88%, var(--primary-text-color));
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .script-action-label:first-of-type { margin-top: 0; }
+
     @media (max-width: 1100px) {
       .field-grid {
         grid-template-columns: 1fr;
@@ -5990,6 +6002,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const sectionFields = section.fields || [];
     const basicFields = sectionFields.filter((field) => !field.advanced);
     const advancedFields = sectionFields.filter((field) => field.advanced);
+    const scriptFields = basicFields.filter((field) => (
+      field.key === "default_pre_script_key" || field.key === "default_post_script_key"
+    ));
+    const visibleBasicFields = basicFields.filter((field) => (
+      field.key !== "default_pre_script_shared_key"
+      && field.key !== "default_post_script_shared_key"
+      && field.key !== "default_pre_script_say_url_key"
+      && field.key !== "default_post_script_say_url_key"
+    ));
     const isAdvancedOpen = this._isAdvancedOpen(section);
     const sectionDirty = this._isSectionDirty(section);
     const expanded = this._isConfigSectionExpanded(section.key);
@@ -6029,7 +6050,22 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           <div class="row-collapse-inner">
             <div class="config-section-body">
               <div class="field-grid">
-                ${basicFields.map((field) => this._renderField(field, values[field.key], errors[field.key])).join("")}
+                ${visibleBasicFields.map((field) => {
+                  if (!scriptFields.includes(field)) {
+                    return this._renderField(field, values[field.key], errors[field.key]);
+                  }
+                  const sharedKey = field.key === "default_pre_script_key"
+                    ? "default_pre_script_shared_key"
+                    : "default_post_script_shared_key";
+                  const sharedScriptsField = basicFields.find((item) => item.key === sharedKey);
+                  return this._renderScriptField(
+                    field,
+                    values,
+                    errors[field.key],
+                    values[sharedKey] !== false,
+                    sharedScriptsField,
+                  );
+                }).join("")}
               </div>
               ${advancedFields.length > 0 ? `
                 <div class="advanced-toggle-row">
@@ -7176,6 +7212,49 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     `;
   }
 
+  _renderScriptField(field, values, error, useSharedScripts, sharedScriptsField) {
+    const sayUrlKey = field.key === "default_pre_script_key"
+      ? "default_pre_script_say_url_key"
+      : "default_post_script_say_url_key";
+    const fieldClasses = ["field"];
+    if (this._isFieldChanged(field.key) || this._isFieldChanged(sayUrlKey)) {
+      fieldClasses.push("changed");
+    }
+    const helpLink = field.docs_url
+      ? `<a class="field-help-link" href="${this._escapeAttribute(this._documentationUrl(field.docs_url))}" target="_blank" rel="noreferrer" aria-label="${this._escapeAttribute(this._t("aria.open_help", { title: field.label }))}" title="${this._escapeAttribute(this._t("aria.open_help", { title: field.label }))}">?</a>`
+      : "";
+    return `
+      <div class="${fieldClasses.join(" ")}" data-field-key="${this._escapeAttribute(field.key)}">
+        <div class="field-top with-icon">
+          <img class="field-icon" src="${this._escapeAttribute(field.icon_url || "")}" alt="" loading="lazy" />
+          <div class="field-header"><div class="field-copy"><div class="field-label-row">
+            <p class="field-label">${this._escapeHtml(field.label)}</p>${helpLink}
+          </div></div></div>
+          <div class="field-description-row"><p class="field-description">${this._escapeHtml(field.description || "")}</p></div>
+        </div>
+        ${useSharedScripts ? "" : '<p class="script-action-label">chime_tts.say</p>'}
+        ${this._renderInput(field, values[field.key])}
+        ${useSharedScripts ? "" : `
+          <p class="script-action-label">chime_tts.say_url</p>
+          ${this._renderInput({ ...field, key: sayUrlKey }, values[sayUrlKey])}
+        `}
+        ${sharedScriptsField ? `
+          <div>
+            <label class="control-checkbox">
+              <input
+                data-field="${this._escapeAttribute(sharedScriptsField.key)}"
+                type="checkbox"
+                ${values[sharedScriptsField.key] ? "checked" : ""}
+              />
+              <span>${this._escapeHtml(sharedScriptsField.label)}</span>
+            </label>
+          </div>
+        ` : ""}
+        <div class="error-text">${error ? this._escapeHtml(this._formatError(error)) : ""}</div>
+      </div>
+    `;
+  }
+
   _renderInput(field, value) {
     const type = field.type === "number" ? "number" : "text";
     const normalizedValue = value === null || value === undefined ? "" : value;
@@ -7913,14 +7992,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
   }
 
-  _rerenderPreservingInputState(fieldKey = null) {
+  _rerenderPreservingInputState(fieldKey = null, stabilizeScroll = false) {
     const scrollElement = document.scrollingElement;
     const scrollTop = scrollElement?.scrollTop ?? window.scrollY ?? 0;
     const activeElement = this.shadowRoot.activeElement;
+    const ancestorScrollPositions = this._captureAncestorScrollPositions(activeElement);
     // Re-focusing a native select after its change event can reopen its picker
     // on mobile browsers. The newly rendered select already has the selected
     // value, so only restore focus for controls that need cursor preservation.
-    const shouldRestoreFocus = activeElement?.tagName !== "SELECT";
+    const shouldRestoreFocus = activeElement?.tagName !== "SELECT"
+      && activeElement?.type !== "checkbox";
     const activeFieldKey = fieldKey || activeElement?.dataset?.field || null;
     const activeNotifyFieldKey = activeElement?.dataset?.notifyField || null;
     const activeNotifyIndex = activeElement?.dataset?.notifyIndex || null;
@@ -7942,6 +8023,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       } else {
         window.scrollTo(0, scrollTop);
       }
+      ancestorScrollPositions.forEach(({ element, top, left }) => {
+        element.scrollTop = top;
+        element.scrollLeft = left;
+      });
     };
 
     this._render();
@@ -7976,6 +8061,34 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         nextField.setSelectionRange(selectionStart, selectionEnd);
       }
     });
+    if (stabilizeScroll) {
+      // Expanding a split script field moves the clicked checkbox down. Home
+      // Assistant's outer scroller applies that compensation after the next
+      // paint, so restore once more after its layout update has settled.
+      window.setTimeout(restoreScrollPosition, 100);
+    }
+  }
+
+  _captureAncestorScrollPositions(element) {
+    const positions = [];
+    const seen = new Set();
+    let current = element;
+    while (current) {
+      const parent = current.parentElement || current.getRootNode?.().host || null;
+      if (!parent || seen.has(parent)) {
+        break;
+      }
+      seen.add(parent);
+      if (parent.scrollHeight > parent.clientHeight || parent.scrollWidth > parent.clientWidth) {
+        positions.push({
+          element: parent,
+          top: parent.scrollTop,
+          left: parent.scrollLeft,
+        });
+      }
+      current = parent;
+    }
+    return positions;
   }
 
   _openRestartConfirmation(reason = "pending") {
@@ -8936,10 +9049,17 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (key === "chime_path" || key === "end_chime_path") {
       this._stopFieldPreviewAudio();
     }
-    this._draftValues = {
+    const nextDraftValues = {
       ...(this._draftValues || {}),
       [key]: nextValue,
     };
+    if (key === "default_pre_script_shared_key" && nextValue) {
+      nextDraftValues.default_pre_script_say_url_key = "";
+    }
+    if (key === "default_post_script_shared_key" && nextValue) {
+      nextDraftValues.default_post_script_say_url_key = "";
+    }
+    this._draftValues = nextDraftValues;
     if (this._clientErrors[key]) {
       const nextErrors = { ...(this._clientErrors || {}) };
       delete nextErrors[key];
@@ -8949,7 +9069,11 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (this._isPathFieldKey(key)) {
       this._schedulePathValidation(key, nextValue);
     }
-    this._rerenderPreservingInputState(key);
+    this._rerenderPreservingInputState(
+      key,
+      key === "default_pre_script_shared_key"
+        || key === "default_post_script_shared_key",
+    );
   }
 
   _randomChimeSetsDraft() {
