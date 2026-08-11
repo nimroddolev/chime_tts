@@ -882,6 +882,27 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
 ### Audio Helper Functions ###
 ##############################
 
+def _repeat_audio_segment(
+    audio_segment: AudioSegment,
+    repeat: int,
+    repeat_delay: float,
+) -> AudioSegment:
+    """Repeat audio, optionally inserting silence between each copy."""
+    if repeat <= 1:
+        return audio_segment
+    if repeat_delay <= 0:
+        return audio_segment * repeat
+
+    silence = AudioSegment.silent(
+        duration=repeat_delay,
+        frame_rate=audio_segment.frame_rate,
+    ).set_channels(audio_segment.channels).set_sample_width(audio_segment.sample_width)
+    repeated_audio = audio_segment
+    for _ in range(repeat - 1):
+        repeated_audio += silence + audio_segment
+    return repeated_audio
+
+
 async def async_get_playback_audio_path(params: dict, options: dict):
     """Create audio to play on media player entity."""
     output_audio = None
@@ -1011,7 +1032,15 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         repeat = params.get("repeat", 1)
         repeat = max(repeat, 1) if isinstance(repeat, int) else 1
         if repeat > 1:
-            new_audio_segment = new_audio_segment * repeat
+            try:
+                repeat_delay = max(float(params.get("repeat_delay", 0) or 0), 0)
+            except (TypeError, ValueError):
+                repeat_delay = 0
+            new_audio_segment = _repeat_audio_segment(
+                new_audio_segment,
+                repeat,
+                repeat_delay,
+            )
             await filesystem_helper.async_export_audio(new_audio_segment, new_audio_file)
 
         duration = len(new_audio_segment) / 1000.0
@@ -1912,6 +1941,7 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
         "tts_speed",
         "tts_pitch",
         "repeat",
+        "repeat_delay",
     ]
     for param in relevant_params:
         for dictionary in [params, options]:

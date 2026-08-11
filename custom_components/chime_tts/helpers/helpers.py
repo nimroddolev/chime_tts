@@ -139,6 +139,7 @@ class ChimeTTSHelper:
             repeat = max(int(data.get("repeat", 1) or 1), 1)
         except (ValueError, TypeError):
             repeat = 1
+        repeat_delay = max(self._coerce_float(data.get("repeat_delay", 0), 0), 0)
         pre_script = data.get("pre_script", None)
         post_script = data.get("post_script", None)
         volume_level = data.get(ATTR_MEDIA_VOLUME_LEVEL, -1) or -1
@@ -174,6 +175,7 @@ class ChimeTTSHelper:
             "tts_speed": tts_speed,
             "tts_pitch": tts_pitch,
             "repeat": repeat,
+            "repeat_delay": repeat_delay,
             "pre_script": pre_script,
             "post_script": post_script,
             "announce": announce,

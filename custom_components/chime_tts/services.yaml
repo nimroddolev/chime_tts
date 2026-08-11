@@ -284,6 +284,18 @@ say:
           min: 1
           mode: box
           step: 1
+    repeat_delay:
+      description: Delay between repeated chime and message audio segments
+      example: 500
+      name: Repeat Delay
+      required: false
+      selector:
+        number:
+          max: 10000
+          min: 0
+          mode: box
+          step: 10
+          unit_of_measurement: ms
     pre_script:
       description: A script entity to run before the audio plays, or YAML containing
         a script entity and parameter values

@@ -995,6 +995,9 @@ def test_issue_314_repeat_is_part_of_cache_key():
     assert get_filename_hash_from_service_data(
         {**base, "repeat": 2}, {}
     ) != get_filename_hash_from_service_data({**base, "repeat": 3}, {})
+    assert get_filename_hash_from_service_data(
+        {**base, "repeat": 2, "repeat_delay": 100}, {}
+    ) != get_filename_hash_from_service_data({**base, "repeat": 2, "repeat_delay": 200}, {})
 
 
 async def test_issue_310_runs_configured_script_before_after_tts():
