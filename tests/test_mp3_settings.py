@@ -341,11 +341,42 @@ def test_parse_message_falls_back_to_tts_for_invalid_yaml_segments(helper: Chime
     assert segments == [{"type": "tts", "message": message}]
 
 
-def test_parse_message_removes_niqqud(helper: ChimeTTSHelper) -> None:
-    """Hebrew niqqud should be stripped before creating the TTS segment."""
+def test_parse_message_preserves_niqqud(helper: ChimeTTSHelper) -> None:
+    """Niqqud survives parsing; stripping it is the TTS platform's decision."""
     segments = helper.parse_message("שָׁלוֹם")
 
-    assert segments == [{"type": "tts", "message": "שלום"}]
+    assert segments == [{"type": "tts", "message": "שָׁלוֹם"}]
+
+
+def test_remove_niqqud_strips_vowels_and_cantillation(helper: ChimeTTSHelper) -> None:
+    """Vowel points and cantillation marks are diacritics and are removed."""
+    assert helper.remove_niqqud("שָׁלוֹם") == "שלום"
+    assert helper.remove_niqqud("בְּרֵאשִׁ֖ית") == "בראשית"
+
+
+def test_remove_niqqud_preserves_hebrew_punctuation(helper: ChimeTTSHelper) -> None:
+    """The maqaf separates words, so removing it would join them."""
+    assert helper.remove_niqqud("כָּל־הָעוֹלָם") == "כל־העולם"
+    assert helper.remove_niqqud("אָ׀ב") == "א׀ב"
+    assert helper.remove_niqqud("סוֹף׃") == "סוף׃"
+
+
+@pytest.mark.parametrize(
+    "tts_platform",
+    ["google_translate", "tts.google_translate", "Google Translate", "tts.google_en_com"],
+)
+def test_supports_niqqud_for_google_translate(helper: ChimeTTSHelper, tts_platform: str) -> None:
+    """Google Translate pronounces niqqud, including its per-language entities."""
+    assert helper.supports_niqqud(tts_platform) is True
+
+
+@pytest.mark.parametrize(
+    "tts_platform",
+    ["tts.piper", "tts.google_cloud", "tts.google_generative_ai", "cloud", "edge_tts", "", None],
+)
+def test_does_not_support_niqqud(helper: ChimeTTSHelper, tts_platform) -> None:
+    """Unknown platforms, and sibling Google products, keep the stripping behaviour."""
+    assert helper.supports_niqqud(tts_platform) is False
 
 
 def test_add_atempo_values_supports_sub_half_values(helper: ChimeTTSHelper) -> None:

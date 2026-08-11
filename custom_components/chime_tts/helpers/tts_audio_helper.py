@@ -74,6 +74,9 @@ class TTSAudioHelper:
         if not tts_platform:
             return None
 
+        # Adapt the message to the resolved platform
+        platform_message = self._adapt_message_to_platform(message, tts_platform)
+
         # Steps 2-3: Generate and retrieve TTS audio under one deadline. A
         # media-source ID can be produced before the provider makes its network
         # request, so timing only generation can prevent a fallback attempt.
@@ -81,7 +84,7 @@ class TTSAudioHelper:
         try:
             audio = await asyncio.wait_for(
                 self._async_generate_and_process_audio(
-                    hass, tts_platform, message, language, cache, tts_options,
+                    hass, tts_platform, platform_message, language, cache, tts_options,
                     is_fallback, start_time, timeout,
                 ),
                 timeout=timeout,
@@ -93,8 +96,22 @@ class TTSAudioHelper:
         if audio:
             return audio
 
-        # Step 4: Retry with fallback platform if needed
+        # Step 4: Retry with fallback platform if needed. The original message is
+        # passed on, so it is re-adapted for the fallback platform.
         return await self._retry_with_fallback(hass, tts_platform, message, language, cache, options)
+
+    def _adapt_message_to_platform(self, message: str, tts_platform: str):
+        """Remove any text the resolved TTS platform cannot pronounce."""
+        if helpers.supports_niqqud(tts_platform):
+            return message
+
+        cleaned_message = helpers.remove_niqqud(message)
+        if cleaned_message != message:
+            _LOGGER.debug(
+                " - Removed Hebrew niqqud: '%s' is not known to support it",
+                tts_platform,
+            )
+        return cleaned_message
 
     @property
     def last_error_message(self) -> str | None:
