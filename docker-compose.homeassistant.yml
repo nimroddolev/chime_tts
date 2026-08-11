@@ -26,3 +26,27 @@ services:
       - ./custom_components/chime_tts:/config/custom_components/chime_tts
       - ./:/workspaces/chime_tts
       - ./.ha/dev/media:/media
+
+  homeassistant-e2e-stable:
+    container_name: chime_tts_ha_e2e_stable
+    image: ghcr.io/home-assistant/home-assistant:stable
+    ports:
+      - "28124:8123"
+    environment:
+      TZ: ${TZ:-Asia/Jerusalem}
+    volumes:
+      - ./.ha/e2e/stable/config:/config
+      - ./custom_components/chime_tts:/config/custom_components/chime_tts
+      - ./.ha/e2e/stable/media:/media
+
+  homeassistant-e2e-dev:
+    container_name: chime_tts_ha_e2e_dev
+    image: ghcr.io/home-assistant/home-assistant:dev
+    ports:
+      - "28125:8123"
+    environment:
+      TZ: ${TZ:-Asia/Jerusalem}
+    volumes:
+      - ./.ha/e2e/dev/config:/config
+      - ./custom_components/chime_tts:/config/custom_components/chime_tts
+      - ./.ha/e2e/dev/media:/media

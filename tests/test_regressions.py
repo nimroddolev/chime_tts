@@ -348,8 +348,8 @@ def test_issue_294_stale_structure_returns_none_not_crash():
     )
 
 
-def test_services_yaml_exposes_scripts_for_both_say_actions():
-    """Both actions expose pre- and post-script service fields."""
+def test_services_yaml_exposes_shared_fields_for_both_say_actions():
+    """Both actions expose shared script and repeat service fields."""
     from custom_components.chime_tts.settings import _load_services_yaml
 
     services_yaml = _load_services_yaml()
@@ -360,6 +360,8 @@ def test_services_yaml_exposes_scripts_for_both_say_actions():
     assert "post_script" in say_fields
     assert "pre_script" in say_url_fields
     assert "post_script" in say_url_fields
+    assert "repeat" in say_url_fields
+    assert "repeat_delay" in say_url_fields
 
 
 def test_panel_uploads_use_home_assistants_authenticated_fetch_helper():

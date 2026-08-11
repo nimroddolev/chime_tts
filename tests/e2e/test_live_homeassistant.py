@@ -190,16 +190,14 @@ class HomeAssistantE2EClient:
                     self.target.image,
                     "sh",
                     "-c",
-                    "find /state -mindepth 1 -maxdepth 1 -exec rm -rf {} +",
+                    "find /state -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true",
                 ],
                 check=True,
             )
 
         self.target.config_dir.mkdir(parents=True, exist_ok=True)
         self.target.media_dir.mkdir(parents=True, exist_ok=True)
-        self.target.integration_dir.parent.mkdir(parents=True, exist_ok=True)
         (self.target.config_dir / "www").mkdir(parents=True, exist_ok=True)
-        shutil.copytree(SOURCE_INTEGRATION_DIR, self.target.integration_dir)
         self.copy_support_components()
         self.target.config_dir.joinpath("configuration.yaml").write_text(
             E2E_CONFIGURATION,
@@ -329,6 +327,19 @@ class HomeAssistantE2EClient:
             token=self.access_token,
             json_body={"handler": "chime_tts"},
         )
+        if payload.get("reason") == "single_instance_allowed":
+            _status, entries = _http_request(
+                "GET",
+                f"{self.hass_url}/api/config/config_entries/entry",
+                token=self.access_token,
+            )
+            existing_entry = next(
+                (entry for entry in entries if entry.get("domain") == "chime_tts"),
+                None,
+            )
+            if existing_entry is not None:
+                self.entry_id = existing_entry["entry_id"]
+                return
         self.entry_id = self._finish_flow(payload)
 
     def wait_for_entry_loaded(self, timeout: float = 90.0) -> None:
@@ -552,7 +563,7 @@ async def test_panel_settings_round_trip(e2e_client: HomeAssistantE2EClient) -> 
     payload = await e2e_client.ws_command({"type": "chime_tts/get_settings"})
 
     assert payload["documentation_url"].endswith("/configuration/")
-    assert any(section["key"] == "paths" for section in payload["sections"])
+    assert any(section["key"] == "audio_folders" for section in payload["sections"])
 
     updated_values = dict(payload["values"])
     updated_values["queue_timeout"] = int(updated_values["queue_timeout"]) + 5
