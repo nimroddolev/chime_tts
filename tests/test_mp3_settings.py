@@ -6,6 +6,7 @@ import hashlib
 import importlib
 import inspect
 import json
+import logging
 import subprocess
 from datetime import datetime
 from types import SimpleNamespace
@@ -70,15 +71,20 @@ def generate_base_tone() -> AudioSegment:
     return Sine(440).to_audio_segment(duration=1000).set_frame_rate(44100).set_channels(1)
 
 
-def test_repeat_audio_segment_inserts_requested_silence() -> None:
+def test_repeat_audio_segment_inserts_requested_silence(caplog: pytest.LogCaptureFixture) -> None:
     """Repeat delay should create gaps only between complete audio copies."""
     tone = Sine(440).to_audio_segment(duration=100).set_frame_rate(44100).set_channels(1)
 
-    repeated = integration_module._repeat_audio_segment(tone, repeat=3, repeat_delay=50)
+    with caplog.at_level(logging.INFO, logger=integration_module.__name__):
+        repeated = integration_module._repeat_audio_segment(tone, repeat=3, repeat_delay=50)
 
     assert len(repeated) == 400
     assert repeated[100:150].rms == 0
     assert repeated[250:300].rms == 0
+    assert "Repeat playback 2/3: inserting a 0.050-second delay" in caplog.text
+    assert "Repeat playback 2/3: delay inserted and audio copy appended" in caplog.text
+    assert "Repeat playback 3/3: inserting a 0.050-second delay" in caplog.text
+    assert "Repeat playback 3/3: delay inserted and audio copy appended" in caplog.text
 
 
 def probe_media_file(path: str) -> dict:
@@ -137,6 +143,7 @@ async def test_async_parse_params_supports_deprecated_aliases_and_flags(helper: 
             "tts_platform": "google_translate",
             "tts_playback_speed": 135,
             "tts_pitch": 4,
+            "repeat": 2,
             "repeat_delay": 250,
             "volume_level": 0.4,
             "join_players": True,
@@ -160,6 +167,7 @@ async def test_async_parse_params_supports_deprecated_aliases_and_flags(helper: 
     assert params["final_delay"] == 300.0
     assert params["tts_speed"] == 135.0
     assert params["tts_pitch"] == 4
+    assert params["repeat"] == 2
     assert params["repeat_delay"] == 250.0
     assert params["volume_level"] == 0.4
     assert params["join_players"] is True
@@ -271,6 +279,7 @@ async def test_async_parse_params_tolerates_none_numeric_fields(helper: ChimeTTS
     assert params["final_delay"] == 0.0
     assert params["tts_speed"] == 100.0
     assert params["tts_pitch"] == 0.0
+    assert params["repeat"] == 0
 
 
 def test_parse_options_yaml_applies_defaults_only_for_matching_platform(helper: ChimeTTSHelper) -> None:

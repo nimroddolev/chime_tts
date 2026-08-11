@@ -721,6 +721,50 @@ async def test_say_url_cache_and_clear_cache(
 
 
 @pytest.mark.asyncio
+async def test_say_url_repeat_adds_complete_plays_and_delays(
+    e2e_client: HomeAssistantE2EClient,
+) -> None:
+    """`repeat` adds complete plays after the initial audio with each delay."""
+    base_service_data = {
+        "message": "Repeat semantics live test",
+        "tts_platform": "test_support_tts",
+        "cache": False,
+    }
+
+    initial = await e2e_client.ws_command(
+        {
+            "type": "call_service",
+            "domain": "chime_tts",
+            "service": "say_url",
+            "service_data": {**base_service_data, "repeat": 0},
+            "return_response": True,
+        }
+    )
+    repeated = await e2e_client.ws_command(
+        {
+            "type": "call_service",
+            "domain": "chime_tts",
+            "service": "say_url",
+            "service_data": {
+                **base_service_data,
+                "repeat": 2,
+                "repeat_delay": 2000,
+            },
+            "return_response": True,
+        }
+    )
+
+    initial_duration = initial["response"]["duration"]
+    repeated_response = repeated["response"]
+    assert initial["response"]["success"] is True
+    assert repeated_response["success"] is True
+    assert repeated_response["duration"] == pytest.approx(
+        initial_duration * 3 + 4,
+        abs=0.1,
+    )
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("case_name", "service_data"),
     [

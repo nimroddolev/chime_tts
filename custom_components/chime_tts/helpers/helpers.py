@@ -165,9 +165,9 @@ class ChimeTTSHelper:
         )
         tts_pitch = self._coerce_float(data.get("tts_pitch", 0), 0)
         try:
-            repeat = max(int(data.get("repeat", 1) or 1), 1)
+            repeat = max(int(data.get("repeat", 0) or 0), 0)
         except (ValueError, TypeError):
-            repeat = 1
+            repeat = 0
         repeat_delay = max(self._coerce_float(data.get("repeat_delay", 0), 0), 0)
         pre_script = data.get("pre_script", None)
         post_script = data.get("post_script", None)

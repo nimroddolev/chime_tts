@@ -913,8 +913,19 @@ def _repeat_audio_segment(
         frame_rate=audio_segment.frame_rate,
     ).set_channels(audio_segment.channels).set_sample_width(audio_segment.sample_width)
     repeated_audio = audio_segment
-    for _ in range(repeat - 1):
+    for play_number in range(2, repeat + 1):
+        _LOGGER.info(
+            "   - Repeat playback %d/%d: inserting a %.3f-second delay before the next audio copy.",
+            play_number,
+            repeat,
+            repeat_delay / 1000,
+        )
         repeated_audio += silence + audio_segment
+        _LOGGER.info(
+            "   - Repeat playback %d/%d: delay inserted and audio copy appended.",
+            play_number,
+            repeat,
+        )
     return repeated_audio
 
 
@@ -962,6 +973,14 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         _LOGGER.debug(" *** Checking Chime TTS audio cache ***")
         audio_dict: dict = await async_verify_cached_audio(hass, filepath_hash, params, options, is_local, is_public, ffmpeg_args)
         if audio_dict:
+            additional_repeats = params.get("repeat", 0)
+            if additional_repeats > 0:
+                _LOGGER.info(
+                    "   - Using cached Chime TTS audio with %d additional repeats (%d total plays) and a %.3f-second delay between plays.",
+                    additional_repeats,
+                    additional_repeats + 1,
+                    params.get("repeat_delay", 0) / 1000,
+                )
             return audio_dict
         _LOGGER.debug("   ...no cached audio found")
 
@@ -1044,19 +1063,32 @@ async def async_get_playback_audio_path(params: dict, options: dict):
 
         # Repeat the whole assembled chime + message audio (#314). Done at the
         # audio level so the chimes repeat too, not just the message segments.
-        repeat = params.get("repeat", 1)
-        repeat = max(repeat, 1) if isinstance(repeat, int) else 1
-        if repeat > 1:
+        # `repeat` is the number of plays after the initial playback.
+        additional_repeats = params.get("repeat", 0)
+        additional_repeats = max(additional_repeats, 0) if isinstance(additional_repeats, int) else 0
+        if additional_repeats > 0:
+            total_plays = additional_repeats + 1
             try:
                 repeat_delay = max(float(params.get("repeat_delay", 0) or 0), 0)
             except (TypeError, ValueError):
                 repeat_delay = 0
+            _LOGGER.info(
+                " *** Repeating assembled Chime TTS audio %d additional times (%d total plays) with a %.3f-second delay between plays.",
+                additional_repeats,
+                total_plays,
+                repeat_delay / 1000,
+            )
             new_audio_segment = _repeat_audio_segment(
                 new_audio_segment,
-                repeat,
+                total_plays,
                 repeat_delay,
             )
             await filesystem_helper.async_export_audio(new_audio_segment, new_audio_file)
+            _LOGGER.info(
+                "   - Repeated Chime TTS audio is ready: %d plays, %.3f seconds total duration.",
+                total_plays,
+                len(new_audio_segment) / 1000,
+            )
 
         duration = len(new_audio_segment) / 1000.0
         audio_dict[AUDIO_DURATION_KEY] = duration
@@ -1966,6 +1998,17 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
                 and len(str(dictionary[param])) > 0
             ):
                 unique_string = unique_string + "-" + str(dictionary[param])
+
+    # `repeat` now means additional plays rather than total plays. Version
+    # repeat-enabled cache entries so audio generated with the old semantics
+    # cannot be reused after this change.
+    repeat_value = params.get("repeat", options.get("repeat", 0))
+    try:
+        has_additional_repeats = int(repeat_value or 0) > 0
+    except (TypeError, ValueError):
+        has_additional_repeats = False
+    if has_additional_repeats:
+        unique_string += "-repeat-semantics-additional-plays-v1"
 
     hash_value = filesystem_helper.get_hash_for_string(unique_string)
     return hash_value

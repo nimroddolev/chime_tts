@@ -1040,8 +1040,8 @@ def test_issue_282_conversion_is_part_of_cache_key():
     assert boost != plain
 
 def test_issue_314_repeat_is_part_of_cache_key():
-    """Different repeat counts produce different cache keys (#314)."""
-    from custom_components.chime_tts import get_filename_hash_from_service_data
+    """Repeat cache entries include their count, delay, and semantics (#314)."""
+    from custom_components.chime_tts import filesystem_helper, get_filename_hash_from_service_data
 
     base = {"message": "hi"}
     assert get_filename_hash_from_service_data(
@@ -1053,6 +1053,9 @@ def test_issue_314_repeat_is_part_of_cache_key():
     assert get_filename_hash_from_service_data(
         {**base, "repeat": 2, "repeat_delay": 100}, {}
     ) != get_filename_hash_from_service_data({**base, "repeat": 2, "repeat_delay": 200}, {})
+    assert get_filename_hash_from_service_data(
+        {**base, "repeat": 2}, {}
+    ) != filesystem_helper.get_hash_for_string("-hi-2")
 
 
 async def test_issue_310_runs_configured_script_before_after_tts():

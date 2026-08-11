@@ -270,14 +270,15 @@ say:
           step: 1
           unit_of_measurement: semitones
     repeat:
-      description: Repeat the chime and message this many times
+      description: Number of additional times to play the complete chime and message
+        after the initial play
       example: 2
       name: Repeat
       required: false
       selector:
         number:
           max: 10
-          min: 1
+          min: 0
           mode: box
           step: 1
     repeat_delay:
