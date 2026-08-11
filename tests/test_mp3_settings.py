@@ -16,8 +16,10 @@ from pydub import AudioSegment
 from pydub.generators import Sine
 
 from custom_components.chime_tts.const import AUDIO_DURATION_KEY
+from custom_components.chime_tts.const import CROSSFADE_KEY
 from custom_components.chime_tts.const import FFMPEG_ARGS_ALEXA
 from custom_components.chime_tts.const import LOCAL_PATH_KEY
+from custom_components.chime_tts.const import OFFSET_KEY
 from custom_components.chime_tts.const import PUBLIC_PATH_KEY
 from custom_components.chime_tts.const import TEMP_PATH_KEY
 from custom_components.chime_tts.const import WWW_PATH_KEY
@@ -166,6 +168,33 @@ async def test_async_parse_params_supports_deprecated_aliases_and_flags(helper: 
     assert params["announce"] is True
     assert params["fade_audio"] is True
     assert params["ffmpeg_args"] == "-filter:a volume=1.25"
+
+
+@pytest.mark.asyncio
+async def test_async_parse_params_uses_configured_offset_and_crossfade_defaults(
+    helper: ChimeTTSHelper,
+) -> None:
+    """Configured playback defaults apply when an action omits both values."""
+    class FakeMediaPlayerHelper:
+        def parse_entity_ids(self, data, hass):
+            del data, hass
+            return ["media_player.kitchen"]
+
+        async def async_initialize_media_players(self, *args, **kwargs):
+            del args, kwargs
+            return ["media_player.kitchen"]
+
+    params = await helper.async_parse_params(
+        hass=FakeHass(),
+        data={"entity_id": ["media_player.kitchen"], "message": "Hello"},
+        is_say_url=False,
+        media_player_helper=FakeMediaPlayerHelper(),
+        default_data={OFFSET_KEY: 525, CROSSFADE_KEY: 35},
+    )
+
+    assert params is not None
+    assert params["offset"] == 525.0
+    assert params["crossfade"] == 35
 
 
 @pytest.mark.asyncio

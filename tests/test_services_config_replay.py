@@ -9,14 +9,33 @@ from unittest.mock import AsyncMock, Mock, call
 import pytest
 
 from custom_components.chime_tts.const import CUSTOM_CHIMES_PATH_KEY
+from custom_components.chime_tts.const import ADD_COVER_ART_KEY
+from custom_components.chime_tts.const import CROSSFADE_KEY
 from custom_components.chime_tts.const import DATA_STORAGE_KEY
+from custom_components.chime_tts.const import DEFAULT_LANGUAGE_KEY
+from custom_components.chime_tts.const import DEFAULT_OFFSET_MS
+from custom_components.chime_tts.const import DEFAULT_POST_SCRIPT_KEY
+from custom_components.chime_tts.const import DEFAULT_POST_SCRIPT_SAY_URL_KEY
+from custom_components.chime_tts.const import DEFAULT_POST_SCRIPT_SHARED_KEY
+from custom_components.chime_tts.const import DEFAULT_PRE_SCRIPT_KEY
+from custom_components.chime_tts.const import DEFAULT_PRE_SCRIPT_SAY_URL_KEY
+from custom_components.chime_tts.const import DEFAULT_PRE_SCRIPT_SHARED_KEY
+from custom_components.chime_tts.const import DEFAULT_TLD_KEY
+from custom_components.chime_tts.const import DEFAULT_VOICE_KEY
 from custom_components.chime_tts.const import DOMAIN
+from custom_components.chime_tts.const import FADE_TRANSITION_KEY
+from custom_components.chime_tts.const import FALLBACK_TTS_PLATFORM_KEY
+from custom_components.chime_tts.const import OFFSET_KEY
 from custom_components.chime_tts.const import QUEUE_TIMEOUT_KEY
+from custom_components.chime_tts.const import REMOVE_TEMP_FILE_DELAY_KEY
 from custom_components.chime_tts.const import SERVICE_REPLAY
 from custom_components.chime_tts.const import SERVICE_CLEAR_CACHE
 from custom_components.chime_tts.const import SERVICE_SAY
 from custom_components.chime_tts.const import SERVICE_SAY_URL
 from custom_components.chime_tts.const import TEMP_PATH_KEY
+from custom_components.chime_tts.const import TEMP_CHIMES_PATH_KEY
+from custom_components.chime_tts.const import TTS_PLATFORM_KEY
+from custom_components.chime_tts.const import TTS_TIMEOUT_KEY
 from custom_components.chime_tts.const import WWW_PATH_KEY
 from homeassistant.components.media_player.const import ATTR_MEDIA_CONTENT_ID
 from homeassistant.core import SupportsResponse
@@ -74,6 +93,122 @@ class FakeHass:
     async def async_add_executor_job(self, func, *args):
         """Run executor jobs inline for tests."""
         return func(*args)
+
+
+@pytest.mark.asyncio
+async def test_configuration_loads_default_start_and_end_chimes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Every configured default is loaded into the integration runtime."""
+    hass = FakeHass()
+    previous_data = dict(integration_module._data)
+    monkeypatch.setattr(
+        integration_module.services_helper,
+        "async_update_services_yaml",
+        AsyncMock(),
+    )
+    integration_module._data["async_say"] = object()
+    integration_module._data["async_say_url"] = object()
+
+    try:
+        await integration_module.async_update_configuration(
+            SimpleNamespace(
+                options={
+                    QUEUE_TIMEOUT_KEY: 31,
+                    TTS_TIMEOUT_KEY: 19,
+                    ADD_COVER_ART_KEY: True,
+                    TTS_PLATFORM_KEY: "google_translate",
+                    DEFAULT_LANGUAGE_KEY: "en-US",
+                    DEFAULT_VOICE_KEY: "Jenny",
+                    DEFAULT_TLD_KEY: "co.uk",
+                    FALLBACK_TTS_PLATFORM_KEY: "cloud",
+                    DEFAULT_PRE_SCRIPT_KEY: "script.prepare",
+                    DEFAULT_POST_SCRIPT_KEY: "script.restore",
+                    DEFAULT_PRE_SCRIPT_SHARED_KEY: False,
+                    DEFAULT_POST_SCRIPT_SHARED_KEY: False,
+                    DEFAULT_PRE_SCRIPT_SAY_URL_KEY: "script.url_prepare",
+                    DEFAULT_POST_SCRIPT_SAY_URL_KEY: "script.url_restore",
+                    "chime_path": "bells",
+                    "end_chime_path": "tada",
+                    OFFSET_KEY: 525,
+                    CROSSFADE_KEY: 35,
+                    FADE_TRANSITION_KEY: 575,
+                    REMOVE_TEMP_FILE_DELAY_KEY: 200,
+                    CUSTOM_CHIMES_PATH_KEY: "/custom/chimes",
+                    TEMP_CHIMES_PATH_KEY: "/media/chime-downloads",
+                    TEMP_PATH_KEY: "/media/chime-temp",
+                    WWW_PATH_KEY: "/config/www/chime-output",
+                }
+            ),
+            hass,
+        )
+
+        expected_values = {
+            QUEUE_TIMEOUT_KEY: 31,
+            TTS_TIMEOUT_KEY: 19,
+            ADD_COVER_ART_KEY: True,
+            TTS_PLATFORM_KEY: "google_translate",
+            DEFAULT_LANGUAGE_KEY: "en-US",
+            DEFAULT_VOICE_KEY: "Jenny",
+            DEFAULT_TLD_KEY: "co.uk",
+            FALLBACK_TTS_PLATFORM_KEY: "cloud",
+            DEFAULT_PRE_SCRIPT_KEY: "script.prepare",
+            DEFAULT_POST_SCRIPT_KEY: "script.restore",
+            DEFAULT_PRE_SCRIPT_SHARED_KEY: False,
+            DEFAULT_POST_SCRIPT_SHARED_KEY: False,
+            DEFAULT_PRE_SCRIPT_SAY_URL_KEY: "script.url_prepare",
+            DEFAULT_POST_SCRIPT_SAY_URL_KEY: "script.url_restore",
+            "chime_path": "bells",
+            "end_chime_path": "tada",
+            OFFSET_KEY: 525,
+            CROSSFADE_KEY: 35,
+            FADE_TRANSITION_KEY: 575,
+            REMOVE_TEMP_FILE_DELAY_KEY: 200,
+        }
+        for key, value in expected_values.items():
+            assert integration_module._data[key] == value
+        assert integration_module._data[CUSTOM_CHIMES_PATH_KEY] == (
+            integration_module.filesystem_helper.make_folder_path_safe("/custom/chimes")
+        )
+        for key, value in (
+            (TEMP_CHIMES_PATH_KEY, "/media/chime-downloads"),
+            (TEMP_PATH_KEY, "/media/chime-temp"),
+            (WWW_PATH_KEY, "/config/www/chime-output"),
+        ):
+            assert integration_module._data[key] == (
+                integration_module.filesystem_helper.make_folder_path_safe(
+                    hass.config.path(value)
+                )
+            )
+    finally:
+        integration_module._data.clear()
+        integration_module._data.update(previous_data)
+
+
+@pytest.mark.asyncio
+async def test_configuration_uses_the_documented_offset_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A missing legacy offset option uses the same default as the settings UI."""
+    hass = FakeHass()
+    previous_data = dict(integration_module._data)
+    monkeypatch.setattr(
+        integration_module.services_helper,
+        "async_update_services_yaml",
+        AsyncMock(),
+    )
+    integration_module._data["async_say"] = object()
+    integration_module._data["async_say_url"] = object()
+
+    try:
+        await integration_module.async_update_configuration(
+            SimpleNamespace(options={}), hass
+        )
+
+        assert integration_module._data[OFFSET_KEY] == DEFAULT_OFFSET_MS
+    finally:
+        integration_module._data.clear()
+        integration_module._data.update(previous_data)
 
 
 def make_services_yaml(options: list[dict[str, str]]) -> dict:

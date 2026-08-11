@@ -87,31 +87,46 @@ def test_issue_294_build_chime_options_coerces_values_to_str():
     assert "None" not in values, "None must not be coerced to the string 'None'"
 
 
-def test_configured_playback_scripts_apply_only_when_service_omits_them():
-    """Configured scripts provide defaults while explicit service values win."""
-    from custom_components.chime_tts import apply_configured_script_defaults
+def test_configured_action_defaults_apply_only_when_service_omits_them():
+    """Configured chimes and scripts provide defaults while explicit values win."""
+    from custom_components.chime_tts import apply_configured_action_defaults
     from custom_components.chime_tts.const import (
         DEFAULT_POST_SCRIPT_KEY,
         DEFAULT_PRE_SCRIPT_KEY,
     )
 
     defaults = {
+        "chime_path": "bells",
+        "end_chime_path": "tada",
         DEFAULT_PRE_SCRIPT_KEY: "script.prepare_speakers",
         DEFAULT_POST_SCRIPT_KEY: "script.restore_speakers",
     }
-    assert apply_configured_script_defaults({"message": "Hello"}, defaults) == {
+    assert apply_configured_action_defaults({"message": "Hello"}, defaults) == {
         "message": "Hello",
+        "chime_path": "bells",
+        "end_chime_path": "tada",
         "pre_script": "script.prepare_speakers",
         "post_script": "script.restore_speakers",
     }
-    assert apply_configured_script_defaults(
-        {"pre_script": "script.custom_prepare", "post_script": ""}, defaults
-    ) == {"pre_script": "script.custom_prepare", "post_script": ""}
+    assert apply_configured_action_defaults(
+        {
+            "chime_path": "",
+            "end_chime_path": "custom_end.mp3",
+            "pre_script": "script.custom_prepare",
+            "post_script": "",
+        },
+        defaults,
+    ) == {
+        "chime_path": "",
+        "end_chime_path": "custom_end.mp3",
+        "pre_script": "script.custom_prepare",
+        "post_script": "",
+    }
 
 
 def test_configured_say_url_scripts_can_be_action_specific():
     """say_url uses its own defaults only when script sharing is disabled."""
-    from custom_components.chime_tts import apply_configured_script_defaults
+    from custom_components.chime_tts import apply_configured_action_defaults
     from custom_components.chime_tts.const import (
         DEFAULT_POST_SCRIPT_KEY,
         DEFAULT_POST_SCRIPT_SAY_URL_KEY,
@@ -129,12 +144,12 @@ def test_configured_say_url_scripts_can_be_action_specific():
         DEFAULT_PRE_SCRIPT_SAY_URL_KEY: "script.url_pre",
         DEFAULT_POST_SCRIPT_SAY_URL_KEY: "script.url_post",
     }
-    assert apply_configured_script_defaults({}, defaults, is_say_url=True) == {
+    assert apply_configured_action_defaults({}, defaults, is_say_url=True) == {
         "pre_script": "script.url_pre",
         "post_script": "script.url_post",
     }
     defaults[DEFAULT_PRE_SCRIPT_SHARED_KEY] = True
-    assert apply_configured_script_defaults({}, defaults, is_say_url=True) == {
+    assert apply_configured_action_defaults({}, defaults, is_say_url=True) == {
         "pre_script": "script.say_pre",
         "post_script": "script.url_post",
     }
@@ -699,6 +714,23 @@ def test_panel_does_not_refocus_native_selects_after_rendering():
 
     assert 'const shouldRestoreFocus = activeElement?.tagName !== "SELECT"' in panel_source
     assert "!shouldRestoreFocus" in panel_source
+
+
+def test_field_preview_buttons_use_their_workspace_accent():
+    """Chime preview controls inherit the colour of their containing section."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert ".chapter-content .field-preview-button" in panel_source
+    assert "background: color-mix(in srgb, var(--workspace-accent) 14%" in panel_source
+    assert ".field-preview-button.preview-playing" in panel_source
+    assert "background: var(--workspace-accent) !important;" in panel_source
+    assert ".field-preview-button.preview-playing::before" in panel_source
 
 
 def test_issue_291_full_entity_id_matches_installed():

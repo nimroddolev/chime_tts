@@ -117,16 +117,33 @@ class ChimeTTSHelper:
 
     # Parameters / Options
 
-    async def async_parse_params(self, hass: HomeAssistant, data, is_say_url, media_player_helper: MediaPlayerHelper):
+    async def async_parse_params(
+        self,
+        hass: HomeAssistant,
+        data,
+        is_say_url,
+        media_player_helper: MediaPlayerHelper,
+        default_data: dict | None = None,
+    ):
         """Parse TTS service parameters."""
+        has_default_data = default_data is not None
+        default_data = default_data or {}
         entity_ids = media_player_helper.parse_entity_ids(data, hass) if is_say_url is False else []
         chime_path =str(data.get("chime_path", ""))
         end_chime_path = str(data.get("end_chime_path", ""))
         offset = self._coerce_float(
-            data.get("delay", data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)),
-            0,
+            data.get(
+                "delay",
+                data.get(OFFSET_KEY, default_data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)),
+            ),
+            default_data.get(OFFSET_KEY, DEFAULT_OFFSET_MS)
+            if has_default_data
+            else 0,
         )
-        crossfade = self._coerce_int(data.get(CROSSFADE_KEY, 0), 0)
+        crossfade = self._coerce_int(
+            data.get(CROSSFADE_KEY, default_data.get(CROSSFADE_KEY, 0)),
+            default_data.get(CROSSFADE_KEY, 0),
+        )
         final_delay = self._coerce_float(data.get("final_delay", 0), 0)
         message = str(data.get("message", ""))
         tts_platform = str(data.get("tts_platform", ""))

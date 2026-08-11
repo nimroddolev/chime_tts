@@ -98,6 +98,7 @@ from .const import (
     DEFAULT_POST_SCRIPT_SAY_URL_KEY,
     FALLBACK_TTS_PLATFORM_KEY,
     OFFSET_KEY,
+    DEFAULT_OFFSET_MS,
     CROSSFADE_KEY,
     CHIME_SETS_KEY,
     CHIME_OFFSETS_KEY,
@@ -242,10 +243,16 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
             _data["service"] = service
 
         # Parse service parameters & TTS options
-        service_data = apply_configured_script_defaults(
+        service_data = apply_configured_action_defaults(
             service.data, _data, is_say_url=is_say_url
         )
-        params = await helpers.async_parse_params(hass, service_data, is_say_url, media_player_helper)
+        params = await helpers.async_parse_params(
+            hass,
+            service_data,
+            is_say_url,
+            media_player_helper,
+            default_data=_data,
+        )
         if params is not None:
             params["_offset_explicit"] = "delay" in service_data or OFFSET_KEY in service_data
             options = helpers.parse_options_yaml(data=service_data, default_data=_data)
@@ -439,11 +446,15 @@ async def async_run_script(hass: HomeAssistant, script):
         _LOGGER.warning("chime_tts: error running script '%s': %s", script_entity_id, error)
 
 
-def apply_configured_script_defaults(
+def apply_configured_action_defaults(
     service_data, default_data: dict, *, is_say_url: bool = False
 ) -> dict:
-    """Apply configured playback scripts only when a service call omits them."""
+    """Apply configured action defaults only when a service call omits them."""
     data = dict(service_data or {})
+    for key in ("chime_path", "end_chime_path"):
+        if key not in data and default_data.get(key):
+            data[key] = default_data[key]
+
     default_keys = (DEFAULT_PRE_SCRIPT_KEY, DEFAULT_POST_SCRIPT_KEY)
     if is_say_url:
         default_keys = (
@@ -739,6 +750,10 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Default TTS Platform
     _data[TTS_PLATFORM_KEY] = options.get(TTS_PLATFORM_KEY, "")
 
+    # Default chimes
+    _data["chime_path"] = options.get("chime_path", "")
+    _data["end_chime_path"] = options.get("end_chime_path", "")
+
     # TTS timeout
     _data[TTS_TIMEOUT_KEY] = options.get(TTS_TIMEOUT_KEY, TTS_TIMEOUT_DEFAULT)
 
@@ -770,7 +785,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     _data[FALLBACK_TTS_PLATFORM_KEY] = options.get(FALLBACK_TTS_PLATFORM_KEY, "")
 
     # Default offset
-    _data[OFFSET_KEY] = options.get(OFFSET_KEY, 0)
+    _data[OFFSET_KEY] = options.get(OFFSET_KEY, DEFAULT_OFFSET_MS)
 
     # Default crossfade
     _data[CROSSFADE_KEY] = options.get(CROSSFADE_KEY, 0)

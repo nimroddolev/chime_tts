@@ -113,8 +113,6 @@ say:
             value: twenty_four
           - label: Whistle
             value: whistle
-          - label: "\U0001F3B2 G"
-            value: G
           translation_key: chime_paths
     end_chime_path:
       description: A preset or custom audio file to be played after TTS audio
@@ -183,8 +181,6 @@ say:
             value: twenty_four
           - label: Whistle
             value: whistle
-          - label: "\U0001F3B2 G"
-            value: G
           translation_key: chime_paths
     offset:
       description: Adds a delay between audio segments when value > 0, or overlays
@@ -508,8 +504,6 @@ say_url:
             value: twenty_four
           - label: Whistle
             value: whistle
-          - label: "\U0001F3B2 G"
-            value: G
           translation_key: chime_paths
     end_chime_path:
       description: A preset or custom audio file to be played after TTS audio
@@ -578,8 +572,6 @@ say_url:
             value: twenty_four
           - label: Whistle
             value: whistle
-          - label: "\U0001F3B2 G"
-            value: G
           translation_key: chime_paths
     offset:
       description: Adds a delay between audio segments when value > 0, or overlays
