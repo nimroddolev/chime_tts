@@ -132,3 +132,22 @@ async def test_request_timeout_and_generation_errors(
         hass, "primary", "hello", None, False, {}
     ) == (None, None)
     assert "failed to generate" in helper.last_error_message
+
+
+@pytest.mark.parametrize(
+    ("tts_platform", "expected"),
+    [
+        ("google_translate", "סַפָּר"),
+        ("tts.google_en_com", "סַפָּר"),
+        ("tts.piper", "ספר"),
+        ("tts.google_generative_ai", "ספר"),
+    ],
+)
+def test_adapt_message_to_platform(tts_platform: str, expected: str) -> None:
+    """Niqqud reaches platforms that pronounce it, and is stripped for the rest."""
+    assert TTSAudioHelper()._adapt_message_to_platform("סַפָּר", tts_platform) == expected
+
+
+def test_adapt_message_to_platform_keeps_maqaf_when_stripping() -> None:
+    """Stripping niqqud must not remove the maqaf and join the two words."""
+    assert TTSAudioHelper()._adapt_message_to_platform("כָּל־הָעוֹלָם", "tts.piper") == "כל־העולם"
