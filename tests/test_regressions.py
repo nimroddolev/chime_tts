@@ -451,7 +451,7 @@ def test_panel_chapter_titles_use_shared_imported_icons():
     assert "ChimeTTSChapterIconsView" in panel_backend
     assert "ChimeTTSChimeSectionIconView" in panel_backend
     assert 'class="chime-section-icon"' in chapter_icons_source
-    assert 'mask: url("/api/chime_tts/panel/option_icons/chime_section.svg")' in panel_source
+    assert 'mask: url("/api/chime_tts/images/option_icons/chime_section.svg")' in panel_source
     assert '<svg viewBox="0 0 150 150" fill="currentColor" aria-hidden="true"' in chapter_icons_source
     assert 'stroke="currentColor" stroke-width="1.37"' in chapter_icons_source
 
@@ -1066,6 +1066,14 @@ def test_chime_set_slot_machine_loops_with_a_new_random_winning_symbol():
     assert "chimeSlotWinnerFadeOut" in slot_machine_source
     assert "chimeSlotWinnerQuestion" in slot_machine_source
     assert "chimeSlotWinnerFadeIn" in slot_machine_source
+    assert "flex-direction:column; gap:0;" in slot_machine_source
+    assert 'transform="translate(-7 0)"' in slot_machine_source
+    assert 'href="/api/chime_tts/images/slot.svg"' in slot_machine_source
+    slot_art_path = Path("custom_components/chime_tts/panel/images/slot.svg")
+    assert slot_art_path.is_file()
+    assert 'id="arm"' not in slot_art_path.read_text()
+    assert 'clip-path="url(#_clip3)"' not in slot_art_path.read_text()
+    assert 'fill="#fff"' not in slot_machine_source
 
 
 def test_unnamed_chime_set_validation_preserves_the_draft():

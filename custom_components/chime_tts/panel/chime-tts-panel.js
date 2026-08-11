@@ -1188,8 +1188,8 @@ template.innerHTML = `
       width: 100%;
       height: 100%;
       background: currentColor;
-      -webkit-mask: url("/api/chime_tts/panel/option_icons/chime_section.svg") center / contain no-repeat;
-      mask: url("/api/chime_tts/panel/option_icons/chime_section.svg") center / contain no-repeat;
+      -webkit-mask: url("/api/chime_tts/images/option_icons/chime_section.svg") center / contain no-repeat;
+      mask: url("/api/chime_tts/images/option_icons/chime_section.svg") center / contain no-repeat;
     }
 
     .chime-sets-workspace .chapter-hero-icon {
@@ -3913,6 +3913,28 @@ template.innerHTML = `
 
     :is(.configuration-workspace, .chime-sets-workspace, .chimes-workspace, .notify-workspace) .chapter-content :is(.button-secondary, .advanced-toggle):not([data-open-notify-test]) {
       color: var(--workspace-accent);
+    }
+
+    :is(.configuration-workspace, .chime-sets-workspace, .chimes-workspace, .notify-workspace) .chapter-content .field-preview-button {
+      border-color: color-mix(in srgb, var(--workspace-accent) 46%, var(--divider-color));
+      background: color-mix(in srgb, var(--workspace-accent) 14%, var(--card-background-color));
+      color: var(--workspace-accent);
+    }
+
+    :is(.configuration-workspace, .chime-sets-workspace, .chimes-workspace, .notify-workspace) .chapter-content .field-preview-button:hover,
+    :is(.configuration-workspace, .chime-sets-workspace, .chimes-workspace, .notify-workspace) .chapter-content .field-preview-button:focus-visible {
+      border-color: color-mix(in srgb, var(--workspace-accent) 68%, var(--divider-color));
+      background: color-mix(in srgb, var(--workspace-accent) 22%, var(--card-background-color));
+    }
+
+    :is(.configuration-workspace, .chime-sets-workspace, .chimes-workspace, .notify-workspace) .chapter-content .field-preview-button.preview-playing {
+      background: var(--workspace-accent) !important;
+      border-color: color-mix(in srgb, var(--workspace-accent) 72%, white 28%) !important;
+      color: var(--card-background-color);
+    }
+
+    :is(.configuration-workspace, .chime-sets-workspace, .chimes-workspace, .notify-workspace) .chapter-content .field-preview-button.preview-playing::before {
+      background: color-mix(in srgb, var(--workspace-accent) 14%, var(--card-background-color));
     }
 
     .logs-workspace .logs-list-actions > a.button-secondary {
@@ -7167,7 +7189,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const fieldIconUrl = field.icon_url || (field.key && OPTION_ICON_DATA_URLS[field.key]
       ? OPTION_ICON_DATA_URLS[field.key]
       : (field.key
-        ? `/api/chime_tts/option_icons/${field.key}.svg`
+        ? `/api/chime_tts/images/option_icons/${field.key}.svg`
         : ""));
     const normalizedFieldIconUrl = fieldIconUrl.startsWith("data:image/svg+xml;")
       ? fieldIconUrl.replaceAll("#", "%23")

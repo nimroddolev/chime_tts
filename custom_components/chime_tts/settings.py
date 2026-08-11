@@ -83,7 +83,7 @@ helpers = ChimeTTSHelper()
 
 _INTEGRATION_ROOT = Path(__file__).resolve().parent
 _FOOTER_LOGO_PATH = _INTEGRATION_ROOT / "panel" / "chime_tts.svg"
-_OPTION_ICONS_PATH = _INTEGRATION_ROOT / "panel" / "option_icons"
+_OPTION_ICONS_PATH = _INTEGRATION_ROOT / "panel" / "images" / "option_icons"
 
 
 def _footer_logo_url() -> str:
@@ -1683,7 +1683,7 @@ def _build_panel_sections(
     def icon_url(field_key: str) -> str:
         """Return a versioned URL that also changes when the SVG asset changes."""
         filename = f"{icon_name(field_key)}.svg"
-        url = f"/api/{DOMAIN}/option_icons/{filename}"
+        url = f"/api/{DOMAIN}/images/option_icons/{filename}"
         if not icon_versioned:
             return url
         try:

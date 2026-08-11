@@ -306,14 +306,14 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
         field for field in voice_section["fields"] if field["key"] == "default_tld_key"
     )["advanced"] is False
     assert language_field["icon_url"].startswith(
-        f"/api/{DOMAIN}/option_icons/language.svg"
+        f"/api/{DOMAIN}/images/option_icons/language.svg"
     )
     assert (
         f"?v={settings_module.VERSION.lstrip('v') or settings_module.VERSION}&asset="
         in language_field["icon_url"]
     )
     assert custom_chimes_field["icon_url"].startswith(
-        f"/api/{DOMAIN}/option_icons/{CUSTOM_CHIMES_PATH_KEY}.svg"
+        f"/api/{DOMAIN}/images/option_icons/{CUSTOM_CHIMES_PATH_KEY}.svg"
     )
     assert (
         f"?v={settings_module.VERSION.lstrip('v') or settings_module.VERSION}&asset="

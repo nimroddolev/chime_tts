@@ -65,11 +65,12 @@ PANEL_URL_PATH = "chime-tts"
 PANEL_MODULE_URL = f"/api/{DOMAIN}/panel.js"
 PANEL_CHAPTER_ICONS_URL = f"/api/{DOMAIN}/chapter-icons.js"
 PANEL_SLOT_MACHINE_URL = f"/api/{DOMAIN}/chime-set-slot-machine.js"
-PANEL_CHIME_SECTION_ICON_URL = f"/api/{DOMAIN}/panel/option_icons/chime_section.svg"
+PANEL_SLOT_MACHINE_ART_URL = f"/api/{DOMAIN}/images/slot.svg"
+PANEL_CHIME_SECTION_ICON_URL = f"/api/{DOMAIN}/images/option_icons/chime_section.svg"
 PANEL_ICON_URL = f"/api/{DOMAIN}/icon.svg"
 PANEL_FOOTER_LOGO_URL = f"/api/{DOMAIN}/footer_logo.svg"
 PANEL_ICONSET_URL = f"/api/{DOMAIN}/iconset.js"
-PANEL_OPTION_ICON_URL = f"/api/{DOMAIN}/option_icons/{{icon_name}}"
+PANEL_OPTION_ICON_URL = f"/api/{DOMAIN}/images/option_icons/{{icon_name}}"
 PANEL_BROWSER_AUDIO_URL = f"/api/{DOMAIN}/browser/audio"
 PANEL_CHIME_PREVIEW_URL = f"/api/{DOMAIN}/chime_preview"
 PANEL_CHIME_SET_OFFSET_PREVIEW_URL = f"/api/{DOMAIN}/chime_set_offset_preview"
@@ -77,6 +78,7 @@ PANEL_BROWSER_UPLOAD_URL = f"/api/{DOMAIN}/browser/upload"
 PANEL_VIEW_NAME = f"api:{DOMAIN}:panel"
 PANEL_CHAPTER_ICONS_VIEW_NAME = f"api:{DOMAIN}:chapter_icons"
 PANEL_SLOT_MACHINE_VIEW_NAME = f"api:{DOMAIN}:empty_chime_set_slot_machine"
+PANEL_SLOT_MACHINE_ART_VIEW_NAME = f"api:{DOMAIN}:empty_chime_set_slot_machine_art"
 PANEL_CHIME_SECTION_ICON_VIEW_NAME = f"api:{DOMAIN}:chime_section_icon"
 PANEL_ICON_VIEW_NAME = f"api:{DOMAIN}:icon"
 PANEL_FOOTER_LOGO_VIEW_NAME = f"api:{DOMAIN}:footer_logo"
@@ -173,6 +175,22 @@ class ChimeTTSEmptyChimeSetSlotMachineView(HomeAssistantView):
         return response
 
 
+class ChimeTTSEmptyChimeSetSlotMachineArtView(HomeAssistantView):
+    """Serve the supplied Chime Sets slot-machine artwork."""
+
+    url = PANEL_SLOT_MACHINE_ART_URL
+    name = PANEL_SLOT_MACHINE_ART_VIEW_NAME
+    requires_auth = False
+
+    def __init__(self, panel_path: Path) -> None:
+        self._panel_path = panel_path
+
+    async def get(self, request) -> web.FileResponse:
+        response = web.FileResponse(self._panel_path / "images/slot.svg")
+        _set_panel_module_headers(response)
+        return response
+
+
 class ChimeTTSChimeSectionIconView(HomeAssistantView):
     """Serve the Chimes chapter illustration."""
 
@@ -186,7 +204,9 @@ class ChimeTTSChimeSectionIconView(HomeAssistantView):
 
     async def get(self, request) -> web.FileResponse:
         """Return the supplied Chimes chapter SVG."""
-        response = web.FileResponse(self._integration_path / "panel/option_icons/chime_section.svg")
+        response = web.FileResponse(
+            self._integration_path / "panel/images/option_icons/chime_section.svg"
+        )
         _set_cache_headers(response)
         return response
 
@@ -254,7 +274,7 @@ class ChimeTTSPanelOptionIconView(HomeAssistantView):
 
     def __init__(self, panel_path: Path) -> None:
         """Initialize the option icon view."""
-        self._icons_path = panel_path / "option_icons"
+        self._icons_path = panel_path / "images/option_icons"
 
     async def get(self, request, icon_name: str) -> web.StreamResponse:
         """Return a single option icon SVG."""
@@ -570,6 +590,7 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
     # running instance that already registered the original panel views.
     if not hass.data.get(PANEL_SLOT_MACHINE_DATA_KEY):
         hass.http.register_view(ChimeTTSEmptyChimeSetSlotMachineView(panel_path))
+        hass.http.register_view(ChimeTTSEmptyChimeSetSlotMachineArtView(panel_path))
         hass.data[PANEL_SLOT_MACHINE_DATA_KEY] = True
 
     if not hass.data.get(WS_DATA_KEY):
