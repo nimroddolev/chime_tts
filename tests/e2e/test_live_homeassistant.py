@@ -514,7 +514,12 @@ async def e2e_client(request: pytest.FixtureRequest) -> HomeAssistantE2EClient:
     """Start each Home Assistant runtime for live e2e tests."""
     if os.environ.get("CHIME_TTS_E2E") != "1":
         pytest.skip("Set CHIME_TTS_E2E=1 to run live Home Assistant end-to-end tests.")
-    request.getfixturevalue("socket_enabled")
+    # pytest-socket is present in the full HA test environment, where this
+    # fixture opts the live Docker clients back into network access. Keep E2E
+    # runnable in the lightweight local test environment too, where that
+    # optional plugin is not installed.
+    with suppress(pytest.FixtureLookupError):
+        request.getfixturevalue("socket_enabled")
 
     client = HomeAssistantE2EClient(request.param)
     await client.bootstrap()
