@@ -50,18 +50,35 @@ class TTSAudioHelper:
         if not tts_platform:
             return None
 
-        # Step 2: Generate TTS audio
+        # Step 2: Adapt the message to the resolved platform
+        platform_message = self._adapt_message_to_platform(message, tts_platform)
+
+        # Step 3: Generate TTS audio
         media_source_id, audio_data = await self._generate_tts_audio(
-            hass, tts_platform, message, language, cache, tts_options
+            hass, tts_platform, platform_message, language, cache, tts_options
         )
 
-        # Step 3: Process the audio data
+        # Step 4: Process the audio data
         audio = await self._process_audio_data(hass, media_source_id, audio_data, start_time)
         if audio:
             return audio
 
-        # Step 4: Retry with fallback platform if needed
+        # Step 5: Retry with fallback platform if needed. The original message is
+        # passed on, so it is re-adapted for the fallback platform.
         return await self._retry_with_fallback(hass, tts_platform, message, language, cache, options)
+
+    def _adapt_message_to_platform(self, message: str, tts_platform: str):
+        """Remove any text the resolved TTS platform cannot pronounce."""
+        if helpers.supports_niqqud(tts_platform):
+            return message
+
+        cleaned_message = helpers.remove_niqqud(message)
+        if cleaned_message != message:
+            _LOGGER.debug(
+                " - Removed Hebrew niqqud: '%s' is not known to support it",
+                tts_platform,
+            )
+        return cleaned_message
 
     def _prepare_tts_request(self, hass: HomeAssistant, tts_platform, message, language, options):
         if not options:

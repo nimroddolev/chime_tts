@@ -36,6 +36,7 @@ from ..const import (
     PIPER,
     VOICE_RSS,
     YANDEX_TTS,
+    NIQQUD_SUPPORTED_TTS_PLATFORMS,
     QUOTE_CHAR_SUBSTITUTE
 )
 from homeassistant.core import HomeAssistant
@@ -46,6 +47,17 @@ from pydub import AudioSegment
 filesystem_helper = FilesystemHelper()
 
 _LOGGER = logging.getLogger(__name__)
+
+TTS_ENTITY_PREFIX = "tts."
+
+# Excludes U+05BE/U+05C0/U+05C3/U+05C6: punctuation, not diacritics. The maqaf
+# separates words, so removing it would join them.
+NIQQUD_PATTERN = re.compile(r"[\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7]")
+
+# Per-language/TLD entities, eg "google_en_com". Narrow, so google_cloud and
+# google_generative_ai do not match.
+GOOGLE_TRANSLATE_ENTITY_PATTERN = re.compile(r"^google_[a-z]{2,3}_[a-z]{2,3}$")
+
 class ChimeTTSHelper:
     """Helper functions for Chime TTS."""
 
@@ -204,14 +216,31 @@ class ChimeTTSHelper:
 
     def remove_niqqud(self, message_text: str):
         """Replace Hebrew niqqud characters with non-voweled characters."""
-        # Unicode range for Hebrew niqqud is \u0591 to \u05C7
-        niqqud_pattern = re.compile(r'[\u0591-\u05C7]')
-        cleaned_text = niqqud_pattern.sub('', message_text)
-        return cleaned_text
+        return NIQQUD_PATTERN.sub("", message_text)
+
+    def normalize_tts_platform_name(self, tts_platform: str):
+        """Reduce a TTS platform name or TTS entity_id to its bare platform name."""
+        if not tts_platform:
+            return ""
+        normalized = self.get_stripped_tts_platform(str(tts_platform)).lower()
+        if normalized.startswith(TTS_ENTITY_PREFIX):
+            normalized = normalized[len(TTS_ENTITY_PREFIX):]
+        if (normalized.startswith(GOOGLE_TRANSLATE)
+                or GOOGLE_TRANSLATE_ENTITY_PATTERN.match(normalized)):
+            normalized = GOOGLE_TRANSLATE
+        return normalized
+
+    def supports_niqqud(self, tts_platform: str):
+        """Return whether the TTS platform pronounces Hebrew niqqud. Unknown platforms do not."""
+        supported = {
+            self.normalize_tts_platform_name(platform)
+            for platform in NIQQUD_SUPPORTED_TTS_PLATFORMS
+        }
+        return self.normalize_tts_platform_name(tts_platform) in supported
 
     def parse_message(self, message_string: str):
         """Parse the message string/YAML object into segments dictionary."""
-        message_string = self.remove_niqqud(message_string)
+        message_string = str(message_string)
         segments = []
         if len(message_string) == 0 or message_string == "None":
             return []
