@@ -5037,7 +5037,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return;
     }
 
-    if (this._picker || this._hasActiveTextEntryFocus()) {
+    if (
+      this._picker
+      || this._hasActiveInteractiveElement()
+    ) {
       this._deferredLogEvents = [
         logEvent,
         ...(this._deferredLogEvents || []).filter((event) => event?.id !== logEvent.id),
@@ -5114,7 +5117,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       .join("");
   }
 
-  _render() {
+  _render({ force = false } = {}) {
+    const activeControl = this.shadowRoot?.activeElement;
+    if (!force && !this._loading && this._isTextEntryOrDropdown(activeControl)) {
+      this._renderTopbar(this._data || {});
+      this._deferPanelRenderUntilBlur(activeControl);
+      return;
+    }
+
     if (this._loading) {
       this._snowfall.innerHTML = "";
       this._renderTopbar({});
@@ -5217,6 +5227,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         : "input";
       field.addEventListener(eventName, (event) => this._handleFieldChange(event));
     });
+    if (!this._panelFocusListenersBound) {
+      this._panelFocusListenersBound = true;
+      this._app.addEventListener("focusin", () => this._syncLogsRefresh());
+      this._app.addEventListener("focusout", () => {
+        window.setTimeout(() => this._syncLogsRefresh(), 0);
+      });
+    }
     this.shadowRoot.querySelectorAll("[data-add-random-chime-set]").forEach((button) => {
       button.addEventListener("click", () => this._addRandomChimeSet());
     });
@@ -8014,7 +8031,18 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
   }
 
-  _rerenderPreservingInputState(fieldKey = null, stabilizeScroll = false) {
+  _rerenderPreservingInputState(
+    fieldKey = null,
+    stabilizeScroll = false,
+    forceRender = false,
+  ) {
+    const activeControl = this.shadowRoot.activeElement;
+    if (!forceRender && this._isTextEntryOrDropdown(activeControl)) {
+      this._renderTopbar(this._data || {});
+      this._deferPanelRenderUntilBlur(activeControl);
+      return;
+    }
+
     const scrollElement = document.scrollingElement;
     const scrollTop = scrollElement?.scrollTop ?? window.scrollY ?? 0;
     const activeElement = this.shadowRoot.activeElement;
@@ -8051,7 +8079,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       });
     };
 
-    this._render();
+    this._render({ force: forceRender });
     window.requestAnimationFrame(() => {
       restoreScrollPosition();
       // A complete panel render can change the page height after the first
@@ -8389,6 +8417,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _renderPreservingScrollPosition() {
+    const activeControl = this.shadowRoot.activeElement;
+    if (this._isTextEntryOrDropdown(activeControl)) {
+      this._renderTopbar(this._data || {});
+      this._deferPanelRenderUntilBlur(activeControl);
+      return;
+    }
+
     const scrollElement = document.scrollingElement;
     const scrollTop = scrollElement?.scrollTop ?? window.scrollY ?? 0;
 
@@ -8409,6 +8444,31 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       restoreScrollPosition();
       window.requestAnimationFrame(restoreScrollPosition);
     });
+  }
+
+  _isTextEntryOrDropdown(element) {
+    return this._hasActiveTextEntryFocus() || element?.tagName === "SELECT";
+  }
+
+  _rerenderAfterLogUpdate() {
+    const activeControl = this.shadowRoot.activeElement;
+    if (this._hasActiveInteractiveElement(activeControl)) {
+      this._renderTopbar(this._data || {});
+      this._deferPanelRenderUntilBlur(activeControl);
+      return;
+    }
+    this._rerenderPreservingInputState();
+  }
+
+  _deferPanelRenderUntilBlur(element) {
+    if (!(element instanceof HTMLElement) || element.dataset.deferPanelRender === "1") {
+      return;
+    }
+    element.dataset.deferPanelRender = "1";
+    element.addEventListener("blur", () => {
+      delete element.dataset.deferPanelRender;
+      this._renderPreservingScrollPosition();
+    }, { once: true });
   }
 
   _toggleConfigSection(sectionKey) {
@@ -8547,11 +8607,17 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       && !this._saving
       && this._isChapterExpanded("logs")
       && !this._picker
-      && !this._hasActiveDropdownFocus()
-      && !this._hasActiveTextEntryFocus()
+      && !this._hasActiveInteractiveElement()
       && !this._hasActiveLogTextSelection()
       && document.visibilityState === "visible"
     );
+  }
+
+  _hasActiveInteractiveElement(element = this.shadowRoot?.activeElement) {
+    return element instanceof HTMLElement
+      && element.matches(
+        'input, textarea, select, button, a[href], [contenteditable="true"], [tabindex]:not([tabindex="-1"])',
+      );
   }
 
   _hasActiveDropdownFocus() {
@@ -8672,13 +8738,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._logsHydrated = true;
       this._logsLoaded = true;
       if (wasShowingSpinner || (logsChanged && this._isChapterExpanded("logs"))) {
-        this._render();
+        this._rerenderAfterLogUpdate();
       }
     } catch (_error) {
       const wasShowingSpinner = this._logsOpeningRefresh;
       this._logsOpeningRefresh = false;
       if (wasShowingSpinner && this._isChapterExpanded("logs")) {
-        this._render();
+        this._rerenderAfterLogUpdate();
       }
       this._syncLogsRefresh();
     } finally {
@@ -9095,6 +9161,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       key,
       key === "default_pre_script_shared_key"
         || key === "default_post_script_shared_key",
+      field.tagName === "SELECT",
     );
   }
 

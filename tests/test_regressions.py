@@ -716,6 +716,29 @@ def test_panel_does_not_refocus_native_selects_after_rendering():
     assert "!shouldRestoreFocus" in panel_source
 
 
+def test_panel_defers_polling_and_full_renders_while_controls_are_active():
+    """Active panel controls defer rendering and polling until they lose focus."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert "this._hasActiveTextEntryFocus() || element?.tagName === \"SELECT\"" in panel_source
+    assert "if (!force && !this._loading && this._isTextEntryOrDropdown(activeControl))" in panel_source
+    assert "field.tagName === \"SELECT\"," in panel_source
+    assert "this._deferPanelRenderUntilBlur(activeControl);" in panel_source
+    assert "_rerenderAfterLogUpdate()" in panel_source
+    assert 'element.addEventListener("blur", () => {' in panel_source
+    assert 'this._app.addEventListener("focusin", () => this._syncLogsRefresh());' in panel_source
+    assert 'this._app.addEventListener("focusout", () => {' in panel_source
+    assert "!this._hasActiveInteractiveElement()" in panel_source
+    assert "this._rerenderPreservingInputState();" in panel_source
+    assert "|| this._hasActiveInteractiveElement()" in panel_source
+
+
 def test_field_preview_buttons_use_their_workspace_accent():
     """Chime preview controls inherit the colour of their containing section."""
     panel_source = (
