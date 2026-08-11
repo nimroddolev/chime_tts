@@ -167,4 +167,7 @@ PIPER = "tts.piper"
 VOICE_RSS = "voicerss"
 YANDEX_TTS = "yandextts"
 
+# Platforms verified to pronounce Hebrew niqqud. Any other platform has it stripped.
+NIQQUD_SUPPORTED_TTS_PLATFORMS = [GOOGLE_TRANSLATE]
+
 QUOTE_CHAR_SUBSTITUTE = "🁢"
