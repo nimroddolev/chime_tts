@@ -201,7 +201,7 @@ Chime TTS works with [TTS Platform integrations](https://www.home-assistant.io/i
 | -------------------- | -------------------------------------------------------------- |
 | **Required:**        | No                                                             |
 | **Example 1:**       | One of the Chime TTS presets:<br/>`airport`<br/>`ba_dum_tss`<br/>`bells`<br/>`bells_2`<br/>`bright`<br/>`chirp`<br/>`choir`<br/>`chord`<br/>`classical`<br/>`crickets`<br/>`ding_dong`<br/>`doorbell`<br/>`drumroll`<br/>`dun_dun_dun`<br/>`error`<br/>`fanfare`<br/>`glockenspiel`<br/>`hail`<br/>`knock`<br/>`marimba`<br/>`mario_coin`<br/>`microphone_tap`<br/>`sad_trombone`<br/>`soft`<br/>`tada`<br/>`toast`<br/>`twenty_four`<br/>`whistle` |
-| **Example 2:**       | One of your own custom chimes : `My Custom Chime`<br/>(_see [Custom Chimes Folder](./#custom-chimes-folder)_) |
+| **Example 2:**       | One of your own custom chimes : `My Custom Chime`<br/>(_see [Custom Chimes Folder](../../chimes#custom-chimes-folder)_) |
 | **Example 3:**       | A [Chime Set](../../chime-sets) name: `🎲 Front Door Chimes` |
 | **Example 4:**       | A local file:<br/>`/media/sounds/notification.mp3` |
 | **Example 5:**       | A file from a remote URL:<br/>`https://www.website.com/sounds/notification.ogg` |
@@ -215,7 +215,7 @@ Chime TTS works with [TTS Platform integrations](https://www.home-assistant.io/i
 | -------------------- | -------------------------------------------------------------- |
 | **Required:**        | No                                                             |
 | **Example 1:**       | One of the Chime TTS presets:<br/>`airport`<br/>`ba_dum_tss`<br/>`bells`<br/>`bells_2`<br/>`bright`<br/>`chirp`<br/>`choir`<br/>`chord`<br/>`classical`<br/>`crickets`<br/>`ding_dong`<br/>`doorbell`<br/>`drumroll`<br/>`dun_dun_dun`<br/>`error`<br/>`fanfare`<br/>`glockenspiel`<br/>`hail`<br/>`knock`<br/>`marimba`<br/>`mario_coin`<br/>`microphone_tap`<br/>`sad_trombone`<br/>`soft`<br/>`tada`<br/>`toast`<br/>`twenty_four`<br/>`whistle` |
-| **Example 2:**       | One of your own custom chimes : `My Custom Chime`<br/>(_see [Custom Chimes Folder](./#custom-chimes-folder)_) |
+| **Example 2:**       | One of your own custom chimes : `My Custom Chime`<br/>(_see [Custom Chimes Folder](../../chimes#custom-chimes-folder)_) |
 | **Example 3:**       | A [Chime Set](../../chime-sets) name: `🎲 Front Door Chimes` |
 | **Example 4:**       | A local file:<br/>`/media/sounds/notification.mp3` |
 | **Example 5:**       | A file from a remote URL:<br/>`https://www.website.com/sounds/notification.ogg` |
@@ -289,7 +289,7 @@ pre_script:
 
 ### `post_script` (Beta)
 
-Run a script after the generated audio finishes. This action value overrides the configured default `post_script`.
+Run a script after `chime_tts.say` playback or `chime_tts.say_url` audio generation. This action value overrides the configured default `post_script`.
 
 <table>
 <tr><td><b>Default Value:</b></td><td>None</td></tr>

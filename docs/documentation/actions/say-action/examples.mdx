@@ -70,6 +70,20 @@ data:
 ```
 <audio controls src={useBaseUrl('/audio/examples/chime_path_end_chime_path.mp3?v=1')} />
 
+### Chime Set (Beta)
+
+Use a [Chime Set](/chime_tts/docs/documentation/chime-sets) anywhere `chime_path` or `end_chime_path` accepts a chime. Chime TTS selects an available member when the action runs.
+
+```yaml
+action: chime_tts.say
+target:
+  entity_id: media_player.living_room
+data:
+  tts_platform: google_translate
+  chime_path: "🎲 Front Door Chimes"
+  message: Someone is at the front door.
+```
+
 ### `repeat` and `repeat_delay` (Beta)
 
 Use `repeat` to add complete copies of an announcement after its initial playback. `repeat_delay` inserts silence, in milliseconds, between copies. In this example, the bell, message, and ending chime play twice, with a one-second pause between them.
@@ -87,6 +101,21 @@ data:
   repeat_delay: 1000
 ```
 <audio controls src={useBaseUrl('/audio/examples/repeat_delay.mp3?v=1')} />
+
+### `pre_script` and `post_script` (Beta)
+
+Use `pre_script` to prepare the player or environment immediately before playback, and `post_script` for cleanup after playback.
+
+```yaml
+action: chime_tts.say
+target:
+  entity_id: media_player.living_room
+data:
+  tts_platform: google_translate
+  message: The front door is open.
+  pre_script: script.prepare_announcement
+  post_script: script.restore_announcement_settings
+```
 
 ## More complex examples
 

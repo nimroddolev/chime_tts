@@ -7,6 +7,8 @@ title: 2. Say URL Action
 
 The `chime_tts.say_url` action generates an audio file with the [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) action and returns either a [publicly accessible URL](#url-key) or a [media content id](#media_content_id-key) to the generated file.
 
+See the [`chime_tts.say_url` parameters](./parameters) reference for the supported audio-generation parameters.
+
 ## Response Object
 
 The action will return an object with the following key/values:
@@ -39,22 +41,22 @@ data:
 
 #### Option A: `chime_tts.say_url` folder path is within the public `www` folder
 
-```
+```json
 {
-  url: https://{YOUR-HOME-ASSISTANT-ADDRESS}:8123/local/chime_tts/gtv7ju45.mp3
-  media_content_id: null,
-  duration: 4.069,
-  success: true
+  "url": "https://{YOUR-HOME-ASSISTANT-ADDRESS}:8123/local/chime_tts/gtv7ju45.mp3",
+  "media_content_id": null,
+  "duration": 4.069,
+  "success": true
 }
 ```
 
 #### Option B: `chime_tts.say_url` folder path is within the `media` folder
 
-```
+```json
 {
-  url: null
-  media_content_id: media-source://media_source/local/chime_tts/gtv7ju45.mp3,
-  duration: 4.069,
-  success: true
+  "url": null,
+  "media_content_id": "media-source://media_source/local/chime_tts/gtv7ju45.mp3",
+  "duration": 4.069,
+  "success": true
 }
 ```

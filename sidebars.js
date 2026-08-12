@@ -30,7 +30,25 @@ const sidebars = {
     {type: 'doc', id: 'documentation/chimes', label: 'Chimes'},
     {type: 'doc', id: 'documentation/chime-sets', label: 'Chime Sets (Beta)'},
     {type: 'category', label: 'Notification Profiles', link: {type: 'doc', id: 'documentation/notify/index'}, items: ['documentation/notify/adding', 'documentation/notify/sending']},
-    {type: 'category', label: 'Actions and Parameters', link: {type: 'doc', id: 'documentation/actions/index'}, items: ['documentation/actions/say-action/index', 'documentation/actions/say-action/parameters', 'documentation/actions/say-action/examples', 'documentation/actions/say_url-action/index', 'documentation/actions/clear_cache-action', 'documentation/actions/replay-action']},
+    {
+      type: 'category',
+      label: 'Actions and Parameters',
+      link: {type: 'doc', id: 'documentation/actions/index'},
+      items: [
+        {
+          type: 'category',
+          label: 'Actions',
+          items: [
+            'documentation/actions/say-action/index',
+            'documentation/actions/say_url-action/index',
+            'documentation/actions/replay-action',
+            'documentation/actions/clear_cache-action',
+          ],
+        },
+        'documentation/actions/say-action/parameters',
+        'documentation/actions/say-action/examples',
+      ],
+    },
   ],
 
   // But you can create a sidebar manually
