@@ -8,12 +8,6 @@ import './chime_tts.say.css'
 
 # `chime_tts.say` Parameters
 
-:::tip Chime Sets
-
-`chime_path` and `end_chime_path` accept a [Chime Set](../../chime-sets) name as well as an individual chime. The selector shows sets with a 🎲 prefix. At runtime Chime TTS randomly chooses an available member; nested sets are not supported.
-
-:::
-
 The `chime_tts.say` action has [standard parameters](#standard-parameters) used by all TTS platforms, and [additional parameters](#additional-parameters) used by specific TTS platforms.
 
 ---
@@ -206,10 +200,11 @@ Chime TTS works with [TTS Platform integrations](https://www.home-assistant.io/i
 | **Description:**     | The file path for the audio to insert **before** the TTS audio |
 | -------------------- | -------------------------------------------------------------- |
 | **Required:**        | No                                                             |
-| **Example 1:**       | One of the Chime TTS presets:<br/>`ba_dum_tss`<br/>`bells`<br/>`bells_2`<br/>`bright`<br/>`chirp`<br/>`choir`<br/>`chord`<br/>`classical`<br/>`crickets`<br/>`ding_dong`<br/>`drumroll`<br/>`dun_dun_dun`<br/>`error`<br/>`fanfare`<br/>`glockenspiel`<br/>`hail`<br/>`knock`<br/>`marimba`<br/>`mario_coin`<br/>`microphone_tap`<br/>`tada`<br/>`toast`<br/>`twenty_four`<br/>`sad_trombone`<br/>`soft`<br/>`whistle` |
+| **Example 1:**       | One of the Chime TTS presets:<br/>`airport`<br/>`ba_dum_tss`<br/>`bells`<br/>`bells_2`<br/>`bright`<br/>`chirp`<br/>`choir`<br/>`chord`<br/>`classical`<br/>`crickets`<br/>`ding_dong`<br/>`doorbell`<br/>`drumroll`<br/>`dun_dun_dun`<br/>`error`<br/>`fanfare`<br/>`glockenspiel`<br/>`hail`<br/>`knock`<br/>`marimba`<br/>`mario_coin`<br/>`microphone_tap`<br/>`sad_trombone`<br/>`soft`<br/>`tada`<br/>`toast`<br/>`twenty_four`<br/>`whistle` |
 | **Example 2:**       | One of your own custom chimes : `My Custom Chime`<br/>(_see [Custom Chimes Folder](./#custom-chimes-folder)_) |
-| **Example 2:**       | A local file:<br/>`/media/sounds/notification.mp3` |
-| **Example 3:**       | A file from a remote URL:<br/>`https://www.website.com/sounds/notification.ogg` |
+| **Example 3:**       | A [Chime Set](../../chime-sets) name: `🎲 Front Door Chimes` |
+| **Example 4:**       | A local file:<br/>`/media/sounds/notification.mp3` |
+| **Example 5:**       | A file from a remote URL:<br/>`https://www.website.com/sounds/notification.ogg` |
 | **Default:**         | None                                                           |
 
 ---
@@ -219,10 +214,11 @@ Chime TTS works with [TTS Platform integrations](https://www.home-assistant.io/i
 | **Description:**     | The file path for the audio to insert **after** the TTS audio |
 | -------------------- | -------------------------------------------------------------- |
 | **Required:**        | No                                                             |
-| **Example 1:**       | One of the Chime TTS presets:<br/>`ba_dum_tss`<br/>`bells`<br/>`bells_2`<br/>`bright`<br/>`chirp`<br/>`choir`<br/>`chord`<br/>`classical`<br/>`crickets`<br/>`ding_dong`<br/>`drumroll`<br/>`dun_dun_dun`<br/>`error`<br/>`fanfare`<br/>`glockenspiel`<br/>`hail`<br/>`knock`<br/>`marimba`<br/>`mario_coin`<br/>`microphone_tap`<br/>`tada`<br/>`toast`<br/>`twenty_four`<br/>`sad_trombone`<br/>`soft`<br/>`whistle` |
+| **Example 1:**       | One of the Chime TTS presets:<br/>`airport`<br/>`ba_dum_tss`<br/>`bells`<br/>`bells_2`<br/>`bright`<br/>`chirp`<br/>`choir`<br/>`chord`<br/>`classical`<br/>`crickets`<br/>`ding_dong`<br/>`doorbell`<br/>`drumroll`<br/>`dun_dun_dun`<br/>`error`<br/>`fanfare`<br/>`glockenspiel`<br/>`hail`<br/>`knock`<br/>`marimba`<br/>`mario_coin`<br/>`microphone_tap`<br/>`sad_trombone`<br/>`soft`<br/>`tada`<br/>`toast`<br/>`twenty_four`<br/>`whistle` |
 | **Example 2:**       | One of your own custom chimes : `My Custom Chime`<br/>(_see [Custom Chimes Folder](./#custom-chimes-folder)_) |
-| **Example 2:**       | A local file:<br/>`/media/sounds/notification.mp3` |
-| **Example 3:**       | A file from a remote URL:<br/>`https://www.website.com/sounds/notification.ogg` |
+| **Example 3:**       | A [Chime Set](../../chime-sets) name: `🎲 Front Door Chimes` |
+| **Example 4:**       | A local file:<br/>`/media/sounds/notification.mp3` |
+| **Example 5:**       | A file from a remote URL:<br/>`https://www.website.com/sounds/notification.ogg` |
 | **Default:**         | None                                                           |
 
 ---
@@ -255,7 +251,13 @@ When using a negative value the audio components are overlaid:
 
 ---
 
-### `pre_script`
+:::caution Beta
+
+The `pre_script` and `post_script` controls are currently in beta and may change between releases.
+
+:::
+
+### `pre_script` (Beta)
 
 Run a script immediately before playback. This action value overrides the configured default `pre_script`.
 
@@ -266,7 +268,7 @@ Run a script immediately before playback. This action value overrides the config
 
 :::info
 
-This field is available only for `chime_tts.say`; it is not available for `chime_tts.say_url`.
+This field is available for both `chime_tts.say` and `chime_tts.say_url`. For `chime_tts.say`, it runs immediately before playback; for `chime_tts.say_url`, it runs before audio generation.
 
 :::
 
@@ -285,7 +287,7 @@ pre_script:
     volume: 0.5
 ```
 
-### `post_script`
+### `post_script` (Beta)
 
 Run a script after the generated audio finishes. This action value overrides the configured default `post_script`.
 
@@ -296,7 +298,7 @@ Run a script after the generated audio finishes. This action value overrides the
 
 :::info
 
-This field is available only for `chime_tts.say`; it is not available for `chime_tts.say_url`.
+This field is available for both `chime_tts.say` and `chime_tts.say_url`. For `chime_tts.say`, it runs after playback; for `chime_tts.say_url`, it runs after audio generation.
 
 :::
 
@@ -324,6 +326,32 @@ post_script:
 | **Required:**    | No                                                                       |
 | **Example:**     | `200`                                                                    |
 | **Default:**     | `0`                                                                      |
+
+---
+
+:::caution Beta
+
+The action-level `repeat` and `repeat_delay` controls are currently in beta and may change between releases.
+
+:::
+
+### `repeat` (Beta)
+
+Repeat the complete assembled announcement—start chime, message, and end chime—after its initial playback. `repeat` is the number of **additional** plays: use `0` for one total playback (no repeat), `1` for two total plays, and so on.
+
+| **Required:** | No |
+| --- | --- |
+| **Example:** | `2` (three total plays) |
+| **Default:** | `0` |
+
+### `repeat_delay` (Beta)
+
+Set the silence, in milliseconds, inserted between each repeated copy of the complete announcement. This applies only when `repeat` is greater than `0`.
+
+| **Required:** | No |
+| --- | --- |
+| **Example:** | `500` (half a second between copies) |
+| **Default:** | `0` |
 
 ---
 
@@ -401,6 +429,8 @@ volume_level:
 | **Required:**    | No                                                                   |
 | **Example:**     | `true`                                                               |
 | **Default:**     | `false`                                                              |
+
+The cache key includes `repeat`, `repeat_delay`, and the current repeat semantics. Audio generated with earlier repeat behavior is therefore not reused for a repeated announcement.
 
 ---
 

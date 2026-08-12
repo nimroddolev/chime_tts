@@ -9,7 +9,7 @@ Set the default chimes, audio timing, transitions, cleanup behaviour, and MP3 co
 
 ### Default Offset
 
-The default [offset](/chime_tts/docs/documentation/actions/say-action/parameters#offset) duration (in milliseconds) between chimes and TTS audio. Positive values introduce a delay, while negative values overlap the audio segments.
+The default [offset](/chime_tts/docs/documentation/actions/say-action/parameters#offset) duration (in milliseconds) between chimes and TTS audio. Positive values introduce a delay, while negative values overlap the audio segments. It is used when an action omits `offset` or `delay`; an action value takes precedence.
 
 <table><tr><td><b>Default Value:</b></td><td>`450`</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
 
@@ -17,7 +17,7 @@ The default [offset](/chime_tts/docs/documentation/actions/say-action/parameters
 
 ### Default Start Chime
 
-Set an optional chime to play before generated speech. An action can override this default.
+Set an optional chime to play before generated speech. It is applied when an action omits `chime_path`; an action value, including an empty value that disables the start chime, takes precedence.
 
 <table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
 
@@ -25,7 +25,7 @@ Set an optional chime to play before generated speech. An action can override th
 
 ### Default End Chime
 
-Set an optional chime to play after generated speech. An action can override this default.
+Set an optional chime to play after generated speech. It is applied when an action omits `end_chime_path`; an action value, including an empty value that disables the end chime, takes precedence.
 
 <table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
 
@@ -33,7 +33,7 @@ Set an optional chime to play after generated speech. An action can override thi
 
 ### Default Crossfade
 
-Set the default crossfade duration between audio segments. An action can override this value. A negative offset overlays segments; crossfade controls how one segment fades into the next.
+Set the default crossfade duration between audio segments. It is used when an action omits `crossfade`; an action value takes precedence. A negative offset overlays segments; crossfade controls how one segment fades into the next.
 
 <table><tr><td><b>Default Value:</b></td><td>`0`</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
 

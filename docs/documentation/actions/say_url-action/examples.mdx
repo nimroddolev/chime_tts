@@ -8,6 +8,22 @@ import './chime_tts.say_url.css'
 
 # `chime_tts.say_url` Examples
 
-The `chime_tts.say_url` action passess all arguments to the [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action) action _(with the exception of all audio playback parameters such (as media_player targets and other playback-related parameters, as there is no audio playback)_.
+The `chime_tts.say_url` action accepts the audio-generation arguments of [`chime_tts.say`](/chime_tts/docs/documentation/actions/say-action), except playback parameters such as media-player targets and player controls.
 
-Please refer to the [`chime_tts.say` examples documentation](/chime_tts/docs/documentation/actions/say-action/examples) for a list of examples.
+Please refer to the [`chime_tts.say` examples documentation](/chime_tts/docs/documentation/actions/say-action/examples) for additional audio examples.
+
+## Repeat generated audio (Beta)
+
+`repeat` is the number of copies to add after the initial one. `repeat_delay` inserts silence, in milliseconds, between copies. The `pre_script` runs before generation and `post_script` runs after generation.
+
+```yaml
+action: chime_tts.say_url
+data:
+  chime_path: doorbell
+  message: Someone is at the front door.
+  tts_platform: google_translate
+  repeat: 1
+  repeat_delay: 750
+  pre_script: script.prepare_announcement
+  post_script: script.log_announcement_created
+```

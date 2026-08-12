@@ -70,6 +70,24 @@ data:
 ```
 <audio controls src={useBaseUrl('/audio/examples/chime_path_end_chime_path.mp3?v=1')} />
 
+### `repeat` and `repeat_delay` (Beta)
+
+Use `repeat` to add complete copies of an announcement after its initial playback. `repeat_delay` inserts silence, in milliseconds, between copies. In this example, the bell, message, and ending chime play twice, with a one-second pause between them.
+
+```yaml
+action: chime_tts.say
+target:
+  entity_id: media_player.living_room
+data:
+  tts_platform: google_translate
+  chime_path: doorbell
+  message: Someone is at the front door.
+  end_chime_path: tada
+  repeat: 1
+  repeat_delay: 1000
+```
+<audio controls src={useBaseUrl('/audio/examples/repeat_delay.mp3?v=1')} />
+
 ## More complex examples
 
 ### `tts_speed`

@@ -5,7 +5,7 @@ title: Action & Script Options
 
 # Action & Script Options
 
-Configure action timeouts and the default scripts that run before and after playback.
+Configure action timeouts and the default scripts that run before and after playback or audio generation.
 
 ### Timeout
 
@@ -31,17 +31,27 @@ The duration (in seconds) to wait before canceling a TTS audio generation attemp
 
 ### Default Playback Scripts
 
-Use a pre-playback script to prepare a player or environment before playback, and a post-playback script for cleanup. An action or notification profile can override either configured default.
+:::caution Beta
+
+Default `pre_script` and `post_script` settings are currently in beta and may change between releases.
+
+:::
+
+Use a pre-playback script to prepare a player or environment before playback, and a post-playback script for cleanup. For `chime_tts.say_url`, the scripts instead run before and after audio generation.
+
+For each script, choose whether its `chime_tts.say` default is also used by `chime_tts.say_url`. When it is not shared, configure a separate default for `chime_tts.say_url`.
+
+Values take precedence in this order: an action's value, then a Notification Profile value, then the applicable configured default. Omitting a value allows the next value in that order to apply.
 
 #### `pre_script`
 
-Runs before playback unless an action or notification profile specifies its own `pre_script` value.
+Runs before `chime_tts.say` playback, or before `chime_tts.say_url` audio generation, unless a higher-precedence value is supplied.
 
 <table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
 
 #### `post_script`
 
-Runs after playback unless an action or notification profile specifies its own `post_script` value.
+Runs after `chime_tts.say` playback, or after `chime_tts.say_url` audio generation, unless a higher-precedence value is supplied.
 
 <table><tr><td><b>Default Value:</b></td><td>None</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
 
