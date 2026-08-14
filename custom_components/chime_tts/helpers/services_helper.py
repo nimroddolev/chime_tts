@@ -9,7 +9,6 @@ import logging
 from homeassistant.core import HomeAssistant, SupportsResponse
 from homeassistant.helpers import service as service_helper
 from .filesystem import FilesystemHelper
-from .helpers import ChimeTTSHelper
 from ..const import (
     DOMAIN,
     SERVICE_SAY,
@@ -19,7 +18,6 @@ from ..const import (
 )
 from ..chime_sets import selector_options
 filesystem_helper = FilesystemHelper()
-helpers = ChimeTTSHelper()
 _LOGGER = logging.getLogger(__name__)
 _OPTIONS_MISSING = object()
 
@@ -57,13 +55,8 @@ class ChimeTTSServicesHelper:
         (SERVICE_SAY_URL, "chime_path"),
         (SERVICE_SAY_URL, "end_chime_path"),
     )
-    _TTS_OPTION_FIELDS = (
-        (SERVICE_SAY, "tts_platform"),
-        (SERVICE_SAY_URL, "tts_platform"),
-    )
-
     async def _async_update_chime_lists(self, hass: HomeAssistant, custom_chime_options: list | None):
-        """Modify the chime path and TTS provider dropdown options."""
+        """Modify the chime path dropdown options."""
 
         services_yaml = await self._async_parse_services_yaml()
         if not services_yaml:
@@ -71,9 +64,6 @@ class ChimeTTSServicesHelper:
 
         try:
             final_options = self._build_chime_options(custom_chime_options, self._data)
-            tts_options = self._build_tts_platform_options(
-                helpers.get_installed_tts_platforms(hass)
-            )
         except Exception as e:
             _LOGGER.error("Unexpected error building chime options: %s", str(e))
             return None
@@ -91,15 +81,6 @@ class ChimeTTSServicesHelper:
                 continue
             if not isinstance(options, list) or options != final_options:
                 self._set_field_options(services_yaml, service_name, field, list(final_options))
-                changed = True
-
-        for service_name, field in self._TTS_OPTION_FIELDS:
-            options = self._get_field_options(services_yaml, service_name, field)
-            if options is _OPTIONS_MISSING:
-                _LOGGER.debug("No options list for %s.%s; skipping", service_name, field)
-                continue
-            if not isinstance(options, list) or options != tts_options:
-                self._set_field_options(services_yaml, service_name, field, list(tts_options))
                 changed = True
 
         if changed:
@@ -130,15 +111,6 @@ class ChimeTTSServicesHelper:
         ]
         options.sort(key=lambda x: x["label"].lower())
         return options
-
-    @staticmethod
-    def _build_tts_platform_options(installed_tts_platforms: list[str] | None) -> list[dict[str, str]]:
-        """Return selector options for every installed TTS provider."""
-        return [
-            {"label": str(platform), "value": str(platform)}
-            for platform in sorted({str(platform) for platform in installed_tts_platforms or []})
-            if str(platform)
-        ]
 
     @staticmethod
     def _get_field_options(services_yaml: dict, service_name: str, field: str):

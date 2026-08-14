@@ -252,11 +252,6 @@ async def test_async_update_services_yaml_refreshes_options_and_registration(mon
         AsyncMock(return_value=[{"label": "Zulu", "value": "zulu"}]),
     )
     monkeypatch.setattr(
-        services_helper_module.helpers,
-        "get_installed_tts_platforms",
-        lambda hass: ["google_translate", "tts.google_generative_ai"],
-    )
-    monkeypatch.setattr(
         services_helper_module.service_helper,
         "async_set_service_schema",
         lambda hass, domain, service, schema: refreshed_schemas.append(
@@ -279,23 +274,10 @@ async def test_async_update_services_yaml_refreshes_options_and_registration(mon
         services_helper_module.DEFAULT_CHIME_OPTIONS + [{"label": "Zulu", "value": "zulu"}],
         key=lambda entry: entry["label"].lower(),
     )
-    expected_tts_options = [
-        {"label": "google_translate", "value": "google_translate"},
-        {
-            "label": "tts.google_generative_ai",
-            "value": "tts.google_generative_ai",
-        },
-    ]
     assert saved_yaml["say"]["fields"]["chime_path"]["selector"]["select"]["options"] == expected_options
     assert saved_yaml["say_url"]["fields"]["end_chime_path"]["selector"]["select"]["options"] == expected_options
-    assert (
-        saved_yaml["say"]["fields"]["tts_platform"]["selector"]["select"]["options"]
-        == expected_tts_options
-    )
-    assert (
-        saved_yaml["say_url"]["fields"]["tts_platform"]["selector"]["select"]["options"]
-        == expected_tts_options
-    )
+    assert saved_yaml["say"]["fields"]["tts_platform"]["selector"]["select"]["options"] == []
+    assert saved_yaml["say_url"]["fields"]["tts_platform"]["selector"]["select"]["options"] == []
     assert [(domain, service) for domain, service, _schema in refreshed_schemas] == [
         (DOMAIN, SERVICE_SAY),
         (DOMAIN, SERVICE_SAY_URL),
@@ -417,21 +399,6 @@ async def test_custom_chimes_monitor_retries_after_metadata_refresh_failure(
         == previous_fingerprint
     )
 
-
-
-def test_build_tts_platform_options_returns_every_installed_provider() -> None:
-    """Installed provider ids should be preserved exactly in dropdown options."""
-    helper = services_helper_module.ChimeTTSServicesHelper()
-
-    options = helper._build_tts_platform_options(
-        ["google_translate", "tts.google_generative_ai", "tts.piper", "google_translate"]
-    )
-
-    assert options == [
-        {"label": "google_translate", "value": "google_translate"},
-        {"label": "tts.google_generative_ai", "value": "tts.google_generative_ai"},
-        {"label": "tts.piper", "value": "tts.piper"},
-    ]
 
 
 def make_options_flow(options: dict | None = None, data: dict | None = None):
