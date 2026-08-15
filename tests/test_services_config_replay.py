@@ -215,6 +215,7 @@ def make_services_yaml(options: list[dict[str, str]]) -> dict:
     """Create the services.yaml shape used by the services helper."""
     return {
         "say": {
+            "target": {"entity": {"domain": "media_player"}},
             "fields": {
                 "chime_path": {"selector": {"select": {"options": list(options)}}},
                 "end_chime_path": {"selector": {"select": {"options": list(options)}}},
@@ -286,6 +287,9 @@ async def test_async_update_services_yaml_refreshes_options_and_registration(mon
         refreshed_schemas[0][2]["fields"]["chime_path"]["selector"]["select"]["options"]
         == expected_options
     )
+    assert refreshed_schemas[0][2]["target"] == {
+        "entity": [{"domain": ["media_player"]}]
+    }
     assert hass.services.removed == [(DOMAIN, SERVICE_SAY), (DOMAIN, SERVICE_SAY_URL)]
     assert hass.services.registered[(DOMAIN, SERVICE_SAY)][0] is say_service
     assert hass.services.registered[(DOMAIN, SERVICE_SAY_URL)][1] == {

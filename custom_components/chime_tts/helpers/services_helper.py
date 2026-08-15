@@ -8,6 +8,7 @@ import logging
 # import voluptuous as vol
 from homeassistant.core import HomeAssistant, SupportsResponse
 from homeassistant.helpers import service as service_helper
+from homeassistant.helpers.selector import TargetSelector
 from .filesystem import FilesystemHelper
 from ..const import (
     DOMAIN,
@@ -131,6 +132,10 @@ class ChimeTTSServicesHelper:
         for service_name in (SERVICE_SAY, SERVICE_SAY_URL):
             schema = services_yaml.get(service_name)
             if isinstance(schema, dict):
+                # The normal services.yaml loader turns shorthand target filters
+                # into lists. This runtime refresh bypasses that loader.
+                if "target" in schema:
+                    schema["target"] = TargetSelector.CONFIG_SCHEMA(schema["target"])
                 service_helper.async_set_service_schema(
                     hass,
                     DOMAIN,
