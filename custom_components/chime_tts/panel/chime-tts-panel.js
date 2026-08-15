@@ -4933,7 +4933,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._loading = false;
       this._render();
       this._syncLogsRefresh();
-      this._primeLogsLoad();
       if (this._data && this._data.notify_profiles_hydrated === false) {
         this._hydrateNotifyProfiles();
       }
@@ -8698,21 +8697,6 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     })));
   }
 
-  _primeLogsLoad() {
-    if (this._loading || this._logsHydrated || this._logsRefreshInFlight) {
-      return;
-    }
-
-    window.setTimeout(() => {
-      if (this._loading || this._logsHydrated || this._logsRefreshInFlight) {
-        return;
-      }
-      this._logsOpeningRefresh = true;
-      this._render();
-      this._refreshLogs({ showOpeningSpinner: true, force: true });
-    }, 0);
-  }
-
   async _refreshLogs({ showOpeningSpinner = false, force = false } = {}) {
     if (this._logsRefreshInFlight || (!force && !this._shouldRefreshLogs())) {
       if (showOpeningSpinner) {
@@ -8730,10 +8714,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       const nextSignature = this._getLogEventsSignature(nextLogEvents);
       const logsChanged = nextSignature !== previousSignature;
       const wasShowingSpinner = this._logsOpeningRefresh;
-      this._data = {
-        ...(this._data || {}),
-        log_events: nextLogEvents,
-      };
+      if (logsChanged) {
+        this._data = {
+          ...(this._data || {}),
+          log_events: nextLogEvents,
+        };
+      }
       this._logsOpeningRefresh = false;
       this._logsHydrated = true;
       this._logsLoaded = true;

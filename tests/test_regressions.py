@@ -743,6 +743,28 @@ def test_panel_defers_polling_and_full_renders_while_controls_are_active():
     assert "|| this._hasActiveInteractiveElement()" in panel_source
 
 
+def test_panel_only_polls_and_rerenders_logs_when_the_logs_chapter_is_open():
+    """Logs are fetched and redrawn only for an open Logs chapter with new data."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    refresh_source = panel_source[
+        panel_source.index("  async _refreshLogs(") : panel_source.index(
+            "  _formatLogEventMeta("
+        )
+    ]
+
+    assert "this._primeLogsLoad()" not in panel_source
+    assert "this._isChapterExpanded(\"logs\")" in panel_source
+    assert "if (logsChanged) {" in refresh_source
+    assert "logsChanged && this._isChapterExpanded(\"logs\")" in refresh_source
+
+
 def test_field_preview_buttons_use_their_workspace_accent():
     """Chime preview controls inherit the colour of their containing section."""
     panel_source = (
