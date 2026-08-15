@@ -5237,7 +5237,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       button.addEventListener("click", () => this._addRandomChimeSet());
     });
     this.shadowRoot.querySelectorAll("[data-random-set-name]").forEach((field) => {
-      field.addEventListener("change", (event) => this._updateRandomChimeSetName(Number(event.currentTarget.dataset.randomSetName), event.currentTarget.value));
+      field.addEventListener("input", (event) => this._updateRandomChimeSetName(Number(event.currentTarget.dataset.randomSetName), event.currentTarget.value));
     });
     this.shadowRoot.querySelectorAll("[data-random-set-member]").forEach((field) => {
       field.addEventListener("change", (event) => this._toggleRandomChimeSetMember(Number(event.currentTarget.dataset.randomSetMember), event.currentTarget.value, event.currentTarget.checked));
@@ -5792,7 +5792,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               ? `<button class="button-secondary" type="button" data-reset-all="1">${this._escapeHtml(this._t("action.reset"))}</button>`
               : ""
             }
-            ${this._saveResult
+            ${this._saveResult && (this._saveResult !== "success" || !this._isDirty)
               ? `
                 <div class="save-slot">
                   <span class="save-status ${this._escapeAttribute(this._saveResult)}" aria-live="polite">${this._saveResult === "success" ? "&#10003;" : "X"}</span>
@@ -5822,7 +5822,21 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         </div>
       </div>
     `;
-    this.shadowRoot.getElementById("save-top")?.addEventListener("click", () => this._submit());
+    const saveButton = this.shadowRoot.getElementById("save-top");
+    saveButton?.addEventListener("pointerdown", (event) => {
+      // Start the save before the browser's default focus change can remove
+      // this button. _submitFromSaveButton deliberately blurs and restores
+      // the active control around the save operation.
+      event.preventDefault();
+      void this._submitFromSaveButton();
+    });
+    saveButton?.addEventListener("click", (event) => {
+      // Pointer activation was handled above; detail 0 represents keyboard
+      // and assistive-technology activation.
+      if (event.detail === 0) {
+        void this._submitFromSaveButton();
+      }
+    });
     this.shadowRoot.querySelectorAll("[data-open-ha-menu]").forEach((button) => {
       button.addEventListener("click", () => this._toggleHassMenu());
     });
@@ -8482,7 +8496,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     element.dataset.deferPanelRender = "1";
     element.addEventListener("blur", () => {
       delete element.dataset.deferPanelRender;
-      this._renderPreservingScrollPosition();
+      // A synchronous render here removes a button that was clicked to move
+      // focus away from this field, which prevents that button's click event
+      // from firing. Let the click complete before redrawing the panel.
+      window.setTimeout(() => this._renderPreservingScrollPosition(), 0);
     }, { once: true });
   }
 
@@ -9054,6 +9071,59 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._isDirty = this._hasValueChanges();
     this._schedulePathValidation(fieldKey, path);
     this._rerenderPreservingInputState(fieldKey);
+  }
+
+  _captureSaveFocusState() {
+    const element = this.shadowRoot?.activeElement;
+    if (!(element instanceof HTMLElement) || element.id === "save-top") {
+      return null;
+    }
+
+    const selector = element.dataset.field
+      ? `[data-field="${CSS.escape(element.dataset.field)}"]`
+      : element.dataset.notifyField
+        ? `[data-notify-field="${CSS.escape(element.dataset.notifyField)}"][data-notify-index="${CSS.escape(String(element.dataset.notifyIndex || ""))}"]`
+        : element.dataset.randomSetName !== undefined
+          ? `[data-random-set-name="${CSS.escape(element.dataset.randomSetName)}"]`
+          : null;
+    if (!selector) {
+      return null;
+    }
+
+    return {
+      element,
+      selector,
+      selectionStart: typeof element.selectionStart === "number" ? element.selectionStart : null,
+      selectionEnd: typeof element.selectionEnd === "number" ? element.selectionEnd : null,
+    };
+  }
+
+  _restoreSaveFocusState(focusState) {
+    if (!focusState) {
+      return;
+    }
+    const element = this.shadowRoot?.querySelector(focusState.selector);
+    if (!(element instanceof HTMLElement)) {
+      return;
+    }
+    element.focus({ preventScroll: true });
+    if (
+      focusState.selectionStart !== null
+      && focusState.selectionEnd !== null
+      && typeof element.setSelectionRange === "function"
+    ) {
+      element.setSelectionRange(focusState.selectionStart, focusState.selectionEnd);
+    }
+  }
+
+  async _submitFromSaveButton() {
+    const focusState = this._captureSaveFocusState();
+    focusState?.element.blur();
+    try {
+      await this._submit();
+    } finally {
+      this._restoreSaveFocusState(focusState);
+    }
   }
 
   async _submit() {

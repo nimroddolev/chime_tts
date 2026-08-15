@@ -1294,9 +1294,6 @@ async def websocket_save_settings(
         updated = hass.config_entries.async_update_entry(
             config_entry, options=validation.data
         )
-        async_block_till_done = getattr(hass, "async_block_till_done", None)
-        if callable(async_block_till_done):
-            await async_block_till_done()
         await async_save_notify_profiles(hass, notify_validation.data)
         if notify_profiles_changed:
             try:

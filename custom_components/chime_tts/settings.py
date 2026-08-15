@@ -2595,6 +2595,22 @@ def get_browse_roots(
     return []
 
 
+def get_browser_locations(
+    hass,
+    config_entry: config_entries.ConfigEntry,
+    field_key: str,
+    values: dict[str, Any] | None = None,
+) -> list[str]:
+    """Return the locations shown in the folder browser sidebar.
+
+    The filesystem root is a navigation location for every browsable field. It
+    does not expand the field's selectable or writable roots.
+    """
+    return _existing_directory_roots(
+        [*get_browse_roots(hass, config_entry, field_key, values), "/"]
+    )
+
+
 def is_path_allowed_for_field(
     hass,
     config_entry: config_entries.ConfigEntry,
@@ -2656,7 +2672,6 @@ def build_directory_browser_payload(
         raise ValueError("unsupported_field")
 
     current_values = values or get_settings_data(hass, config_entry)
-    allowed_roots = get_browse_roots(hass, config_entry, field_key, current_values)
     requested_path = ensure_trailing_slash(path or _normalize_string(current_values.get(field_key)))
     current_path = requested_path
     requested_dir = current_path.rstrip("/") or "/"
@@ -2749,7 +2764,9 @@ def build_directory_browser_payload(
                 "badges": _path_badges(hass, root),
                 "relative_label": _browser_relative_label(current_path, root),
             }
-            for root in allowed_roots
+            for root in get_browser_locations(
+                hass, config_entry, field_key, current_values
+            )
         ],
         "capabilities": {
             "can_select": current_path_allowed,
