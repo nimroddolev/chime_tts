@@ -6258,7 +6258,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               const previewKey = this._getFieldPreviewKey("chime_path", value);
               const loading = this._fieldPreviewLoadingKey === previewKey;
               const playing = this._fieldPreviewPlayingKey === previewKey;
-              return `<div class="random-chime-member"><label><input type="checkbox" data-random-set-member="${index}" value="${this._escapeAttribute(value)}" ${checked ? "checked" : ""} /><span>${this._escapeHtml(option.label || value)}</span></label><button class="button-secondary icon-only-button field-preview-button ${playing ? "preview-playing" : ""}" ${this._previewPlayingStyle(playing, this._fieldPreviewDuration)} type="button" data-random-chime-audio-toggle="${this._escapeAttribute(value)}" aria-label="${this._escapeAttribute(this._t(loading ? "action.loading_preview" : playing ? "action.pause_preview" : "action.play_preview"))}" title="${this._escapeAttribute(this._t(loading ? "action.loading_preview" : playing ? "action.pause_preview" : "action.play_preview"))}">${loading ? '<span class="button-spinner" aria-hidden="true"></span>' : playing ? ICONS.pause : ICONS.play}</button></div>`;
+              return `<div class="random-chime-member"><label><input type="checkbox" data-random-set-member="${index}" value="${this._escapeAttribute(value)}" ${checked ? "checked" : ""} /><span>${this._escapeHtml(option.label || value)}</span></label><button class="button-secondary icon-only-button field-preview-button ${playing ? "preview-playing" : ""}" ${this._previewPlayingStyle(playing, this._fieldPreviewDuration)} type="button" data-random-chime-audio-toggle="${this._escapeAttribute(value)}" aria-label="${this._escapeAttribute(this._t(playing ? "action.pause_preview" : loading ? "action.loading_preview" : "action.play_preview"))}" title="${this._escapeAttribute(this._t(playing ? "action.pause_preview" : loading ? "action.loading_preview" : "action.play_preview"))}">${playing ? ICONS.pause : loading ? '<span class="button-spinner" aria-hidden="true"></span>' : ICONS.play}</button></div>`;
             }).join("")}
           </div>
         </div></div>
@@ -6296,7 +6296,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                     const previewKey = this._getFieldPreviewKey("chime_path", value);
                     const loading = this._fieldPreviewLoadingKey === previewKey;
                     const playing = this._fieldPreviewPlayingKey === previewKey;
-                    return `<div class="random-chime-member chime-list-member"><span>${this._escapeHtml(option.label || value)}</span><button class="button-secondary icon-only-button field-preview-button ${playing ? "preview-playing" : ""}" ${this._previewPlayingStyle(playing, this._fieldPreviewDuration)} type="button" data-random-chime-audio-toggle="${this._escapeAttribute(value)}" aria-label="${this._escapeAttribute(this._t(loading ? "action.loading_preview" : playing ? "action.pause_preview" : "action.play_preview"))}" title="${this._escapeAttribute(this._t(loading ? "action.loading_preview" : playing ? "action.pause_preview" : "action.play_preview"))}">${loading ? '<span class="button-spinner" aria-hidden="true"></span>' : playing ? ICONS.pause : ICONS.play}</button><button class="button-secondary icon-only-button chime-set-offset-button" type="button" data-edit-chime-offset="${this._escapeAttribute(value)}" data-chime-offset-label="${this._escapeAttribute(option.label || value)}" aria-label="Edit chime offset" title="Edit offset">${ICONS.pencil}</button></div>`;
+                    return `<div class="random-chime-member chime-list-member"><span>${this._escapeHtml(option.label || value)}</span><button class="button-secondary icon-only-button field-preview-button ${playing ? "preview-playing" : ""}" ${this._previewPlayingStyle(playing, this._fieldPreviewDuration)} type="button" data-random-chime-audio-toggle="${this._escapeAttribute(value)}" aria-label="${this._escapeAttribute(this._t(playing ? "action.pause_preview" : loading ? "action.loading_preview" : "action.play_preview"))}" title="${this._escapeAttribute(this._t(playing ? "action.pause_preview" : loading ? "action.loading_preview" : "action.play_preview"))}">${playing ? ICONS.pause : loading ? '<span class="button-spinner" aria-hidden="true"></span>' : ICONS.play}</button><button class="button-secondary icon-only-button chime-set-offset-button" type="button" data-edit-chime-offset="${this._escapeAttribute(value)}" data-chime-offset-label="${this._escapeAttribute(option.label || value)}" aria-label="Edit chime offset" title="Edit offset">${ICONS.pencil}</button></div>`;
                   }).join("")}
                 </div>
               </div></div>
@@ -7062,7 +7062,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         const previewKey = this._getNotifyPreviewKey(index, field.key, selectedValue);
         const isLoading = this._notifyPreviewLoadingKey === previewKey;
         const isPlaying = this._notifyPreviewPlayingKey === previewKey;
-        const actionLabel = this._t(isLoading ? "action.loading_preview" : isPlaying ? "action.pause_preview" : "action.play_preview");
+        const actionLabel = this._t(isPlaying ? "action.pause_preview" : isLoading ? "action.loading_preview" : "action.play_preview");
         control = `
           <div class="input-row select-preview-row">
             ${selectMarkup}
@@ -7075,7 +7075,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
               data-notify-index="${this._escapeAttribute(String(index))}"
               aria-label="${this._escapeAttribute(`${actionLabel} for ${field.label}`)}"
               title="${this._escapeAttribute(actionLabel)}"
-            >${isLoading ? '<span class="button-spinner" aria-hidden="true"></span>' : isPlaying ? ICONS.pause : ICONS.play}</button>
+            >${isPlaying ? ICONS.pause : isLoading ? '<span class="button-spinner" aria-hidden="true"></span>' : ICONS.play}</button>
           </div>
         `;
       } else {
@@ -7375,7 +7375,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     const previewKey = this._getFieldPreviewKey(field.key, selectedValue);
     const isLoading = this._fieldPreviewLoadingKey === previewKey;
     const isPlaying = this._fieldPreviewPlayingKey === previewKey;
-    const actionLabel = this._t(isLoading ? "action.loading_preview" : isPlaying ? "action.pause_preview" : "action.play_preview");
+    const actionLabel = this._t(isPlaying ? "action.pause_preview" : isLoading ? "action.loading_preview" : "action.play_preview");
     return `
       <div class="input-row select-preview-row">
         ${selectMarkup}
@@ -7387,7 +7387,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           data-field-audio-value="${this._escapeAttribute(selectedValue)}"
           aria-label="${this._escapeAttribute(`${actionLabel} for ${field.label}`)}"
           title="${this._escapeAttribute(actionLabel)}"
-        >${isLoading ? '<span class="button-spinner" aria-hidden="true"></span>' : isPlaying ? ICONS.pause : ICONS.play}</button>
+        >${isPlaying ? ICONS.pause : isLoading ? '<span class="button-spinner" aria-hidden="true"></span>' : ICONS.play}</button>
       </div>
     `;
   }
@@ -8036,7 +8036,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     forceRender = false,
   ) {
     const activeControl = this.shadowRoot.activeElement;
-    if (!forceRender && this._isTextEntryOrDropdown(activeControl)) {
+    const hasPreviewState = Boolean(
+      this._previewRenderPending
+      || this._fieldPreviewAudio
+      || this._notifyPreviewAudio
+      || this._fieldPreviewLoadingKey
+      || this._fieldPreviewPlayingKey
+      || this._notifyPreviewLoadingKey
+      || this._notifyPreviewPlayingKey,
+    );
+    if (!forceRender && !hasPreviewState && this._isTextEntryOrDropdown(activeControl)) {
       this._renderTopbar(this._data || {});
       this._deferPanelRenderUntilBlur(activeControl);
       return;
@@ -8078,7 +8087,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       });
     };
 
-    this._render({ force: forceRender });
+    this._render({ force: forceRender || hasPreviewState });
+    this._previewRenderPending = false;
     window.requestAnimationFrame(() => {
       restoreScrollPosition();
       // A complete panel render can change the page height after the first
@@ -10364,6 +10374,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _stopFieldPreviewAudio({ preserveElement = false } = {}) {
+    this._previewRenderPending = true;
     this._fieldPreviewAudioLoadToken += 1;
     if (this._fieldPreviewAudio) {
       this._fieldPreviewAudio.pause();
@@ -10456,9 +10467,17 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     });
     this._fieldPreviewAudio = audio;
     this._fieldPreviewAudioObjectUrl = objectUrl;
+    this._fieldPreviewLoadingKey = "";
     this._fieldPreviewPlayingKey = previewKey;
     const playAttempt = audio.play();
     if (playAttempt && typeof playAttempt.catch === "function") {
+      playAttempt.then(() => {
+        if (this._fieldPreviewAudio === audio && !audio.paused && !audio.ended) {
+          this._fieldPreviewLoadingKey = "";
+          this._fieldPreviewPlayingKey = previewKey;
+          this._rerenderPreservingInputState(fieldKey);
+        }
+      });
       playAttempt.catch(() => {
         if (this._fieldPreviewAudio === audio) {
           this._stopFieldPreviewAudio();
@@ -10475,6 +10494,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _stopNotifyPreviewAudio({ preserveElement = false } = {}) {
+    this._previewRenderPending = true;
     this._notifyPreviewAudioLoadToken += 1;
     if (this._notifyPreviewAudio) {
       this._notifyPreviewAudio.pause();
@@ -10567,9 +10587,17 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     });
     this._notifyPreviewAudio = audio;
     this._notifyPreviewAudioObjectUrl = objectUrl;
+    this._notifyPreviewLoadingKey = "";
     this._notifyPreviewPlayingKey = previewKey;
     const playAttempt = audio.play();
     if (playAttempt && typeof playAttempt.catch === "function") {
+      playAttempt.then(() => {
+        if (this._notifyPreviewAudio === audio && !audio.paused && !audio.ended) {
+          this._notifyPreviewLoadingKey = "";
+          this._notifyPreviewPlayingKey = previewKey;
+          this._rerenderPreservingInputState();
+        }
+      });
       playAttempt.catch(() => {
         if (this._notifyPreviewAudio === audio) {
           this._stopNotifyPreviewAudio();

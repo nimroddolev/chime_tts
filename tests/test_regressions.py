@@ -782,6 +782,45 @@ def test_field_preview_buttons_use_their_workspace_accent():
     assert ".field-preview-button.preview-playing::before" in panel_source
 
 
+def test_field_and_notify_previews_wait_for_confirmed_playback():
+    """Configuration previews leave loading only after the browser starts audio."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    field_preview = panel_source[
+        panel_source.index("  async _toggleFieldPreviewAudio(") : panel_source.index(
+            "  _stopNotifyPreviewAudio("
+        )
+    ]
+    notify_preview = panel_source[
+        panel_source.index("  async _toggleNotifyPreviewAudio(") : panel_source.index(
+            "  async _togglePickerAudio("
+        )
+    ]
+
+    for preview_source, loading_key, playing_key in (
+        (field_preview, "_fieldPreviewLoadingKey", "_fieldPreviewPlayingKey"),
+        (notify_preview, "_notifyPreviewLoadingKey", "_notifyPreviewPlayingKey"),
+    ):
+        assert "playAttempt.then(() =>" in preview_source
+        assert (
+            f"this.{loading_key} = \"\";\n"
+            f"    this.{playing_key} = previewKey;\n"
+            "    const playAttempt = audio.play();" in preview_source
+        )
+
+    assert panel_source.count("isPlaying ? ICONS.pause : isLoading ?") == 2
+    assert panel_source.count("playing ? ICONS.pause : loading ?") == 2
+    assert "!hasPreviewState && this._isTextEntryOrDropdown(activeControl)" in panel_source
+    assert "this._render({ force: forceRender || hasPreviewState });" in panel_source
+    assert panel_source.count("this._previewRenderPending = true;") == 2
+
+
 def test_issue_291_full_entity_id_matches_installed():
     """A full tts.* entity id selects that entity instead of being rejected (#291)."""
     helper = ChimeTTSHelper()
