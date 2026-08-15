@@ -689,6 +689,26 @@ def test_panel_hides_snowfall_and_uses_a_spinner_while_loading():
     assert "Loading Chime TTS settings..." not in panel_source
 
 
+def test_panel_finishes_saving_before_refreshing_settings_metadata():
+    """A delayed metadata refresh must not leave the save control in limbo."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+    submit_source = panel_source.split("  async _submit() {", 1)[1].split(
+        "  _handleFieldChange", 1
+    )[0]
+
+    assert "void this._refreshSavedSettingsMetadata();" in submit_source
+    assert "await this._reloadSettingsMetadata();" not in submit_source
+    assert "this._data = { ...(this._data || {}), ...saveResult };" in submit_source
+    assert 'class="button-primary is-saving"' in panel_source
+    assert ".button-primary:disabled:not(.is-saving)" in panel_source
+
+
 def test_panel_renders_chime_fields_as_selectable_options_with_preview_controls():
     """Chime fields use selects in both editors and retain their preview controls."""
     panel_source = (

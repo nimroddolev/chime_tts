@@ -696,7 +696,7 @@ template.innerHTML = `
       width: 100%;
     }
 
-    .button-primary:disabled {
+    .button-primary:disabled:not(.is-saving) {
       background: transparent;
       color: color-mix(in srgb, var(--primary-text-color) 88%, transparent);
     }
@@ -5798,6 +5798,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                   <span class="save-status ${this._escapeAttribute(this._saveResult)}" aria-live="polite">${this._saveResult === "success" ? "&#10003;" : "X"}</span>
                 </div>
               `
+              : this._saving
+                ? `
+                  <div class="save-slot">
+                    <button class="button-primary is-saving" type="button" disabled aria-busy="true" aria-label="${this._escapeAttribute(this._t("action.save"))}"><span class="button-spinner" aria-hidden="true"></span></button>
+                  </div>
+                `
               : this._restartPending && !this._isDirty
                 ? `
                   <div class="save-slot">
@@ -9072,13 +9078,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._render();
 
     try {
-      this._data = await this._hass.callWS({
+      const saveResult = await this._hass.callWS({
         type: "chime_tts/save_settings",
         values,
         notify_profiles: notifyProfiles,
         allow_invalid_paths: Object.keys(this._invalidPathOverrides || {}).filter((fieldKey) => this._invalidPathOverrides[fieldKey]),
       });
-      await this._reloadSettingsMetadata();
+      this._data = { ...(this._data || {}), ...saveResult };
       const hasValidationErrors = Object.keys(this._data?.errors || {}).length > 0;
       this._draftValues = hasValidationErrors
         ? values
@@ -9099,6 +9105,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       } else if (this._data?.message_type === "success" && this._data?.message) {
         this._showSaveResult("success");
         this._scheduleMessageClear();
+      }
+      if (!hasValidationErrors && this._data?.message_type === "success") {
+        void this._refreshSavedSettingsMetadata();
       }
     } catch (error) {
       this._data = {
@@ -10262,6 +10271,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       return true;
     } catch (_error) {
       return false;
+    }
+  }
+
+  async _refreshSavedSettingsMetadata() {
+    if (await this._reloadSettingsMetadata()) {
+      if (!this._saving && !this._isDirty) {
+        this._render();
+      }
     }
   }
 

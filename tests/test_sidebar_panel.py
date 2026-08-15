@@ -15,6 +15,7 @@ from homeassistant.components.notify.legacy import NOTIFY_SERVICES
 
 from custom_components.chime_tts.const import (
     CHIME_OFFSETS_KEY,
+    CHIME_SETS_KEY,
     CUSTOM_CHIMES_PATH_KEY,
     DEFAULT_CHIME_OFFSETS,
 )
@@ -383,6 +384,47 @@ async def test_websocket_save_settings_persists_only_custom_chime_offset_overrid
         **DEFAULT_CHIME_OFFSETS,
         "bells": 125,
     }
+
+
+@pytest.mark.asyncio
+async def test_websocket_save_settings_persists_new_chime_set_and_requires_restart(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A saved Chime Set responds without waiting for a full panel refresh."""
+    hass, config_entry, _paths = make_hass(tmp_path)
+    values = settings_module.get_settings_data(hass, config_entry)
+    values[CHIME_SETS_KEY] = [
+        {
+            "id": "soft",
+            "name": "Soft",
+            "chimes": ["bells", "marimba"],
+            "offsets": {},
+        }
+    ]
+    connection = FakeConnection()
+
+    async def fail_if_panel_refresh_is_requested(*args, **kwargs):
+        raise AssertionError("Save responses must not wait for a panel refresh")
+
+    monkeypatch.setattr(panel_module, "async_build_panel_payload", fail_if_panel_refresh_is_requested)
+
+    await save_settings_handler(
+        hass,
+        connection,
+        {
+            "id": 4,
+            "type": "chime_tts/save_settings",
+            "values": values,
+            "notify_profiles": [],
+        },
+    )
+
+    assert connection.errors == []
+    payload = connection.results[-1][1]
+    assert payload["message_type"] == "success"
+    assert payload["restart_required"] is True
+    assert config_entry.options[CHIME_SETS_KEY] == values[CHIME_SETS_KEY]
 
 
 @pytest.mark.asyncio

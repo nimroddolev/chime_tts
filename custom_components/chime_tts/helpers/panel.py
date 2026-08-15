@@ -95,6 +95,28 @@ ENTRY_DATA_KEY = f"{DOMAIN}_panel_entry_id"
 CHIME_PREVIEW_FIELD_KEYS = {"chime_path", "end_chime_path"}
 
 
+def _build_save_settings_result(
+    *,
+    values: dict[str, Any],
+    notify_profiles: list[dict[str, Any]],
+    notify_profile_errors: list[dict[str, str]] | None = None,
+    errors: dict[str, str] | None = None,
+    message: str,
+    message_type: str,
+    restart_required: bool,
+) -> dict[str, Any]:
+    """Build the immediate, lightweight response for a settings save."""
+    return {
+        "values": values,
+        "notify_profiles": notify_profiles,
+        "notify_profile_errors": notify_profile_errors or [],
+        "errors": errors or {},
+        "message": message,
+        "message_type": message_type,
+        "restart_required": restart_required,
+    }
+
+
 def _is_supported_audio_upload(filename: str) -> bool:
     """Return whether an upload filename has a supported audio extension."""
     return Path(filename).suffix.lower() in CHIME_FILE_EXTENSIONS
@@ -1241,9 +1263,7 @@ async def websocket_save_settings(
         LOGGER.debug("Chime TTS panel validation errors: %s", validation.errors)
         connection.send_result(
             msg["id"],
-            await async_build_panel_payload(
-                hass,
-                config_entry,
+            _build_save_settings_result(
                 values=validation.data,
                 notify_profiles=notify_validation.data,
                 notify_profile_errors=notify_validation.errors,
@@ -1258,9 +1278,7 @@ async def websocket_save_settings(
     if any(profile_errors for profile_errors in notify_validation.errors):
         connection.send_result(
             msg["id"],
-            await async_build_panel_payload(
-                hass,
-                config_entry,
+            _build_save_settings_result(
                 values=validation.data,
                 notify_profiles=notify_validation.data,
                 notify_profile_errors=notify_validation.errors,
@@ -1300,9 +1318,7 @@ async def websocket_save_settings(
         LOGGER.exception("Failed to save Chime TTS panel settings")
         connection.send_result(
             msg["id"],
-            await async_build_panel_payload(
-                hass,
-                config_entry,
+            _build_save_settings_result(
                 values=validation.data,
                 notify_profiles=notify_validation.data,
                 notify_profile_errors=notify_validation.errors,
@@ -1315,9 +1331,7 @@ async def websocket_save_settings(
 
     connection.send_result(
         msg["id"],
-        await async_build_panel_payload(
-            hass,
-            config_entry,
+        _build_save_settings_result(
             values=dict(config_entry.options),
             notify_profiles=notify_validation.data,
             message=(
