@@ -13,6 +13,7 @@ from .filesystem import FilesystemHelper
 from ..const import (
     OFFSET_KEY,
     CROSSFADE_KEY,
+    INITIAL_DELAY_KEY,
     TTS_PLATFORM_KEY,
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
@@ -156,6 +157,13 @@ class ChimeTTSHelper:
             data.get(CROSSFADE_KEY, default_data.get(CROSSFADE_KEY, 0)),
             default_data.get(CROSSFADE_KEY, 0),
         )
+        initial_delay = max(
+            self._coerce_float(
+                data.get(INITIAL_DELAY_KEY, default_data.get(INITIAL_DELAY_KEY, 0)),
+                default_data.get(INITIAL_DELAY_KEY, 0),
+            ),
+            0,
+        )
         final_delay = self._coerce_float(data.get("final_delay", 0), 0)
         message = str(data.get("message", ""))
         tts_platform = str(data.get("tts_platform", ""))
@@ -197,6 +205,7 @@ class ChimeTTSHelper:
             "cache": cache,
             "offset": offset,
             "crossfade": crossfade,
+            "initial_delay": initial_delay,
             "final_delay": final_delay,
             "message": message,
             "language": language,

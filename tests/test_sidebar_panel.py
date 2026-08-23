@@ -24,6 +24,7 @@ from custom_components.chime_tts.const import TEMP_PATH_KEY
 from custom_components.chime_tts.const import TTS_PLATFORM_KEY
 from custom_components.chime_tts.const import WWW_PATH_KEY
 from custom_components.chime_tts.const import DOMAIN
+from custom_components.chime_tts.const import INITIAL_DELAY_KEY
 
 panel_module = importlib.import_module("custom_components.chime_tts.helpers.panel")
 panel_logs_module = importlib.import_module("custom_components.chime_tts.helpers.panel_logs")
@@ -331,8 +332,15 @@ def test_build_panel_payload_exposes_sidebar_metadata_and_field_hints(tmp_path: 
     crossfade_field = next(
         field for field in playback_section["fields"] if field["key"] == "crossfade"
     )
+    initial_delay_field = next(
+        field for field in playback_section["fields"] if field["key"] == INITIAL_DELAY_KEY
+    )
     assert crossfade_field["docs_url"].endswith(
         "/documentation/configuration/playback-options/#default-crossfade"
+    )
+    assert initial_delay_field["min"] == 0
+    assert initial_delay_field["icon_url"].startswith(
+        f"/api/{DOMAIN}/images/option_icons/{INITIAL_DELAY_KEY}.svg"
     )
     about_section = next(section for section in payload["sections"] if section["key"] == "about")
     assert about_section["kind"] == "about"
@@ -408,6 +416,11 @@ async def test_websocket_save_settings_persists_new_chime_set_and_requires_resta
         raise AssertionError("Save responses must not wait for a panel refresh")
 
     monkeypatch.setattr(panel_module, "async_build_panel_payload", fail_if_panel_refresh_is_requested)
+
+    async def fail_if_background_tasks_are_waited_on():
+        raise AssertionError("Save responses must not wait for background tasks")
+
+    hass.async_block_till_done = fail_if_background_tasks_are_waited_on
 
     await save_settings_handler(
         hass,
@@ -673,6 +686,28 @@ def test_build_directory_browser_payload_includes_previews_and_badges(tmp_path: 
     assert any(
         root["path"] == str(paths["custom_chimes_dir"]).rstrip("/") + "/"
         for root in payload["roots"]
+    )
+
+
+def test_directory_browser_includes_filesystem_root_without_expanding_access(
+    tmp_path: Path,
+) -> None:
+    """The root location supports navigation without allowing it as a media path."""
+    hass, config_entry, paths = make_hass(tmp_path)
+
+    payload = settings_module.build_directory_browser_payload(
+        hass,
+        config_entry,
+        TEMP_PATH_KEY,
+        str(paths["temp_audio_dir"]),
+    )
+
+    assert any(root["path"] == "/" for root in payload["roots"])
+    assert settings_module.is_path_navigable_for_field(
+        hass, config_entry, TEMP_PATH_KEY, "/"
+    )
+    assert not settings_module.is_path_allowed_for_field(
+        hass, config_entry, TEMP_PATH_KEY, "/"
     )
 
 

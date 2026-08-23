@@ -18,6 +18,7 @@ from pydub.generators import Sine
 
 from custom_components.chime_tts.const import AUDIO_DURATION_KEY
 from custom_components.chime_tts.const import CROSSFADE_KEY
+from custom_components.chime_tts.const import INITIAL_DELAY_KEY
 from custom_components.chime_tts.const import FFMPEG_ARGS_ALEXA
 from custom_components.chime_tts.const import LOCAL_PATH_KEY
 from custom_components.chime_tts.const import OFFSET_KEY
@@ -138,6 +139,7 @@ async def test_async_parse_params_supports_deprecated_aliases_and_flags(helper: 
             "end_chime_path": "tada",
             "delay": 125,
             "crossfade": 25,
+            "initial_delay": 200,
             "final_delay": 300,
             "message": "hello",
             "tts_platform": "google_translate",
@@ -164,6 +166,7 @@ async def test_async_parse_params_supports_deprecated_aliases_and_flags(helper: 
     assert params["end_chime_path"] == "tada"
     assert params["offset"] == 125.0
     assert params["crossfade"] == 25
+    assert params["initial_delay"] == 200.0
     assert params["final_delay"] == 300.0
     assert params["tts_speed"] == 135.0
     assert params["tts_pitch"] == 4
@@ -197,12 +200,13 @@ async def test_async_parse_params_uses_configured_offset_and_crossfade_defaults(
         data={"entity_id": ["media_player.kitchen"], "message": "Hello"},
         is_say_url=False,
         media_player_helper=FakeMediaPlayerHelper(),
-        default_data={OFFSET_KEY: 525, CROSSFADE_KEY: 35},
+        default_data={OFFSET_KEY: 525, CROSSFADE_KEY: 35, INITIAL_DELAY_KEY: 150},
     )
 
     assert params is not None
     assert params["offset"] == 525.0
     assert params["crossfade"] == 35
+    assert params["initial_delay"] == 150.0
 
 
 @pytest.mark.asyncio
@@ -265,6 +269,7 @@ async def test_async_parse_params_tolerates_none_numeric_fields(helper: ChimeTTS
             "message": "hello",
             "offset": None,
             "crossfade": None,
+            "initial_delay": None,
             "final_delay": None,
             "tts_speed": None,
             "tts_pitch": None,
@@ -276,6 +281,7 @@ async def test_async_parse_params_tolerates_none_numeric_fields(helper: ChimeTTS
     assert params is not None
     assert params["offset"] == 0.0
     assert params["crossfade"] == 0
+    assert params["initial_delay"] == 0.0
     assert params["final_delay"] == 0.0
     assert params["tts_speed"] == 100.0
     assert params["tts_pitch"] == 0.0

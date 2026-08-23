@@ -50,6 +50,10 @@
                     "name": "Offset",
                     "description": "Adds a delay between audio segments when value > 0, or overlays audio segments when value < 0."
                 },
+                "initial_delay": {
+                    "name": "Initial Delay",
+                    "description": "Initial delay (in milliseconds) added to the start of the audio"
+                },
                 "final_delay": {
                     "name": "Final Delay",
                     "description": "Final delay (in milliseconds) added to the end of the audio"
@@ -132,6 +136,10 @@
                 "offset": {
                     "name": "Offset",
                     "description": "Adds a delay between audio segments when value > 0, or overlays audio segments when value < 0."
+                },
+                "initial_delay": {
+                    "name": "Initial Delay",
+                    "description": "Initial delay (in milliseconds) added to the start of the audio"
                 },
                 "final_delay": {
                     "name": "Final Delay",

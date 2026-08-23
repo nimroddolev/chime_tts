@@ -100,6 +100,7 @@ from .const import (
     OFFSET_KEY,
     DEFAULT_OFFSET_MS,
     CROSSFADE_KEY,
+    INITIAL_DELAY_KEY,
     CHIME_SETS_KEY,
     CHIME_OFFSETS_KEY,
     DEFAULT_CHIME_OFFSETS,
@@ -790,6 +791,9 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Default crossfade
     _data[CROSSFADE_KEY] = options.get(CROSSFADE_KEY, 0)
 
+    # Initial silence prepended to generated audio
+    _data[INITIAL_DELAY_KEY] = options.get(INITIAL_DELAY_KEY, 0)
+
     # Default audio fade transition duration
     _data[FADE_TRANSITION_KEY] = options.get(FADE_TRANSITION_KEY, DEFAULT_FADE_TRANSITION_MS)
 
@@ -938,6 +942,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     end_chime_path = params.get("end_chime_path", None)
     offset = params.get("offset", _data[OFFSET_KEY])
     crossfade = params.get("crossfade", _data[CROSSFADE_KEY])
+    initial_delay = params.get("initial_delay", _data.get(INITIAL_DELAY_KEY, 0))
     message = params.get("message", None)
     cache = params.get("cache", False)
     entity_ids = params.get("entity_ids", [])
@@ -1007,6 +1012,10 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                                                    offset=end_chime_offset,
                                                    crossfade=crossfade,
                                                    audio=output_audio)
+
+    # Initial delay is part of the generated file, before any chime or TTS.
+    if output_audio is not None and initial_delay > 0:
+        output_audio = AudioSegment.silent(duration=initial_delay) + output_audio
 
     # Save generated audio file
     audio_dict = {
@@ -1984,6 +1993,7 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
         "end_chime_path",
         "offset",
         "crossfade",
+        "initial_delay",
         "tts_playback_speed",
         "tts_speed",
         "tts_pitch",

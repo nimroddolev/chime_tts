@@ -45,6 +45,7 @@ from .const import (
     GOOGLE_CLOUD,
     GOOGLE_TRANSLATE,
     IBM_WATSON_TTS,
+    INITIAL_DELAY_KEY,
     MARYTTS,
     MICROSOFT_EDGE_TTS,
     MICROSOFT_TTS,
@@ -828,6 +829,15 @@ SETTINGS_FIELDS: tuple[SettingsField, ...] = (
         advanced=True,
     ),
     SettingsField(
+        key=INITIAL_DELAY_KEY,
+        label="Default initial delay",
+        description="Milliseconds of silence added before generated audio.",
+        field_type="number",
+        section="playback",
+        required=True,
+        min_value=0,
+    ),
+    SettingsField(
         key=FADE_TRANSITION_KEY,
         label="Fade transition",
         description="Milliseconds used for announce and fade_audio transitions.",
@@ -916,6 +926,7 @@ SETTINGS_SECTIONS = (
             "end_chime_path",
             OFFSET_KEY,
             CROSSFADE_KEY,
+            INITIAL_DELAY_KEY,
             FADE_TRANSITION_KEY,
             REMOVE_TEMP_FILE_DELAY_KEY,
             ADD_COVER_ART_KEY,
@@ -1202,6 +1213,7 @@ def _field_default_value(field_key: str, hass) -> Any:
         "end_chime_path": "",
         OFFSET_KEY: DEFAULT_OFFSET_MS,
         CROSSFADE_KEY: 0,
+        INITIAL_DELAY_KEY: 0,
         FADE_TRANSITION_KEY: DEFAULT_FADE_TRANSITION_MS,
         REMOVE_TEMP_FILE_DELAY_KEY: "",
         CUSTOM_CHIMES_PATH_KEY: "",
@@ -2974,7 +2986,7 @@ def validate_settings(
         errors[TTS_TIMEOUT_KEY] = "timeout_sub"
         normalized[TTS_TIMEOUT_KEY] = current_data[TTS_TIMEOUT_KEY]
 
-    for field_key in (OFFSET_KEY, CROSSFADE_KEY, FADE_TRANSITION_KEY):
+    for field_key in (OFFSET_KEY, CROSSFADE_KEY, INITIAL_DELAY_KEY, FADE_TRANSITION_KEY):
         try:
             normalized[field_key] = _normalize_int(
                 user_input.get(field_key),
@@ -2999,6 +3011,8 @@ def validate_settings(
 
     if normalized[CROSSFADE_KEY] < 0:
         errors[CROSSFADE_KEY] = "invalid_number"
+    if normalized[INITIAL_DELAY_KEY] < 0:
+        errors[INITIAL_DELAY_KEY] = "invalid_number"
     if normalized[FADE_TRANSITION_KEY] < 0:
         errors[FADE_TRANSITION_KEY] = "invalid_number"
     if (

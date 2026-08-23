@@ -362,6 +362,8 @@ def test_services_yaml_exposes_shared_fields_for_both_say_actions():
     assert "post_script" in say_url_fields
     assert "repeat" in say_url_fields
     assert "repeat_delay" in say_url_fields
+    assert "initial_delay" in say_fields
+    assert "initial_delay" in say_url_fields
     assert say_fields["tts_platform"]["selector"]["select"]["options"] == []
     assert say_url_fields["tts_platform"]["selector"]["select"]["options"] == []
 
@@ -709,6 +711,57 @@ def test_panel_finishes_saving_before_refreshing_settings_metadata():
     assert ".button-primary:disabled:not(.is-saving)" in panel_source
 
 
+def test_panel_shows_save_for_new_changes_while_success_is_visible():
+    """A previous success indicator must not hide Save after another edit."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert 'this._saveResult && (this._saveResult !== "success" || !this._isDirty)' in panel_source
+
+
+def test_panel_defers_blur_redraw_until_after_the_save_click():
+    """Clicking Save from a focused field must not replace the clicked button."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+    defer_source = panel_source.split("  _deferPanelRenderUntilBlur(element) {", 1)[1].split(
+        "  _toggleConfigSection", 1
+    )[0]
+
+    assert "window.setTimeout(() => this._renderPreservingScrollPosition(), 0);" in defer_source
+    assert "this._renderPreservingScrollPosition();" not in defer_source
+
+
+def test_panel_save_click_blurs_and_restores_the_edited_field():
+    """Save captures, blurs, and restores the active editable field."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+    topbar_source = panel_source.split("  _renderTopbar(data) {", 1)[1].split(
+        "  _handleBetaBadgeClick", 1
+    )[0]
+
+    assert 'void this._submitFromSaveButton();' in topbar_source
+    assert 'if (event.detail === 0)' in topbar_source
+    assert '  _captureSaveFocusState() {' in panel_source
+    assert 'focusState?.element.blur();' in panel_source
+    assert 'await this._submit();' in panel_source
+    assert 'this._restoreSaveFocusState(focusState);' in panel_source
+
+
 def test_panel_renders_chime_fields_as_selectable_options_with_preview_controls():
     """Chime fields use selects in both editors and retain their preview controls."""
     panel_source = (
@@ -724,6 +777,21 @@ def test_panel_renders_chime_fields_as_selectable_options_with_preview_controls(
     assert "_isChimePreviewField(field)" in panel_source
     assert "data-field-audio-toggle" in panel_source
     assert "data-notify-audio-toggle" in panel_source
+
+
+def test_panel_updates_chime_set_names_before_save_is_clicked():
+    """Typing a Chime Set name must not consume the following Save click."""
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "chime_tts"
+        / "panel"
+        / "chime-tts-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert 'querySelectorAll("[data-random-set-name]")' in panel_source
+    assert 'field.addEventListener("input", (event) => this._updateRandomChimeSetName(' in panel_source
+    assert 'field.addEventListener("change", (event) => this._updateRandomChimeSetName(' not in panel_source
 
 
 def test_panel_does_not_refocus_native_selects_after_rendering():
@@ -1141,6 +1209,16 @@ def test_issue_314_repeat_is_part_of_cache_key():
     assert get_filename_hash_from_service_data(
         {**base, "repeat": 2}, {}
     ) != filesystem_helper.get_hash_for_string("-hi-2")
+
+
+def test_initial_delay_is_part_of_cache_key():
+    """Cached audio must retain its configured leading silence."""
+    from custom_components.chime_tts import get_filename_hash_from_service_data
+
+    base = {"message": "hi"}
+    assert get_filename_hash_from_service_data(
+        {**base, "initial_delay": 100}, {}
+    ) != get_filename_hash_from_service_data({**base, "initial_delay": 200}, {})
 
 
 async def test_issue_310_runs_configured_script_before_after_tts():
