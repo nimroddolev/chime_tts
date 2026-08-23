@@ -251,6 +251,28 @@ When using a negative value the audio components are overlaid:
 
 ---
 
+### `initial_delay`
+
+| **Description:** | The silence (in milliseconds) to insert before the complete generated audio, including any start chime. |
+| ---------------- | -------------------------------------------------------------------------------------------------------- |
+| **Required:**    | No                                                                                                       |
+| **Example:**     | `200` (Adds 200 milliseconds of silence before the announcement)                                        |
+| **Default:**     | `0`                                                                                                      |
+
+When omitted, the configured [default initial delay](/chime_tts/docs/documentation/configuration/playback-options#default-initial-delay) is used. A value supplied in the action takes precedence.
+
+---
+
+### `final_delay`
+
+| **Description:** | The delay (in milliseconds) to insert after the chimes and the TTS audio |
+| ---------------- | ------------------------------------------------------------------------ |
+| **Required:**    | No                                                                       |
+| **Example:**     | `200`                                                                    |
+| **Default:**     | `0`                                                                      |
+
+---
+
 :::caution Beta
 
 The `pre_script` and `post_script` controls are currently in beta and may change between releases.
@@ -316,16 +338,6 @@ post_script:
   data:
     volume: 0.5
 ```
-
----
-
-### `final_delay`
-
-| **Description:** | The delay (in milliseconds) to insert after the chimes and the TTS audio |
-| ---------------- | ------------------------------------------------------------------------ |
-| **Required:**    | No                                                                       |
-| **Example:**     | `200`                                                                    |
-| **Default:**     | `0`                                                                      |
 
 ---
 

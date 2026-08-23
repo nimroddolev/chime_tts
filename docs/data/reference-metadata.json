@@ -11,6 +11,7 @@
     {"key":"end_chime_path","name":"Default end chime","description":"Optional chime played after generated speech.","default":"None"},
     {"key":"offset","name":"Default offset","description":"Milliseconds between chimes and TTS; negative values overlay audio.","default":"450"},
     {"key":"crossfade","name":"Default crossfade","description":"Milliseconds to fade one audio segment out while the next fades in.","default":"0"},
+    {"key":"initial_delay","name":"Default initial delay","description":"Milliseconds of silence to prepend before generated audio.","default":"0"},
     {"key":"fade_transition","name":"Fade transition","description":"Milliseconds used for announce and fade_audio transitions.","default":"500"},
     {"key":"remove_temp_file_delay","name":"Temporary-file cleanup delay","description":"Milliseconds to wait before deleting uncached temporary files.","default":"Built-in timing"},
     {"key":"add_cover_art","name":"Add cover art","description":"Embed Chime TTS cover art in generated MP3 files.","default":"false"},
@@ -27,7 +28,7 @@
     {"key":"chime_path","name":"Start chime","description":"Optional chime before the message.","default":"None"},
     {"key":"end_chime_path","name":"End chime","description":"Optional chime after the message.","default":"None"},
     {"key":"tts_platform","name":"TTS platform, language, voice and TLD","description":"Provider selection and supported provider defaults.","default":"Configuration defaults"},
-    {"key":"offset","name":"Timing and TTS tuning","description":"offset, crossfade, final_delay, tts_speed and tts_pitch.","default":"Configuration defaults"},
+    {"key":"offset","name":"Timing and TTS tuning","description":"offset, crossfade, initial_delay, final_delay, tts_speed and tts_pitch.","default":"Configuration defaults"},
     {"key":"playback","name":"Playback and audio options","description":"volume_level, audio_conversion, options, announce, fade_audio, cache, join_players and unjoin_players.","default":"false / provider defaults"},
     {"key":"scripts","name":"Playback scripts","description":"pre_script and post_script accept a script entity or YAML with script and data.","default":"Configuration defaults"}
   ]

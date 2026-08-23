@@ -374,6 +374,12 @@
       "default": "0"
     },
     {
+      "key": "initial_delay",
+      "name": "Default initial delay",
+      "description": "Milliseconds of silence to prepend before generated audio.",
+      "default": "0"
+    },
+    {
       "key": "fade_transition",
       "name": "Fade transition",
       "description": "Milliseconds used for announce and fade_audio transitions.",
@@ -462,7 +468,7 @@
     {
       "key": "offset",
       "name": "Timing and TTS tuning",
-      "description": "offset, crossfade, final_delay, tts_speed and tts_pitch.",
+      "description": "offset, crossfade, initial_delay, final_delay, tts_speed and tts_pitch.",
       "default": "Configuration defaults"
     },
     {
