@@ -1576,6 +1576,37 @@ template.innerHTML = `
       margin-left: auto;
     }
 
+    .logs-debug-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logs-debug-control .control-checkbox { display: block; padding: 0; }
+    .logs-debug-control .control-checkbox input {
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      margin: 0;
+      border: 2px solid color-mix(in srgb, #f97316 52%, var(--divider-color));
+      border-radius: 7px;
+      background: var(--card-background-color);
+      cursor: pointer;
+    }
+    .logs-debug-control .control-checkbox input:checked {
+      border-color: #f97316;
+      background: #f97316;
+    }
+    .logs-debug-control .control-checkbox input:checked::after {
+      content: "✓";
+      display: block;
+      color: #fff;
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 18px;
+      text-align: center;
+    }
+
     .log-event-row {
       --log-row-accent: color-mix(in srgb, var(--divider-color) 72%, transparent);
       --log-row-accent-solid: var(--primary-color);
@@ -4794,7 +4825,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._logsHydrated = false;
     this._logsSubscription = null;
     this._logsSubscriptionPending = false;
+    this._debugLogsSubscription = null;
+    this._debugLogsSubscriptionPending = false;
     this._deferredLogEvents = [];
+    this._debugLogsEnabled = false;
+    this._debugLogsUpdating = false;
+    this._debugLogsError = "";
     this._boundVisibilityRefresh = () => this._syncLogsRefresh();
     this._boundSelectionRefresh = () => this._syncLogsRefresh();
     this._boundFocusRefresh = () => this._syncLogsRefresh();
@@ -4852,6 +4888,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     window.removeEventListener("beforeunload", this._boundBeforeUnload);
     document.removeEventListener("click", this._boundNavigationClick, true);
     this._teardownLogsSubscription();
+    this._teardownDebugLogsSubscription();
     this._clearLogsRefreshTimer();
     this._clearAllNotifyProfileTestTimers();
     this._clearAllLogCopyTimers();
@@ -4949,6 +4986,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     try {
       await this._loadPanelTranslations();
       this._data = await this._hass.callWS({ type: "chime_tts/get_settings" });
+      await this._loadDebugLogsState();
       this._draftValues = { ...(this._data?.values || {}) };
       this._draftNotifyProfiles = this._cloneNotifyProfiles(this._data?.notify_profiles || []);
       this._isDirty = false;
@@ -4975,6 +5013,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._expandedChapters = {};
       await this._ensureFooterLogoMarkup(this._data?.footer_logo_url || "");
       await this._ensureLogsSubscription();
+      await this._ensureDebugLogsSubscription();
     } catch (error) {
       this._data = {
         sections: [],
@@ -5113,6 +5152,34 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     }
     this._logsSubscription = null;
     this._logsSubscriptionPending = false;
+  }
+
+  async _ensureDebugLogsSubscription() {
+    if (!this._hass?.connection || this._debugLogsSubscription || this._debugLogsSubscriptionPending) return;
+    this._debugLogsSubscriptionPending = true;
+    try {
+      this._debugLogsSubscription = await this._hass.connection.subscribeMessage(
+        (message) => this._handleDebugLogsStatus(message?.event || message),
+        { type: "chime_tts/subscribe_debug_log_status" },
+      );
+    } catch (_error) {
+      this._debugLogsSubscription = null;
+    } finally {
+      this._debugLogsSubscriptionPending = false;
+    }
+  }
+
+  _teardownDebugLogsSubscription() {
+    if (typeof this._debugLogsSubscription === "function") this._debugLogsSubscription();
+    this._debugLogsSubscription = null;
+    this._debugLogsSubscriptionPending = false;
+  }
+
+  _handleDebugLogsStatus(status) {
+    if (typeof status?.debug_enabled !== "boolean" || this._debugLogsUpdating) return;
+    this._debugLogsEnabled = status.debug_enabled;
+    this._debugLogsError = "";
+    this._renderPreservingScrollPosition();
   }
 
   _handleIncomingLogEvent(logEvent) {
@@ -5746,6 +5813,11 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         this._toggleAllLogEvents(event.currentTarget.dataset.toggleAllLogs);
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-toggle-debug-logs]").forEach((toggle) => {
+      toggle.addEventListener("change", (event) => {
+        this._setDebugLogsEnabled(event.currentTarget.checked);
       });
     });
     this.shadowRoot.querySelectorAll("[data-toggle-log-arrow]").forEach((button) => {
@@ -6591,10 +6663,13 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                   `
                   : ""
                 }
-                ${events.length === 0 && !logsPending
-                  ? `<p class="hint">${this._escapeHtml(this._t("empty.logs"))}</p>`
-                  : `
-                    <div class="logs-list-actions">
+                <div class="logs-list-actions">
+                      <div class="logs-debug-control">
+                        <strong>${this._escapeHtml(this._t("label.debug_logs"))}</strong>
+                        <label class="control-checkbox">
+                          <input type="checkbox" data-toggle-debug-logs aria-label="${this._escapeAttribute(this._t("label.debug_logs"))}" ${this._debugLogsEnabled ? "checked" : ""} ${this._debugLogsUpdating ? "disabled" : ""} />
+                        </label>
+                      </div>
                       <a
                         class="button-secondary"
                         href="${this._escapeAttribute(this._data?.logs_url || "/config/logs?filter=chime_tts")}"
@@ -6612,12 +6687,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
                         `
                         : ""
                       }
-                    </div>
+                </div>
+                ${this._debugLogsError ? `<p class="error-text">${this._escapeHtml(this._debugLogsError)}</p>` : ""}
+                ${events.length === 0 && !logsPending
+                  ? `<p class="hint">${this._escapeHtml(this._t("empty.logs"))}</p>`
+                  : `
                     <div class="logs-list">
                       ${events.map((event) => this._renderLogEventRow(event)).join("")}
                     </div>
-                  `
-                }
+                  `}
             </div>
           `,
         })}
@@ -8706,6 +8784,41 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._render();
   }
 
+  async _loadDebugLogsState() {
+    if (!this._hass?.callWS) return;
+    try {
+      const status = await this._hass.callWS({ type: "chime_tts/get_debug_log_status" });
+      this._debugLogsEnabled = Boolean(status?.debug_enabled);
+      this._debugLogsError = "";
+    } catch (_error) {
+      this._debugLogsError = this._t("error.debug_logs");
+    }
+  }
+
+  async _setDebugLogsEnabled(enabled) {
+    if (!this._hass?.callWS || this._debugLogsUpdating) return;
+    const previousValue = this._debugLogsEnabled;
+    this._debugLogsEnabled = Boolean(enabled);
+    this._debugLogsUpdating = true;
+    this._debugLogsError = "";
+    this._renderPreservingScrollPosition();
+    try {
+      await this._hass.callWS({
+        type: "logger/integration_log_level",
+        integration: "chime_tts",
+        level: enabled ? "DEBUG" : "NOTSET",
+        persistence: enabled ? "permanent" : "none",
+      });
+      await this._loadDebugLogsState();
+    } catch (_error) {
+      this._debugLogsEnabled = previousValue;
+      this._debugLogsError = this._t("error.debug_logs");
+    } finally {
+      this._debugLogsUpdating = false;
+      this._renderPreservingScrollPosition();
+    }
+  }
+
   _clearLogsRefreshTimer() {
     if (this._logsRefreshTimer) {
       window.clearTimeout(this._logsRefreshTimer);
@@ -8788,7 +8901,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._logsRefreshTimer = window.setTimeout(() => {
       this._logsRefreshTimer = null;
       this._refreshLogs();
+      this._refreshDebugLogsState();
     }, 2000);
+  }
+
+  async _refreshDebugLogsState() {
+    if (!this._shouldRefreshLogs() || this._debugLogsUpdating) return;
+    const previousValue = this._debugLogsEnabled;
+    await this._loadDebugLogsState();
+    if (this._debugLogsEnabled !== previousValue) this._renderPreservingScrollPosition();
   }
 
   _getLogEventsSignature(events) {

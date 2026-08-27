@@ -16,8 +16,10 @@ from homeassistant.components.frontend import (
     async_remove_panel,
 )
 from homeassistant.components import websocket_api
+from homeassistant.components.logger.helpers import get_integration_loggers
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EVENT_LOGGING_CHANGED
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 import logging
@@ -625,6 +627,8 @@ async def async_setup_panel(hass: HomeAssistant, config_entry: ConfigEntry) -> N
         websocket_api.async_register_command(hass, websocket_browser_delete_entry)
         websocket_api.async_register_command(hass, websocket_validate_path)
         websocket_api.async_register_command(hass, websocket_get_logs)
+        websocket_api.async_register_command(hass, websocket_get_debug_log_status)
+        websocket_api.async_register_command(hass, websocket_subscribe_debug_log_status)
         websocket_api.async_register_command(hass, websocket_subscribe_logs)
         websocket_api.async_register_command(hass, websocket_repeat_log_action)
         websocket_api.async_register_command(hass, websocket_refresh_custom_chimes)
@@ -1006,6 +1010,68 @@ async def websocket_get_logs(
             "log_events": await async_get_panel_log_events(hass),
         },
     )
+
+
+@websocket_api.websocket_command({"type": "chime_tts/get_debug_log_status"})
+@websocket_api.async_response
+async def websocket_get_debug_log_status(
+    hass: HomeAssistant,
+    connection,
+    msg: dict[str, Any],
+) -> None:
+    """Return whether Chime TTS is currently emitting debug logs."""
+    if connection.user is None or not connection.user.is_admin:
+        connection.send_error(
+            msg["id"],
+            "unauthorized",
+            "Administrator access is required to view Chime TTS log settings.",
+        )
+        return
+
+    connection.send_result(msg["id"], await _async_get_debug_log_status(hass))
+
+
+async def _async_get_debug_log_status(hass: HomeAssistant) -> dict[str, bool]:
+    """Return Chime TTS's explicit debug-log configuration.
+
+    Do not treat a debug root logger as this integration's debug setting: the
+    integration details page disables its own override with ``NOTSET``.
+    """
+    logger_names = await get_integration_loggers(hass, DOMAIN)
+    return {
+        "debug_enabled": any(
+            logging.getLogger(logger_name).level == logging.DEBUG
+            for logger_name in logger_names
+        ),
+    }
+
+
+@callback
+@websocket_api.websocket_command({"type": "chime_tts/subscribe_debug_log_status"})
+@websocket_api.require_admin
+def websocket_subscribe_debug_log_status(
+    hass: HomeAssistant,
+    connection,
+    msg: dict[str, Any],
+) -> None:
+    """Push debug-log status changes made elsewhere in Home Assistant."""
+    async def send_status() -> None:
+        connection.send_message(
+            websocket_api.event_message(
+                msg["id"],
+                await _async_get_debug_log_status(hass),
+            )
+        )
+
+    @callback
+    def handle_logging_changed(_event) -> None:
+        hass.async_create_task(send_status())
+
+    connection.subscriptions[msg["id"]] = hass.bus.async_listen(
+        EVENT_LOGGING_CHANGED,
+        handle_logging_changed,
+    )
+    connection.send_result(msg["id"])
 
 
 @callback

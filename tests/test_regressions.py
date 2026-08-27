@@ -1289,6 +1289,21 @@ def test_notification_profile_fields_share_the_notify_header_surface():
     assert ".notify-workspace .notify-profile-card .field {" in panel_source
 
 
+def test_logs_section_uses_home_assistant_logger_debug_level():
+    """The Logs toggle reflects and updates Home Assistant's logger setting."""
+    panel_source = Path(
+        "custom_components/chime_tts/panel/chime-tts-panel.js"
+    ).read_text()
+    assert 'type: "chime_tts/get_debug_log_status"' in panel_source
+    assert 'type: "chime_tts/subscribe_debug_log_status"' in panel_source
+    assert 'type: "logger/integration_log_level"' in panel_source
+    assert 'integration: "chime_tts"' in panel_source
+    assert 'level: enabled ? "DEBUG" : "NOTSET"' in panel_source
+    assert 'persistence: enabled ? "permanent" : "none"' in panel_source
+    assert "data-toggle-debug-logs" in panel_source
+    assert "border-radius: 7px;" in panel_source
+
+
 def test_chime_set_slot_machine_loops_with_a_new_random_winning_symbol():
     """Each seamless reel cycle promotes its winner and selects another one."""
     slot_machine_source = Path(

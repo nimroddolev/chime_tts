@@ -32,6 +32,7 @@ settings_module = importlib.import_module("custom_components.chime_tts.settings"
 save_settings_handler = inspect.unwrap(panel_module.websocket_save_settings)
 repeat_log_action_handler = inspect.unwrap(panel_module.websocket_repeat_log_action)
 get_logs_handler = inspect.unwrap(panel_module.websocket_get_logs)
+get_debug_log_status_handler = inspect.unwrap(panel_module.websocket_get_debug_log_status)
 get_settings_handler = inspect.unwrap(panel_module.websocket_get_settings)
 get_notify_profiles_handler = inspect.unwrap(panel_module.websocket_get_notify_profiles)
 browse_path_handler = inspect.unwrap(panel_module.websocket_browse_path)
@@ -1306,6 +1307,47 @@ async def test_websocket_get_logs_returns_session_log_events(tmp_path: Path) -> 
 
     assert connection.errors == []
     assert connection.results[-1][1]["log_events"][0]["title"] == "Configuration update completed"
+
+
+@pytest.mark.asyncio
+async def test_websocket_get_debug_log_status_reads_integration_logger_level(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The panel reports Chime TTS's explicitly configured logger level."""
+    hass, _config_entry, _paths = make_hass(tmp_path)
+    connection = FakeConnection()
+
+    async def get_loggers(_hass, _domain):
+        return {"custom_components.chime_tts"}
+
+    monkeypatch.setattr(
+        panel_module,
+        "get_integration_loggers",
+        get_loggers,
+    )
+    logger = logging.getLogger("custom_components.chime_tts")
+    previous_level = logger.level
+    logger.setLevel(logging.DEBUG)
+    try:
+        await get_debug_log_status_handler(
+            hass,
+            connection,
+            {"id": 100, "type": "chime_tts/get_debug_log_status"},
+        )
+        assert connection.results[-1][1] == {"debug_enabled": True}
+
+        logger.setLevel(logging.NOTSET)
+        await get_debug_log_status_handler(
+            hass,
+            connection,
+            {"id": 101, "type": "chime_tts/get_debug_log_status"},
+        )
+        assert connection.results[-1][1] == {"debug_enabled": False}
+    finally:
+        logger.setLevel(previous_level)
+
+    assert connection.errors == []
 
 
 def test_build_backfilled_grouped_events_keeps_notification_and_nested_say_logs_together() -> None:
