@@ -2179,7 +2179,7 @@ def _existing_directory_roots(candidates: list[str]) -> list[str]:
         if (
             normalized
             and normalized not in seen
-            and os.path.isdir(normalized.rstrip("/"))
+            and os.path.isdir(normalized.rstrip("/") or "/")
         ):
             seen.add(normalized)
             roots.append(normalized)
@@ -2711,6 +2711,12 @@ def is_path_navigable_for_field(
         return os.path.isabs(normalized)
 
     normalized_path = normalized.rstrip("/") or "/"
+    # The filesystem root is a navigation-only location.  It is deliberately
+    # excluded from ``is_path_allowed_for_field`` so it can never be saved as
+    # a media path.
+    if normalized_path == "/":
+        return True
+
     for root in get_browse_roots(hass, config_entry, field_key, values):
         normalized_root = root.rstrip("/") or "/"
         if _is_subdirectory(normalized_root, normalized_path) or _is_subdirectory(

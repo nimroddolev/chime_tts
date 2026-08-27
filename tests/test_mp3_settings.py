@@ -36,7 +36,8 @@ integration_module = importlib.import_module("custom_components.chime_tts.__init
 EXPECTED_PCM_MD5 = {
     "base": "fbb9c6e77875d2a4756796dde5dae858",
     "speed125": "27ab47cf8a4ec4ec9c06420e52216ccd",
-    "pitch12": "6899ada5e1a53a3135ba7ccb8ab050b3",
+    # FFmpeg 9's atempo filter produces this deterministic PCM output.
+    "pitch12": "5db9261c2dbfa274f8634c64896a146b",
     "alexa": "2c6ce06185e4b841a3c2e825191da9c6",
     "delay": "c53002b2dd22145acfb5f31e438fe469",
     "yaml_combo": "fc46c44180390c480f9029f872a11bab",
