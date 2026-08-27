@@ -1042,14 +1042,15 @@ template.innerHTML = `
       --chapter-hero-help-border-color: color-mix(in srgb, #dc2626 28%, var(--divider-color));
       --chapter-hero-help-background: color-mix(in srgb, #dc2626 12%, var(--card-background-color));
       --chapter-hero-help-background-hover: color-mix(in srgb, #dc2626 18%, var(--card-background-color));
-      background:
-        radial-gradient(circle at top right, color-mix(in srgb, #dc2626 12%, transparent), transparent 44%),
-        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff4f5 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fff7f8 8%));
+      background: var(--notify-section-surface);
       box-shadow: 0 22px 48px rgba(0, 0, 0, 0.18);
     }
 
     .notify-workspace .chapter-hero { --chapter-hero-copy-color: color-mix(in srgb, #dc2626 82%, white 18%); }
     .notify-workspace {
+      --notify-section-surface:
+        radial-gradient(circle at top right, color-mix(in srgb, #dc2626 12%, transparent), transparent 44%),
+        linear-gradient(180deg, color-mix(in srgb, var(--card-background-color) 97%, #fff4f5 3%), color-mix(in srgb, var(--secondary-background-color) 92%, #fff7f8 8%));
       --section-help-color: color-mix(in srgb, #dc2626 82%, white 18%);
       --section-help-border: color-mix(in srgb, #dc2626 28%, var(--divider-color));
       --section-help-background: color-mix(in srgb, #dc2626 12%, var(--card-background-color));
@@ -3973,6 +3974,41 @@ template.innerHTML = `
       color: color-mix(in srgb, #991b1b 86%, black 14%);
     }
 
+    .notify-workspace .notify-profile-actions :is([data-open-notify-test], [data-run-notify-inline-test]:not(:disabled)) {
+      color: #fff;
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      border-color: #991b1b;
+      box-shadow: 0 12px 22px rgba(220, 38, 38, 0.24);
+    }
+
+    .notify-workspace .notify-profile-actions :is([data-open-notify-test], [data-run-notify-inline-test]:not(:disabled)):hover,
+    .notify-workspace .notify-profile-actions :is([data-open-notify-test], [data-run-notify-inline-test]:not(:disabled)):focus-visible {
+      background: linear-gradient(135deg, #ef4444, #991b1b);
+      border-color: #7f1d1d;
+    }
+
+    .notify-workspace .notify-entity-chip {
+      border-color: color-mix(in srgb, #dc2626 34%, var(--divider-color));
+      background: color-mix(in srgb, #dc2626 14%, var(--card-background-color));
+      color: color-mix(in srgb, #991b1b 86%, black 14%);
+    }
+
+    .notify-workspace .notify-target-picker {
+      --primary-color: var(--workspace-accent);
+      --mdc-theme-primary: var(--workspace-accent);
+      --ha-color-fill-primary-normal-resting: var(--workspace-accent);
+      --ha-color-fill-primary-loud-resting: var(--workspace-accent);
+      --wa-color-fill-normal: var(--workspace-accent);
+      --wa-color-fill-loud: var(--workspace-accent);
+      --wa-color-brand-fill-normal: var(--workspace-accent);
+      --wa-color-brand-fill-loud: var(--workspace-accent);
+      --wa-color-on-normal: #fff;
+      --button-color-fill-normal-hover: #dc2626;
+      --button-color-fill-normal-active: #991b1b;
+      --button-color-fill-loud-hover: #dc2626;
+      --button-color-fill-loud-active: #991b1b;
+    }
+
     .logs-workspace .log-event-toggle {
       border-color: color-mix(in srgb, #f97316 34%, var(--divider-color));
       background: color-mix(in srgb, #f97316 18%, var(--card-background-color));
@@ -4037,6 +4073,12 @@ template.innerHTML = `
         color: color-mix(in srgb, #f87171 78%, white 22%);
       }
 
+      .notify-workspace .notify-entity-chip {
+        border-color: color-mix(in srgb, #f87171 46%, transparent);
+        background: color-mix(in srgb, #dc2626 10%, var(--card-background-color));
+        color: color-mix(in srgb, #f87171 78%, white 22%);
+      }
+
       .logs-workspace .log-event-toggle {
         border-color: color-mix(in srgb, #f97316 48%, transparent);
         background: color-mix(in srgb, #f97316 12%, var(--card-background-color));
@@ -4094,6 +4136,43 @@ template.innerHTML = `
 
     .notify-profile-actions [data-run-notify-inline-test]:disabled {
       border: 1px solid color-mix(in srgb, var(--divider-color) 82%, var(--primary-text-color) 18%);
+    }
+
+    /* Keep every notification-profile action visually aligned with Add Profile. */
+    .notify-workspace .notify-profile-actions :is(
+      [data-open-notify-test],
+      [data-run-notify-inline-test],
+      [data-close-notify-test]
+    ) {
+      border-color: color-mix(in srgb, #dc2626 34%, var(--divider-color));
+      background: color-mix(in srgb, #dc2626 18%, var(--card-background-color));
+      color: color-mix(in srgb, #dc2626 82%, white 18%);
+      box-shadow: none;
+    }
+
+    .notify-workspace .notify-profile-actions :is(
+      [data-open-notify-test],
+      [data-run-notify-inline-test]:not(:disabled),
+      [data-close-notify-test]
+    ):hover,
+    .notify-workspace .notify-profile-actions :is(
+      [data-open-notify-test],
+      [data-run-notify-inline-test]:not(:disabled),
+      [data-close-notify-test]
+    ):focus-visible {
+      color: #fff;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .notify-workspace .notify-profile-actions :is(
+        [data-open-notify-test],
+        [data-run-notify-inline-test],
+        [data-close-notify-test]
+      ) {
+        border-color: color-mix(in srgb, #dc2626 48%, transparent);
+        background: color-mix(in srgb, #dc2626 12%, var(--card-background-color));
+        color: color-mix(in srgb, #dc2626 82%, white 18%);
+      }
     }
 
     .notify-profile-actions [data-remove-notify-profile] {
@@ -4177,6 +4256,11 @@ template.innerHTML = `
       border-radius: 14px;
       background: transparent;
       border-color: var(--accent-color, var(--primary-color));
+    }
+
+    /* Keep every notification-profile field on the same surface as its section header. */
+    .notify-workspace .notify-profile-card .field {
+      background: var(--notify-section-surface);
     }
 
     /* Every field follows its workspace accent; validation errors retain red. */

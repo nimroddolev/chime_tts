@@ -1255,18 +1255,38 @@ data:
     assert calls == []
 
 
-def test_notification_profile_run_button_has_a_clean_darker_green_treatment():
-    """The Run icon stays crisp while its notification action is less bright."""
+def test_notification_profile_actions_use_the_notify_section_accent():
+    """Notify profile controls use the same red accent as their section."""
     panel_source = Path(
         "custom_components/chime_tts/panel/chime-tts-panel.js"
     ).read_text()
-    run_button_css = panel_source.split(
-        ".notify-profile-actions [data-open-notify-test] {", 1
-    )[1].split(".notify-profile-actions [data-remove-notify-profile]", 1)[0]
+    assert "Keep every notification-profile action visually aligned with Add Profile." in panel_source
+    assert "[data-close-notify-test]" in panel_source
+    assert "[data-run-notify-inline-test]," in panel_source
+    assert "background: color-mix(in srgb, #dc2626 18%, var(--card-background-color));" in panel_source
+    assert "[data-close-notify-test]\n    ):hover" in panel_source
+    assert "color: #fff;" in panel_source
+    assert ".notify-workspace .notify-entity-chip" in panel_source
+    assert ".notify-workspace .notify-target-picker" in panel_source
+    assert "--mdc-theme-primary: var(--workspace-accent);" in panel_source
+    assert "--wa-color-fill-loud: var(--workspace-accent);" in panel_source
+    assert "_applyNotifyTargetPickerAccent(picker)" in panel_source
+    assert 'root.querySelectorAll("ha-button")' in panel_source
+    assert 'button.style.setProperty("color", "#fff", "important")' in panel_source
+    assert 'button.style.setProperty("--wa-color-brand-on-loud", "#fff")' in panel_source
+    assert 'button.shadowRoot?.querySelectorAll("button, .button, ha-svg-icon")' in panel_source
+    assert "picker.updateComplete?.then(() => this._applyNotifyTargetPickerAccent(picker));" in panel_source
 
-    assert "rgba(21, 128, 61, 0.5)" in run_button_css
-    assert "rgba(20, 83, 45, 0.42)" in run_button_css
-    assert "filter: drop-shadow(0 0 0.7px #000);" not in run_button_css
+
+def test_notification_profile_fields_share_the_notify_header_surface():
+    """Notify profile fields use the same background surface as their header."""
+    panel_source = Path(
+        "custom_components/chime_tts/panel/chime-tts-panel.js"
+    ).read_text()
+    assert "--notify-section-surface:" in panel_source
+    assert ".notify-workspace .chapter-hero {" in panel_source
+    assert "background: var(--notify-section-surface);" in panel_source
+    assert ".notify-workspace .notify-profile-card .field {" in panel_source
 
 
 def test_chime_set_slot_machine_loops_with_a_new_random_winning_symbol():
