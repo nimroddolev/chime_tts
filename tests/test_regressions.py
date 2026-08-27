@@ -1274,7 +1274,9 @@ def test_notification_profile_actions_use_the_notify_section_accent():
     assert 'root.querySelectorAll("ha-button")' in panel_source
     assert 'button.style.setProperty("color", "#fff", "important")' in panel_source
     assert 'button.style.setProperty("--wa-color-brand-on-loud", "#fff")' in panel_source
-    assert 'button.shadowRoot?.querySelectorAll("button, .button, ha-svg-icon")' in panel_source
+    assert 'button.style.setProperty("--mdc-theme-on-primary", "#fff")' in panel_source
+    assert 'element.style.setProperty("stroke", "#fff", "important")' in panel_source
+    assert "picker.__notifyAccentStateListenersBound" in panel_source
     assert "picker.updateComplete?.then(() => this._applyNotifyTargetPickerAccent(picker));" in panel_source
 
 

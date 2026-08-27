@@ -10395,6 +10395,12 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         observer.observe(picker, { childList: true, subtree: true });
         picker.__notifyAccentObserver = observer;
       }
+      if (!picker.__notifyAccentStateListenersBound) {
+        picker.__notifyAccentStateListenersBound = true;
+        ["pointerover", "pointerdown", "focusin", "focusout", "keydown"].forEach((eventName) => {
+          picker.addEventListener(eventName, () => this._applyNotifyTargetPickerAccent(picker), true);
+        });
+      }
       if (picker.__notifyPickerBound) {
         return;
       }
@@ -10446,11 +10452,20 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       button.style.setProperty("--wa-color-brand-on-loud", "#fff");
       button.style.setProperty("--ha-color-on-primary-normal", "#fff");
       button.style.setProperty("--ha-color-on-primary-loud", "#fff");
+      button.style.setProperty("--mdc-theme-on-primary", "#fff");
       button.style.setProperty("color", "#fff", "important");
-      button.shadowRoot?.querySelectorAll("button, .button, ha-svg-icon").forEach((element) => {
-        element.style.setProperty("color", "#fff", "important");
-        element.style.setProperty("fill", "#fff", "important");
-      });
+      const buttonRoots = [button, button.shadowRoot].filter(Boolean);
+      while (buttonRoots.length > 0) {
+        const root = buttonRoots.pop();
+        root.querySelectorAll("*").forEach((element) => {
+          if (element instanceof HTMLElement || element instanceof SVGElement) {
+            element.style.setProperty("color", "#fff", "important");
+            element.style.setProperty("fill", "#fff", "important");
+            element.style.setProperty("stroke", "#fff", "important");
+          }
+          if (element.shadowRoot) buttonRoots.push(element.shadowRoot);
+        });
+      }
     });
   }
 
