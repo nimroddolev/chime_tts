@@ -6,6 +6,7 @@ import math
 from homeassistant.core import HomeAssistant, State
 from homeassistant.const import CONF_ENTITY_ID, SERVICE_VOLUME_SET
 from .media_player import ChimeTTSMediaPlayer
+from .target_resolver import resolve_media_player_entity_ids
 
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_ANNOUNCE,
@@ -92,26 +93,8 @@ class MediaPlayerHelper:
         )
 
     def parse_entity_ids(self, data, hass) -> list[str]:
-        """Parse media_player entity_ids into list object."""
-        entity_ids: list[str] = data.get(CONF_ENTITY_ID, [])
-        if isinstance(entity_ids, str):
-            entity_ids = entity_ids.split(",")
-
-        # Find all media_player entities associated with device/s specified
-        device_ids = data.get("device_id", [])
-        if isinstance(device_ids, str):
-            device_ids = device_ids.split(",")
-        entity_registry = hass.data["entity_registry"]
-        for device_id in device_ids:
-            matching_entity_ids = [
-                entity.entity_id
-                for entity in entity_registry.entities.values()
-                if entity.device_id == device_id
-                and entity.entity_id.startswith("media_player.")
-            ]
-            entity_ids.extend(matching_entity_ids)
-        entity_ids: list[str] = list(set(entity_ids))
-        return entity_ids
+        """Resolve all supported Home Assistant targets to media players."""
+        return resolve_media_player_entity_ids(hass, data)
 
     def get_fade_in_out_media_players(self) -> list[ChimeTTSMediaPlayer]:
         """List of media_player objects that should fade out before Chime TTS playback and fade back in when completed."""

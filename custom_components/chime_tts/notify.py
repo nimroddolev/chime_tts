@@ -81,6 +81,8 @@ class ChimeTTSNotificationService(BaseNotificationService):
         kwargs["message"] = message
         original_kwargs = dict(kwargs)
         data = kwargs.get("data", {}) or {}
+        target_keys = ("target", "entity_id", "device_id", "area_id", "floor_id", "label_id")
+        has_target_override = any(key in data for key in target_keys)
         notify_name = str(self._config.get("name") or "profile")
         notify_event_id = start_panel_log_event(
             self.hass,
@@ -93,7 +95,12 @@ class ChimeTTSNotificationService(BaseNotificationService):
         self.hass.data[DOMAIN][ACTIVE_NOTIFY_LOG_EVENT_ID] = notify_event_id
 
         for key in [
+            "target",
             "entity_id",
+            "device_id",
+            "area_id",
+            "floor_id",
+            "label_id",
             "chime_path",
             "end_chime_path",
             "offset",
@@ -116,7 +123,10 @@ class ChimeTTSNotificationService(BaseNotificationService):
             "pre_script",
             "post_script",
         ]:
-            kwargs[key] = data.get(key, self._config.get(key))
+            if key in target_keys and has_target_override:
+                kwargs[key] = data.get(key)
+            else:
+                kwargs[key] = data.get(key, self._config.get(key))
 
         if kwargs.get("crossfade") in (None, ""):
             kwargs["crossfade"] = data.get(

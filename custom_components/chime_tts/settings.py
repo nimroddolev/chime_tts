@@ -444,8 +444,8 @@ NOTIFY_PROFILE_SCHEMA_FIELDS: tuple[dict[str, Any], ...] = (
         "label": "Target media players",
         "type": "text",
         "required": True,
-        "description": "Select one one or more media_player entities to play the notification.",
-        "placeholder": "media_player.kitchen, media_player.office",
+        "description": "Select media-player entities, devices, areas, floors, or labels to resolve when the notification runs.",
+        "placeholder": "media_player.kitchen",
     },
     {"key": "chime_path", "label": "Start chime", "type": "select"},
     {"key": "end_chime_path", "label": "End chime", "type": "select"},
@@ -539,7 +539,8 @@ NOTIFY_PROFILE_SCHEMA_FIELDS: tuple[dict[str, Any], ...] = (
     {"key": "join_players", "label": "Join players", "type": "boolean"},
     {"key": "unjoin_players", "label": "Unjoin players", "type": "boolean"},
 )
-NOTIFY_REQUIRED_KEYS = {"name", "entity_id"}
+NOTIFY_TARGET_KEYS = ("entity_id", "device_id", "area_id", "floor_id", "label_id")
+NOTIFY_REQUIRED_KEYS = {"name", "targets"}
 NOTIFY_BOOLEAN_KEYS = {
     "announce",
     "cache",
@@ -577,6 +578,7 @@ NOTIFY_EDITABLE_KEYS = (
 NOTIFY_PROFILE_DEFAULTS = {
     "name": "",
     "entity_id": "",
+    "targets": [],
     "chime_path": "",
     "end_chime_path": "",
     "tts_platform": "",
@@ -1442,6 +1444,43 @@ def _parse_notify_entity_id(value: str) -> str | list[str]:
     return entity_ids
 
 
+def _normalize_notify_targets(profile: Mapping[str, Any]) -> list[dict[str, str]]:
+    """Convert YAML target fields to the panel's typed target sources."""
+    targets: list[dict[str, str]] = []
+    supplied = profile.get("targets")
+    if isinstance(supplied, list):
+        for target in supplied:
+            if not isinstance(target, Mapping):
+                continue
+            target_type = str(target.get("type") or "").strip()
+            target_id = str(target.get("id") or "").strip()
+            if target_type in NOTIFY_TARGET_KEYS and target_id:
+                targets.append({"type": target_type, "id": target_id})
+        if targets:
+            return targets
+    nested = profile.get("target") if isinstance(profile.get("target"), Mapping) else {}
+    for target_type in NOTIFY_TARGET_KEYS:
+        value = nested.get(target_type, profile.get(target_type))
+        values = value if isinstance(value, list | tuple) else [value]
+        for target_id in values:
+            for split_id in str(target_id or "").split(",") if target_type == "entity_id" else [target_id]:
+                normalized_id = str(split_id or "").strip()
+                if normalized_id:
+                    targets.append({"type": target_type, "id": normalized_id})
+    return targets
+
+
+def _notify_targets_to_sources(profile: Mapping[str, Any]) -> dict[str, str | list[str]]:
+    """Return typed panel targets in the YAML/service target representation."""
+    sources: dict[str, list[str]] = {}
+    for target in _normalize_notify_targets(profile):
+        sources.setdefault(target["type"], []).append(target["id"])
+    return {
+        target_type: values[0] if len(values) == 1 else values
+        for target_type, values in sources.items()
+    }
+
+
 def _normalize_notify_options_for_display(value: Any) -> str:
     """Normalize notify options into YAML text for the panel."""
     if value in (None, ""):
@@ -1494,6 +1533,15 @@ def _normalize_notify_profile_for_display(profile: dict[str, Any]) -> dict[str, 
 
     for key in NOTIFY_BOOLEAN_KEYS:
         normalized[key] = _normalize_bool(profile.get(key))
+
+    # Keep legacy entity-only YAML and the existing panel payload unchanged.
+    # Typed targets are emitted only for profiles that use a broader source.
+    normalized.pop("targets", None)
+    targets = _normalize_notify_targets(profile)
+    if profile.get("targets") is not None or any(
+        target["type"] != "entity_id" for target in targets
+    ):
+        normalized["targets"] = targets
 
     if normalized["crossfade"] == "" and profile.get("crossafade") not in (None, ""):
         try:
@@ -1549,9 +1597,13 @@ def validate_notify_profiles(
                 normalized[key] = ""
                 profile_errors[key] = "invalid_number"
 
-        for key in NOTIFY_REQUIRED_KEYS:
-            if normalized[key] == "":
-                profile_errors[key] = "required"
+        normalized["targets"] = _normalize_notify_targets(profile or {})
+        entity_ids = [target["id"] for target in normalized["targets"] if target["type"] == "entity_id"]
+        normalized["entity_id"] = ", ".join(entity_ids)
+        if normalized["name"] == "":
+            profile_errors["name"] = "required"
+        if not normalized["targets"]:
+            profile_errors["targets"] = "required"
 
         if normalized["options"]:
             try:
@@ -1573,9 +1625,7 @@ def _serialize_notify_profile(profile: dict[str, Any]) -> dict[str, Any]:
     serialized: dict[str, Any] = {"platform": DOMAIN}
 
     serialized["name"] = _normalize_string(profile.get("name"))
-    serialized["entity_id"] = _parse_notify_entity_id(
-        _normalize_string(profile.get("entity_id"))
-    )
+    serialized.update(_notify_targets_to_sources(profile))
 
     ordered_optional_keys = (
         "chime_path",

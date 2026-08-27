@@ -6838,8 +6838,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     if (errors?.name) {
       validationMessages.push("Enter a profile name.");
     }
-    if (errors?.entity_id) {
-      validationMessages.push("Select at least one media player.");
+    if (errors?.targets || errors?.entity_id) {
+      validationMessages.push("Select at least one target.");
     }
     const hasValidationErrors = validationMessages.length > 0;
     const expanded = this._isNotifyProfileExpanded(index);
@@ -6974,7 +6974,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _renderNotifyEntityPicker(profile, errors, index) {
-    const selectedEntities = this._parseNotifyEntityIds(profile?.entity_id);
+    const selectedEntities = this._notifyTargets(profile);
     const entityField = this._findNotifyProfileField("entity_id");
     const helpLink = entityField?.docs_url
       ? `<a
@@ -6987,7 +6987,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         >?</a>`
       : "";
     return `
-      <div class="field wide ${errors?.entity_id ? "error" : ""}">
+      <div class="field wide ${errors?.targets || errors?.entity_id ? "error" : ""}">
         <div class="field-top">
           <div class="field-header">
             <div class="field-copy">
@@ -7005,14 +7005,14 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         ${selectedEntities.length > 0
           ? `
             <div class="notify-entity-chip-list">
-              ${selectedEntities.map((entityId) => `
+              ${selectedEntities.map((target) => `
                 <button
                   class="notify-entity-chip"
                   type="button"
                   data-notify-index="${this._escapeAttribute(String(index))}"
-                  data-remove-notify-entity="${this._escapeAttribute(entityId)}"
+                  data-remove-notify-entity="${this._escapeAttribute(`${target.type}:${target.id}`)}"
                 >
-                  <span>${this._escapeHtml(entityId)}</span>
+                  <span>${this._escapeHtml(`${this._notifyTargetLabel(target.type)}: ${target.id}`)}</span>
                   <span aria-hidden="true">×</span>
                 </button>
               `).join("")}
@@ -7020,11 +7020,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
           `
           : `<p class="hint">${this._escapeHtml(this._t("empty.media_players"))}</p>`
         }
-        <ha-entity-picker
-          class="notify-entity-picker"
-          data-notify-entity-picker="${this._escapeAttribute(String(index))}"
-        ></ha-entity-picker>
-        <div class="error-text">${errors?.entity_id ? this._escapeHtml(this._formatError(errors.entity_id)) : ""}</div>
+        <ha-selector class="notify-target-picker" data-notify-target-picker="${this._escapeAttribute(String(index))}"></ha-selector>
+        <div class="error-text">${errors?.targets || errors?.entity_id ? this._escapeHtml(this._formatError(errors?.targets || errors?.entity_id)) : ""}</div>
       </div>
     `;
   }
@@ -10147,26 +10144,29 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     window.setTimeout(cleanup, 300);
   }
 
-  _parseNotifyEntityIds(value) {
-    return String(value || "")
-      .split(",")
-      .map((entityId) => entityId.trim())
-      .filter(Boolean);
+  _notifyTargets(profile) {
+    if (Array.isArray(profile?.targets) && profile.targets.length > 0) {
+      return profile.targets.filter((target) => target?.type && target?.id);
+    }
+    return String(profile?.entity_id || "").split(",").map((id) => id.trim()).filter(Boolean)
+      .map((id) => ({ type: "entity_id", id }));
   }
 
-  _stringifyNotifyEntityIds(entityIds) {
-    return entityIds.join(", ");
+  _notifyTargetLabel(type) {
+    return ({ entity_id: "Entity", device_id: "Device", area_id: "Area", floor_id: "Floor", label_id: "Label" })[type] || type;
   }
 
-  _removeNotifyEntity(index, entityId) {
-    if (Number.isNaN(index) || !entityId) {
+  _removeNotifyEntity(index, encodedTarget) {
+    if (Number.isNaN(index) || !encodedTarget) {
       return;
     }
+    const [type, ...idParts] = encodedTarget.split(":");
+    const id = idParts.join(":");
     const nextProfiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
-    const currentIds = this._parseNotifyEntityIds(nextProfiles[index]?.entity_id);
+    const targets = this._notifyTargets(nextProfiles[index]);
     nextProfiles[index] = {
       ...nextProfiles[index],
-      entity_id: this._stringifyNotifyEntityIds(currentIds.filter((item) => item !== entityId)),
+      targets: targets.filter((target) => target.type !== type || target.id !== id),
     };
     this._draftNotifyProfiles = nextProfiles;
     this._isDirty = this._hasValueChanges();
@@ -10174,33 +10174,77 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   }
 
   _wireNotifyEntityPickers() {
-    this.shadowRoot.querySelectorAll("[data-notify-entity-picker]").forEach((picker) => {
-      const index = Number(picker.dataset.notifyEntityPicker);
-      const selectedEntities = this._parseNotifyEntityIds(
-        this._draftNotifyProfiles?.[index]?.entity_id,
-      );
-      const selectedValue = "";
+    this.shadowRoot.querySelectorAll("[data-notify-target-picker]").forEach((picker) => {
+      const index = Number(picker.dataset.notifyTargetPicker);
       picker.hass = this._hass;
-      picker.includeDomains = ["media_player"];
-      // A target is represented by a chip above this control, so exclude it
-      // from the picker until the user removes that chip again.
-      picker.excludeEntities = selectedEntities;
-      picker.value = selectedValue;
-      picker.label = this._t("label.add_media_player");
-      picker.helper = this._t("description.add_media_player");
-      picker.clearable = true;
+      picker.selector = { target: { entity: { domain: ["media_player"] } } };
+      picker.value = {};
       picker.disabled = this._saving;
+      this._applyNotifyTargetPickerAccent(picker);
+      requestAnimationFrame(() => this._applyNotifyTargetPickerAccent(picker));
+      requestAnimationFrame(() => requestAnimationFrame(() => this._applyNotifyTargetPickerAccent(picker)));
+      window.setTimeout(() => this._applyNotifyTargetPickerAccent(picker), 50);
+      picker.updateComplete?.then(() => this._applyNotifyTargetPickerAccent(picker));
+      if (!picker.__notifyAccentObserver) {
+        const observer = new MutationObserver(() => this._applyNotifyTargetPickerAccent(picker));
+        observer.observe(picker, { childList: true, subtree: true });
+        picker.__notifyAccentObserver = observer;
+      }
       if (picker.__notifyPickerBound) {
         return;
       }
       picker.__notifyPickerBound = true;
       picker.addEventListener("value-changed", (event) => {
-        const entityId = event.detail?.value;
-        if (!entityId) {
+        const selected = event.detail?.value;
+        if (!selected || typeof selected !== "object") {
           return;
         }
-        this._addNotifyEntity(index, entityId);
-        picker.value = "";
+        Object.entries(selected).forEach(([type, ids]) => {
+          if (["entity_id", "device_id", "area_id", "floor_id", "label_id"].includes(type)) {
+            (Array.isArray(ids) ? ids : [ids]).forEach((id) => this._addNotifyEntity(index, { type, id }));
+          }
+        });
+        picker.value = {};
+      });
+    });
+  }
+
+  _applyNotifyTargetPickerAccent(picker) {
+    const buttons = new Set();
+    const roots = [picker, picker?.shadowRoot].filter(Boolean);
+    while (roots.length > 0) {
+      const root = roots.pop();
+      root.querySelectorAll("ha-button").forEach((button) => buttons.add(button));
+      root.querySelectorAll("*").forEach((element) => {
+        if (element.shadowRoot) {
+          roots.push(element.shadowRoot);
+        }
+      });
+    }
+    const accent = "var(--workspace-accent)";
+    buttons.forEach((button) => {
+      for (const property of [
+        "--wa-color-fill-normal",
+        "--wa-color-fill-loud",
+        "--wa-color-brand-fill-normal",
+        "--wa-color-brand-fill-loud",
+        "--button-color-fill-normal-hover",
+        "--button-color-fill-normal-active",
+        "--button-color-fill-loud-hover",
+        "--button-color-fill-loud-active",
+      ]) {
+        button.style.setProperty(property, accent);
+      }
+      button.style.setProperty("--wa-color-on-normal", "#fff");
+      button.style.setProperty("--wa-color-on-loud", "#fff");
+      button.style.setProperty("--wa-color-brand-on-normal", "#fff");
+      button.style.setProperty("--wa-color-brand-on-loud", "#fff");
+      button.style.setProperty("--ha-color-on-primary-normal", "#fff");
+      button.style.setProperty("--ha-color-on-primary-loud", "#fff");
+      button.style.setProperty("color", "#fff", "important");
+      button.shadowRoot?.querySelectorAll("button, .button, ha-svg-icon").forEach((element) => {
+        element.style.setProperty("color", "#fff", "important");
+        element.style.setProperty("fill", "#fff", "important");
       });
     });
   }
@@ -10212,23 +10256,23 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._wireNotifyEntityPickers();
   }
 
-  _addNotifyEntity(index, entityId) {
-    if (Number.isNaN(index) || !entityId) {
+  _addNotifyEntity(index, target) {
+    if (Number.isNaN(index) || !target?.type || !target?.id) {
       return;
     }
     const nextProfiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
-    const currentIds = this._parseNotifyEntityIds(nextProfiles[index]?.entity_id);
-    if (!currentIds.includes(entityId)) {
-      currentIds.push(entityId);
+    const targets = this._notifyTargets(nextProfiles[index]);
+    if (!targets.some((item) => item.type === target.type && item.id === target.id)) {
+      targets.push({ type: target.type, id: target.id });
     }
     nextProfiles[index] = {
       ...nextProfiles[index],
-      entity_id: this._stringifyNotifyEntityIds(currentIds),
+      targets,
     };
     this._draftNotifyProfiles = nextProfiles;
-    if (this._notifyProfileClientErrors?.[index]?.entity_id) {
+    if (this._notifyProfileClientErrors?.[index]?.targets) {
       const nextErrors = this._cloneNotifyProfileErrors(this._notifyProfileClientErrors);
-      delete nextErrors[index].entity_id;
+      delete nextErrors[index].targets;
       this._notifyProfileClientErrors = nextErrors;
     }
     this._isDirty = this._hasValueChanges();
@@ -11375,8 +11419,8 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       if (!String(profile.name ?? "").trim()) {
         notifyProfileErrors[index] = { ...(notifyProfileErrors[index] || {}), name: "required" };
       }
-      if (!String(profile.entity_id ?? "").trim()) {
-        notifyProfileErrors[index] = { ...(notifyProfileErrors[index] || {}), entity_id: "required" };
+      if (this._notifyTargets(profile).length === 0) {
+        notifyProfileErrors[index] = { ...(notifyProfileErrors[index] || {}), targets: "required" };
       }
       if (Object.keys(notifyProfileErrors[index] || {}).length > 0) {
         this._expandedNotifyProfiles = {
@@ -11393,6 +11437,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     return {
       name: "",
       entity_id: "",
+      targets: [],
       chime_path: "",
       end_chime_path: "",
       tts_platform: "",
