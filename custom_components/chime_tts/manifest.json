@@ -5,6 +5,7 @@
     "api",
     "frontend",
     "http",
+    "logger",
     "media_source"
   ],
   "codeowners": [
