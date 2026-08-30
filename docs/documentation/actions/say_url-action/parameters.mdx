@@ -12,11 +12,11 @@ The `chime_tts.say_url` action generates a publicly accessible audio file; it do
 
 Refer to the [`chime_tts.say` parameters documentation](/chime_tts/docs/documentation/actions/say-action/parameters) for detailed behavior and segment examples. Configure the output location in [Configuration](/chime_tts/docs/documentation/configuration); the folder must be an allowlisted external directory, `/media`, or `/config/www`.
 
-Use [`initial_delay`](/chime_tts/docs/documentation/actions/say-action/parameters#initial_delay) to prepend silence to the generated file. As with `chime_tts.say`, an action value overrides the configured default.
+Use [`initial_delay`](/chime_tts/docs/documentation/actions/say-action/parameters#initial_delay-beta) to prepend silence to the generated file. As with `chime_tts.say`, an action value overrides the configured default.
 
 :::caution Beta
 
-`repeat` and `repeat_delay` are beta parameters for `chime_tts.say_url` and may change between releases. `repeat` is the number of additional copies to generate after the initial copy, so `0` means no repeat. `repeat_delay` inserts silence, in milliseconds, between copies of the complete chime-and-message audio.
+`initial_delay`, `repeat`, and `repeat_delay` are beta parameters for `chime_tts.say_url` and may change between releases. `initial_delay` inserts silence before the complete generated audio. `repeat` is the number of additional copies to generate after the initial copy, so `0` means no repeat. `repeat_delay` inserts silence, in milliseconds, between copies of the complete chime-and-message audio.
 
 `pre_script` and `post_script` are also beta parameters and may change between releases.
 

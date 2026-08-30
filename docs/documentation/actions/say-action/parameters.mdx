@@ -251,7 +251,13 @@ When using a negative value the audio components are overlaid:
 
 ---
 
-### `initial_delay`
+### `initial_delay` (Beta)
+
+:::caution Beta
+
+`initial_delay` is a beta parameter and may change between releases.
+
+:::
 
 | **Description:** | The silence (in milliseconds) to insert before the complete generated audio, including any start chime. |
 | ---------------- | -------------------------------------------------------------------------------------------------------- |
@@ -259,7 +265,7 @@ When using a negative value the audio components are overlaid:
 | **Example:**     | `200` (Adds 200 milliseconds of silence before the announcement)                                        |
 | **Default:**     | `0`                                                                                                      |
 
-When omitted, the configured [default initial delay](/chime_tts/docs/documentation/configuration/playback-options#default-initial-delay) is used. A value supplied in the action takes precedence.
+When omitted, the configured [default initial delay](/chime_tts/docs/documentation/configuration/playback-options#default-initial-delay-beta) is used. A value supplied in the action takes precedence.
 
 ---
 
@@ -273,13 +279,13 @@ When omitted, the configured [default initial delay](/chime_tts/docs/documentati
 
 ---
 
+### `pre_script` (Beta)
+
 :::caution Beta
 
-The `pre_script` and `post_script` controls are currently in beta and may change between releases.
+The `pre_script` is a beta parameter and may change between releases.
 
 :::
-
-### `pre_script` (Beta)
 
 Run a script immediately before playback. This action value overrides the configured default `pre_script`.
 
@@ -311,6 +317,12 @@ pre_script:
 
 ### `post_script` (Beta)
 
+:::caution Beta
+
+The `post_script` is a beta parameter and may change between releases.
+
+:::
+
 Run a script after `chime_tts.say` playback or `chime_tts.say_url` audio generation. This action value overrides the configured default `post_script`.
 
 <table>
@@ -341,15 +353,15 @@ post_script:
 
 ---
 
+### `repeat` (Beta)
+
 :::caution Beta
 
-The action-level `repeat` and `repeat_delay` controls are currently in beta and may change between releases.
+`repeat` is a beta parameter and may change between releases.
 
 :::
 
-### `repeat` (Beta)
-
-Repeat the complete assembled announcement—start chime, message, and end chime—after its initial playback. `repeat` is the number of **additional** plays: use `0` for one total playback (no repeat), `1` for two total plays, and so on.
+Repeat the complete assembled announcement-start chime, message, and end chime-after its initial playback. `repeat` is the number of **additional** plays: use `0` for one total playback (no repeat), `1` for two total plays, and so on.
 
 | **Required:** | No |
 | --- | --- |
@@ -357,6 +369,12 @@ Repeat the complete assembled announcement—start chime, message, and end chime
 | **Default:** | `0` |
 
 ### `repeat_delay` (Beta)
+
+:::caution Beta
+
+`repeat_delay` is a beta parameter and may change between releases.
+
+:::
 
 Set the silence, in milliseconds, inserted between each repeated copy of the complete announcement. This applies only when `repeat` is greater than `0`.
 

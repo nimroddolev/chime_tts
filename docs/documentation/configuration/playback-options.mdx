@@ -39,9 +39,15 @@ Set the default crossfade duration between audio segments. It is used when an ac
 
 ---
 
-### Default Initial Delay
+### Default Initial Delay (Beta)
 
-Set the default silence duration, in milliseconds, to prepend to generated audio before any start chime or TTS. It is used when an action omits [`initial_delay`](/chime_tts/docs/documentation/actions/say-action/parameters#initial_delay); an action value takes precedence.
+:::caution Beta
+
+The `initial_delay` default and action parameter are beta features and may change between releases.
+
+:::
+
+Set the default silence duration, in milliseconds, to prepend to generated audio before any start chime or TTS. It is used when an action omits [`initial_delay`](/chime_tts/docs/documentation/actions/say-action/parameters#initial_delay-beta); an action value takes precedence.
 
 <table><tr><td><b>Default Value:</b></td><td>`0`</td></tr><tr><td><b>Required:</b></td><td>No</td></tr></table>
 
