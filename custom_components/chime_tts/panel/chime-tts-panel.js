@@ -2945,6 +2945,7 @@ template.innerHTML = `
     }
 
     .picker-modal {
+      position: relative;
       width: min(980px, calc(100vw - 32px));
       height: min(86vh, 820px);
       display: flex;
@@ -3592,11 +3593,8 @@ template.innerHTML = `
     }
 
     .picker-action-overlay {
-      position: fixed;
-      top: var(--modal-top, 0px);
-      left: var(--modal-left, 0px);
-      width: var(--modal-width, 100vw);
-      height: var(--modal-height, 100vh);
+      position: absolute;
+      inset: 0;
       z-index: 45;
       display: flex;
       align-items: center;
@@ -8061,6 +8059,7 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             type="text"
             value="${this._escapeAttribute(this._pickerAction.value || "")}"
             placeholder="${this._escapeAttribute(this._pickerAction.placeholder || "")}"
+            ${this._pickerBusy ? "disabled" : ""}
           />
         </div>
       `;
@@ -8084,18 +8083,19 @@ class ChimeTtsSettingsPanel extends HTMLElement {
             <div class="picker-action-actions">
               ${isUploadConflicts
                 ? ""
-                : `<button class="button-secondary" type="button" data-picker-action-cancel="1">${this._escapeHtml(this._t("action.cancel"))}</button>`
+                : `<button class="button-secondary" type="button" data-picker-action-cancel="1" ${this._pickerBusy ? "disabled" : ""}>${this._escapeHtml(this._t("action.cancel"))}</button>`
               }
               ${secondaryLabel
-                ? `<button class="button-secondary" type="button" data-picker-action-secondary="1">${this._escapeHtml(secondaryLabel)}</button>`
+                ? `<button class="button-secondary" type="button" data-picker-action-secondary="1" ${this._pickerBusy ? "disabled" : ""}>${this._escapeHtml(secondaryLabel)}</button>`
                 : ""
               }
               <button
                 class="${isDelete ? "button-danger" : "button-primary"}"
                 type="button"
                 data-picker-action-submit="1"
+                aria-busy="${this._pickerBusy ? "true" : "false"}"
                 ${this._pickerBusy ? "disabled" : ""}
-              >${this._escapeHtml(actionLabel)}</button>
+              >${this._pickerBusy ? '<span class="button-spinner" aria-hidden="true"></span>' : this._escapeHtml(actionLabel)}</button>
             </div>
           </div>
         </div>
@@ -11089,7 +11089,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         : this._picker.current_path || "";
       return true;
     } catch (error) {
-      this._pickerError = error?.message || this._t("error.browser_action");
+      const message = error?.message || this._t("error.browser_action");
+      if (this._pickerAction) {
+        this._pickerAction = {
+          ...this._pickerAction,
+          error: message,
+        };
+      } else {
+        this._pickerError = message;
+      }
       return false;
     } finally {
       this._pickerBusy = false;
@@ -11232,10 +11240,9 @@ class ChimeTtsSettingsPanel extends HTMLElement {
   _getPickerUploadRelativeName(file, { directory }) {
     const normalizedRelativePath = String(file?.webkitRelativePath || "").replace(/\\/g, "/");
     if (directory && normalizedRelativePath) {
-      const parts = normalizedRelativePath.split("/").filter(Boolean);
-      if (parts.length > 1) {
-        return parts.slice(1).join("/");
-      }
+      // Preserve the selected folder as the first path segment so its files
+      // are uploaded into that folder inside the current destination.
+      return normalizedRelativePath.split("/").filter(Boolean).join("/");
     }
     return file?.name || "";
   }

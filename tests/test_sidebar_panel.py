@@ -873,6 +873,32 @@ async def test_browser_mutation_websocket_commands_return_refreshed_payloads(
 
 
 @pytest.mark.asyncio
+async def test_websocket_create_folder_reports_an_existing_folder_name(
+    tmp_path: Path,
+) -> None:
+    """Creating an existing folder returns an error the modal can display."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    connection = FakeConnection()
+    (paths["temp_audio_dir"] / "uploads").mkdir()
+
+    await create_folder_handler(
+        hass,
+        connection,
+        {
+            "id": 13,
+            "type": "chime_tts/browser_create_folder",
+            "field_key": TEMP_PATH_KEY,
+            "path": str(paths["temp_audio_dir"]),
+            "name": "uploads",
+        },
+    )
+
+    assert connection.errors == [
+        (13, "already_exists", "A folder with that name already exists."),
+    ]
+
+
+@pytest.mark.asyncio
 async def test_websocket_browse_path_returns_missing_path_notice_with_existing_ancestor(
     tmp_path: Path,
 ) -> None:

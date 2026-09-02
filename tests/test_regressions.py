@@ -1306,6 +1306,48 @@ def test_logs_section_uses_home_assistant_logger_debug_level():
     assert "border-radius: 7px;" in panel_source
 
 
+def test_picker_action_modal_is_positioned_inside_the_folder_browser():
+    """Nested picker actions must not apply the panel offset twice."""
+    panel_source = Path(
+        "custom_components/chime_tts/panel/chime-tts-panel.js"
+    ).read_text()
+    picker_modal_css = panel_source.split(".picker-modal {", 1)[1].split("}", 1)[0]
+    picker_action_css = panel_source.split(".picker-action-overlay {", 1)[1].split("}", 1)[0]
+    assert "position: relative;" in picker_modal_css
+    assert "position: absolute;" in picker_action_css
+    assert "inset: 0;" in picker_action_css
+    assert "var(--modal-left" not in picker_action_css
+
+
+def test_create_folder_modal_retains_errors_and_shows_progress():
+    """Folder-creation errors stay in the modal while its request is pending."""
+    panel_source = Path(
+        "custom_components/chime_tts/panel/chime-tts-panel.js"
+    ).read_text()
+    assert "if (this._pickerAction) {" in panel_source
+    assert "error: message," in panel_source
+    assert 'aria-busy="${this._pickerBusy ? "true" : "false"}"' in panel_source
+    assert "button-spinner\" aria-hidden=\"true" in panel_source
+
+
+def test_folder_upload_keeps_the_selected_folder_in_its_destination_path():
+    """Folder uploads retain their top-level directory instead of flattening it."""
+    panel_source = Path(
+        "custom_components/chime_tts/panel/chime-tts-panel.js"
+    ).read_text()
+    upload_name_method = panel_source.split("_getPickerUploadRelativeName", 1)[1].split(
+        "async _performPickerUpload", 1
+    )[0]
+    assert 'return normalizedRelativePath.split("/").filter(Boolean).join("/");' in upload_name_method
+    assert "parts.slice(1)" not in upload_name_method
+
+
+def test_folder_upload_confirmation_names_the_selected_folder():
+    """The folder-upload confirmation clearly describes the destination."""
+    translations = Path("custom_components/chime_tts/translations/en.json").read_text()
+    assert 'Upload the \\"{source}\\" folder with {count} files to folder \\"{destination}\\"?' in translations
+
+
 def test_chime_set_slot_machine_loops_with_a_new_random_winning_symbol():
     """Each seamless reel cycle promotes its winner and selects another one."""
     slot_machine_source = Path(
