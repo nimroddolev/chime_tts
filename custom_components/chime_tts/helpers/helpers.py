@@ -829,19 +829,20 @@ class ChimeTTSHelper:
         return file_path
 
     def add_atempo_values_to_ffmpeg_args_string(self, tempo: float, ffmpeg_args_string: str = None):
-        """Add atempo values (supporting values less than 0.5) to an FFmpeg argument string."""
-        tempos = []
-        if tempo < 0.5:
-            tempos = [0.5]
-            remaining = tempo
-            while remaining < 0.5:
-                remaining /= 0.5
-                if remaining >= 0.5:
-                    tempos.append(remaining)
-                    break
-                tempos.append(0.5)
-        else:
-            tempos = [tempo]
+        """Add chained FFmpeg atempo filters for values outside its 0.5–2.0 range."""
+        tempos: list[float] = []
+        remaining = tempo
+
+        # FFmpeg's atempo filter accepts values from 0.5 to 2.0. Preserve the
+        # requested overall tempo by applying enough boundary factors first,
+        # then append the remaining in-range factor.
+        while remaining < 0.5:
+            tempos.append(0.5)
+            remaining /= 0.5
+        while remaining > 2.0:
+            tempos.append(2.0)
+            remaining /= 2.0
+        tempos.append(remaining)
 
         for tempo_n in tempos:
             if ffmpeg_args_string is None:

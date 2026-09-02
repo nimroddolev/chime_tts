@@ -400,6 +400,13 @@ def test_add_atempo_values_supports_sub_half_values(helper: ChimeTTSHelper) -> N
     assert helper.add_atempo_values_to_ffmpeg_args_string(0.25) == "-af atempo=0.5,atempo=0.5"
 
 
+def test_add_atempo_values_supports_above_double_values(helper: ChimeTTSHelper) -> None:
+    """Very fast playback requires chained atempo filters."""
+    assert helper.add_atempo_values_to_ffmpeg_args_string(8.0) == (
+        "-af atempo=2.0,atempo=2.0,atempo=2.0"
+    )
+
+
 @pytest.mark.asyncio
 async def test_change_speed_builds_expected_ffmpeg_args(helper: ChimeTTSHelper) -> None:
     """Speed changes should translate to the expected FFmpeg filter chain."""
@@ -432,6 +439,29 @@ async def test_change_pitch_builds_expected_ffmpeg_args(helper: ChimeTTSHelper) 
         hass=hass,
         audio_segment=audio,
         ffmpeg_args="-af asetrate=44100*2.0,atempo=0.5",
+        folder="/tmp",
+    )
+
+
+@pytest.mark.asyncio
+async def test_change_negative_pitch_chains_atempo_filters(helper: ChimeTTSHelper) -> None:
+    """Large negative pitch shifts must keep every atempo value in range."""
+    audio = SimpleNamespace(frame_rate=16000)
+    hass = FakeHass()
+    helper.async_ffmpeg_convert_from_audio_segment = AsyncMock(return_value="converted")
+
+    result = await helper.async_change_pitch_of_audiosegment(
+        hass, audio, pitch=-50, temp_folder="/tmp"
+    )
+
+    assert result == "converted"
+    helper.async_ffmpeg_convert_from_audio_segment.assert_awaited_once_with(
+        hass=hass,
+        audio_segment=audio,
+        ffmpeg_args=(
+            "-af asetrate=16000*0.0556811698837712,atempo=2.0,atempo=2.0,"
+            "atempo=2.0,atempo=2.0,atempo=1.1224620483093732"
+        ),
         folder="/tmp",
     )
 
