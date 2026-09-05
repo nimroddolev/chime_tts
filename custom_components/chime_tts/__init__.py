@@ -503,7 +503,8 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
                 hass,
                 audio_dict,
                 params["entity_ids"],
-                params["announce"]
+                params["announce"],
+                params.get("extra"),
             )
             if play_result is True:
                 await async_post_playback_actions(
@@ -1528,7 +1529,8 @@ async def async_play_media(
     hass: HomeAssistant,
     audio_dict,
     entity_ids,
-    announce
+    announce,
+    extra: dict | None = None,
 ):
     """Call the media_player.play_media service."""
 
@@ -1565,7 +1567,9 @@ async def async_play_media(
     service_data[ATTR_MEDIA_CONTENT_ID] = media_player_helper.get_media_content_id(hass, file_path)
 
     # Play Chime TTS notification
-    media_service_calls = await  async_prepare_media_service_calls(hass, entity_ids, service_data, audio_dict)
+    media_service_calls = await async_prepare_media_service_calls(
+        hass, entity_ids, service_data, audio_dict, extra
+    )
     play_result = await async_fire_media_service_calls(hass, media_service_calls)
     if play_result is False:
         _LOGGER.error("Playback failed")
@@ -1590,7 +1594,9 @@ def _sonos_volume_set_call(entity_id, volume_percent: int):
         "result": True,
     }
 
-async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, service_data, audio_dict):
+async def async_prepare_media_service_calls(
+    hass: HomeAssistant, entity_ids, service_data, audio_dict, extra: dict | None = None
+):
     """Prepare the media_player service calls for audio playback."""
     helpers.debug_subtitle("Chime TTS playback")
     service_calls = []
@@ -1630,6 +1636,8 @@ async def async_prepare_media_service_calls(hass: HomeAssistant, entity_ids, ser
             for entity_id in standard_media_player_entity_ids:
                 _LOGGER.debug("     - %s", entity_id)
             standard_service_data[CONF_ENTITY_ID] = standard_media_player_entity_ids
+            if extra:
+                standard_service_data["extra"] = extra
             service_calls.append({
                 "domain": "media_player",
                 "service": SERVICE_PLAY_MEDIA,

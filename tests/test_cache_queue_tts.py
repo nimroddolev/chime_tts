@@ -474,6 +474,34 @@ async def test_async_prepare_media_service_calls_groups_standard_players(monkeyp
 
 
 @pytest.mark.asyncio
+async def test_async_prepare_media_service_calls_forwards_extra_to_standard_players(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Standard players receive caller-provided media metadata unchanged."""
+    helper = integration_module.media_player_helper
+    extra = {"metadata": {"metadataType": 3, "title": "Doorbell"}}
+
+    helper.joined_entity_id = None
+    monkeypatch.setattr(helper, "get_is_standard_media_player", lambda entity_id: True)
+    monkeypatch.setattr(helper, "get_media_players_of_platform", lambda entity_ids, platform: [])
+
+    calls = await integration_module.async_prepare_media_service_calls(
+        hass=FakeHass(),
+        entity_ids=["media_player.display"],
+        service_data={
+            CONF_ENTITY_ID: [],
+            ATTR_MEDIA_ANNOUNCE: True,
+            ATTR_MEDIA_CONTENT_TYPE: MediaType.MUSIC,
+            ATTR_MEDIA_CONTENT_ID: "media-source://media_source/media/file.mp3",
+        },
+        audio_dict={PUBLIC_PATH_KEY: None},
+        extra=extra,
+    )
+
+    assert calls[0]["service_data"]["extra"] == extra
+
+
+@pytest.mark.asyncio
 async def test_async_prepare_media_service_calls_splits_non_uniform_sonos(monkeypatch: pytest.MonkeyPatch) -> None:
     """Sonos players with different target volumes should each get their own play call."""
     helper = integration_module.media_player_helper

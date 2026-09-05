@@ -155,6 +155,7 @@ async def test_async_parse_params_supports_deprecated_aliases_and_flags(helper: 
             "cache": True,
             "announce": True,
             "fade_audio": True,
+            "extra": {"metadata": {"title": "Hello"}},
             "audio_conversion": "Volume 125%",
         },
         is_say_url=False,
@@ -179,6 +180,7 @@ async def test_async_parse_params_supports_deprecated_aliases_and_flags(helper: 
     assert params["cache"] is True
     assert params["announce"] is True
     assert params["fade_audio"] is True
+    assert params["extra"] == {"metadata": {"title": "Hello"}}
     assert params["ffmpeg_args"] == "-filter:a volume=1.25"
 
 

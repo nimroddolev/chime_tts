@@ -186,6 +186,10 @@ class ChimeTTSHelper:
         cache = data.get("cache", False) or False
         announce = data.get("announce", False) or False
         fade_audio = data.get("fade_audio", False) or False
+        extra = data.get("extra", None)
+        if extra is not None and not isinstance(extra, dict):
+            _LOGGER.warning("Ignoring media_player extra because it is not a dictionary")
+            extra = None
         media_players_array = await media_player_helper.async_initialize_media_players(
             hass, entity_ids, volume_level, join_players, unjoin_players, announce, fade_audio
         ) if is_say_url is False else []
@@ -218,6 +222,7 @@ class ChimeTTSHelper:
             "post_script": post_script,
             "announce": announce,
             "fade_audio": fade_audio,
+            "extra": extra,
             "volume_level": volume_level,
             "join_players": join_players,
             "unjoin_players": unjoin_players,

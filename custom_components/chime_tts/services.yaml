@@ -356,6 +356,13 @@ say:
       required: false
       selector:
         boolean: null
+    extra:
+      description: Additional media-player data, such as Cast metadata and artwork
+      example: "metadata:\n  metadataType: 3\n  title: Doorbell\n  images:\n    - url: https://example.com/doorbell.jpg"
+      name: Extra Media Data
+      required: false
+      selector:
+        object: null
     fade_audio:
       description: Fade out playing audio during announcement, fade back in when completed
         (on supported devices)
