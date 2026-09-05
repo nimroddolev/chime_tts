@@ -88,9 +88,17 @@ class MediaPlayerHelper:
         if hass is None or entity_id is None or hass.states.get(entity_id) is None:
             return None
 
-        return ChimeTTSMediaPlayer(
+        media_player = ChimeTTSMediaPlayer(
             hass=hass, entity_id=entity_id, target_volume_level=target_volume_level
         )
+        if await media_player.async_turn_on():
+            if not await self.async_wait_until_media_players_state_not(
+                hass, [media_player], "off"
+            ):
+                _LOGGER.warning(
+                    'Timed out waiting for "%s" to turn on', media_player.entity_id
+                )
+        return media_player
 
     def parse_entity_ids(self, data, hass) -> list[str]:
         """Resolve all supported Home Assistant targets to media players."""

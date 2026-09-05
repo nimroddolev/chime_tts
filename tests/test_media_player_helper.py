@@ -139,6 +139,29 @@ async def test_initialize_parse_and_lookup_media_players(
     ) == ["media_player.two"]
 
 
+@pytest.mark.asyncio
+async def test_get_media_player_waits_for_off_player_to_turn_on() -> None:
+    """An off player is ready before the caller can dispatch play_media."""
+    helper = MediaPlayerHelper()
+    hass = Hass()
+    state = SimpleNamespace(state="off", attributes={})
+    hass.states = SimpleNamespace(get=lambda entity_id: state)
+
+    async def turn_on(**kwargs) -> None:
+        assert kwargs["service"] == "turn_on"
+        state.state = "idle"
+
+    hass.services.async_call = AsyncMock(side_effect=turn_on)
+
+    player = await helper.async_get_media_player_object(
+        hass, "media_player.kitchen", -1
+    )
+
+    assert player is not None
+    assert player.get_state() == "idle"
+    hass.services.async_call.assert_awaited_once()
+
+
 def test_media_helper_feature_and_media_source_lookup() -> None:
     """Feature bits and media source ids use the most-specific media directory."""
     helper = MediaPlayerHelper()

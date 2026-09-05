@@ -42,8 +42,8 @@ class FakeMediaHass:
 
 
 @pytest.mark.asyncio
-async def test_media_player_initializes_and_turns_on_off_entity() -> None:
-    """The wrapper derives platform, features, playback, and volume state."""
+async def test_media_player_turns_on_off_entity_before_playback() -> None:
+    """Turning an off player on is awaited rather than run in the background."""
     hass = FakeMediaHass(
         "off",
         {
@@ -57,7 +57,6 @@ async def test_media_player_initializes_and_turns_on_off_entity() -> None:
     player = ChimeTTSMediaPlayer(
         hass, "media_player.kitchen", {"media_player.kitchen": 0.5}
     )
-    await asyncio.gather(*hass.created_tasks)
 
     assert player.platform == "sonos"
     assert player.initially_playing is False
@@ -66,6 +65,8 @@ async def test_media_player_initializes_and_turns_on_off_entity() -> None:
     assert player.announce_supported is True
     assert player.join_supported is True
     assert player.get_should_change_volume() is True
+    assert hass.services.async_call.await_count == 0
+    assert await player.async_turn_on() is True
     hass.services.async_call.assert_awaited_once()
 
 
@@ -103,17 +104,16 @@ def test_media_player_feature_detection_handles_missing_and_unknown_features() -
     assert player.get_supported_feature(ATTR_MEDIA_VOLUME_LEVEL) is False
 
 
-def test_media_player_handles_task_errors_missing_platform_and_dict_setter() -> None:
+@pytest.mark.asyncio
+async def test_media_player_handles_turn_on_errors_missing_platform_and_dict_setter() -> None:
     """Non-critical service and registry failures leave a usable wrapper."""
     hass = FakeMediaHass("off")
     hass.data["entity_registry"].entities = {}
-    hass.services.async_call = lambda **kwargs: object()
-    hass.async_create_task = lambda coroutine: (_ for _ in ()).throw(
-        RuntimeError("no task loop")
-    )
+    hass.services.async_call = AsyncMock(side_effect=RuntimeError("turn on failed"))
     player = ChimeTTSMediaPlayer(hass, "media_player.kitchen", -1)
 
     assert player.platform is None
+    assert await player.async_turn_on() is False
     player.target_volume_level = {"media_player.kitchen": 0.6}
     assert player.target_volume_level == 0.6
 

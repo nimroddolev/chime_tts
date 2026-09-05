@@ -29,7 +29,6 @@ class ChimeTTSMediaPlayer:
         self.platform = self.get_platform()
 
         # Initialise state and values
-        self.turn_on()
         self.initially_playing = (
             self.get_state() == "playing" and
             # Check that media_player is actually playing (HomePods can incorrectly have the state "playing" when no media is playing)
@@ -58,21 +57,21 @@ class ChimeTTSMediaPlayer:
 
     # Service Calls
 
-    def turn_on(self):
-        """Turn on the media player if it is currently off."""
+    async def async_turn_on(self) -> bool:
+        """Turn on an off media player and report whether it was requested."""
         if self.get_state() == "off":
             _LOGGER.info('Turning on "%s"...', self.entity_id)
             try:
-                self.hass.async_create_task(
-                    self.hass.services.async_call(
-                        domain="media_player",
-                        service=SERVICE_TURN_ON,
-                        service_data={CONF_ENTITY_ID: self.entity_id},
-                        blocking=True
-                    )
+                await self.hass.services.async_call(
+                    domain="media_player",
+                    service=SERVICE_TURN_ON,
+                    service_data={CONF_ENTITY_ID: self.entity_id},
+                    blocking=True,
                 )
+                return True
             except Exception as error:
                 _LOGGER.error("Error calling media_player.turn_on: %s", str(error))
+        return False
 
 
     # Getters & Setters
