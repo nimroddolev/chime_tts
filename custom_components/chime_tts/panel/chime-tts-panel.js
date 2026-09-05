@@ -4635,12 +4635,58 @@ template.innerHTML = `
 
     :host([narrow]) .picker-browser-shell {
       grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: 87px minmax(0, 1fr);
       min-height: 0;
       flex: 1 1 auto;
     }
 
     :host([narrow]) .picker-browser-sidebar {
-      display: none;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      height: 87px;
+      min-height: 87px;
+      max-height: 87px;
+      gap: 8px;
+      overflow: hidden;
+      padding: 12px 14px;
+      border-right: 0;
+      border-bottom: 1px solid color-mix(in srgb, var(--divider-color) 82%, transparent);
+    }
+
+    :host([narrow]) .picker-sidebar-header {
+      flex: 0 0 auto;
+      align-items: flex-start;
+      padding-top: 9px;
+    }
+
+    :host([narrow]) .picker-location-label {
+      margin: 0;
+    }
+
+    :host([narrow]) .picker-sidebar-list {
+      align-self: flex-start;
+      flex: 1 1 auto;
+      flex-direction: row;
+      align-items: flex-start;
+      height: 62px;
+      min-height: 62px;
+      max-height: 62px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    :host([narrow]) .picker-sidebar-list .picker-root {
+      box-sizing: border-box;
+      flex: 0 0 auto;
+      width: fit-content;
+      max-width: min(70vw, 240px);
+      min-height: 60px;
+    }
+
+    :host([narrow]) .picker-sidebar-list .picker-root-path {
+      max-width: min(56vw, 200px);
     }
 
     :host([narrow]) .picker-root {
@@ -6193,7 +6239,10 @@ class ChimeTtsSettingsPanel extends HTMLElement {
 
   _renderPreservingPickerScroll() {
     this._pickerScrollState = this._capturePickerScrollState();
-    this._render();
+    // Picker filtering happens while the search input is focused. Force this
+    // render so the normal text-entry render deferral does not leave the rows
+    // showing the unfiltered listing.
+    this._render({ force: true });
     this._restorePickerScrollState();
   }
 

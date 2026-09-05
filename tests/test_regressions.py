@@ -1319,6 +1319,18 @@ def test_picker_action_modal_is_positioned_inside_the_folder_browser():
     assert "var(--modal-left" not in picker_action_css
 
 
+def test_folder_picker_search_forces_a_rerender_while_the_input_has_focus():
+    """Typing a folder search term must update the visible rows immediately."""
+    panel_source = Path(
+        "custom_components/chime_tts/panel/chime-tts-panel.js"
+    ).read_text()
+    picker_render = panel_source.split("  _renderPreservingPickerScroll() {", 1)[1].split(
+        "  _renderSection(", 1
+    )[0]
+
+    assert 'this._render({ force: true });' in picker_render
+
+
 def test_create_folder_modal_retains_errors_and_shows_progress():
     """Folder-creation errors stay in the modal while its request is pending."""
     panel_source = Path(
