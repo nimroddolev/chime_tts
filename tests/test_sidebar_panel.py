@@ -5,6 +5,8 @@ from __future__ import annotations
 import inspect
 import importlib
 import logging
+from datetime import timedelta
+from datetime import timezone
 from pathlib import Path
 import time
 from types import SimpleNamespace
@@ -1591,8 +1593,15 @@ def test_panel_log_handler_creates_live_grouped_warning_event_without_active_row
     ]
 
 
-def test_merge_backfilled_events_merges_live_action_row_with_millisecond_offset() -> None:
+def test_merge_backfilled_events_merges_live_action_row_with_millisecond_offset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """A live row and backfilled row for the same action should merge despite minor timestamp drift."""
+    monkeypatch.setattr(
+        panel_logs_module,
+        "_local_tzinfo",
+        lambda: timezone(timedelta(hours=3)),
+    )
     store = panel_logs_module.PanelLogStore()
     store.events.append(
         {
@@ -1650,9 +1659,14 @@ def test_merge_backfilled_events_merges_live_action_row_with_millisecond_offset(
 
 
 def test_get_panel_log_events_merges_live_initialization_row_with_backfilled_setup_logs(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A live initialization row should be enriched with earlier and later setup log lines from backfill."""
+    monkeypatch.setattr(
+        panel_logs_module,
+        "_local_tzinfo",
+        lambda: timezone(timedelta(hours=3)),
+    )
     hass, _config_entry, paths = make_hass(tmp_path)
     store = panel_logs_module.async_setup_panel_log_store(hass)
     store.events.append(

@@ -98,6 +98,18 @@ async def test_initialize_parse_and_lookup_media_players(
         "async_get_media_player_object",
         AsyncMock(side_effect=[first, None, second]),
     )
+    media_player_helper_module = importlib.import_module(
+        "custom_components.chime_tts.helpers.media_player_helper"
+    )
+    monkeypatch.setattr(
+        media_player_helper_module,
+        "resolve_media_player_entity_ids",
+        lambda _hass, _data: [
+            "media_player.a",
+            "media_player.b",
+            "media_player.kitchen",
+        ],
+    )
 
     assert (
         await helper.async_initialize_media_players(

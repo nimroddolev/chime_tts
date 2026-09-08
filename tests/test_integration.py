@@ -94,5 +94,6 @@ async def test_script_continues_after_chime_queue_timeout(hass, monkeypatch):
     )
 
     await script.async_run()
+    await hass.async_block_till_done()
 
     assert len(continued) == 1

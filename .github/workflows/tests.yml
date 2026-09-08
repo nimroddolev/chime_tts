@@ -38,6 +38,9 @@ jobs:
           python-version: "${{ matrix.python-version }}"
           cache: "pip"
 
+      - name: "Install FFmpeg"
+        run: sudo apt-get update && sudo apt-get install --yes ffmpeg
+
       - name: "Install tox"
         run: python -m pip install --upgrade pip tox
 

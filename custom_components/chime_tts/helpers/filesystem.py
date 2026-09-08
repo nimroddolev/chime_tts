@@ -761,4 +761,4 @@ class FilesystemHelper:
                         chime_options.append(
                             {"label": label, "value": absolute_file_path}
                         )
-        return chime_options
+        return sorted(chime_options, key=lambda option: option["label"].casefold())
