@@ -191,9 +191,11 @@ class ChimeTTSEmptyChimeSetSlotMachineView(HomeAssistantView):
     requires_auth = False
 
     def __init__(self, panel_path: Path) -> None:
+        """Initialize the view with its panel asset directory."""
         self._panel_path = panel_path
 
     async def get(self, request) -> web.FileResponse:
+        """Return the empty Chime Sets slot-machine module."""
         response = web.FileResponse(self._panel_path / "chime-set-slot-machine.js")
         _set_panel_module_headers(response)
         return response
@@ -207,9 +209,11 @@ class ChimeTTSEmptyChimeSetSlotMachineArtView(HomeAssistantView):
     requires_auth = False
 
     def __init__(self, panel_path: Path) -> None:
+        """Initialize the view with its panel asset directory."""
         self._panel_path = panel_path
 
     async def get(self, request) -> web.FileResponse:
+        """Return the empty Chime Sets slot-machine artwork."""
         response = web.FileResponse(self._panel_path / "images/slot.svg")
         _set_panel_module_headers(response)
         return response
@@ -538,6 +542,7 @@ class ChimeTTSPanelChimeSetOffsetPreviewView(HomeAssistantView):
     requires_auth = True
 
     async def get(self, request) -> web.StreamResponse:
+        """Render the requested chime-set offset preview."""
         hass: HomeAssistant = request.app["hass"]
         config_entry = _get_config_entry(hass)
         if config_entry is None:

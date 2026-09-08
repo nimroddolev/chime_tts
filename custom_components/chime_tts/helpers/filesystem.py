@@ -579,7 +579,7 @@ class FilesystemHelper:
                         )
                         return False
 
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     _LOGGER.error(
                         "FFmpeg process timed out while analyzing: %s", file_path
                     )

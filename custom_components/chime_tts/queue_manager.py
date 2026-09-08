@@ -39,7 +39,7 @@ class ChimeTTSQueueManager:
         while not self._shutdown_event.is_set():
             try:
                 service_call = await asyncio.wait_for(self.queue.get(), timeout=1.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
 
             if service_call is None:
@@ -64,7 +64,7 @@ class ChimeTTSQueueManager:
                 except Exception as e:
                     _LOGGER.error("Error setting result for service call %s: %s", service_call, str(e))
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._handle_timeout_error(service_call, start_time)
         except asyncio.CancelledError:
             _LOGGER.info("Service call %s was cancelled", service_call)

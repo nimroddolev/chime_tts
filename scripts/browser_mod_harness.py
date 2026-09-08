@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Register a Browser Mod-compatible test client with Home Assistant."""
 
 import argparse
 import asyncio
@@ -11,6 +12,8 @@ import aiohttp
 
 
 class BrowserModHarness:
+    """Maintain a WebSocket client that emulates Browser Mod."""
+
     def __init__(
         self,
         hass_url: str,
@@ -19,6 +22,7 @@ class BrowserModHarness:
         browser_id: str,
         artifact_dir: Path,
     ) -> None:
+        """Initialize the harness with Home Assistant authentication details."""
         self.hass_url = hass_url.rstrip("/")
         self.client_id = client_id
         self.refresh_token = refresh_token
@@ -43,6 +47,7 @@ class BrowserModHarness:
         }
 
     async def run(self) -> None:
+        """Connect the client and process Browser Mod commands."""
         timeout = aiohttp.ClientTimeout(total=None, sock_connect=30, sock_read=None)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             self.session = session
@@ -268,6 +273,7 @@ class BrowserModHarness:
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse required connection arguments."""
     parser = argparse.ArgumentParser(description="Register a fake Browser Mod client for HA testing.")
     parser.add_argument("--hass-url", required=True)
     parser.add_argument("--client-id", required=True)
@@ -278,6 +284,7 @@ def parse_args() -> argparse.Namespace:
 
 
 async def async_main() -> int:
+    """Run the asynchronous harness entry point."""
     args = parse_args()
     harness = BrowserModHarness(
         hass_url=args.hass_url,
@@ -291,12 +298,13 @@ async def async_main() -> int:
 
 
 def main() -> int:
+    """Run the harness and return its process exit status."""
     try:
         return asyncio.run(async_main())
     except KeyboardInterrupt:
         return 130
     except Exception as err:
-        print(f"browser_mod_harness failed: {err}", file=sys.stderr)
+        sys.stderr.write(f"browser_mod_harness failed: {err}\n")
         return 1
 
 

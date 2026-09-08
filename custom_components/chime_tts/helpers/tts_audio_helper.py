@@ -89,7 +89,7 @@ class TTSAudioHelper:
                 ),
                 timeout=timeout,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._last_error_message = f"TTS audio request with {tts_platform} timed out after {timeout}s."
             _LOGGER.error(self._last_error_message)
             audio = None
@@ -275,7 +275,7 @@ class TTSAudioHelper:
                 self._handle_generation_error(last_error, last_engine, media_source_id)
             return None, None
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             _LOGGER.error(
                 "TTS audio generation with %s timed out after %ss. "
                 "Consider increasing the TTS timeout in the configuration.",

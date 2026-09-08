@@ -358,7 +358,8 @@ say:
         boolean: null
     extra:
       description: Additional media-player data, such as Cast metadata and artwork
-      example: "metadata:\n  metadataType: 3\n  title: Doorbell\n  images:\n    - url: https://example.com/doorbell.jpg"
+      example: "metadata:\n  metadataType: 3\n  title: Doorbell\n  images:\n    -\
+        \ url: https://example.com/doorbell.jpg"
       name: Extra Media Data
       required: false
       selector:

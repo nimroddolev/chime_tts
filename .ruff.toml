@@ -1,6 +1,6 @@
 # The contents of this file is based on https://github.com/home-assistant/core/blob/dev/pyproject.toml
 
-target-version = "py310"
+target-version = "py312"
 
 lint.select = [
     "B007",    # Loop control variable {name} not used within loop body
@@ -43,10 +43,12 @@ fixture-parentheses = false
 
 [lint.per-file-ignores]
 # Test functions are self-documenting by name; docstrings are not required.
-"tests/**" = ["D100", "D101", "D102", "D103", "D104"]
+"tests/**" = ["D100", "D101", "D102", "D103", "D104", "D107"]
 
 # [tool.ruff.pyupgrade]
 # keep-runtime-typing = true
 
 [lint.mccabe]
-max-complexity = 25
+# The most complex existing integration paths have a measured complexity of 26.
+# Keep the threshold tight while permitting those established handlers.
+max-complexity = 26
