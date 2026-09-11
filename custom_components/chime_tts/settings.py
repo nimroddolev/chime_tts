@@ -42,6 +42,9 @@ from .const import (
     ELEVENLABS,
     FADE_TRANSITION_KEY,
     FALLBACK_TTS_PLATFORM_KEY,
+    FALLBACK_TTS_REPORT_KEY,
+    FALLBACK_TTS_REPORT_DEFAULT,
+    FALLBACK_TTS_REPORT_OPTIONS,
     GOOGLE_CLOUD,
     GOOGLE_TRANSLATE,
     IBM_WATSON_TTS,
@@ -174,6 +177,18 @@ GOOGLE_TRANSLATE_TLD_NAMES = {
     "com": "Global", "com.af": "Afghanistan", "com.ag": "Antigua and Barbuda", "com.ai": "Anguilla", "com.ar": "Argentina", "com.au": "Australia", "com.bd": "Bangladesh", "com.bh": "Bahrain", "com.bn": "Brunei", "com.bo": "Bolivia", "com.br": "Brazil", "com.bz": "Belize", "com.co": "Colombia", "com.cu": "Cuba", "com.cy": "Cyprus", "com.do": "Dominican Republic", "com.ec": "Ecuador", "com.eg": "Egypt", "com.et": "Ethiopia", "com.fj": "Fiji", "com.gh": "Ghana", "com.gi": "Gibraltar", "com.gt": "Guatemala", "com.hk": "Hong Kong", "com.jm": "Jamaica", "com.kh": "Cambodia", "com.kw": "Kuwait", "com.lb": "Lebanon", "com.ly": "Libya", "com.mm": "Myanmar", "com.mt": "Malta", "com.mx": "Mexico", "com.my": "Malaysia", "com.na": "Namibia", "com.ng": "Nigeria", "com.ni": "Nicaragua", "com.np": "Nepal", "com.om": "Oman", "com.pa": "Panama", "com.pe": "Peru", "com.pg": "Papua New Guinea", "com.ph": "Philippines", "com.pk": "Pakistan", "com.pr": "Puerto Rico", "com.py": "Paraguay", "com.qa": "Qatar", "com.sa": "Saudi Arabia", "com.sb": "Solomon Islands", "com.sg": "Singapore", "com.sl": "Sierra Leone", "com.sv": "El Salvador", "com.tj": "Tajikistan", "com.tr": "Türkiye", "com.tw": "Taiwan", "com.ua": "Ukraine", "com.uy": "Uruguay", "com.vc": "Saint Vincent and the Grenadines", "com.vn": "Vietnam",
     "cv": "Cape Verde", "cz": "Czech Republic", "de": "Germany", "dj": "Djibouti", "dk": "Denmark", "dm": "Dominica", "dz": "Algeria", "ee": "Estonia", "es": "Spain", "fi": "Finland", "fm": "Micronesia", "fr": "France", "ga": "Gabon", "ge": "Georgia", "gg": "Guernsey", "gl": "Greenland", "gm": "Gambia", "gr": "Greece", "gy": "Guyana", "hn": "Honduras", "hr": "Croatia", "ht": "Haiti", "hu": "Hungary", "ie": "Ireland", "im": "Isle of Man", "iq": "Iraq", "is": "Iceland", "it": "Italy", "je": "Jersey", "jo": "Jordan", "kg": "Kyrgyzstan", "ki": "Kiribati", "kz": "Kazakhstan", "la": "Laos", "li": "Liechtenstein", "lk": "Sri Lanka", "lt": "Lithuania", "lu": "Luxembourg", "lv": "Latvia", "md": "Moldova", "me": "Montenegro", "mg": "Madagascar", "mk": "North Macedonia", "ml": "Mali", "mn": "Mongolia", "ms": "Montserrat", "mu": "Mauritius", "mv": "Maldives", "mw": "Malawi", "ne": "Niger", "nl": "Netherlands", "no": "Norway", "nr": "Nauru", "nu": "Niue", "pl": "Poland", "pn": "Pitcairn", "ps": "Palestine", "pt": "Portugal", "ro": "Romania", "rs": "Serbia", "ru": "Russia", "rw": "Rwanda", "sc": "Seychelles", "se": "Sweden", "sh": "Saint Helena", "si": "Slovenia", "sk": "Slovakia", "sm": "San Marino", "sn": "Senegal", "so": "Somalia", "sr": "Suriname", "st": "São Tomé and Príncipe", "td": "Chad", "tg": "Togo", "tl": "Timor-Leste", "tm": "Turkmenistan", "tn": "Tunisia", "to": "Tonga", "tt": "Trinidad and Tobago", "vg": "British Virgin Islands", "vu": "Vanuatu", "ws": "Samoa",
 }
+
+FALLBACK_TTS_REPORT_LABELS = {
+    "debug": "Debug log entry (default)",
+    "warning": "Warning log entry",
+    "notification": "Notification",
+    "repair": "Repair issue",
+}
+
+FALLBACK_TTS_REPORT_FIELD_OPTIONS = [
+    {"value": option, "label": FALLBACK_TTS_REPORT_LABELS[option]}
+    for option in FALLBACK_TTS_REPORT_OPTIONS
+]
 
 TLD_OPTIONS = [{"value": "", "label": "Provider default"}] + [
     {"value": tld, "label": f"{tld} — {GOOGLE_TRANSLATE_TLD_NAMES[tld]}"}
@@ -757,6 +772,17 @@ SETTINGS_FIELDS: tuple[SettingsField, ...] = (
         allow_custom_value=True,
     ),
     SettingsField(
+        key=FALLBACK_TTS_REPORT_KEY,
+        label="Report fallback TTS use as",
+        description=(
+            "How to surface a switch to the fallback platform: a debug log line "
+            "(default), a warning log line, a notification, or a repair issue "
+            "that clears once the requested platform works again."
+        ),
+        field_type="select",
+        section="voice",
+    ),
+    SettingsField(
         key=DEFAULT_PRE_SCRIPT_KEY,
         label="Default pre-playback script",
         description="Runs before playback when an action does not specify pre_script. Supports script.name or YAML with script and data fields.",
@@ -914,6 +940,7 @@ SETTINGS_SECTIONS = (
         "fields": [
             TTS_PLATFORM_KEY,
             FALLBACK_TTS_PLATFORM_KEY,
+            FALLBACK_TTS_REPORT_KEY,
             DEFAULT_LANGUAGE_KEY,
             DEFAULT_VOICE_KEY,
             DEFAULT_TLD_KEY,
@@ -1211,6 +1238,7 @@ def _field_default_value(field_key: str, hass) -> Any:
         DEFAULT_PRE_SCRIPT_SAY_URL_KEY: "",
         DEFAULT_POST_SCRIPT_SAY_URL_KEY: "",
         FALLBACK_TTS_PLATFORM_KEY: "",
+        FALLBACK_TTS_REPORT_KEY: FALLBACK_TTS_REPORT_DEFAULT,
         "chime_path": "",
         "end_chime_path": "",
         OFFSET_KEY: DEFAULT_OFFSET_MS,
@@ -1929,6 +1957,7 @@ async def async_build_panel_payload(
         + [{"value": option, "label": option} for option in tts_platforms],
         FALLBACK_TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]
         + [{"value": option, "label": option} for option in tts_platforms],
+        FALLBACK_TTS_REPORT_KEY: FALLBACK_TTS_REPORT_FIELD_OPTIONS,
         DEFAULT_TLD_KEY: TLD_OPTIONS,
     }
     default_provider = _normalize_string(values.get(TTS_PLATFORM_KEY))
@@ -2030,6 +2059,16 @@ def build_options_schema(
                     options=tts_platforms,
                     mode=selector.SelectSelectorMode.DROPDOWN,
                     custom_value=True,
+                )
+            ),
+            vol.Optional(
+                FALLBACK_TTS_REPORT_KEY,
+                default=data[FALLBACK_TTS_REPORT_KEY],
+            ): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=FALLBACK_TTS_REPORT_OPTIONS,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                    custom_value=False,
                 )
             ),
             vol.Optional(
@@ -3122,6 +3161,11 @@ def validate_settings(
     }
 
     normalized[ADD_COVER_ART_KEY] = _normalize_bool(user_input.get(ADD_COVER_ART_KEY))
+    report_mode = _normalize_string(user_input.get(FALLBACK_TTS_REPORT_KEY))
+    normalized[FALLBACK_TTS_REPORT_KEY] = (
+        report_mode if report_mode in FALLBACK_TTS_REPORT_OPTIONS
+        else current_data[FALLBACK_TTS_REPORT_KEY]
+    )
     _normalize_shared_script_settings(normalized, user_input, current_data)
     _clear_shared_action_script_values(normalized)
 
@@ -3222,6 +3266,7 @@ def build_panel_payload(
         + [{"value": option, "label": option} for option in tts_platforms],
         FALLBACK_TTS_PLATFORM_KEY: [{"value": "", "label": "Not set"}]
         + [{"value": option, "label": option} for option in tts_platforms],
+        FALLBACK_TTS_REPORT_KEY: FALLBACK_TTS_REPORT_FIELD_OPTIONS,
         DEFAULT_TLD_KEY: TLD_OPTIONS,
     }
     default_provider = _normalize_string(values.get(TTS_PLATFORM_KEY))

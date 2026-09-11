@@ -14,7 +14,13 @@ from pydub import AudioSegment
 from custom_components.chime_tts.const import ALEXA_MEDIA_PLAYER_PLATFORM
 from custom_components.chime_tts.const import AUDIO_DURATION_KEY
 from custom_components.chime_tts.const import AUDIO_PATH_KEY
+from custom_components.chime_tts.const import FALLBACK_TTS_ISSUE_ID
+from custom_components.chime_tts.const import FALLBACK_TTS_NOTIFICATION_ID
 from custom_components.chime_tts.const import FALLBACK_TTS_PLATFORM_KEY
+from custom_components.chime_tts.const import FALLBACK_TTS_REPORT_KEY
+from custom_components.chime_tts.const import FALLBACK_TTS_REPORT_NOTIFICATION
+from custom_components.chime_tts.const import FALLBACK_TTS_REPORT_REPAIR
+from custom_components.chime_tts.const import FALLBACK_TTS_REPORT_WARNING
 from custom_components.chime_tts.const import GOOGLE_TRANSLATE
 from custom_components.chime_tts.const import IBM_WATSON_TTS
 from custom_components.chime_tts.const import LOCAL_PATH_KEY
@@ -739,3 +745,184 @@ async def test_tts_audio_helper_extract_audio_loads_segment(monkeypatch: pytest.
     result = await helper._extract_audio(("audio/mpeg", b"binary-audio"), start_time=datetime.now())
 
     assert result == audio
+
+
+def _report_helper(report_mode):
+    """Build a helper configured with a fallback platform and report mode."""
+    helper = TTSAudioHelper()
+    helper._data = {
+        FALLBACK_TTS_PLATFORM_KEY: "fallback_engine",
+        FALLBACK_TTS_REPORT_KEY: report_mode,
+    }
+    return helper
+
+
+def test_fallback_report_defaults_to_debug_only(monkeypatch: pytest.MonkeyPatch, caplog) -> None:
+    """The default report mode keeps the pre-existing debug-only behaviour."""
+    created_issues: list[str] = []
+    notifications: list[str] = []
+    monkeypatch.setattr(
+        tts_audio_module.ir, "async_create_issue",
+        lambda *args, **kwargs: created_issues.append(args),
+    )
+    monkeypatch.setattr(
+        tts_audio_module, "async_create_notification",
+        lambda *args, **kwargs: notifications.append(args),
+    )
+
+    helper = _report_helper("debug")
+    with caplog.at_level("WARNING"):
+        helper._report_fallback_used(FakeHass(), "primary_engine", "fallback_engine")
+
+    assert created_issues == []
+    assert notifications == []
+    assert "fallback" not in caplog.text.lower()
+
+
+def test_fallback_report_warning_mode_logs_a_warning(
+    monkeypatch: pytest.MonkeyPatch, caplog
+) -> None:
+    """Warning mode surfaces the switch without enabling debug logging."""
+    helper = _report_helper(FALLBACK_TTS_REPORT_WARNING)
+    with caplog.at_level("WARNING"):
+        helper._report_fallback_used(FakeHass(), "primary_engine", "fallback_engine")
+
+    assert "fallback_engine" in caplog.text
+
+
+def test_fallback_report_notification_mode_creates_a_notification(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Notification mode raises a persistent notification with a stable id."""
+    calls: list[dict] = []
+    monkeypatch.setattr(
+        tts_audio_module, "async_create_notification",
+        lambda hass, message, **kwargs: calls.append({"message": message, **kwargs}),
+    )
+
+    helper = _report_helper(FALLBACK_TTS_REPORT_NOTIFICATION)
+    helper._report_fallback_used(FakeHass(), "primary_engine", "fallback_engine")
+
+    assert len(calls) == 1
+    assert calls[0]["notification_id"] == FALLBACK_TTS_NOTIFICATION_ID
+    assert "fallback_engine" in calls[0]["message"]
+
+
+def test_fallback_report_repair_mode_creates_an_issue(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Repair mode raises a non-fixable warning issue naming both platforms."""
+    calls: list[dict] = []
+    monkeypatch.setattr(
+        tts_audio_module.ir, "async_create_issue",
+        lambda hass, domain, issue_id, **kwargs: calls.append(
+            {"domain": domain, "issue_id": issue_id, **kwargs}
+        ),
+    )
+
+    helper = _report_helper(FALLBACK_TTS_REPORT_REPAIR)
+    helper._report_fallback_used(FakeHass(), "primary_engine", "fallback_engine")
+
+    assert len(calls) == 1
+    assert calls[0]["issue_id"] == FALLBACK_TTS_ISSUE_ID
+    assert calls[0]["is_fixable"] is False
+    assert calls[0]["translation_placeholders"] == {
+        "primary_platform": "primary_engine",
+        "fallback_platform": "fallback_engine",
+    }
+
+
+@pytest.mark.asyncio
+async def test_fallback_repair_issue_survives_the_fallback_succeeding(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The fallback's own success must not clear the issue just raised for it."""
+    helper = TTSAudioHelper()
+    helper._data = {
+        TTS_TIMEOUT_KEY: 1,
+        QUEUE_TIMEOUT_KEY: 4,
+        TTS_PLATFORM_KEY: "",
+        FALLBACK_TTS_PLATFORM_KEY: "fallback_engine",
+        FALLBACK_TTS_REPORT_KEY: FALLBACK_TTS_REPORT_REPAIR,
+    }
+    created: list[str] = []
+    deleted: list[str] = []
+    monkeypatch.setattr(
+        tts_audio_module.ir, "async_create_issue",
+        lambda hass, domain, issue_id, **kwargs: created.append(issue_id),
+    )
+    monkeypatch.setattr(
+        tts_audio_module.ir, "async_delete_issue",
+        lambda hass, domain, issue_id: deleted.append(issue_id),
+    )
+
+    requested_platforms: list[str] = []
+
+    async def generate_audio(hass, tts_platform, *args, **kwargs):
+        requested_platforms.append(tts_platform)
+        return "media-source://tts/test", None
+
+    async def get_media_source_audio(*args, **kwargs):
+        if len(requested_platforms) == 1:
+            await asyncio.sleep(2)
+        return "audio/mpeg", b"fallback-audio"
+
+    monkeypatch.setattr(helper, "_generate_tts_audio", generate_audio)
+    monkeypatch.setattr(
+        tts_audio_module.tts, "async_get_media_source_audio", get_media_source_audio
+    )
+    monkeypatch.setattr(helper, "_extract_audio", AsyncMock(return_value="fallback-audio"))
+    monkeypatch.setattr(
+        tts_audio_module.helpers, "get_tts_platform", lambda **kwargs: kwargs["tts_platform"]
+    )
+
+    result = await helper.async_request_tts_audio(
+        hass=FakeHass(), tts_platform="primary_engine", message="hello",
+        language="en", cache=True, options={},
+    )
+
+    assert result == "fallback-audio"
+    assert requested_platforms == ["primary_engine", "fallback_engine"]
+    assert created == [FALLBACK_TTS_ISSUE_ID]
+    assert deleted == []
+
+
+@pytest.mark.asyncio
+async def test_fallback_repair_issue_clears_once_the_primary_works(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A successful request on the requested platform clears the repair issue."""
+    helper = TTSAudioHelper()
+    helper._data = {
+        TTS_TIMEOUT_KEY: 5,
+        QUEUE_TIMEOUT_KEY: 20,
+        TTS_PLATFORM_KEY: "",
+        FALLBACK_TTS_PLATFORM_KEY: "fallback_engine",
+        FALLBACK_TTS_REPORT_KEY: FALLBACK_TTS_REPORT_REPAIR,
+    }
+    deleted: list[str] = []
+    monkeypatch.setattr(
+        tts_audio_module.ir, "async_delete_issue",
+        lambda hass, domain, issue_id: deleted.append(issue_id),
+    )
+
+    async def generate_audio(hass, tts_platform, *args, **kwargs):
+        return "media-source://tts/test", None
+
+    async def get_media_source_audio(*args, **kwargs):
+        return "audio/mpeg", b"primary-audio"
+
+    monkeypatch.setattr(helper, "_generate_tts_audio", generate_audio)
+    monkeypatch.setattr(
+        tts_audio_module.tts, "async_get_media_source_audio", get_media_source_audio
+    )
+    monkeypatch.setattr(helper, "_extract_audio", AsyncMock(return_value="primary-audio"))
+    monkeypatch.setattr(
+        tts_audio_module.helpers, "get_tts_platform", lambda **kwargs: kwargs["tts_platform"]
+    )
+
+    result = await helper.async_request_tts_audio(
+        hass=FakeHass(), tts_platform="primary_engine", message="hello",
+        language="en", cache=True, options={},
+    )
+
+    assert result == "primary-audio"
+    assert deleted == [FALLBACK_TTS_ISSUE_ID]
