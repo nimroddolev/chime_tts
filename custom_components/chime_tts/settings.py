@@ -41,6 +41,7 @@ from .const import (
     DOMAIN,
     ELEVENLABS,
     FADE_TRANSITION_KEY,
+    FALLBACK_TTS_CACHE_KEY,
     FALLBACK_TTS_PLATFORM_KEY,
     GOOGLE_CLOUD,
     GOOGLE_TRANSLATE,
@@ -757,6 +758,17 @@ SETTINGS_FIELDS: tuple[SettingsField, ...] = (
         allow_custom_value=True,
     ),
     SettingsField(
+        key=FALLBACK_TTS_CACHE_KEY,
+        label="Cache fallback TTS audio",
+        description=(
+            "Off by default. Cached audio is keyed to the requested platform, so "
+            "caching the fallback platform's audio keeps serving its voice after "
+            "the requested platform recovers."
+        ),
+        field_type="boolean",
+        section="voice",
+    ),
+    SettingsField(
         key=DEFAULT_PRE_SCRIPT_KEY,
         label="Default pre-playback script",
         description="Runs before playback when an action does not specify pre_script. Supports script.name or YAML with script and data fields.",
@@ -914,6 +926,7 @@ SETTINGS_SECTIONS = (
         "fields": [
             TTS_PLATFORM_KEY,
             FALLBACK_TTS_PLATFORM_KEY,
+            FALLBACK_TTS_CACHE_KEY,
             DEFAULT_LANGUAGE_KEY,
             DEFAULT_VOICE_KEY,
             DEFAULT_TLD_KEY,
@@ -1211,6 +1224,7 @@ def _field_default_value(field_key: str, hass) -> Any:
         DEFAULT_PRE_SCRIPT_SAY_URL_KEY: "",
         DEFAULT_POST_SCRIPT_SAY_URL_KEY: "",
         FALLBACK_TTS_PLATFORM_KEY: "",
+        FALLBACK_TTS_CACHE_KEY: False,
         "chime_path": "",
         "end_chime_path": "",
         OFFSET_KEY: DEFAULT_OFFSET_MS,
@@ -2032,6 +2046,10 @@ def build_options_schema(
                     custom_value=True,
                 )
             ),
+            vol.Optional(
+                FALLBACK_TTS_CACHE_KEY,
+                default=data[FALLBACK_TTS_CACHE_KEY],
+            ): bool,
             vol.Optional(
                 DEFAULT_PRE_SCRIPT_KEY,
                 description={"suggested_value": data[DEFAULT_PRE_SCRIPT_KEY]},
@@ -3122,6 +3140,9 @@ def validate_settings(
     }
 
     normalized[ADD_COVER_ART_KEY] = _normalize_bool(user_input.get(ADD_COVER_ART_KEY))
+    normalized[FALLBACK_TTS_CACHE_KEY] = _normalize_bool(
+        user_input.get(FALLBACK_TTS_CACHE_KEY)
+    )
     _normalize_shared_script_settings(normalized, user_input, current_data)
     _clear_shared_action_script_values(normalized)
 
