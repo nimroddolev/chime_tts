@@ -287,6 +287,7 @@
                     "default_pre_script_key": "Default pre-playback script",
                     "default_post_script_key": "Default post-playback script",
                     "fallback_tts_platform_key": "Fallback TTS platform",
+                    "fallback_tts_report_key": "Report use of the fallback TTS platform as a 'debug' log entry (default), a 'warning' log entry, a 'notification', or a 'repair' issue that clears once the requested platform works again",
                     "offset": "Default offset value (in milliseconds) between chimes & TTS audio",
                     "crossfade": "Default crossfade value (in milliseconds) between audio segments",
                     "fade_transition_key": "Fade transition (in milliseconds) when fading currently playing audio for `announce` and `fade_audio`",
@@ -313,6 +314,12 @@
             "invalid_chime_paths": "Invalid custom chime path detected",
             "temp_path": "The temp folder must be a subfolder of a media directory",
             "www_path": "The chime_tts.say_url folder must be a subfolder of an external directory, eg: /config/www/chime_tts"
+        }
+    },
+    "issues": {
+        "fallback_tts_in_use": {
+            "title": "Chime TTS is using the fallback TTS platform",
+            "description": "The requested TTS platform '{primary_platform}' failed to generate audio, so the fallback platform '{fallback_platform}' was used instead. This issue clears automatically once '{primary_platform}' generates audio again."
         }
     }
 }
