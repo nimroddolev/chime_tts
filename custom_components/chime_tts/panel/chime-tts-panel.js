@@ -8683,12 +8683,30 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     });
   }
 
-  _isTextEntryOrDropdown(element) {
-    return this._hasActiveTextEntryFocus() || element?.tagName === "SELECT";
+  _activePanelControl() {
+    return this.shadowRoot?.activeElement || null;
+  }
+
+  _activePanelFocusPath() {
+    const path = [];
+    let element = this._activePanelControl();
+    while (element instanceof HTMLElement) {
+      path.push(element);
+      element = element.shadowRoot?.activeElement || null;
+    }
+    return path;
+  }
+
+  _isTextEntryOrDropdown(element = this._activePanelControl()) {
+    return this._hasActiveTextEntryFocus() || this._activePanelFocusPath().some(
+      (activeElement) => activeElement.tagName === "SELECT"
+        || activeElement.matches("ha-selector, ha-picker-combo-box")
+        || Boolean(activeElement.shadowRoot?.activeElement),
+    );
   }
 
   _rerenderAfterLogUpdate() {
-    const activeControl = this.shadowRoot.activeElement;
+    const activeControl = this._activePanelControl();
     if (this._hasActiveInteractiveElement(activeControl)) {
       this._renderTopbar(this._data || {});
       this._deferPanelRenderUntilBlur(activeControl);
@@ -8888,37 +8906,39 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     );
   }
 
-  _hasActiveInteractiveElement(element = this.shadowRoot?.activeElement) {
-    return element instanceof HTMLElement
-      && element.matches(
-        'input, textarea, select, button, a[href], [contenteditable="true"], [tabindex]:not([tabindex="-1"])',
-      );
+  _hasActiveInteractiveElement(element = this._activePanelControl()) {
+    const interactiveSelector = [
+      'input',
+      'textarea',
+      'select',
+      'button',
+      'a[href]',
+      '[contenteditable="true"]',
+      '[tabindex]:not([tabindex="-1"])',
+      'ha-selector',
+      'ha-picker-combo-box',
+    ].join(", ");
+    return [element, ...this._activePanelFocusPath()].some(
+      (activeElement) => activeElement instanceof HTMLElement
+        && (activeElement.matches(interactiveSelector) || Boolean(activeElement.shadowRoot?.activeElement)),
+    );
   }
 
   _hasActiveDropdownFocus() {
-    const activeElement = this.shadowRoot?.activeElement;
-    if (!activeElement) {
-      return false;
-    }
-    return activeElement.tagName === "SELECT";
+    return this._activePanelFocusPath().some((element) => element.tagName === "SELECT");
   }
 
   _hasActiveTextEntryFocus() {
-    const activeElement = this.shadowRoot?.activeElement;
-    if (!(activeElement instanceof HTMLElement)) {
-      return false;
-    }
-
-    if (activeElement.tagName === "TEXTAREA") {
-      return true;
-    }
-
-    if (activeElement.tagName !== "INPUT") {
-      return activeElement.isContentEditable;
-    }
-
-    const inputType = String(activeElement.getAttribute("type") || "text").toLowerCase();
-    return !["checkbox", "radio", "range", "button", "submit", "reset"].includes(inputType);
+    return this._activePanelFocusPath().some((activeElement) => {
+      if (activeElement.tagName === "TEXTAREA") {
+        return true;
+      }
+      if (activeElement.tagName !== "INPUT") {
+        return activeElement.isContentEditable;
+      }
+      const inputType = String(activeElement.getAttribute("type") || "text").toLowerCase();
+      return !["checkbox", "radio", "range", "button", "submit", "reset"].includes(inputType);
+    });
   }
 
   _hasActiveLogTextSelection() {

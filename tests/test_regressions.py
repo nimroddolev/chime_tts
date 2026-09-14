@@ -818,7 +818,10 @@ def test_panel_defers_polling_and_full_renders_while_controls_are_active():
         / "chime-tts-panel.js"
     ).read_text(encoding="utf-8")
 
-    assert "this._hasActiveTextEntryFocus() || element?.tagName === \"SELECT\"" in panel_source
+    assert "_activePanelFocusPath()" in panel_source
+    assert 'activeElement.matches("ha-selector, ha-picker-combo-box")' in panel_source
+    assert "'ha-selector'," in panel_source
+    assert "'ha-picker-combo-box'," in panel_source
     assert "if (!force && !this._loading && this._isTextEntryOrDropdown(activeControl))" in panel_source
     assert "field.tagName === \"SELECT\"," in panel_source
     assert "this._deferPanelRenderUntilBlur(activeControl);" in panel_source
