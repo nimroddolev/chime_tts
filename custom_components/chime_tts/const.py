@@ -154,6 +154,7 @@ FALLBACK_TTS_REPORT_OPTIONS = [
 ]
 FALLBACK_TTS_ISSUE_ID = "fallback_tts_in_use"
 FALLBACK_TTS_NOTIFICATION_ID = "chime_tts_fallback_in_use"
+FALLBACK_TTS_CACHE_KEY = "fallback_tts_cache_key"
 DEFAULT_LANGUAGE_KEY = "default_language_key"
 DEFAULT_VOICE_KEY = "default_voice_key"
 DEFAULT_TLD_KEY = "default_tld_key"
