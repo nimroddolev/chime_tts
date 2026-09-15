@@ -62,6 +62,85 @@ class _FakeHass:
         self.data = {}
 
 
+def test_issue_339_external_chime_cache_key_is_stable(monkeypatch):
+    """Downloaded descriptors and cached local paths share one cache key (#339)."""
+    from custom_components.chime_tts.const import CROSSFADE_KEY, OFFSET_KEY
+
+    integration = importlib.import_module("custom_components.chime_tts")
+    local_path = "/media/chime_tts/downloaded.mp3"
+    downloaded = {
+        "audio_dict": {
+            "local_path": local_path,
+            "audio_duration": 1.25,
+        },
+        "file_hash": "external-url-hash",
+    }
+    resolved_paths = AsyncMock(
+        side_effect=[(downloaded, None), (None, None), (local_path, None), (None, None)]
+    )
+    cache_lookup = AsyncMock(return_value={"cached": True})
+    monkeypatch.setattr(
+        integration.filesystem_helper,
+        "async_get_chime_path_with_offset",
+        resolved_paths,
+    )
+    monkeypatch.setattr(integration, "async_verify_cached_audio", cache_lookup)
+    monkeypatch.setattr(
+        integration.media_player_helper,
+        "get_alexa_media_players_count",
+        lambda: 0,
+    )
+    monkeypatch.setattr(integration, "_data", {OFFSET_KEY: 0, CROSSFADE_KEY: 0})
+
+    initial_params = {
+        "hass": object(),
+        "message": "Hello",
+        "chime_path": "https://example.com/chime.mp3",
+        "cache": True,
+        "entity_ids": ["media_player.office"],
+    }
+    cached_params = {**initial_params}
+    assert asyncio.run(integration.async_get_playback_audio_path(initial_params, {})) == {
+        "cached": True
+    }
+    assert asyncio.run(integration.async_get_playback_audio_path(cached_params, {})) == {
+        "cached": True
+    }
+
+    initial_request_hash = cache_lookup.await_args_list[0].args[1]
+    cached_request_hash = cache_lookup.await_args_list[1].args[1]
+    assert initial_request_hash == cached_request_hash
+
+
+def test_issue_339_pre_resolved_external_chime_is_loaded(monkeypatch):
+    """A downloaded URL descriptor survives the playback resolution pass (#339)."""
+    integration = importlib.import_module("custom_components.chime_tts")
+    downloaded = {
+        "audio_dict": {
+            "local_path": "/media/chime_tts/downloaded.mp3",
+            "audio_duration": 1.25,
+        },
+        "file_hash": "external-url-hash",
+    }
+    load_audio = AsyncMock(return_value=b"audio")
+    resolve_again = AsyncMock()
+    monkeypatch.setattr(integration.filesystem_helper, "async_load_audio", load_audio)
+    monkeypatch.setattr(
+        integration.filesystem_helper, "async_get_chime_path", resolve_again
+    )
+    monkeypatch.setattr(integration.filesystem_helper, "delete_file", lambda *_: None)
+
+    result = asyncio.run(
+        integration.async_get_audio_from_path(
+            hass=_FakeHass(), filepath=downloaded, cache=False
+        )
+    )
+
+    assert result == b"audio"
+    load_audio.assert_awaited_once_with("/media/chime_tts/downloaded.mp3")
+    resolve_again.assert_not_awaited()
+
+
 def test_issue_294_build_chime_options_coerces_values_to_str():
     """Numeric/boolean-looking chime names stay strings so services.yaml parses (#294)."""
     custom = [

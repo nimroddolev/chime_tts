@@ -1469,7 +1469,7 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
 
 async def async_get_audio_from_path(
         hass: HomeAssistant,
-        filepath: str,
+        filepath: str | dict,
         cache: bool = False,
         offset: float = 0,
         crossfade: float = 0,
@@ -1480,12 +1480,16 @@ async def async_get_audio_from_path(
     if filepath is None or filepath == "None" or len(filepath) == 0:
         return audio
 
-    # Load/download audio file & validate local path
-    filepath = await filesystem_helper.async_get_chime_path(
-        chime_path=filepath,
-        cache=cache,
-        data=_data,
-        hass=hass)
+    # URLs may already have been resolved by async_get_playback_audio_path so
+    # Chime Sets can contribute their offset before the cache key is built. In
+    # that case `filepath` is the downloaded-audio descriptor; resolving it a
+    # second time rejects the non-string value and loses the downloaded file.
+    if not isinstance(filepath, dict):
+        filepath = await filesystem_helper.async_get_chime_path(
+            chime_path=filepath,
+            cache=cache,
+            data=_data,
+            hass=hass)
 
     if filepath is not None:
 
@@ -2028,12 +2032,23 @@ def get_filename_hash_from_service_data(params: dict, options: dict):
     ]
     for param in relevant_params:
         for dictionary in [params, options]:
+            value = dictionary.get(param, None)
+            # A just-downloaded external chime is represented by a descriptor,
+            # while later cache-enabled calls resolve to the same local path.
+            # Use that stable path in both cases so generated-audio cache keys
+            # remain reusable.
+            if (
+                param in {"chime_path", "end_chime_path"}
+                and isinstance(value, dict)
+                and isinstance(value.get("audio_dict"), dict)
+            ):
+                value = value["audio_dict"].get(LOCAL_PATH_KEY, value)
             if (
                 param in dictionary
-                and dictionary.get(param, None)
-                and len(str(dictionary[param])) > 0
+                and value
+                and len(str(value)) > 0
             ):
-                unique_string = unique_string + "-" + str(dictionary[param])
+                unique_string = unique_string + "-" + str(value)
 
     # `repeat` now means additional plays rather than total plays. Version
     # repeat-enabled cache entries so audio generated with the old semantics
