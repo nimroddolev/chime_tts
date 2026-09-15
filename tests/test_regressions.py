@@ -62,6 +62,35 @@ class _FakeHass:
         self.data = {}
 
 
+def test_issue_339_pre_resolved_external_chime_is_loaded(monkeypatch):
+    """A downloaded URL descriptor survives the playback resolution pass (#339)."""
+    integration = importlib.import_module("custom_components.chime_tts")
+    downloaded = {
+        "audio_dict": {
+            "local_path": "/media/chime_tts/downloaded.mp3",
+            "audio_duration": 1.25,
+        },
+        "file_hash": "external-url-hash",
+    }
+    load_audio = AsyncMock(return_value=b"audio")
+    resolve_again = AsyncMock()
+    monkeypatch.setattr(integration.filesystem_helper, "async_load_audio", load_audio)
+    monkeypatch.setattr(
+        integration.filesystem_helper, "async_get_chime_path", resolve_again
+    )
+    monkeypatch.setattr(integration.filesystem_helper, "delete_file", lambda *_: None)
+
+    result = asyncio.run(
+        integration.async_get_audio_from_path(
+            hass=_FakeHass(), filepath=downloaded, cache=False
+        )
+    )
+
+    assert result == b"audio"
+    load_audio.assert_awaited_once_with("/media/chime_tts/downloaded.mp3")
+    resolve_again.assert_not_awaited()
+
+
 def test_issue_294_build_chime_options_coerces_values_to_str():
     """Numeric/boolean-looking chime names stay strings so services.yaml parses (#294)."""
     custom = [

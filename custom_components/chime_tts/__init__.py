@@ -1475,7 +1475,7 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
 
 async def async_get_audio_from_path(
         hass: HomeAssistant,
-        filepath: str,
+        filepath: str | dict,
         cache: bool = False,
         offset: float = 0,
         crossfade: float = 0,
@@ -1486,12 +1486,16 @@ async def async_get_audio_from_path(
     if filepath is None or filepath == "None" or len(filepath) == 0:
         return audio
 
-    # Load/download audio file & validate local path
-    filepath = await filesystem_helper.async_get_chime_path(
-        chime_path=filepath,
-        cache=cache,
-        data=_data,
-        hass=hass)
+    # URLs may already have been resolved by async_get_playback_audio_path so
+    # Chime Sets can contribute their offset before the cache key is built. In
+    # that case `filepath` is the downloaded-audio descriptor; resolving it a
+    # second time rejects the non-string value and loses the downloaded file.
+    if not isinstance(filepath, dict):
+        filepath = await filesystem_helper.async_get_chime_path(
+            chime_path=filepath,
+            cache=cache,
+            data=_data,
+            hass=hass)
 
     if filepath is not None:
 
