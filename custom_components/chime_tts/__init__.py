@@ -97,6 +97,8 @@ from .const import (
     DEFAULT_PRE_SCRIPT_SAY_URL_KEY,
     DEFAULT_POST_SCRIPT_SAY_URL_KEY,
     FALLBACK_TTS_PLATFORM_KEY,
+    FALLBACK_TTS_REPORT_KEY,
+    FALLBACK_TTS_REPORT_DEFAULT,
     OFFSET_KEY,
     DEFAULT_OFFSET_MS,
     CROSSFADE_KEY,
@@ -786,6 +788,12 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     # Fallback TTS Platform
     _data[FALLBACK_TTS_PLATFORM_KEY] = options.get(FALLBACK_TTS_PLATFORM_KEY, "")
 
+    # How use of the fallback TTS platform is reported (debug log / warning log
+    # / persistent notification / repair issue)
+    _data[FALLBACK_TTS_REPORT_KEY] = options.get(
+        FALLBACK_TTS_REPORT_KEY, FALLBACK_TTS_REPORT_DEFAULT
+    )
+
     # Default offset
     _data[OFFSET_KEY] = options.get(OFFSET_KEY, DEFAULT_OFFSET_MS)
 
@@ -870,6 +878,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         DEFAULT_PRE_SCRIPT_SAY_URL_KEY,
         DEFAULT_POST_SCRIPT_SAY_URL_KEY,
         FALLBACK_TTS_PLATFORM_KEY,
+        FALLBACK_TTS_REPORT_KEY,
         OFFSET_KEY,
         CROSSFADE_KEY,
         FADE_TRANSITION_KEY,
