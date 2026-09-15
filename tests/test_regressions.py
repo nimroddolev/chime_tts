@@ -1484,7 +1484,7 @@ def test_unnamed_chime_set_validation_preserves_the_draft():
     assert "? values" in panel_source
 
 
-def _run_playback_path(monkeypatch, *, used_fallback):
+def _run_playback_path(monkeypatch, *, used_fallback, cache_fallback=False):
     """Drive async_get_playback_audio_path with a stubbed generation pipeline."""
     from types import SimpleNamespace
 
@@ -1492,6 +1492,7 @@ def _run_playback_path(monkeypatch, *, used_fallback):
 
     from custom_components.chime_tts.const import (
         CROSSFADE_KEY,
+        FALLBACK_TTS_CACHE_KEY,
         OFFSET_KEY,
         TEMP_PATH_KEY,
         WWW_PATH_KEY,
@@ -1545,7 +1546,7 @@ def _run_playback_path(monkeypatch, *, used_fallback):
         {OFFSET_KEY: 0, CROSSFADE_KEY: 0, TEMP_PATH_KEY: "/tmp", WWW_PATH_KEY: "/tmp"},
     )
 
-    helper._data = {}
+    helper._data = {FALLBACK_TTS_CACHE_KEY: cache_fallback}
 
     class _Hass:
         async def async_add_executor_job(self, func, *args):
@@ -1574,4 +1575,14 @@ def test_issue_303_fallback_audio_is_not_written_to_the_cache(monkeypatch):
 def test_issue_303_primary_audio_is_still_cached(monkeypatch):
     """A normal primary-platform generation still populates the cache."""
     add_to_cache = _run_playback_path(monkeypatch, used_fallback=False)
+    assert add_to_cache.await_count > 0
+
+
+def test_issue_303_fallback_audio_is_cached_when_opted_in(monkeypatch):
+    """The fallback cache setting permits caching assembled fallback audio."""
+    add_to_cache = _run_playback_path(
+        monkeypatch,
+        used_fallback=True,
+        cache_fallback=True,
+    )
     assert add_to_cache.await_count > 0

@@ -14,7 +14,8 @@ from ..const import (
     QUEUE_TIMEOUT_KEY,
     QUEUE_TIMEOUT_DEFAULT,
     TTS_PLATFORM_KEY,
-     FALLBACK_TTS_PLATFORM_KEY,
+    FALLBACK_TTS_PLATFORM_KEY,
+    FALLBACK_TTS_CACHE_KEY,
     AMAZON_POLLY,
     BAIDU,
     ELEVENLABS,
@@ -147,6 +148,21 @@ class TTSAudioHelper:
     def last_request_used_fallback(self) -> bool:
         """Return whether the most recent request used the configured fallback."""
         return self._last_request_used_fallback
+
+    @property
+    def cache_fallback_audio(self) -> bool:
+        """Return whether audio produced by the fallback platform may be cached."""
+        return bool(self._data.get(FALLBACK_TTS_CACHE_KEY, False))
+
+    @property
+    def may_cache_request_audio(self) -> bool:
+        """Return whether audio from the most recent request may be cached."""
+        return self.cache_fallback_audio or not self._last_request_used_fallback
+
+    @property
+    def may_cache_call_audio(self) -> bool:
+        """Return whether the current service call's combined audio may be cached."""
+        return self.cache_fallback_audio or not self._fallback_used_in_call
 
     def _tts_attempt_timeout(self, is_fallback: bool) -> int:
         """Return the total time budget for one TTS platform attempt."""
@@ -404,12 +420,15 @@ class TTSAudioHelper:
             _LOGGER.debug(
                 "Retrying TTS audio generation with fallback platform '%s'", fallback_platform
             )
+            # Keep fallback audio out of Home Assistant's TTS cache unless the
+            # fallback-cache setting explicitly permits it.
+            fallback_cache = cache and self.cache_fallback_audio
             return await self.async_request_tts_audio(
                 hass=hass,
                 tts_platform=fallback_platform,
                 message=message,
                 language=language,
-                cache=cache,
+                cache=fallback_cache,
                 options=options,
                 is_fallback=True,
             )

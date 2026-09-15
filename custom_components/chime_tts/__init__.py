@@ -1129,11 +1129,10 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         value = f"{quote}{value}{quote}"
         _LOGGER.debug("   * %s = %s", key, value)
 
-    # The assembled-audio cache is looked up before TTS generation. It cannot
-    # safely represent fallback audio without reusing it as primary audio on a
-    # later call, so only cache assembled audio generated entirely by requested
-    # providers. Individual fallback TTS segments are cached by provider below.
-    if cache and not tts_audio_helper.fallback_used_in_call:
+    # The assembled-audio cache is looked up before TTS generation. Fallback
+    # audio therefore requires explicit opt-in before it can be reused as
+    # primary-provider audio after the requested provider recovers.
+    if cache and tts_audio_helper.may_cache_call_audio:
         await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, None), duration, params, options)
         await async_add_audio_file_to_cache(hass, audio_dict.get(LOCAL_PATH_KEY, None), duration, params, options)
 
@@ -1417,7 +1416,11 @@ async def async_process_segments(hass, message, output_audio=None, params={}, op
                     # Cache the new TTS audio?
                     if tts_audio is not None:
                         tts_audio_duration = float(len(tts_audio) / 1000.0)
-                        if segment_cache is True and audio_dict is None:
+                        if (
+                            segment_cache is True
+                            and audio_dict is None
+                            and tts_audio_helper.may_cache_request_audio
+                        ):
                             _LOGGER.debug(" - Saving generated TTS audio to cache...")
                             tts_audio_full_path = await filesystem_helper.async_save_audio_to_folder(
                                 hass,

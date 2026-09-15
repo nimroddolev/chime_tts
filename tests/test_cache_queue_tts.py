@@ -14,6 +14,7 @@ from pydub import AudioSegment
 from custom_components.chime_tts.const import ALEXA_MEDIA_PLAYER_PLATFORM
 from custom_components.chime_tts.const import AUDIO_DURATION_KEY
 from custom_components.chime_tts.const import AUDIO_PATH_KEY
+from custom_components.chime_tts.const import FALLBACK_TTS_CACHE_KEY
 from custom_components.chime_tts.const import FALLBACK_TTS_PLATFORM_KEY
 from custom_components.chime_tts.const import GOOGLE_TRANSLATE
 from custom_components.chime_tts.const import IBM_WATSON_TTS
@@ -721,7 +722,10 @@ async def test_tts_audio_helper_generate_audio_retries_prefixed_engine(monkeypat
 async def test_tts_audio_helper_retry_with_fallback_calls_async_request(monkeypatch: pytest.MonkeyPatch) -> None:
     """Fallback retries delegate back through `async_request_tts_audio`."""
     helper = TTSAudioHelper()
-    helper._data = {FALLBACK_TTS_PLATFORM_KEY: "fallback_engine"}
+    helper._data = {
+        FALLBACK_TTS_PLATFORM_KEY: "fallback_engine",
+        FALLBACK_TTS_CACHE_KEY: False,
+    }
     request_tts = AsyncMock(return_value="audio")
 
     monkeypatch.setattr(helper, "async_request_tts_audio", request_tts)
@@ -741,7 +745,7 @@ async def test_tts_audio_helper_retry_with_fallback_calls_async_request(monkeypa
         tts_platform="fallback_engine",
         message="hello",
         language="en",
-        cache=True,
+        cache=False,
         options={"voice": "Jenny"},
         is_fallback=True,
     )
@@ -753,7 +757,10 @@ async def test_tts_audio_helper_tracks_resolved_fallback_platform(
 ) -> None:
     """Fallback audio retains its provider identity and cache setting."""
     helper = TTSAudioHelper()
-    helper._data = {FALLBACK_TTS_PLATFORM_KEY: "fallback_engine"}
+    helper._data = {
+        FALLBACK_TTS_PLATFORM_KEY: "fallback_engine",
+        FALLBACK_TTS_CACHE_KEY: True,
+    }
     audio = AudioSegment.silent(duration=100)
     monkeypatch.setattr(
         helper,
@@ -786,7 +793,7 @@ async def test_tts_segment_cache_uses_the_resolved_fallback_provider(
     """Fallback segment audio is stored under its actual provider's cache key."""
     helper = integration_module.tts_audio_helper
     helper.reset_fallback_tracking()
-    helper._data = {}
+    helper._data = {FALLBACK_TTS_CACHE_KEY: True}
     audio = AudioSegment.silent(duration=100)
     hass = FakeHass()
     stored = AsyncMock()
