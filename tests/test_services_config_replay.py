@@ -24,6 +24,7 @@ from custom_components.chime_tts.const import DEFAULT_TLD_KEY
 from custom_components.chime_tts.const import DEFAULT_VOICE_KEY
 from custom_components.chime_tts.const import DOMAIN
 from custom_components.chime_tts.const import FADE_TRANSITION_KEY
+from custom_components.chime_tts.const import FALLBACK_TTS_CACHE_KEY
 from custom_components.chime_tts.const import FALLBACK_TTS_PLATFORM_KEY
 from custom_components.chime_tts.const import OFFSET_KEY
 from custom_components.chime_tts.const import QUEUE_TIMEOUT_KEY
@@ -122,6 +123,7 @@ async def test_configuration_loads_default_start_and_end_chimes(
                     DEFAULT_VOICE_KEY: "Jenny",
                     DEFAULT_TLD_KEY: "co.uk",
                     FALLBACK_TTS_PLATFORM_KEY: "cloud",
+                    FALLBACK_TTS_CACHE_KEY: True,
                     DEFAULT_PRE_SCRIPT_KEY: "script.prepare",
                     DEFAULT_POST_SCRIPT_KEY: "script.restore",
                     DEFAULT_PRE_SCRIPT_SHARED_KEY: False,
@@ -152,6 +154,7 @@ async def test_configuration_loads_default_start_and_end_chimes(
             DEFAULT_VOICE_KEY: "Jenny",
             DEFAULT_TLD_KEY: "co.uk",
             FALLBACK_TTS_PLATFORM_KEY: "cloud",
+            FALLBACK_TTS_CACHE_KEY: True,
             DEFAULT_PRE_SCRIPT_KEY: "script.prepare",
             DEFAULT_POST_SCRIPT_KEY: "script.restore",
             DEFAULT_PRE_SCRIPT_SHARED_KEY: False,
@@ -206,6 +209,7 @@ async def test_configuration_uses_the_documented_offset_default(
         )
 
         assert integration_module._data[OFFSET_KEY] == DEFAULT_OFFSET_MS
+        assert integration_module._data[FALLBACK_TTS_CACHE_KEY] is False
     finally:
         integration_module._data.clear()
         integration_module._data.update(previous_data)

@@ -99,6 +99,7 @@ from .const import (
     FALLBACK_TTS_PLATFORM_KEY,
     FALLBACK_TTS_REPORT_KEY,
     FALLBACK_TTS_REPORT_DEFAULT,
+    FALLBACK_TTS_CACHE_KEY,
     OFFSET_KEY,
     DEFAULT_OFFSET_MS,
     CROSSFADE_KEY,
@@ -793,6 +794,10 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
     _data[FALLBACK_TTS_REPORT_KEY] = options.get(
         FALLBACK_TTS_REPORT_KEY, FALLBACK_TTS_REPORT_DEFAULT
     )
+    # Cache audio produced by the fallback TTS platform only when explicitly
+    # enabled. This is disabled by default so fallback audio is not reused as
+    # the requested platform's audio after it recovers.
+    _data[FALLBACK_TTS_CACHE_KEY] = options.get(FALLBACK_TTS_CACHE_KEY, False)
 
     # Default offset
     _data[OFFSET_KEY] = options.get(OFFSET_KEY, DEFAULT_OFFSET_MS)
@@ -879,6 +884,7 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         DEFAULT_POST_SCRIPT_SAY_URL_KEY,
         FALLBACK_TTS_PLATFORM_KEY,
         FALLBACK_TTS_REPORT_KEY,
+        FALLBACK_TTS_CACHE_KEY,
         OFFSET_KEY,
         CROSSFADE_KEY,
         FADE_TRANSITION_KEY,
