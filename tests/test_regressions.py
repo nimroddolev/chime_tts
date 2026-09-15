@@ -111,7 +111,6 @@ def test_issue_339_external_chime_cache_key_is_stable(monkeypatch):
     cached_request_hash = cache_lookup.await_args_list[1].args[1]
     assert initial_request_hash == cached_request_hash
 
-
 def test_issue_339_pre_resolved_external_chime_is_loaded(monkeypatch):
     """A downloaded URL descriptor survives the playback resolution pass (#339)."""
     integration = importlib.import_module("custom_components.chime_tts")
