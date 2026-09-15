@@ -320,7 +320,7 @@
     "issues": {
         "fallback_tts_in_use": {
             "title": "Chime TTS is using the fallback TTS platform",
-            "description": "The requested TTS platform '{primary_platform}' failed to generate audio, so the fallback platform '{fallback_platform}' was used instead. This issue clears automatically once '{primary_platform}' generates audio again."
+            "description": "The requested TTS platform {primary_platform} failed to generate audio, so the fallback platform {fallback_platform} was used instead. This issue clears automatically once {primary_platform} generates audio again."
         }
     }
 }
