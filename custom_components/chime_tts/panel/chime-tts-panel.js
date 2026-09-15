@@ -10479,12 +10479,18 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         if (!selected || typeof selected !== "object") {
           return;
         }
+        let addedTarget = false;
         Object.entries(selected).forEach(([type, ids]) => {
           if (["entity_id", "device_id", "area_id", "floor_id", "label_id"].includes(type)) {
-            (Array.isArray(ids) ? ids : [ids]).forEach((id) => this._addNotifyEntity(index, { type, id }));
+            (Array.isArray(ids) ? ids : [ids]).forEach((id) => {
+              addedTarget = this._addNotifyEntity(index, { type, id }, { render: false }) || addedTarget;
+            });
           }
         });
         picker.value = {};
+        if (addedTarget) {
+          this._rerenderPreservingInputState(null, true, true);
+        }
       });
     });
   }
@@ -10545,15 +10551,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._wireNotifyEntityPickers();
   }
 
-  _addNotifyEntity(index, target) {
+  _addNotifyEntity(index, target, { render = true } = {}) {
     if (Number.isNaN(index) || !target?.type || !target?.id) {
-      return;
+      return false;
     }
     const nextProfiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
     const targets = this._notifyTargets(nextProfiles[index]);
-    if (!targets.some((item) => item.type === target.type && item.id === target.id)) {
-      targets.push({ type: target.type, id: target.id });
+    if (targets.some((item) => item.type === target.type && item.id === target.id)) {
+      return false;
     }
+    targets.push({ type: target.type, id: target.id });
     nextProfiles[index] = {
       ...nextProfiles[index],
       targets,
@@ -10565,7 +10572,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._notifyProfileClientErrors = nextErrors;
     }
     this._isDirty = this._hasValueChanges();
-    this._render();
+    if (render) {
+      // A target selection is a completed, explicit picker action. Unlike a
+      // text or dropdown edit, its resulting chip must be shown immediately;
+      // otherwise the focused ha-selector causes a normal render to defer the
+      // update until blur and the selected target appears to have been
+      // discarded. Preserve the outer scroll position while doing so.
+      this._rerenderPreservingInputState(null, true, true);
+    }
+    return true;
   }
 
   _reindexNotifyProfileState(state, removedIndex) {
