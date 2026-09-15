@@ -14,9 +14,9 @@ from pydub import AudioSegment
 from custom_components.chime_tts.const import ALEXA_MEDIA_PLAYER_PLATFORM
 from custom_components.chime_tts.const import AUDIO_DURATION_KEY
 from custom_components.chime_tts.const import AUDIO_PATH_KEY
+from custom_components.chime_tts.const import FALLBACK_TTS_CACHE_KEY
 from custom_components.chime_tts.const import FALLBACK_TTS_ISSUE_ID
 from custom_components.chime_tts.const import FALLBACK_TTS_NOTIFICATION_ID
-from custom_components.chime_tts.const import FALLBACK_TTS_CACHE_KEY
 from custom_components.chime_tts.const import FALLBACK_TTS_PLATFORM_KEY
 from custom_components.chime_tts.const import FALLBACK_TTS_REPORT_KEY
 from custom_components.chime_tts.const import FALLBACK_TTS_REPORT_NOTIFICATION
@@ -270,6 +270,25 @@ def test_get_filename_hash_ignores_irrelevant_fields_and_tracks_relevant_changes
 
     assert base_hash == same_hash
     assert changed_hash != base_hash
+
+
+def test_tts_segment_cache_hash_preserves_primary_keys_and_separates_fallbacks() -> None:
+    """Only fallback output moves to a provider-specific Chime TTS cache key."""
+    params = {"message": "Hello", "tts_platform": "primary_engine", "cache": True}
+    primary_hash = integration_module.get_filename_hash_from_service_data(params, {})
+
+    assert (
+        integration_module.get_tts_segment_cache_hash(
+            params, {}, "primary_engine", False
+        )
+        == primary_hash
+    )
+    assert (
+        integration_module.get_tts_segment_cache_hash(
+            params, {}, "fallback_engine", True
+        )
+        != primary_hash
+    )
 
 
 @pytest.mark.asyncio
@@ -707,7 +726,7 @@ async def test_tts_audio_helper_generate_audio_retries_prefixed_engine(monkeypat
 
 @pytest.mark.asyncio
 async def test_tts_audio_helper_retry_with_fallback_calls_async_request(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Fallback retries delegate back through `async_request_tts_audio`, uncached."""
+    """Fallback retries delegate back through `async_request_tts_audio`."""
     helper = TTSAudioHelper()
     helper._data = {
         FALLBACK_TTS_PLATFORM_KEY: "fallback_engine",
@@ -739,20 +758,25 @@ async def test_tts_audio_helper_retry_with_fallback_calls_async_request(monkeypa
 
 
 @pytest.mark.asyncio
-async def test_tts_audio_helper_retry_with_fallback_caches_when_opted_in(
+async def test_tts_audio_helper_tracks_resolved_fallback_platform(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Enabling the fallback cache option restores pass-through caching."""
+    """Fallback audio retains its provider identity and cache setting."""
     helper = TTSAudioHelper()
     helper._data = {
         FALLBACK_TTS_PLATFORM_KEY: "fallback_engine",
         FALLBACK_TTS_CACHE_KEY: True,
     }
-    request_tts = AsyncMock(return_value="audio")
+    audio = AudioSegment.silent(duration=100)
+    monkeypatch.setattr(
+        helper,
+        "_prepare_tts_request",
+        lambda hass, platform, message, language, options, **kwargs: (platform, {}, language),
+    )
+    generate = AsyncMock(side_effect=[None, audio])
+    monkeypatch.setattr(helper, "_async_generate_and_process_audio", generate)
 
-    monkeypatch.setattr(helper, "async_request_tts_audio", request_tts)
-
-    await helper._retry_with_fallback(
+    result = await helper.async_request_tts_audio(
         hass=FakeHass(),
         tts_platform="primary_engine",
         message="hello",
@@ -761,75 +785,77 @@ async def test_tts_audio_helper_retry_with_fallback_caches_when_opted_in(
         options={},
     )
 
-    assert request_tts.await_args.kwargs["cache"] is True
+    assert result == audio
+    assert helper.last_tts_platform == "fallback_engine"
+    assert helper.last_request_used_fallback is True
+    assert helper.fallback_used_in_call is True
+    assert [call.args[4] for call in generate.await_args_list] == [True, True]
 
 
 @pytest.mark.asyncio
-async def test_tts_audio_helper_tracks_fallback_use_for_cache_gating(
+async def test_tts_segment_cache_uses_the_resolved_fallback_provider(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Falling back marks the request and the call as uncacheable."""
-    helper = TTSAudioHelper()
-    helper._data = {
-        FALLBACK_TTS_PLATFORM_KEY: "fallback_engine",
-        FALLBACK_TTS_CACHE_KEY: False,
-    }
-    monkeypatch.setattr(helper, "async_request_tts_audio", AsyncMock(return_value="audio"))
-
+    """Fallback segment audio is stored under its actual provider's cache key."""
+    helper = integration_module.tts_audio_helper
     helper.reset_fallback_tracking()
-    assert helper.may_cache_request_audio is True
-    assert helper.may_cache_call_audio is True
+    helper._data = {FALLBACK_TTS_CACHE_KEY: True}
+    audio = AudioSegment.silent(duration=100)
+    hass = FakeHass()
+    stored = AsyncMock()
 
-    await helper._retry_with_fallback(
-        hass=FakeHass(),
-        tts_platform="primary_engine",
-        message="hello",
-        language="en",
-        cache=True,
-        options={},
+    async def request_fallback(**kwargs):
+        helper._last_tts_platform = "fallback_engine"
+        helper._last_request_used_fallback = True
+        helper._fallback_used_in_call = True
+        return audio
+
+    monkeypatch.setattr(
+        integration_module.helpers,
+        "parse_message",
+        lambda message: [{"type": "tts", "message": "hello", "tts_platform": "primary_engine"}],
+    )
+    monkeypatch.setattr(helper, "async_request_tts_audio", request_fallback)
+    monkeypatch.setattr(integration_module, "async_get_cached_audio_data", AsyncMock(return_value=None))
+    monkeypatch.setattr(
+        integration_module.filesystem_helper,
+        "async_save_audio_to_folder",
+        AsyncMock(return_value="/tmp/fallback.mp3"),
+    )
+    monkeypatch.setattr(integration_module, "async_store_data", stored)
+    monkeypatch.setattr(
+        integration_module.helpers,
+        "async_change_speed_of_audiosegment",
+        AsyncMock(side_effect=lambda hass, clip, speed, folder: clip),
+    )
+    monkeypatch.setattr(
+        integration_module.helpers,
+        "async_change_pitch_of_audiosegment",
+        AsyncMock(side_effect=lambda hass, clip, pitch, folder: clip),
+    )
+    monkeypatch.setattr(
+        integration_module.helpers,
+        "async_ffmpeg_convert_from_audio_segment",
+        AsyncMock(side_effect=lambda hass, clip, conversion, folder: clip),
+    )
+    monkeypatch.setattr(integration_module, "_data", {TEMP_PATH_KEY: "/tmp"})
+
+    await integration_module.async_process_segments(
+        hass, "unused", params={"cache": True}, options={}
     )
 
-    assert helper.may_cache_request_audio is False
-    assert helper.may_cache_call_audio is False
-
-    # Opting in makes fallback audio cacheable again without clearing tracking.
-    helper._data[FALLBACK_TTS_CACHE_KEY] = True
-    assert helper.may_cache_request_audio is True
-    assert helper.may_cache_call_audio is True
-
-    helper._data[FALLBACK_TTS_CACHE_KEY] = False
-    helper.reset_fallback_tracking()
-    assert helper.may_cache_call_audio is True
-
-
-@pytest.mark.asyncio
-async def test_tts_audio_helper_call_tracking_survives_a_later_primary_success(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A clean later segment must not re-enable caching for the whole call."""
-    helper = TTSAudioHelper()
-    helper._data = {
-        FALLBACK_TTS_PLATFORM_KEY: "fallback_engine",
-        FALLBACK_TTS_CACHE_KEY: False,
-    }
-    monkeypatch.setattr(helper, "async_request_tts_audio", AsyncMock(return_value="audio"))
-
-    helper.reset_fallback_tracking()
-    await helper._retry_with_fallback(
-        hass=FakeHass(),
-        tts_platform="primary_engine",
-        message="hello",
-        language="en",
-        cache=True,
-        options={},
+    expected_hash = integration_module.get_filename_hash_from_service_data(
+        {
+            "message": "hello",
+            "tts_platform": "fallback_engine",
+            "language": None,
+            "cache": True,
+            "tts_speed": 100.0,
+            "tts_pitch": 0.0,
+        },
+        {},
     )
-    assert helper.may_cache_call_audio is False
-
-    # A subsequent top-level request that succeeds on the primary platform
-    # clears the per-request flag but not the per-call one.
-    helper._used_fallback = False
-    assert helper.may_cache_request_audio is True
-    assert helper.may_cache_call_audio is False
+    assert stored.await_args.args[1] == expected_hash
 
 
 @pytest.mark.asyncio

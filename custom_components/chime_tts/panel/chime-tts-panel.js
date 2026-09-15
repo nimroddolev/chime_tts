@@ -8683,12 +8683,30 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     });
   }
 
-  _isTextEntryOrDropdown(element) {
-    return this._hasActiveTextEntryFocus() || element?.tagName === "SELECT";
+  _activePanelControl() {
+    return this.shadowRoot?.activeElement || null;
+  }
+
+  _activePanelFocusPath() {
+    const path = [];
+    let element = this._activePanelControl();
+    while (element instanceof HTMLElement) {
+      path.push(element);
+      element = element.shadowRoot?.activeElement || null;
+    }
+    return path;
+  }
+
+  _isTextEntryOrDropdown(element = this._activePanelControl()) {
+    return this._hasActiveTextEntryFocus() || this._activePanelFocusPath().some(
+      (activeElement) => activeElement.tagName === "SELECT"
+        || activeElement.matches("ha-selector, ha-picker-combo-box")
+        || Boolean(activeElement.shadowRoot?.activeElement),
+    );
   }
 
   _rerenderAfterLogUpdate() {
-    const activeControl = this.shadowRoot.activeElement;
+    const activeControl = this._activePanelControl();
     if (this._hasActiveInteractiveElement(activeControl)) {
       this._renderTopbar(this._data || {});
       this._deferPanelRenderUntilBlur(activeControl);
@@ -8888,37 +8906,39 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     );
   }
 
-  _hasActiveInteractiveElement(element = this.shadowRoot?.activeElement) {
-    return element instanceof HTMLElement
-      && element.matches(
-        'input, textarea, select, button, a[href], [contenteditable="true"], [tabindex]:not([tabindex="-1"])',
-      );
+  _hasActiveInteractiveElement(element = this._activePanelControl()) {
+    const interactiveSelector = [
+      'input',
+      'textarea',
+      'select',
+      'button',
+      'a[href]',
+      '[contenteditable="true"]',
+      '[tabindex]:not([tabindex="-1"])',
+      'ha-selector',
+      'ha-picker-combo-box',
+    ].join(", ");
+    return [element, ...this._activePanelFocusPath()].some(
+      (activeElement) => activeElement instanceof HTMLElement
+        && (activeElement.matches(interactiveSelector) || Boolean(activeElement.shadowRoot?.activeElement)),
+    );
   }
 
   _hasActiveDropdownFocus() {
-    const activeElement = this.shadowRoot?.activeElement;
-    if (!activeElement) {
-      return false;
-    }
-    return activeElement.tagName === "SELECT";
+    return this._activePanelFocusPath().some((element) => element.tagName === "SELECT");
   }
 
   _hasActiveTextEntryFocus() {
-    const activeElement = this.shadowRoot?.activeElement;
-    if (!(activeElement instanceof HTMLElement)) {
-      return false;
-    }
-
-    if (activeElement.tagName === "TEXTAREA") {
-      return true;
-    }
-
-    if (activeElement.tagName !== "INPUT") {
-      return activeElement.isContentEditable;
-    }
-
-    const inputType = String(activeElement.getAttribute("type") || "text").toLowerCase();
-    return !["checkbox", "radio", "range", "button", "submit", "reset"].includes(inputType);
+    return this._activePanelFocusPath().some((activeElement) => {
+      if (activeElement.tagName === "TEXTAREA") {
+        return true;
+      }
+      if (activeElement.tagName !== "INPUT") {
+        return activeElement.isContentEditable;
+      }
+      const inputType = String(activeElement.getAttribute("type") || "text").toLowerCase();
+      return !["checkbox", "radio", "range", "button", "submit", "reset"].includes(inputType);
+    });
   }
 
   _hasActiveLogTextSelection() {
@@ -10459,12 +10479,18 @@ class ChimeTtsSettingsPanel extends HTMLElement {
         if (!selected || typeof selected !== "object") {
           return;
         }
+        let addedTarget = false;
         Object.entries(selected).forEach(([type, ids]) => {
           if (["entity_id", "device_id", "area_id", "floor_id", "label_id"].includes(type)) {
-            (Array.isArray(ids) ? ids : [ids]).forEach((id) => this._addNotifyEntity(index, { type, id }));
+            (Array.isArray(ids) ? ids : [ids]).forEach((id) => {
+              addedTarget = this._addNotifyEntity(index, { type, id }, { render: false }) || addedTarget;
+            });
           }
         });
         picker.value = {};
+        if (addedTarget) {
+          this._rerenderPreservingInputState(null, true, true);
+        }
       });
     });
   }
@@ -10525,15 +10551,16 @@ class ChimeTtsSettingsPanel extends HTMLElement {
     this._wireNotifyEntityPickers();
   }
 
-  _addNotifyEntity(index, target) {
+  _addNotifyEntity(index, target, { render = true } = {}) {
     if (Number.isNaN(index) || !target?.type || !target?.id) {
-      return;
+      return false;
     }
     const nextProfiles = this._cloneNotifyProfiles(this._draftNotifyProfiles || []);
     const targets = this._notifyTargets(nextProfiles[index]);
-    if (!targets.some((item) => item.type === target.type && item.id === target.id)) {
-      targets.push({ type: target.type, id: target.id });
+    if (targets.some((item) => item.type === target.type && item.id === target.id)) {
+      return false;
     }
+    targets.push({ type: target.type, id: target.id });
     nextProfiles[index] = {
       ...nextProfiles[index],
       targets,
@@ -10545,7 +10572,15 @@ class ChimeTtsSettingsPanel extends HTMLElement {
       this._notifyProfileClientErrors = nextErrors;
     }
     this._isDirty = this._hasValueChanges();
-    this._render();
+    if (render) {
+      // A target selection is a completed, explicit picker action. Unlike a
+      // text or dropdown edit, its resulting chip must be shown immediately;
+      // otherwise the focused ha-selector causes a normal render to defer the
+      // update until blur and the selected target appears to have been
+      // discarded. Preserve the outer scroll position while doing so.
+      this._rerenderPreservingInputState(null, true, true);
+    }
+    return true;
   }
 
   _reindexNotifyProfileState(state, removedIndex) {
