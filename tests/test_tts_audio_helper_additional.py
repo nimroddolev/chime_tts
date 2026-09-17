@@ -144,8 +144,9 @@ async def test_direct_tts_audio_bypasses_media_source_fetch(
     """Direct engine audio retrieval avoids hangs in media-source download paths."""
     helper = TTSAudioHelper()
     helper._data = {TTS_PLATFORM_KEY: "primary", FALLBACK_TTS_PLATFORM_KEY: ""}
-    hass = SimpleNamespace(
-        data={
+
+    class _FakeHass:
+        data = {
             "tts_manager": SimpleNamespace(
                 process_options=lambda engine, language, options: (
                     language or "en",
@@ -153,7 +154,8 @@ async def test_direct_tts_audio_bypasses_media_source_fetch(
                 )
             )
         }
-    )
+
+    hass = _FakeHass()
     engine = SimpleNamespace(
         async_internal_get_tts_audio=AsyncMock(return_value=("wav", b"bytes"))
     )
@@ -177,6 +179,7 @@ async def test_direct_tts_audio_bypasses_media_source_fetch(
         "async_load_audio",
         AsyncMock(return_value=AudioSegment.silent(duration=1)),
     )
+    monkeypatch.setattr(module.ir, "async_delete_issue", lambda *args, **kwargs: None)
 
     audio = await helper.async_request_tts_audio(
         hass, "primary", "hello", "en", False, {}
