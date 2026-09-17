@@ -203,7 +203,9 @@ class TTSAudioHelper:
         media_source_id, audio_data = await self._generate_tts_audio(
             hass, tts_platform, message, language, cache, tts_options, is_fallback, timeout
         )
-        return await self._process_audio_data(hass, media_source_id, audio_data, start_time)
+        return await self._process_audio_data(
+            hass, tts_platform, message, language, tts_options, media_source_id, audio_data, start_time
+        )
 
     def _prepare_tts_request(
         self,
@@ -382,7 +384,23 @@ class TTSAudioHelper:
         return candidates
 
 
-    async def _process_audio_data(self, hass: HomeAssistant, media_source_id, audio_data, start_time):
+    async def _process_audio_data(
+        self,
+        hass: HomeAssistant,
+        tts_platform: str,
+        message: str,
+        language: str | None,
+        tts_options: dict | None,
+        media_source_id,
+        audio_data,
+        start_time,
+    ):
+        direct_audio_data = await self._get_direct_tts_audio(
+            hass, tts_platform, message, language, tts_options
+        )
+        if direct_audio_data is not None and len(direct_audio_data) == 2:
+            return await self._extract_audio(direct_audio_data, start_time)
+
         if not media_source_id:
             self._last_error_message = "Unable to generate a Home Assistant media source id for the TTS request."
             _LOGGER.error("Error: Unable to generate media_source_id")
@@ -406,6 +424,79 @@ class TTSAudioHelper:
             return await self._extract_audio(audio_data, start_time)
 
         return None
+
+    async def _get_direct_tts_audio(
+        self,
+        hass: HomeAssistant,
+        tts_platform: str,
+        message: str,
+        language: str | None,
+        tts_options: dict | None,
+    ) -> tuple[str, bytes] | None:
+        """Fetch TTS audio directly from the resolved engine when possible."""
+        engine_instance = self._get_engine_instance(hass, tts_platform)
+        if engine_instance is None:
+            return None
+
+        processed_language, processed_options = self._process_engine_options(
+            hass, engine_instance, language, tts_options
+        )
+        if processed_language is None or processed_options is None:
+            return None
+
+        for method_name in (
+            "async_internal_get_tts_audio",
+            "internal_async_get_tts_audio",
+            "async_get_tts_audio",
+        ):
+            method = getattr(engine_instance, method_name, None)
+            if method is None:
+                continue
+            try:
+                audio_data = await method(message, processed_language, processed_options)
+            except Exception as error:
+                _LOGGER.debug(
+                    "Direct TTS audio request with %s via %s failed; falling back to media source retrieval: %s",
+                    tts_platform,
+                    method_name,
+                    error,
+                )
+                return None
+            if audio_data is not None and len(audio_data) == 2:
+                return audio_data
+            return None
+        return None
+
+    def _process_engine_options(
+        self,
+        hass: HomeAssistant,
+        engine_instance,
+        language: str | None,
+        tts_options: dict | None,
+    ) -> tuple[str | None, dict | None]:
+        """Run Home Assistant's TTS option validation when available."""
+        manager = getattr(hass, "data", {}).get("tts_manager")
+        if manager is None or not hasattr(manager, "process_options"):
+            return language, dict(tts_options or {})
+        try:
+            return manager.process_options(
+                engine_instance,
+                language,
+                dict(tts_options or {}),
+            )
+        except Exception as error:
+            _LOGGER.debug("Direct TTS option processing failed: %s", error)
+            return None, None
+
+    def _get_engine_instance(self, hass: HomeAssistant, tts_platform: str):
+        """Resolve a Home Assistant TTS engine instance across HA versions."""
+        try:
+            from homeassistant.components.tts.helper import get_engine_instance
+
+            return get_engine_instance(hass, tts_platform)
+        except Exception as error:
+            _LOGGER.debug("Unable to resolve TTS engine instance for %s: %s", tts_platform, error)
+            return None
 
     async def _extract_audio(self, audio_data, start_time):
         audio_bytes = audio_data[1]
