@@ -8,7 +8,7 @@
 # Newer HA cores require Python 3.13; on Python 3.12 pip resolves the newest
 # compatible pair (HA 2025.1.x).
 
-pytest-homeassistant-custom-component>=0.13.190
+pytest-homeassistant-custom-component>=0.13.365
 pydub
 aiofiles
 ruff==0.16.8
