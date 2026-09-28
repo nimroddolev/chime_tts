@@ -1,6 +1,7 @@
 """The Chime TTS integration."""
 
 import logging
+import os
 import time
 from datetime import datetime, timedelta
 
@@ -55,6 +56,7 @@ from .const import (
     AUDIO_PATH_KEY,
     LOCAL_PATH_KEY,
     PUBLIC_PATH_KEY,
+    SONOS_WWW_PATH_KEY,
     AUDIO_DURATION_KEY,
     FADE_TRANSITION_KEY,
     REMOVE_TEMP_FILE_DELAY_KEY,
@@ -530,6 +532,7 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
                     _LOGGER.debug("Removing temporary file%s:", "s" if local_path and public_path else "")
                 filesystem_helper.delete_file(hass, local_path)
                 filesystem_helper.delete_file(hass, public_path)
+                filesystem_helper.delete_file(hass, audio_dict.get(SONOS_WWW_PATH_KEY))
         else:
             await async_run_script(hass, params.get("post_script"))
 
@@ -995,6 +998,7 @@ async def async_get_playback_audio_path(params: dict, options: dict):
         _LOGGER.debug(" *** Checking Chime TTS audio cache ***")
         audio_dict: dict = await async_verify_cached_audio(hass, filepath_hash, params, options, is_local, is_public, ffmpeg_args)
         if audio_dict:
+            await async_add_sonos_www_copy(hass, audio_dict, entity_ids, filepath_hash, True)
             additional_repeats = params.get("repeat", 0)
             if additional_repeats > 0:
                 _LOGGER.info(
@@ -1147,9 +1151,12 @@ async def async_get_playback_audio_path(params: dict, options: dict):
     # The assembled-audio cache is looked up before TTS generation. Fallback
     # audio therefore requires explicit opt-in before it can be reused as
     # primary-provider audio after the requested provider recovers.
-    if cache and tts_audio_helper.may_cache_call_audio:
+    is_cached = cache and tts_audio_helper.may_cache_call_audio
+    if is_cached:
         await async_add_audio_file_to_cache(hass, audio_dict.get(PUBLIC_PATH_KEY, None), duration, params, options)
         await async_add_audio_file_to_cache(hass, audio_dict.get(LOCAL_PATH_KEY, None), duration, params, options)
+
+    await async_add_sonos_www_copy(hass, audio_dict, entity_ids, filepath_hash, is_cached)
 
     return audio_dict
 
@@ -1166,6 +1173,58 @@ async def async_save_audio_to_folder(hass: HomeAssistant, is_local: bool, is_pub
         audio_dict[PUBLIC_PATH_KEY] = await filesystem_helper.async_save_audio_to_folder(
             hass, output_audio, _data[WWW_PATH_KEY])
     return audio_dict
+
+async def async_add_sonos_www_copy(hass: HomeAssistant, audio_dict: dict, entity_ids, filepath_hash: str, cache: bool):
+    """Add a www copy for Sonos targets, recording it on the cache entry when cached."""
+    if not media_player_helper.get_media_players_of_platform(entity_ids, SONOS_PLATFORM):
+        return
+    if await async_ensure_sonos_www_copy(hass, audio_dict) and cache:
+        await async_cache_sonos_www_path(hass, filepath_hash, audio_dict[SONOS_WWW_PATH_KEY])
+
+async def async_ensure_sonos_www_copy(hass: HomeAssistant, audio_dict: dict) -> bool:
+    """Copy the processed audio into the www folder for Sonos playback.
+
+    Sonos keeps the last played URL and fetches it again later. The signed
+    media-source URL expires after a day, so that later fetch fails
+    authentication and Home Assistant bans the speaker's IP
+    (home-assistant/core#88714). /local/ is served without an auth check.
+
+    The copy is made from the processed local file rather than reusing
+    PUBLIC_PATH_KEY, which holds audio saved before repeat and FFmpeg
+    processing when Alexa players are targeted in the same call.
+    Returns True when a new copy was made.
+    """
+    existing = audio_dict.get(SONOS_WWW_PATH_KEY) or ""
+    if await hass.async_add_executor_job(filesystem_helper.path_exists, existing):
+        return False
+    audio_dict[SONOS_WWW_PATH_KEY] = None
+    local_path = audio_dict.get(LOCAL_PATH_KEY, None)
+    if not local_path:
+        return False
+    audio_dict[SONOS_WWW_PATH_KEY] = await filesystem_helper.async_copy_file(hass, local_path, _data[WWW_PATH_KEY])
+    return bool(audio_dict[SONOS_WWW_PATH_KEY])
+
+async def async_cache_sonos_www_path(hass: HomeAssistant, filepath_hash: str, www_path: str):
+    """Record the Sonos www copy on its cache entry so clear_cache removes it."""
+    cached = await async_retrieve_data(hass, filepath_hash)
+    if isinstance(cached, dict):
+        cached[SONOS_WWW_PATH_KEY] = www_path
+        await async_store_data(hass, filepath_hash, cached)
+
+def get_sonos_media_content_id(hass: HomeAssistant, audio_dict: dict):
+    """Return a relative /local/ URL for the Sonos www copy, or None.
+
+    The Sonos integration turns a relative URL into an absolute one using
+    Home Assistant's own (internal first) URL.
+    """
+    www_path = audio_dict.get(SONOS_WWW_PATH_KEY)
+    public_dir = hass.config.path("www")
+    if not www_path or not public_dir:
+        return None
+    relative_path = os.path.relpath(www_path, public_dir)
+    if relative_path.startswith(".."):
+        return None
+    return f"/local/{relative_path}"
 
 
 def validate_audio_dict(hass: HomeAssistant, is_local: bool, is_public: bool, audio_dict: dict):
@@ -1689,6 +1748,9 @@ async def async_prepare_media_service_calls(
     # Sonos media_players
     if len(sonos_media_player_entity_ids) > 0:
         sonos_service_data = service_data.copy()
+        sonos_media_content_id = get_sonos_media_content_id(hass, audio_dict)
+        if sonos_media_content_id:
+            sonos_service_data[ATTR_MEDIA_CONTENT_ID] = sonos_media_content_id
         if sonos_service_data[ATTR_MEDIA_CONTENT_ID] is None:
             _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
         else:
@@ -1985,6 +2047,10 @@ async def async_remove_cached_audio_data(hass: HomeAssistant,
             _LOGGER.debug("...removing public file %s", value)
             filesystem_helper.delete_file(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
             audio_dict[PUBLIC_PATH_KEY] = None
+        elif key == SONOS_WWW_PATH_KEY and value is not None and clear_www_tts_cache:
+            _LOGGER.debug("...removing Sonos public file %s", value)
+            filesystem_helper.delete_file(hass, value)
+            audio_dict[SONOS_WWW_PATH_KEY] = None
 
     # Remove key/value from integration storage if no paths remain
     if (
