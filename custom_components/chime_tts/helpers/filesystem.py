@@ -279,9 +279,6 @@ class FilesystemHelper:
                 secure_name = f"{secrets.token_hex(16)}.mp3"
                 audio_full_path = os.path.join(folder, secure_name)
 
-                # Ensure the directory exists
-                os.makedirs(folder, exist_ok=True)
-
                 # Export the audio to the secure file path
                 await self.async_export_audio(audio, audio_full_path)
             except Exception as error:
@@ -299,7 +296,7 @@ class FilesystemHelper:
                     if await hass.async_add_executor_job(
                         self.path_exists, audio_full_path
                     ):
-                        os.remove(audio_full_path)
+                        await hass.async_add_executor_job(os.remove, audio_full_path)
                     await self.async_export_audio(audio, audio_full_path)
             except Exception as error:
                 _LOGGER.warning(
@@ -408,7 +405,7 @@ class FilesystemHelper:
         if await hass.async_add_executor_job(self.path_exists, folder) is False:
             _LOGGER.debug("Creating audio folder: %s", folder)
             try:
-                os.makedirs(folder)
+                await hass.async_add_executor_job(os.makedirs, folder)
                 return True
             except OSError as error:
                 _LOGGER.warning(
@@ -434,7 +431,9 @@ class FilesystemHelper:
             return None
         if await self.async_create_folder(hass, destination_folder):
             try:
-                copied_file_path = shutil.copy(source_file, destination_folder)
+                copied_file_path = await hass.async_add_executor_job(
+                    shutil.copy, source_file, destination_folder
+                )
                 return copied_file_path
             except FileNotFoundError:
                 _LOGGER.warning(
