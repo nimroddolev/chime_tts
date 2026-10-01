@@ -84,11 +84,24 @@ async def test_generate_process_extract_and_fallback(
         "async_load_audio",
         AsyncMock(return_value=AudioSegment.silent(duration=1)),
     )
+    monkeypatch.setattr(helper, "_get_direct_tts_audio", AsyncMock(return_value=None))
     audio = await helper._process_audio_data(
-        hass, "media-source://tts/test", None, datetime.now()
+        hass,
+        "primary",
+        "hello",
+        None,
+        {},
+        "media-source://tts/test",
+        None,
+        datetime.now(),
     )
     assert len(audio) == 1
-    assert await helper._process_audio_data(hass, None, None, datetime.now()) is None
+    assert (
+        await helper._process_audio_data(
+            hass, "primary", "hello", None, {}, None, None, datetime.now()
+        )
+        is None
+    )
 
     retry = AsyncMock(return_value="fallback-audio")
     monkeypatch.setattr(helper, "async_request_tts_audio", retry)
@@ -134,6 +147,95 @@ async def test_request_timeout_and_generation_errors(
     assert "failed to generate" in helper.last_error_message
 
 
+@pytest.mark.asyncio
+async def test_direct_tts_audio_bypasses_media_source_fetch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Direct engine audio retrieval avoids hangs in media-source download paths."""
+    helper = TTSAudioHelper()
+    helper._data = {TTS_PLATFORM_KEY: "primary", FALLBACK_TTS_PLATFORM_KEY: ""}
+
+    class _FakeHass:
+        data = {
+            "tts_manager": SimpleNamespace(
+                process_options=lambda engine, language, options: (
+                    language or "en",
+                    dict(options or {}),
+                )
+            )
+        }
+
+    hass = _FakeHass()
+    engine = SimpleNamespace(
+        async_internal_get_tts_audio=AsyncMock(return_value=("wav", b"bytes"))
+    )
+    module = importlib.import_module(
+        "custom_components.chime_tts.helpers.tts_audio_helper"
+    )
+    monkeypatch.setattr(module.helpers, "get_tts_platform", lambda **kwargs: "primary")
+    monkeypatch.setattr(
+        module.tts.media_source,
+        "generate_media_source_id",
+        lambda **kwargs: "media-source://tts/test",
+    )
+    monkeypatch.setattr(
+        helper, "_get_engine_instance", lambda hass, tts_platform: engine
+    )
+    monkeypatch.setattr(
+        module.tts,
+        "async_get_media_source_audio",
+        AsyncMock(side_effect=AssertionError("media source fetch should be skipped")),
+    )
+    monkeypatch.setattr(
+        module.filesystem_helper,
+        "async_load_audio",
+        AsyncMock(return_value=AudioSegment.silent(duration=1)),
+    )
+    monkeypatch.setattr(module.ir, "async_delete_issue", lambda *args, **kwargs: None)
+
+    audio = await helper.async_request_tts_audio(
+        hass, "primary", "hello", "en", False, {}
+    )
+
+    assert len(audio) == 1
+    engine.async_internal_get_tts_audio.assert_awaited_once_with("hello", "en", {})
+
+
+@pytest.mark.asyncio
+async def test_direct_tts_audio_tries_legacy_provider_name(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A modern-looking configured name can resolve to a legacy provider."""
+    helper = TTSAudioHelper()
+    hass = SimpleNamespace(
+        data={
+            "tts_manager": SimpleNamespace(
+                providers={"legacy_provider": object()},
+                process_options=lambda engine, language, options: (
+                    language or "en",
+                    dict(options or {}),
+                ),
+            )
+        }
+    )
+    engine = SimpleNamespace(
+        async_get_tts_audio=AsyncMock(return_value=("wav", b"bytes"))
+    )
+    resolved_engines: list[str] = []
+
+    def get_engine_instance(_hass, engine_name: str):
+        resolved_engines.append(engine_name)
+        return engine if engine_name == "legacy_provider" else None
+
+    monkeypatch.setattr(helper, "_get_engine_instance", get_engine_instance)
+
+    assert await helper._get_direct_tts_audio(
+        hass, "tts.legacy_provider", "hello", "en", {}
+    ) == ("wav", b"bytes")
+    assert resolved_engines == ["tts.legacy_provider", "legacy_provider"]
+    engine.async_get_tts_audio.assert_awaited_once_with("hello", "en", {})
+
+
 @pytest.mark.parametrize(
     ("tts_platform", "expected"),
     [
@@ -150,4 +252,7 @@ def test_adapt_message_to_platform(tts_platform: str, expected: str) -> None:
 
 def test_adapt_message_to_platform_keeps_maqaf_when_stripping() -> None:
     """Stripping niqqud must not remove the maqaf and join the two words."""
-    assert TTSAudioHelper()._adapt_message_to_platform("כָּל־הָעוֹלָם", "tts.piper") == "כל־העולם"
+    assert (
+        TTSAudioHelper()._adapt_message_to_platform("כָּל־הָעוֹלָם", "tts.piper")
+        == "כל־העולם"
+    )
