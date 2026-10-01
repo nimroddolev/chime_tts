@@ -5,8 +5,8 @@
 # pytest-homeassistant-custom-component pins one HA core version per release.
 # The pin below tracks a recent release; the tox matrix (tox.ini) installs
 # several versions to confirm the integration works across HA releases.
-# Newer HA cores require Python 3.13; on Python 3.12 pip resolves the newest
-# compatible pair (HA 2025.1.x).
+# The current pytest-homeassistant-custom-component release requires Python 3.14.
+# The Docker smoke job below therefore uses Python 3.14 as well.
 
 pytest-homeassistant-custom-component>=0.13.365
 pydub
