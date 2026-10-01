@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import importlib
+import os
+import shutil
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -156,3 +158,45 @@ async def test_chime_path_resolution_for_custom_url_and_set(
     assert await helper.async_get_chime_path_with_offset(
         "Set", False, set_data, hass
     ) == (str(custom), None)
+
+
+class RecordingHass(Hass):
+    """Hass facade that records which callables were sent to the executor."""
+
+    def __init__(self, root: Path) -> None:
+        """Start with an empty executor log."""
+        super().__init__(root)
+        self.executor_calls: list = []
+
+    async def async_add_executor_job(self, func, *args):
+        """Record the callable, then run it inline."""
+        self.executor_calls.append(func)
+        return func(*args)
+
+
+@pytest.mark.asyncio
+async def test_folder_creation_and_copy_run_in_executor(tmp_path: Path) -> None:
+    """Blocking mkdir, copy and remove calls go through the executor."""
+    helper = FilesystemHelper()
+    hass = RecordingHass(tmp_path)
+    source = tmp_path / "source.mp3"
+    source.write_bytes(b"audio")
+    target_dir = tmp_path / "www" / "chime-tts"
+
+    copied = await helper.async_copy_file(hass, str(source), str(target_dir))
+
+    assert copied == str(target_dir / "source.mp3")
+    assert (target_dir / "source.mp3").read_bytes() == b"audio"
+    assert os.makedirs in hass.executor_calls
+    assert shutil.copy in hass.executor_calls
+
+    existing = tmp_path / "existing.mp3"
+    existing.write_bytes(b"old")
+    helper.async_export_audio = AsyncMock()
+    helper.get_downloaded_chime_path = lambda url, folder: str(existing)
+    await helper.async_save_audio_to_folder(
+        hass, None, str(tmp_path), file_name="https://example.com/existing.mp3"
+    )
+
+    assert os.remove in hass.executor_calls
+    assert existing.exists() is False
