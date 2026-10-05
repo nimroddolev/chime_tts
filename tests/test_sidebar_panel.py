@@ -444,6 +444,48 @@ async def test_websocket_save_settings_persists_new_chime_set_and_requires_resta
 
 
 @pytest.mark.asyncio
+async def test_websocket_save_settings_leaves_configuration_yaml_untouched_when_profiles_unchanged(
+    tmp_path: Path,
+) -> None:
+    """Saving an ordinary setting must not rewrite configuration.yaml (#352)."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    original = (
+        "# Keep this operational note.\n"
+        "default_config:\n"
+        "\n"
+        "# Disabled configuration must not disappear.\n"
+        "# recorder:\n"
+        "#   purge_keep_days: 5\n"
+        "\n"
+        "shell_command:\n"
+        "  formatting_example: |-\n"
+        "    printf '%s\\n' 'first line'\n"
+        "    printf '%s\\n' 'second line'\n"
+    )
+    config_file.write_text(original, encoding="utf-8")
+    values = settings_module.get_settings_data(hass, config_entry)
+    values[CHIME_OFFSETS_KEY]["bells"] = 125
+    connection = FakeConnection()
+
+    await save_settings_handler(
+        hass,
+        connection,
+        {
+            "id": 4,
+            "type": "chime_tts/save_settings",
+            "values": values,
+            "notify_profiles": [],
+        },
+    )
+
+    assert connection.errors == []
+    assert connection.results[-1][1]["message_type"] == "success"
+    assert config_entry.options[CHIME_OFFSETS_KEY] == {"bells": 125}
+    assert config_file.read_text(encoding="utf-8") == original
+
+
+@pytest.mark.asyncio
 async def test_websocket_save_custom_chimes_path_does_not_require_restart(tmp_path: Path) -> None:
     """A custom chimes folder update is applied without a restart prompt."""
     hass, config_entry, paths = make_hass(tmp_path)
