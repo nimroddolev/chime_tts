@@ -1365,8 +1365,10 @@ async def websocket_save_settings(
         updated = hass.config_entries.async_update_entry(
             config_entry, options=validation.data
         )
-        await async_save_notify_profiles(hass, notify_validation.data)
         if notify_profiles_changed:
+            # Only rewrite configuration.yaml when the notify profiles changed.
+            # Saving an unrelated setting must leave the file untouched (#352).
+            await async_save_notify_profiles(hass, notify_validation.data)
             try:
                 from ..notify import async_reregister_notify_profiles
 
