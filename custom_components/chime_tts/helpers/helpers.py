@@ -1,10 +1,13 @@
 """Audio helper functions for Chime TTS."""
 
+import asyncio
+from asyncio.subprocess import DEVNULL, PIPE
+import contextlib
 import logging
 import math
 import os
 import re
-import subprocess
+import secrets
 import shutil
 import yaml
 from .media_player_helper import MediaPlayerHelper
@@ -50,6 +53,28 @@ from pydub import AudioSegment
 filesystem_helper = FilesystemHelper()
 
 _LOGGER = logging.getLogger(__name__)
+
+# Seconds to wait for a killed FFmpeg process to exit
+FFMPEG_ABORT_TIMEOUT_S = 5
+
+# Strong references to cleanup tasks that outlive a cancelled caller
+_CLEANUP_TASKS: set[asyncio.Task] = set()
+
+
+async def _async_run_cleanup(cleanup) -> None:
+    """Run a cleanup coroutine to completion, even if the caller is cancelled again."""
+    task = asyncio.get_running_loop().create_task(cleanup)
+    _CLEANUP_TASKS.add(task)
+    task.add_done_callback(_CLEANUP_TASKS.discard)
+    await asyncio.shield(task)
+
+
+async def _async_capture(awaitable) -> tuple:
+    """Await and return (result, error), so a shielded job never raises unobserved."""
+    try:
+        return await awaitable, None
+    except Exception as error:
+        return None, error
 
 TTS_ENTITY_PREFIX = "tts."
 
@@ -97,6 +122,16 @@ _KNOWN_TTS_PROVIDER_ALIASES = {
     "yandex": YANDEX_TTS,
     "yandextts": YANDEX_TTS,
 }
+def ffmpeg_output_path(source_path: str, ffmpeg_args: str) -> str:
+    """Return where FFmpeg output for source_path ends up given ffmpeg_args."""
+    args = (ffmpeg_args or "").split()
+    if "-f" in args:
+        index = args.index("-f")
+        if index + 1 < len(args) and args[index + 1] != "mp3":
+            return f"{os.path.splitext(source_path)[0]}.{args[index + 1]}"
+    return source_path
+
+
 class ChimeTTSHelper:
     """Helper functions for Chime TTS."""
 
@@ -713,43 +748,79 @@ class ChimeTTSHelper:
             _LOGGER.warning("Skipping FFmpeg conversion: %s", error_string)
             return ret_val
 
-        # Save to temp file
-        temp_filename = "temp_segment.mp3"
-        temp_audio_file = await filesystem_helper.async_save_audio_to_folder(
+        # Unique name so concurrent conversions don't collide. Chosen before the
+        # save so cleanup knows the path even if the save is interrupted.
+        temp_filename = f"{secrets.token_hex(16)}.mp3"
+        temp_audio_file = filesystem_helper.get_downloaded_chime_path(folder=folder, url=temp_filename)
+        converted_audio_file = None
+        save_job = asyncio.ensure_future(_async_capture(filesystem_helper.async_save_audio_to_folder(
             hass=hass,
             audio=audio_segment,
             folder=folder,
-            file_name=temp_filename)
-        if not temp_audio_file:
-            full_path = f"{folder}/{temp_filename}"
-            _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to store audio segment to: %s", full_path)
-            return ret_val
+            file_name=temp_filename)))
+        try:
+            # Shielded: the export thread can't be stopped, so cleanup waits for it instead
+            saved_file, error = await asyncio.shield(save_job)
+            if not saved_file:
+                _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to store audio segment to: %s. Error: %s", temp_audio_file, error)
+                return ret_val
 
-        # Convert with FFmpeg
-        converted_audio_file = await self.async_ffmpeg_convert_from_file(hass, temp_audio_file, ffmpeg_args)
-        if converted_audio_file is None or converted_audio_file is False or len(converted_audio_file) < 5:
-            _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to convert audio segment from file %s", temp_audio_file)
+            # Convert with FFmpeg
+            converted_audio_file = await self.async_ffmpeg_convert_from_file(hass, temp_audio_file, ffmpeg_args)
+            if converted_audio_file is None or converted_audio_file is False or len(converted_audio_file) < 5:
+                _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to convert audio segment from file %s", temp_audio_file)
 
-        # Load new AudioSegment from converted file
-        else:
-            try:
-                ret_val = await filesystem_helper.async_load_audio(str(converted_audio_file))
-            except Exception as error:
-                _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to load converted audio segment from file: %s. Error: %s",
-                                str(converted_audio_file), error)
+            # Load new AudioSegment from converted file
+            else:
+                try:
+                    ret_val = await filesystem_helper.async_load_audio(str(converted_audio_file))
+                except Exception as error:
+                    _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to load converted audio segment from file: %s. Error: %s",
+                                    str(converted_audio_file), error)
+        finally:
+            # An explicit non-mp3 format (eg: -f wav) leaves its output beside the temp file
+            sibling_output = ffmpeg_output_path(temp_audio_file, ffmpeg_args)
+            await _async_run_cleanup(
+                self.async_remove_temp_files(
+                    hass, [temp_audio_file, converted_audio_file, sibling_output], wait_for=save_job))
 
-        # Delete temp file & converted file
-        for file_path in [temp_audio_file, converted_audio_file]:
+        return ret_val
+
+    async def async_remove_temp_files(self, hass: HomeAssistant, file_paths: list, wait_for: asyncio.Future | None = None) -> None:
+        """Delete FFmpeg temp files that exist, without touching the event loop.
+
+        wait_for is an in-flight job that may still write one of the files.
+        """
+        if wait_for is not None:
+            await asyncio.wait([wait_for])
+        for file_path in file_paths:
             if (file_path
                 and isinstance(file_path, str)
                 and await hass.async_add_executor_job(filesystem_helper.path_exists, file_path)):
                 try:
-                    os.remove(file_path)
+                    await hass.async_add_executor_job(os.remove, file_path)
                 except Exception as error:
-                    _LOGGER.warning("ffmpeg_convert_from_audio_segment - Unable to delete file: %s. Error: %s",
+                    _LOGGER.warning("Unable to delete FFmpeg temp file: %s. Error: %s",
                                     str(file_path), error)
 
-        return ret_val
+    async def _async_abort_ffmpeg(self,
+                                  hass: HomeAssistant,
+                                  ffmpeg_process: asyncio.subprocess.Process | None,
+                                  output_path: str,
+                                  wait_for: asyncio.Future | None = None) -> None:
+        """Stop FFmpeg if still running, then delete its output."""
+        if ffmpeg_process is not None:
+            if ffmpeg_process.returncode is None:
+                with contextlib.suppress(ProcessLookupError):
+                    ffmpeg_process.kill()
+            # Keep draining stderr so a full pipe can't stall the exit
+            try:
+                await asyncio.wait_for(ffmpeg_process.communicate(), timeout=FFMPEG_ABORT_TIMEOUT_S)
+            except TimeoutError:
+                _LOGGER.warning("FFmpeg did not exit after being stopped: %s", output_path)
+            except Exception as error:
+                _LOGGER.debug("Error while stopping FFmpeg: %s", error)
+        await self.async_remove_temp_files(hass, [output_path], wait_for=wait_for)
 
     async def async_ffmpeg_convert_from_file(self, hass: HomeAssistant, file_path: str, ffmpeg_args: str):
         """Convert audio file with FFmpeg and provided arguments."""
@@ -765,6 +836,10 @@ class ChimeTTSHelper:
             return file_path
 
         ffmpeg_cmd_string = ""
+        converted_file_path = None
+        ffmpeg_process = None
+        move_job = None
+        keep_output = False
         try:
             # Add standard arguments
             ffmpeg_cmd = [
@@ -774,65 +849,55 @@ class ChimeTTSHelper:
                 *ffmpeg_args.split()
             ]
 
-            # Save to a specific file type (eg: -f wav)
-            try:
-                # Use specified file type
-                index = ffmpeg_cmd.index('-f')
-                if index >= 0 and len(ffmpeg_args) >= index:
-                    file_extension = ffmpeg_cmd[index+1]
-                    if file_extension != "mp3":
-                        converted_file_path = local_file_path.replace(".mp3", f".{file_extension}")
-            except Exception:
-                # Use mp3 as default
-                converted_file_path = local_file_path.replace(".mp3", "_converted.mp3")
+            # The converted file replaces the source, unless an explicit non-mp3
+            # output type (eg: -f wav) is requested, which is saved alongside it
+            output_file_path = ffmpeg_output_path(local_file_path, ffmpeg_args)
 
-            if converted_file_path == local_file_path:
-                converted_file_path = local_file_path.replace(".mp3", "_converted.mp3")
-
-            # Delete converted output file if it exists
-            if await hass.async_add_executor_job(filesystem_helper.path_exists, converted_file_path):
-                os.remove(converted_file_path)
-
+            # FFmpeg writes to a unique temp name, then it is moved into place, so
+            # concurrent conversions of one file can't clobber each other's output
+            root, extension = os.path.splitext(output_file_path)
+            converted_file_path = f"{root}_converted_{secrets.token_hex(8)}{extension or '.mp3'}"
             ffmpeg_cmd.append(converted_file_path)
 
             # Convert the audio file
             ffmpeg_cmd_string = " ".join(ffmpeg_cmd)
             _LOGGER.debug("Running FFmpeg operation: \"%s\"", ffmpeg_cmd_string)
-            ffmpeg_process = subprocess.Popen(ffmpeg_cmd,
-                                              stdin=subprocess.PIPE,
-                                              stdout=subprocess.PIPE,
-                                              stderr=subprocess.PIPE)
-            _, error_output = ffmpeg_process.communicate()
-
+            ffmpeg_process = await asyncio.create_subprocess_exec(*ffmpeg_cmd,
+                                                                  stdin=DEVNULL,
+                                                                  stdout=DEVNULL,
+                                                                  stderr=PIPE)
+            _, error_output = await ffmpeg_process.communicate()
 
             if ffmpeg_process.returncode != 0:
-                error_message = error_output.decode('utf-8')
+                error_message = error_output.decode('utf-8', errors='replace')
                 _LOGGER.error(("FFmpeg operation failed.\n\nArguments string: \"%s\"\n\nError code: %s\n\nError output:\n%s"),
                                str(ffmpeg_process.returncode),
                                str(error_message),
                                ffmpeg_cmd_string)
                 return False
 
-            # Replace original with converted file
-            if converted_file_path == local_file_path.replace(".mp3", "_converted.mp3"):
-                try:
-                    shutil.move(converted_file_path, local_file_path)
-                except Exception as error:
-                    _LOGGER.error("Error renaming file %s to %s. Error: %s. FFmpeg options: %s",
-                                   local_file_path, converted_file_path, error, ffmpeg_cmd_string)
-                    return False
+            # Move converted file into place
+            move_job = asyncio.ensure_future(
+                _async_capture(hass.async_add_executor_job(shutil.move, converted_file_path, output_file_path)))
+            _, error = await asyncio.shield(move_job)
+            if error is not None:
+                _LOGGER.error("Error renaming file %s to %s. Error: %s. FFmpeg options: %s",
+                               converted_file_path, output_file_path, error, ffmpeg_cmd_string)
+                return False
 
+            keep_output = True
             return file_path
-
-        except subprocess.CalledProcessError as error:
-            _LOGGER.error("FFmpeg subproces error: %s FFmpeg options: %s",
-                           error, ffmpeg_cmd_string)
 
         except Exception as error:
             _LOGGER.error("FFmpeg unexpected error: %s FFmpeg options: %s",
                            error, ffmpeg_cmd_string)
+            return False
 
-        return file_path
+        finally:
+            # Runs on failure and cancellation alike, so partial output never lingers
+            if not keep_output and converted_file_path:
+                await _async_run_cleanup(
+                    self._async_abort_ffmpeg(hass, ffmpeg_process, converted_file_path, wait_for=move_job))
 
     def add_atempo_values_to_ffmpeg_args_string(self, tempo: float, ffmpeg_args_string: str = None):
         """Add chained FFmpeg atempo filters for values outside its 0.5–2.0 range."""
@@ -840,7 +905,7 @@ class ChimeTTSHelper:
         remaining = tempo
         # Zero, negative, NaN or infinite tempos never converge in the loops
         # below; leave the audio at its current tempo instead.
-        if not isinstance(tempo, (int, float)) or not math.isfinite(tempo) or tempo <= 0:
+        if not isinstance(tempo, int | float) or not math.isfinite(tempo) or tempo <= 0:
             _LOGGER.warning("Ignoring invalid audio tempo value: %s", tempo)
             return ffmpeg_args_string
 

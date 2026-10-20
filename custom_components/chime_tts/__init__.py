@@ -534,9 +534,9 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
                     await hass.async_add_executor_job(time.sleep, remove_temp_file_delay_s)
                 else:
                     _LOGGER.debug("Removing temporary file%s:", "s" if local_path and public_path else "")
-                filesystem_helper.delete_file(hass, local_path)
-                filesystem_helper.delete_file(hass, public_path)
-                filesystem_helper.delete_file(hass, audio_dict.get(SONOS_WWW_PATH_KEY))
+                await filesystem_helper.async_delete_file(hass, local_path)
+                await filesystem_helper.async_delete_file(hass, public_path)
+                await filesystem_helper.async_delete_file(hass, audio_dict.get(SONOS_WWW_PATH_KEY))
         else:
             await async_run_script(hass, params.get("post_script"))
 
@@ -1077,10 +1077,11 @@ async def async_get_playback_audio_path(params: dict, options: dict):
                 cover_art_filepath = f"{filesystem_helper.path_to_parent_folder('custom_components')}/chime_tts/cover_art.jpg"
                 if await hass.async_add_executor_job(filesystem_helper.path_exists, cover_art_filepath):
                     _LOGGER.debug("Adding cover art to %s", new_audio_file)
+                    # A failed conversion returns False; keep playing the original.
                     new_audio_file = await helpers.async_ffmpeg_convert_from_file(
                         hass,
                         new_audio_file,
-                        f"-i {cover_art_filepath} -c copy -map 0 -map 1")
+                        f"-i {cover_art_filepath} -c copy -map 0 -map 1") or new_audio_file
 
         # Perform FFmpeg conversion
         if ffmpeg_args:
@@ -1610,7 +1611,7 @@ async def async_get_audio_from_path(
 
             # Remove downloaded file when cache=false
             if cache is False and file_hash is not None:
-                filesystem_helper.delete_file(hass, filepath)
+                await filesystem_helper.async_delete_file(hass, filepath)
 
             if audio_from_path is not None:
                 duration = float(len(audio_from_path) / 1000.0)
@@ -1753,6 +1754,17 @@ def _squeezebox_service_calls(entity_ids: list[str], service_data: dict, extra: 
             })
     return service_calls
 
+
+async def _async_alexa_compatible_file(hass: HomeAssistant, public_file: str) -> str:
+    """Convert public_file for Alexa Media Player, keeping the original if that fails."""
+    if await filesystem_helper.async_is_audio_alexa_compatible(hass=hass, file_path=public_file):
+        return public_file
+    converted = await helpers.async_ffmpeg_convert_from_file(hass, public_file, FFMPEG_ARGS_ALEXA)
+    if not converted:
+        _LOGGER.warning("Alexa conversion failed; sending the unconverted file: %s", public_file)
+        return public_file
+    return converted
+
 async def async_prepare_media_service_calls(
     hass: HomeAssistant, entity_ids, service_data, audio_dict, extra: dict | None = None
 ):
@@ -1877,9 +1889,7 @@ async def async_prepare_media_service_calls(
         for entity_id in alexa_media_player_entity_ids:
             _LOGGER.debug("     - %s", entity_id)
 
-        # Ensure audio file is Alexa Media Player compatible
-        if not await filesystem_helper.async_is_audio_alexa_compatible(hass=hass, file_path=public_file):
-            public_file = await helpers.async_ffmpeg_convert_from_file(hass, public_file, FFMPEG_ARGS_ALEXA)
+        public_file = await _async_alexa_compatible_file(hass, public_file)
 
         # Add service call
         if len(public_file) > 0:
@@ -2144,19 +2154,19 @@ async def async_remove_cached_audio_data(hass: HomeAssistant,
         if key == LOCAL_PATH_KEY and audio_dict.get(LOCAL_PATH_KEY, None) is not None:
             if clear_chimes_cache and await filesystem_helper.async_file_exists_in_directory(value, temp_chimes_path):
                 _LOGGER.debug("...removing chime file %s", value)
-                filesystem_helper.delete_file(hass, audio_dict.get(LOCAL_PATH_KEY, None))
+                await filesystem_helper.async_delete_file(hass, audio_dict.get(LOCAL_PATH_KEY, None))
                 audio_dict[LOCAL_PATH_KEY] = None
             elif clear_temp_tts_cache and await filesystem_helper.async_file_exists_in_directory(value, temp_path):
                 _LOGGER.debug("...removing TTS file %s", value)
-                filesystem_helper.delete_file(hass, audio_dict.get(LOCAL_PATH_KEY, None))
+                await filesystem_helper.async_delete_file(hass, audio_dict.get(LOCAL_PATH_KEY, None))
                 audio_dict[LOCAL_PATH_KEY] = None
         elif key == PUBLIC_PATH_KEY and value is not None and clear_www_tts_cache:
             _LOGGER.debug("...removing public file %s", value)
-            filesystem_helper.delete_file(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
+            await filesystem_helper.async_delete_file(hass, audio_dict.get(PUBLIC_PATH_KEY, None))
             audio_dict[PUBLIC_PATH_KEY] = None
         elif key == SONOS_WWW_PATH_KEY and value is not None and clear_www_tts_cache:
             _LOGGER.debug("...removing Sonos public file %s", value)
-            filesystem_helper.delete_file(hass, value)
+            await filesystem_helper.async_delete_file(hass, value)
             audio_dict[SONOS_WWW_PATH_KEY] = None
 
     # Remove key/value from integration storage if no paths remain
