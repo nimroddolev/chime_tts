@@ -69,3 +69,26 @@ def test_falls_back_to_registries_when_target_helper_lacks_target_selection():
     })
 
     assert resolver.resolve_media_player_entity_ids(hass, {"device_id": "device_1"}) == ["media_player.kitchen"]
+
+
+def test_fallback_expands_group_targets_without_target_selection():
+    """The registry fallback expands groups before filtering media players."""
+    resolver = _resolver_module()
+    resolver.target_helper = SimpleNamespace()
+    states = {
+        "group.downstairs": SimpleNamespace(
+            attributes={"entity_id": ["media_player.kitchen", "light.hall"]}
+        ),
+    }
+    hass = SimpleNamespace(
+        data={
+            "entity_registry": SimpleNamespace(entities={}),
+            "device_registry": SimpleNamespace(devices={}),
+            "area_registry": SimpleNamespace(areas={}),
+        },
+        states=SimpleNamespace(get=states.get),
+    )
+
+    assert resolver.resolve_media_player_entity_ids(
+        hass, {"entity_id": "group.downstairs"}
+    ) == ["media_player.kitchen"]
