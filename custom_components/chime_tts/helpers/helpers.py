@@ -905,7 +905,7 @@ class ChimeTTSHelper:
         remaining = tempo
         # Zero, negative, NaN or infinite tempos never converge in the loops
         # below; leave the audio at its current tempo instead.
-        if not isinstance(tempo, (int, float)) or not math.isfinite(tempo) or tempo <= 0:
+        if not isinstance(tempo, int | float) or not math.isfinite(tempo) or tempo <= 0:
             _LOGGER.warning("Ignoring invalid audio tempo value: %s", tempo)
             return ffmpeg_args_string
 
