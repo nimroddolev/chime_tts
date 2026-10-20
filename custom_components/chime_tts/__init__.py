@@ -1672,7 +1672,7 @@ async def async_play_media(
         hass, entity_ids, service_data, audio_dict, extra
     )
     play_result = await async_fire_media_service_calls(hass, media_service_calls)
-    if play_result is False:
+    if play_result is not True:
         _LOGGER.error("Playback failed")
 
     return play_result
@@ -1841,12 +1841,12 @@ async def async_prepare_media_service_calls(
 def _settle_delay_ms(service_call: dict) -> float:
     """Settle delay requested by a service call, or 0 when none is set."""
     delay_after = service_call.get("delay_after", 0)
-    if isinstance(delay_after, (int, float)) and delay_after > 0:
+    if isinstance(delay_after, int | float) and delay_after > 0:
         return delay_after
     return 0
 
-async def async_fire_media_service_calls(hass: HomeAssistant, media_service_calls):
-    """Fire the array of media service_calls."""
+async def async_fire_media_service_calls(hass: HomeAssistant, media_service_calls) -> bool | None:
+    """Fire media service calls, returning None after a partial dispatch failure."""
     if media_service_calls is None:
         _LOGGER.error("No service calls to fire")
         return False
@@ -1862,9 +1862,11 @@ async def async_fire_media_service_calls(hass: HomeAssistant, media_service_call
     if settle_calls:
         await asyncio.sleep(max(_settle_delay_ms(call) for call in settle_calls) / 1000)
 
+    dispatched_playback = False
     for service_call in other_calls:
         if not await _async_fire_media_service_call(hass, service_call):
-            return False
+            return None if dispatched_playback else False
+        dispatched_playback = True
 
     return True
 

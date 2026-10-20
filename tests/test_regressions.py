@@ -1213,6 +1213,20 @@ def test_issue_275_runner_does_not_sleep_without_tag(monkeypatch):
     assert events == []
 
 
+def test_issue_275_runner_reports_partial_dispatch_failure(monkeypatch):
+    """A later failure must not skip playback cleanup for earlier dispatches."""
+    calls = [
+        {"domain": "media_player", "service": "play_media", "service_data": {}},
+        {"domain": "notify", "service": "alexa_media", "service_data": {}},
+    ]
+    result, events = _fire_calls_with_fake_sleep(
+        monkeypatch, calls, fail_service="alexa_media"
+    )
+
+    assert result is None
+    assert events == [("call", "play_media")]
+
+
 def test_issue_275_runner_blocks_only_settle_calls(monkeypatch):
     """volume_set completes before the settle delay; every other call stays non-blocking."""
     from custom_components.chime_tts import _sonos_volume_set_call
