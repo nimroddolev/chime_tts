@@ -1741,6 +1741,8 @@ class ConfigurationYamlWriteError(HomeAssistantError):
 
 
 _READ_ONLY_ERRNOS = {errno.EACCES, errno.EPERM, errno.EROFS}
+_XATTR_UNSUPPORTED_ERRNOS = {errno.ENOTSUP, errno.EOPNOTSUPP}
+_DIRECTORY_FSYNC_UNSUPPORTED_ERRNOS = {errno.EINVAL, errno.ENOTSUP, errno.EOPNOTSUPP}
 
 
 def _write_text_in_place(path: str, content: str) -> None:
@@ -1752,13 +1754,14 @@ def _write_text_in_place(path: str, content: str) -> None:
 
 
 def _has_posix_acl(path: str, name: str = "system.posix_acl_access") -> bool:
-    """Return whether path carries the given ACL xattr, which a rename would drop."""
+    """Return whether path might carry an ACL xattr that a rename would drop."""
     if not hasattr(os, "listxattr"):
         return False
     try:
         return name in os.listxattr(path)
-    except OSError:
-        return False
+    except OSError as error:
+        # Unknown metadata must use the in-place path, which preserves it.
+        return error.errno not in _XATTR_UNSUPPORTED_ERRNOS
 
 
 def _has_extra_xattrs(path: str) -> bool:
@@ -1770,8 +1773,9 @@ def _has_extra_xattrs(path: str) -> bool:
         return False
     try:
         names = os.listxattr(path)
-    except OSError:
-        return False
+    except OSError as error:
+        # Avoid replacing a file when its metadata could not be inspected.
+        return error.errno not in _XATTR_UNSUPPORTED_ERRNOS
     return any(name != "security.selinux" for name in names)
 
 
@@ -1811,14 +1815,14 @@ def _temp_matches_target(temp_path: str, target: str, current: os.stat_result) -
 
 def _fsync_directory(directory: str) -> None:
     """Flush a directory entry so a completed rename survives a power loss."""
+    dir_fd = os.open(directory, os.O_RDONLY)
     try:
-        dir_fd = os.open(directory, os.O_RDONLY)
-    except OSError:
-        return
-    try:
-        # Some filesystems refuse fsync on a directory; the rename still happened.
-        with contextlib.suppress(OSError):
+        try:
             os.fsync(dir_fd)
+        except OSError as error:
+            # Some filesystems do not support syncing directory descriptors.
+            if error.errno not in _DIRECTORY_FSYNC_UNSUPPORTED_ERRNOS:
+                raise
     finally:
         os.close(dir_fd)
 
@@ -1868,17 +1872,23 @@ def _write_text_atomically(path: str, content: str) -> None:
         _write_text_in_place(target, content)
         return
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as temp_file:
+        with os.fdopen(fd, "w", encoding="utf-8", closefd=False) as temp_file:
             temp_file.write(content)
             temp_file.flush()
             os.fsync(temp_file.fileno())
         # The temp file stays 0600 until its owner is right, so it is never
         # readable by the wrong group.
         if not _temp_matches_target(temp_path, target, current):
+            os.close(fd)
+            fd = None
             os.unlink(temp_path)
             _write_text_in_place(target, content)
             return
         os.chmod(temp_path, stat.S_IMODE(current.st_mode))
+        # chown and chmod change inode metadata after the content fsync.
+        os.fsync(fd)
+        os.close(fd)
+        fd = None
         try:
             os.replace(temp_path, target)
         except OSError as error:
@@ -1893,6 +1903,10 @@ def _write_text_atomically(path: str, content: str) -> None:
         with contextlib.suppress(FileNotFoundError):
             os.unlink(temp_path)
         raise
+    finally:
+        if fd is not None:
+            with contextlib.suppress(OSError):
+                os.close(fd)
 
 
 def _write_configuration_yaml(hass, loaded: dict[str, Any]) -> None:

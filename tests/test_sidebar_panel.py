@@ -2797,7 +2797,46 @@ def test_issue_352_file_with_other_xattrs_writes_in_place(tmp_path: Path) -> Non
 
 def test_issue_352_extra_xattr_detection_ignores_selinux(monkeypatch: pytest.MonkeyPatch) -> None:
     """Only attributes other than the separately compared SELinux label count."""
-    monkeypatch.setattr(settings_module.os, "listxattr", lambda path: ["security.selinux"])
+    monkeypatch.setattr(
+        settings_module.os, "listxattr", lambda path: ["security.selinux"], raising=False
+    )
     assert settings_module._has_extra_xattrs("/config/configuration.yaml") is False
-    monkeypatch.setattr(settings_module.os, "listxattr", lambda path: ["security.selinux", "user.note"])
+    monkeypatch.setattr(
+        settings_module.os,
+        "listxattr",
+        lambda path: ["security.selinux", "user.note"],
+        raising=False,
+    )
     assert settings_module._has_extra_xattrs("/config/configuration.yaml") is True
+
+
+def test_issue_352_xattr_inspection_error_writes_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Unknown xattrs prevent a replace that could discard metadata."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+
+    def unreadable_xattrs(path):
+        raise OSError(errno.EIO, "I/O error")
+
+    monkeypatch.setattr(settings_module.os, "listxattr", unreadable_xattrs, raising=False)
+    _save_arrival_profile(hass)
+
+    assert config_file.stat().st_ino == inode
+    assert _saved_profile_names(config_file) == ["arrival"]
+
+
+def test_issue_352_directory_fsync_error_is_reported(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A real directory fsync error is not reported as a durable save."""
+    real_fsync = settings_module.os.fsync
+
+    def fail_directory_fsync(file_descriptor):
+        raise OSError(errno.EIO, "I/O error")
+
+    monkeypatch.setattr(settings_module.os, "fsync", fail_directory_fsync)
+    with pytest.raises(OSError, match="I/O error"):
+        settings_module._fsync_directory(str(tmp_path))
+    monkeypatch.setattr(settings_module.os, "fsync", real_fsync)
