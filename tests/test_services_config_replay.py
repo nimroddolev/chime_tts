@@ -68,7 +68,9 @@ class FakeServices:
         """Track removed services."""
         self.removed.append((domain, service))
 
-    async def async_call(self, domain: str, service: str, service_data: dict) -> None:
+    async def async_call(
+        self, domain: str, service: str, service_data: dict, blocking: bool = False
+    ) -> None:
         """Record service calls and optionally raise a configured error."""
         self.calls.append(
             {"domain": domain, "service": service, "service_data": service_data}
@@ -629,6 +631,7 @@ async def test_async_fire_media_service_calls_returns_false_on_service_errors() 
     )
 
     assert result is False
+    assert len(hass.services.calls) == 1
 
 
 @pytest.mark.asyncio

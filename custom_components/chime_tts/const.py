@@ -48,6 +48,10 @@ CAST_PLATFORM = "cast"
 SONOS_PLATFORM = "sonos"
 SPOTIFY_PLATFORM = "spotify"
 
+# Some Sonos models drop a play_media that arrives in the same instant as the
+# preceding volume_set. Wait this long after the volume_set so the speaker settles.
+SONOS_VOLUME_SETTLE_MS = 200
+
 ROOT_PATH_KEY = "root_path_key"
 MEDIA_FOLDER_PATH = "/local/"
 PUBLIC_FOLDER_PATH = "/config/www/"

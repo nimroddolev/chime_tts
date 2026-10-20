@@ -1,5 +1,6 @@
 """The Chime TTS integration."""
 
+import asyncio
 import logging
 import os
 import time
@@ -80,6 +81,7 @@ from .const import (
     ALEXA_MEDIA_PLAYER_PLATFORM,
     FFMPEG_ARGS_ALEXA,
     SONOS_PLATFORM,
+    SONOS_VOLUME_SETTLE_MS,
     MP3_PRESET_CUSTOM_PREFIX,
     MP3_PRESET_CUSTOM_KEY,
     QUEUE_TIMEOUT_KEY,
@@ -511,13 +513,13 @@ async def async_prepare_media(hass: HomeAssistant, params, options, media_player
                 params["announce"],
                 params.get("extra"),
             )
-            if play_result is True:
-                await async_post_playback_actions(
-                    hass,
-                    audio_duration,
-                    params["final_delay"],
-                    media_players_array,
-                )
+            await async_post_playback_actions(
+                hass,
+                audio_duration,
+                params["final_delay"],
+                media_players_array,
+                wait_for_playback=play_result is not False,
+            )
 
             # Optional script to run after playback (#310)
             await async_run_script(hass, params.get("post_script"))
@@ -1674,7 +1676,7 @@ async def async_play_media(
         hass, entity_ids, service_data, audio_dict, extra
     )
     play_result = await async_fire_media_service_calls(hass, media_service_calls)
-    if play_result is False:
+    if play_result is not True:
         _LOGGER.error("Playback failed")
 
     return play_result
@@ -1695,6 +1697,8 @@ def _sonos_volume_set_call(entity_id, volume_percent: int):
         },
         "blocking": True,
         "result": True,
+        # Let the speaker apply the new level before the announcement arrives.
+        "delay_after": SONOS_VOLUME_SETTLE_MS,
     }
 
 async def async_prepare_media_service_calls(
@@ -1838,69 +1842,100 @@ async def async_prepare_media_service_calls(
     return service_calls
 
 
-async def async_fire_media_service_calls(hass: HomeAssistant, media_service_calls):
-    """Fire the array of media service_calls."""
+def _settle_delay_ms(service_call: dict) -> float:
+    """Settle delay requested by a service call, or 0 when none is set."""
+    delay_after = service_call.get("delay_after", 0)
+    if isinstance(delay_after, int | float) and delay_after > 0:
+        return delay_after
+    return 0
+
+async def async_fire_media_service_calls(hass: HomeAssistant, media_service_calls) -> bool | None:
+    """Fire media service calls, returning None after a partial dispatch failure."""
     if media_service_calls is None:
         _LOGGER.error("No service calls to fire")
         return False
-    for service_call in media_service_calls:
-        _LOGGER.debug("   Calling %s.%s with data:",
-                    service_call["domain"],
-                    service_call["service"])
-        for key, value in service_call["service_data"].items():
-            _LOGGER.debug("     - %s: %s", str(key), str(value))
-        try:
-            await hass.services.async_call(
-                domain=service_call["domain"],
-                service=service_call["service"],
-                service_data=service_call["service_data"]
+
+    # Fire every call that needs a settle delay (Sonos volume_set) first and
+    # wait once, so rooms with different volumes do not start staggered.
+    settle_calls = [call for call in media_service_calls if _settle_delay_ms(call) > 0]
+    other_calls = [call for call in media_service_calls if _settle_delay_ms(call) == 0]
+    for service_call in settle_calls:
+        # Block so the delay starts once the volume change has been applied
+        if not await _async_fire_media_service_call(hass, service_call, blocking=True):
+            return False
+    if settle_calls:
+        await asyncio.sleep(max(_settle_delay_ms(call) for call in settle_calls) / 1000)
+
+    dispatched_playback = False
+    for service_call in other_calls:
+        if not await _async_fire_media_service_call(hass, service_call):
+            return None if dispatched_playback else False
+        dispatched_playback = True
+
+    return True
+
+async def _async_fire_media_service_call(hass: HomeAssistant, service_call: dict, blocking: bool = False) -> bool:
+    """Fire a single media service call, logging and returning False on failure."""
+    _LOGGER.debug("   Calling %s.%s with data:",
+                service_call["domain"],
+                service_call["service"])
+    for key, value in service_call["service_data"].items():
+        _LOGGER.debug("     - %s: %s", str(key), str(value))
+    try:
+        await hass.services.async_call(
+            domain=service_call["domain"],
+            service=service_call["service"],
+            service_data=service_call["service_data"],
+            blocking=blocking,
+        )
+    except ServiceNotFound:
+        _LOGGER.error("Could not find service `%s.%s`.%s",
+                service_call["domain"],
+                service_call["service"],
+                (" Please install the Alexa Media Player Custom Component: https://github.com/alandtse/alexa_media_player"
+                    if service_call["service"] == "alexa_media"
+                    else "")
+        )
+        return False
+    except TemplateError as err:
+        _LOGGER.error("Error while rendering Jinja2 template for audio playback: %s", err)
+        return False
+    except HomeAssistantError as err:
+        _LOGGER.error("An error occurred: %s", str(err))
+        if err == "Unknown source directory":
+            _LOGGER.warning(
+                "Please check that media directories are enabled in your configuration.yaml file, e.g:\r\n\r\nmedia_source:\r\n media_dirs:\r\n   local: /media"
             )
-        except ServiceNotFound:
-            _LOGGER.error("Could not find service `%s.%s`.%s",
-                    service_call["domain"],
-                    service_call["service"],
-                    (" Please install the Alexa Media Player Custom Component: https://github.com/alandtse/alexa_media_player"
-                        if service_call["service"] == "alexa_media"
-                        else "")
-            )
-            return False
-        except TemplateError as err:
-            _LOGGER.error("Error while rendering Jinja2 template for audio playback: %s", err)
-            return False
-        except HomeAssistantError as err:
-            _LOGGER.error("An error occurred: %s", str(err))
-            if err == "Unknown source directory":
-                _LOGGER.warning(
-                    "Please check that media directories are enabled in your configuration.yaml file, e.g:\r\n\r\nmedia_source:\r\n media_dirs:\r\n   local: /media"
-                )
-            return False
-        except Exception as err:
-            _LOGGER.error("Unexpected error when playing audio via %s.%s: %s",
-                            service_call["domain"],
-                            service_call["service"],
-                            str(err)
-                            )
-            return False
+        return False
+    except Exception as err:
+        _LOGGER.error("Unexpected error when playing audio via %s.%s: %s",
+                        service_call["domain"],
+                        service_call["service"],
+                        str(err)
+                        )
+        return False
 
     return True
 
 async def async_post_playback_actions(hass: HomeAssistant,
                                       audio_duration: float,
                                       final_delay: float,
-                                      media_players_array: list[ChimeTTSMediaPlayer]):
+                                      media_players_array: list[ChimeTTSMediaPlayer],
+                                      wait_for_playback: bool = True):
     """Run post playback actions."""
-    # Wait the audio playback duration
-    total_delay_s = round(audio_duration + ((final_delay/1000) if final_delay > 0 else 0),3)
-    _LOGGER.debug(" - Waiting %ss for audio playback to complete...", str(total_delay_s))
-    await hass.async_add_executor_job(time.sleep, total_delay_s)
+    if wait_for_playback:
+        # Wait the audio playback duration
+        total_delay_s = round(audio_duration + ((final_delay/1000) if final_delay > 0 else 0),3)
+        _LOGGER.debug(" - Waiting %ss for audio playback to complete...", str(total_delay_s))
+        await hass.async_add_executor_job(time.sleep, total_delay_s)
 
-    # Wait for playback to end on all media_players
-    playing_media_players: list[ChimeTTSMediaPlayer] = []
-    for media_player in media_players_array:
-        if not(media_player_helper.announce and (media_player.platform == SPOTIFY_PLATFORM or media_player.platform == SONOS_PLATFORM)):
-            playing_media_players.append(media_player)
-    if not await media_player_helper.async_wait_until_media_players_state_not(hass, playing_media_players, "playing"):
-        _LOGGER.debug(" - Timed out waiting for playback to complete")
+        # Wait for playback to end on all media_players
+        playing_media_players: list[ChimeTTSMediaPlayer] = []
+        for media_player in media_players_array:
+            if not(media_player_helper.announce and (media_player.platform == SPOTIFY_PLATFORM or media_player.platform == SONOS_PLATFORM)):
+                playing_media_players.append(media_player)
+        if not await media_player_helper.async_wait_until_media_players_state_not(hass, playing_media_players, "playing"):
+            _LOGGER.debug(" - Timed out waiting for playback to complete")
 
     fade_in_media_players: list[ChimeTTSMediaPlayer] = media_player_helper.get_fade_in_out_media_players()
     set_volume_media_players: list[ChimeTTSMediaPlayer] = media_player_helper.get_set_volume_media_players()
