@@ -1,5 +1,6 @@
 """The Chime TTS integration."""
 
+import asyncio
 import logging
 import os
 import time
@@ -80,6 +81,7 @@ from .const import (
     ALEXA_MEDIA_PLAYER_PLATFORM,
     FFMPEG_ARGS_ALEXA,
     SONOS_PLATFORM,
+    SONOS_VOLUME_SETTLE_MS,
     MP3_PRESET_CUSTOM_PREFIX,
     MP3_PRESET_CUSTOM_KEY,
     QUEUE_TIMEOUT_KEY,
@@ -1691,6 +1693,8 @@ def _sonos_volume_set_call(entity_id, volume_percent: int):
         },
         "blocking": True,
         "result": True,
+        # Let the speaker apply the new level before the announcement arrives.
+        "delay_after": SONOS_VOLUME_SETTLE_MS,
     }
 
 async def async_prepare_media_service_calls(
@@ -1834,49 +1838,76 @@ async def async_prepare_media_service_calls(
     return service_calls
 
 
+def _settle_delay_ms(service_call: dict) -> float:
+    """Settle delay requested by a service call, or 0 when none is set."""
+    delay_after = service_call.get("delay_after", 0)
+    if isinstance(delay_after, (int, float)) and delay_after > 0:
+        return delay_after
+    return 0
+
 async def async_fire_media_service_calls(hass: HomeAssistant, media_service_calls):
     """Fire the array of media service_calls."""
     if media_service_calls is None:
         _LOGGER.error("No service calls to fire")
         return False
-    for service_call in media_service_calls:
-        _LOGGER.debug("   Calling %s.%s with data:",
-                    service_call["domain"],
-                    service_call["service"])
-        for key, value in service_call["service_data"].items():
-            _LOGGER.debug("     - %s: %s", str(key), str(value))
-        try:
-            await hass.services.async_call(
-                domain=service_call["domain"],
-                service=service_call["service"],
-                service_data=service_call["service_data"]
+
+    # Fire every call that needs a settle delay (Sonos volume_set) first and
+    # wait once, so rooms with different volumes do not start staggered.
+    settle_calls = [call for call in media_service_calls if _settle_delay_ms(call) > 0]
+    other_calls = [call for call in media_service_calls if _settle_delay_ms(call) == 0]
+    for service_call in settle_calls:
+        # Block so the delay starts once the volume change has been applied
+        if not await _async_fire_media_service_call(hass, service_call, blocking=True):
+            return False
+    if settle_calls:
+        await asyncio.sleep(max(_settle_delay_ms(call) for call in settle_calls) / 1000)
+
+    for service_call in other_calls:
+        if not await _async_fire_media_service_call(hass, service_call):
+            return False
+
+    return True
+
+async def _async_fire_media_service_call(hass: HomeAssistant, service_call: dict, blocking: bool = False) -> bool:
+    """Fire a single media service call, logging and returning False on failure."""
+    _LOGGER.debug("   Calling %s.%s with data:",
+                service_call["domain"],
+                service_call["service"])
+    for key, value in service_call["service_data"].items():
+        _LOGGER.debug("     - %s: %s", str(key), str(value))
+    try:
+        await hass.services.async_call(
+            domain=service_call["domain"],
+            service=service_call["service"],
+            service_data=service_call["service_data"],
+            blocking=blocking,
+        )
+    except ServiceNotFound:
+        _LOGGER.error("Could not find service `%s.%s`.%s",
+                service_call["domain"],
+                service_call["service"],
+                (" Please install the Alexa Media Player Custom Component: https://github.com/alandtse/alexa_media_player"
+                    if service_call["service"] == "alexa_media"
+                    else "")
+        )
+        return False
+    except TemplateError as err:
+        _LOGGER.error("Error while rendering Jinja2 template for audio playback: %s", err)
+        return False
+    except HomeAssistantError as err:
+        _LOGGER.error("An error occurred: %s", str(err))
+        if err == "Unknown source directory":
+            _LOGGER.warning(
+                "Please check that media directories are enabled in your configuration.yaml file, e.g:\r\n\r\nmedia_source:\r\n media_dirs:\r\n   local: /media"
             )
-        except ServiceNotFound:
-            _LOGGER.error("Could not find service `%s.%s`.%s",
-                    service_call["domain"],
-                    service_call["service"],
-                    (" Please install the Alexa Media Player Custom Component: https://github.com/alandtse/alexa_media_player"
-                        if service_call["service"] == "alexa_media"
-                        else "")
-            )
-            return False
-        except TemplateError as err:
-            _LOGGER.error("Error while rendering Jinja2 template for audio playback: %s", err)
-            return False
-        except HomeAssistantError as err:
-            _LOGGER.error("An error occurred: %s", str(err))
-            if err == "Unknown source directory":
-                _LOGGER.warning(
-                    "Please check that media directories are enabled in your configuration.yaml file, e.g:\r\n\r\nmedia_source:\r\n media_dirs:\r\n   local: /media"
-                )
-            return False
-        except Exception as err:
-            _LOGGER.error("Unexpected error when playing audio via %s.%s: %s",
-                            service_call["domain"],
-                            service_call["service"],
-                            str(err)
-                            )
-            return False
+        return False
+    except Exception as err:
+        _LOGGER.error("Unexpected error when playing audio via %s.%s: %s",
+                        service_call["domain"],
+                        service_call["service"],
+                        str(err)
+                        )
+        return False
 
     return True
 
