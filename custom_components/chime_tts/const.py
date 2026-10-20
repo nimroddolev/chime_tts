@@ -46,6 +46,9 @@ ADD_COVER_ART_KEY = "add_cover_art"
 ALEXA_MEDIA_PLAYER_PLATFORM = "alexa_media"
 SONOS_PLATFORM = "sonos"
 SPOTIFY_PLATFORM = "spotify"
+SQUEEZEBOX_PLATFORM = "squeezebox"
+# `extra` key the Squeezebox integration reads for the announcement volume (0-1]
+SQUEEZEBOX_ATTR_ANNOUNCE_VOLUME = "announce_volume"
 
 ROOT_PATH_KEY = "root_path_key"
 MEDIA_FOLDER_PATH = "/local/"

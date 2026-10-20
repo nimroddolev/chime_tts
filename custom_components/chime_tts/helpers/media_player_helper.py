@@ -19,6 +19,7 @@ from ..const import (
     ALEXA_MEDIA_PLAYER_PLATFORM,
     SONOS_PLATFORM,
     SPOTIFY_PLATFORM,
+    SQUEEZEBOX_PLATFORM,
     TRANSITION_STEP_MS,
 )
 from ..config import (
@@ -26,6 +27,15 @@ from ..config import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def is_valid_announce_volume(volume_level) -> bool:
+    """Whether Squeezebox accepts the level as `announce_volume`, which must be in (0, 1]."""
+    return (
+        isinstance(volume_level, int | float)
+        and not isinstance(volume_level, bool)
+        and 0 < volume_level <= 1
+    )
 
 
 class MediaPlayerHelper:
@@ -124,6 +134,7 @@ class MediaPlayerHelper:
                 and media_player.target_volume_level
                 not in [-1, media_player.initial_volume_level]
                 and media_player.platform not in (SPOTIFY_PLATFORM, SONOS_PLATFORM)
+                and not self.get_uses_announce_volume(media_player)
             ):
                 set_volume_media_players.append(media_player)
         return set_volume_media_players
@@ -182,7 +193,41 @@ class MediaPlayerHelper:
             ALEXA_MEDIA_PLAYER_PLATFORM,
             SONOS_PLATFORM,
             SPOTIFY_PLATFORM,
+            SQUEEZEBOX_PLATFORM,
         )
+
+    def get_uses_announce_volume(self, media_player: ChimeTTSMediaPlayer) -> bool:
+        """Whether the player takes its target volume from the announcement itself.
+
+        Squeezebox applies `extra.announce_volume` for the announcement only and
+        restores the previous level afterwards, so no volume_set is needed. Only
+        true when an `announce_volume` is actually sent for this player's level,
+        so a target of 0 or none falls back to volume_set. Joined members always
+        use volume_set: only the leader receives play_media, and LMS does not
+        sync volume across a group by default.
+        """
+        if not (
+            self.announce
+            and media_player.announce_supported
+            and media_player.platform == SQUEEZEBOX_PLATFORM
+            and is_valid_announce_volume(media_player.target_volume_level)
+        ):
+            return False
+        leader = self.get_join_leader()
+        return leader is None or leader is media_player or not media_player.join_supported
+
+    def get_join_leader(self) -> ChimeTTSMediaPlayer | None:
+        """Player that will lead the speaker group, or None when not joining.
+
+        Mirrors the leader choice in async_join_media_players, which runs after
+        the pre-playback volume_set and so cannot be consulted yet.
+        """
+        if not self.join_players:
+            return None
+        for media_player in self.media_players:
+            if media_player.join_supported:
+                return media_player
+        return None
 
     def get_platform_from_entity_id(self, entity_id):
         """Platform for the media_player with entity_id."""
