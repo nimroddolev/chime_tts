@@ -7,6 +7,7 @@ import inspect
 import json
 import logging
 import subprocess
+import threading
 from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -405,6 +406,24 @@ def test_add_atempo_values_supports_above_double_values(helper: ChimeTTSHelper) 
     assert helper.add_atempo_values_to_ffmpeg_args_string(8.0) == (
         "-af atempo=2.0,atempo=2.0,atempo=2.0"
     )
+
+
+@pytest.mark.parametrize("tempo", [0, 0.0, -1.0, float("nan"), float("inf"), float("-inf")])
+def test_add_atempo_values_ignores_invalid_tempo(helper: ChimeTTSHelper, tempo: float) -> None:
+    """Non-positive or non-finite tempos used to loop forever; they are now skipped."""
+    result: list = []
+    worker = threading.Thread(
+        target=lambda: result.append(
+            helper.add_atempo_values_to_ffmpeg_args_string(tempo, "-af asetrate=44100*2.0")
+        ),
+        daemon=True,
+    )
+    worker.start()
+    worker.join(timeout=2)
+
+    assert not worker.is_alive()
+    assert result == ["-af asetrate=44100*2.0"]
+    assert helper.add_atempo_values_to_ffmpeg_args_string(tempo) is None
 
 
 @pytest.mark.asyncio

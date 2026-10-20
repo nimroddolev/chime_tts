@@ -1,6 +1,7 @@
 """Audio helper functions for Chime TTS."""
 
 import logging
+import math
 import os
 import re
 import subprocess
@@ -837,6 +838,11 @@ class ChimeTTSHelper:
         """Add chained FFmpeg atempo filters for values outside its 0.5–2.0 range."""
         tempos: list[float] = []
         remaining = tempo
+        # Zero, negative, NaN or infinite tempos never converge in the loops
+        # below; leave the audio at its current tempo instead.
+        if not isinstance(tempo, (int, float)) or not math.isfinite(tempo) or tempo <= 0:
+            _LOGGER.warning("Ignoring invalid audio tempo value: %s", tempo)
+            return ffmpeg_args_string
 
         # FFmpeg's atempo filter accepts values from 0.5 to 2.0. Preserve the
         # requested overall tempo by applying enough boundary factors first,
