@@ -41,13 +41,38 @@ def target_sources(data: Mapping[str, Any]) -> dict[str, list[str]]:
     return result
 
 
+def _expand_group_entities(hass, entity_ids: Iterable[str]) -> set[str]:
+    """Expand Home Assistant group targets when the core helper is unavailable."""
+    states = getattr(hass, "states", None)
+    if states is None:
+        return set(entity_ids)
+
+    expanded: set[str] = set()
+    pending = list(entity_ids)
+    while pending:
+        entity_id = pending.pop()
+        if entity_id in expanded:
+            continue
+        state = states.get(entity_id)
+        members = (
+            _as_list(state.attributes.get("entity_id"))
+            if entity_id.startswith("group.") and state is not None
+            else []
+        )
+        if members:
+            pending.extend(members)
+        else:
+            expanded.add(entity_id)
+    return expanded
+
+
 def _fallback_referenced_entities(hass, sources: Mapping[str, list[str]]) -> set[str]:
     """Resolve sources using registries when core's target helper is unavailable."""
     entity_registry = hass.data.get("entity_registry")
     device_registry = hass.data.get("device_registry")
     area_registry = hass.data.get("area_registry")
     if entity_registry is None:
-        return set(sources.get("entity_id", []))
+        return _expand_group_entities(hass, sources.get("entity_id", []))
 
     entities = tuple(entity_registry.entities.values())
     areas = getattr(area_registry, "areas", {}) if area_registry else {}
@@ -76,7 +101,7 @@ def _fallback_referenced_entities(hass, sources: Mapping[str, list[str]]) -> set
             and getattr(entry, "device_id", None) in device_ids
         )
     )
-    return referenced
+    return _expand_group_entities(hass, referenced)
 
 
 def resolve_media_player_entity_ids(hass, data: Mapping[str, Any]) -> list[str]:
