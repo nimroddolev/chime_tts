@@ -41,13 +41,43 @@ def target_sources(data: Mapping[str, Any]) -> dict[str, list[str]]:
     return result
 
 
+def _expand_group_entities(hass, entity_ids: Iterable[str]) -> set[str]:
+    """Expand Home Assistant group targets when the core helper is unavailable."""
+    states = getattr(hass, "states", None)
+    if states is None:
+        return set(entity_ids)
+
+    expanded: set[str] = set()
+    visited: set[str] = set()
+    pending = list(entity_ids)
+    while pending:
+        entity_id = pending.pop()
+        if entity_id in visited:
+            continue
+        visited.add(entity_id)
+        if entity_id == "all":
+            pending.extend(states.async_entity_ids())
+            continue
+        state = states.get(entity_id)
+        members = (
+            _as_list(state.attributes.get("entity_id"))
+            if entity_id.startswith("group.") and state is not None
+            else []
+        )
+        if members:
+            pending.extend(members)
+        else:
+            expanded.add(entity_id)
+    return expanded
+
+
 def _fallback_referenced_entities(hass, sources: Mapping[str, list[str]]) -> set[str]:
     """Resolve sources using registries when core's target helper is unavailable."""
     entity_registry = hass.data.get("entity_registry")
     device_registry = hass.data.get("device_registry")
     area_registry = hass.data.get("area_registry")
     if entity_registry is None:
-        return set(sources.get("entity_id", []))
+        return _expand_group_entities(hass, sources.get("entity_id", []))
 
     entities = tuple(entity_registry.entities.values())
     areas = getattr(area_registry, "areas", {}) if area_registry else {}
@@ -59,24 +89,28 @@ def _fallback_referenced_entities(hass, sources: Mapping[str, list[str]]) -> set
         if getattr(area, "floor_id", None) in set(sources.get("floor_id", []))
         or labels.intersection(getattr(area, "labels", []) or [])
     )
-    device_ids = set(sources.get("device_id", []))
+    explicit_device_ids = set(sources.get("device_id", []))
+    labeled_device_ids = {
+        device.id for device in devices.values()
+        if labels.intersection(getattr(device, "labels", []) or [])
+    }
+    device_ids = explicit_device_ids | labeled_device_ids
     device_ids.update(
         device.id for device in devices.values()
         if getattr(device, "area_id", None) in area_ids
-        or labels.intersection(getattr(device, "labels", []) or [])
     )
     referenced = set(sources.get("entity_id", []))
     referenced.update(
         entry.entity_id for entry in entities
         if labels.intersection(getattr(entry, "labels", []) or [])
         or getattr(entry, "area_id", None) in area_ids
-        or getattr(entry, "device_id", None) in set(sources.get("device_id", []))
+        or getattr(entry, "device_id", None) in explicit_device_ids | labeled_device_ids
         or (
             not getattr(entry, "area_id", None)
             and getattr(entry, "device_id", None) in device_ids
         )
     )
-    return referenced
+    return _expand_group_entities(hass, referenced)
 
 
 def resolve_media_player_entity_ids(hass, data: Mapping[str, Any]) -> list[str]:
@@ -84,7 +118,8 @@ def resolve_media_player_entity_ids(hass, data: Mapping[str, Any]) -> list[str]:
     sources = target_sources(data)
     if not sources:
         return []
-    if target_helper is not None:
+    # Older releases ship helpers.target without TargetSelection.
+    if target_helper is not None and hasattr(target_helper, "TargetSelection"):
         selection = target_helper.TargetSelection(sources)
         selected = target_helper.async_extract_referenced_entity_ids(
             hass, selection, expand_group=True
