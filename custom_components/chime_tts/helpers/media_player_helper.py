@@ -17,6 +17,7 @@ from homeassistant.components.media_player.const import (
 )
 from ..const import (
     ALEXA_MEDIA_PLAYER_PLATFORM,
+    CAST_PLATFORM,
     SONOS_PLATFORM,
     SPOTIFY_PLATFORM,
     TRANSITION_STEP_MS,
@@ -642,6 +643,12 @@ class MediaPlayerHelper:
                 )
                 continue
 
+            if (
+                volume_key == "target_volume_level"
+                and target_volume > current_volume
+            ):
+                await self.async_stop_playing_cast_media_player(hass, media_player)
+
             volume_changed_dicts.append(
                 {"media_player": media_player, "target_volume": target_volume}
             )
@@ -681,6 +688,35 @@ class MediaPlayerHelper:
                 await self.async_set_volume_action(hass, entity_id, target_volume)
 
         await self.async_wait_until_target_volume_reached(hass, volume_changed_dicts)
+
+    async def async_stop_playing_cast_media_player(
+        self, hass: HomeAssistant, media_player: ChimeTTSMediaPlayer
+    ) -> None:
+        """Stop a playing Cast player before its volume is raised for an announcement.
+
+        Cast has no announce mode, so raising the volume first makes the current
+        media blast at announcement volume until play_media replaces it.
+        """
+        if media_player.platform != CAST_PLATFORM or media_player.get_state() != "playing":
+            return
+        # Players on the fade/pause path are resumed afterwards. A pause that has
+        # not reported yet must not turn into a stop that loses the session.
+        if media_player in self.get_fade_in_out_media_players():
+            return
+        _LOGGER.debug("Preventing Google Cast volume spike for %s", media_player.entity_id)
+        try:
+            await hass.services.async_call(
+                domain="media_player",
+                service="media_stop",
+                service_data={CONF_ENTITY_ID: media_player.entity_id},
+                blocking=True,
+            )
+        except Exception as error:
+            _LOGGER.warning(
+                "Unable to stop %s before raising its volume: %s",
+                media_player.entity_id,
+                error,
+            )
 
     async def async_set_volume_action(
         self,
