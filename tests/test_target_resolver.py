@@ -24,6 +24,7 @@ def test_resolves_entity_device_area_floor_and_label_sources():
         "floor": SimpleNamespace(entity_id="media_player.floor", device_id="device_3", area_id=None, labels=[]),
         "label": SimpleNamespace(entity_id="media_player.label", device_id=None, area_id=None, labels=["label_1"]),
         "label_device": SimpleNamespace(entity_id="media_player.label_device", device_id="device_4", area_id=None, labels=[]),
+        "label_device_area": SimpleNamespace(entity_id="media_player.label_device_area", device_id="device_4", area_id="area_1", labels=[]),
         "label_area": SimpleNamespace(entity_id="media_player.label_area", device_id="device_5", area_id=None, labels=[]),
         "not_player": SimpleNamespace(entity_id="light.not_player", device_id="device_1", area_id=None, labels=[]),
     }
@@ -51,6 +52,7 @@ def test_resolves_entity_device_area_floor_and_label_sources():
     }) == [
         "media_player.direct", "media_player.area", "media_player.device", "media_player.floor",
         "media_player.label", "media_player.label_area", "media_player.label_device",
+        "media_player.label_device_area",
     ]
 
 
