@@ -48,10 +48,15 @@ def _expand_group_entities(hass, entity_ids: Iterable[str]) -> set[str]:
         return set(entity_ids)
 
     expanded: set[str] = set()
+    visited: set[str] = set()
     pending = list(entity_ids)
     while pending:
         entity_id = pending.pop()
-        if entity_id in expanded:
+        if entity_id in visited:
+            continue
+        visited.add(entity_id)
+        if entity_id == "all":
+            pending.extend(states.async_entity_ids())
             continue
         state = states.get(entity_id)
         members = (
