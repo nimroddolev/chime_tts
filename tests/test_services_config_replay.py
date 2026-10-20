@@ -33,6 +33,7 @@ from custom_components.chime_tts.const import SERVICE_REPLAY
 from custom_components.chime_tts.const import SERVICE_CLEAR_CACHE
 from custom_components.chime_tts.const import SERVICE_SAY
 from custom_components.chime_tts.const import SERVICE_SAY_URL
+from custom_components.chime_tts.const import TEMP_PATH_DEFAULT
 from custom_components.chime_tts.const import TEMP_PATH_KEY
 from custom_components.chime_tts.const import TEMP_CHIMES_PATH_KEY
 from custom_components.chime_tts.const import TTS_PLATFORM_KEY
@@ -41,8 +42,10 @@ from custom_components.chime_tts.const import WWW_PATH_KEY
 from homeassistant.components.media_player.const import ATTR_MEDIA_CONTENT_ID
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import HomeAssistantError
+from custom_components.chime_tts.helpers.media_player_helper import MediaPlayerHelper
 
 config_flow_module = importlib.import_module("custom_components.chime_tts.config_flow")
+settings_module = importlib.import_module("custom_components.chime_tts.settings")
 integration_module = importlib.import_module("custom_components.chime_tts.__init__")
 services_helper_module = importlib.import_module("custom_components.chime_tts.helpers.services_helper")
 
@@ -454,6 +457,99 @@ async def test_options_flow_rejects_temp_path_outside_media_dirs(monkeypatch: py
 
     assert result["type"] == "form"
     assert result["errors"][TEMP_PATH_KEY] == TEMP_PATH_KEY
+
+
+def _options_input(temp_path: str) -> dict:
+    """Return a valid options form submission with the given temp path."""
+    return {
+        QUEUE_TIMEOUT_KEY: 60,
+        "tts_timeout": 30,
+        "tts_platform_key": "",
+        "default_language_key": "",
+        "default_voice_key": "",
+        "default_tld_key": "",
+        "fallback_tts_platform_key": "",
+        "offset": 450,
+        "crossfade": 0,
+        "fade_transition_key": 500,
+        "remove_temp_file_delay": 0,
+        CUSTOM_CHIMES_PATH_KEY: "",
+        "temp_chimes_path": "/config/media/chimes",
+        TEMP_PATH_KEY: temp_path,
+        WWW_PATH_KEY: "/config/www/chime_tts",
+        "add_cover_art": False,
+    }
+
+
+@pytest.mark.asyncio
+async def test_issue_306_default_temp_path_follows_registered_media_dir(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When /media is not a media dir, the default lands in one that is and plays."""
+    flow = make_options_flow()
+    monkeypatch.setattr(config_flow_module.helpers, "get_installed_tts_platforms", lambda hass: ["google_translate"])
+    monkeypatch.setattr(flow, "get_installed_tts", lambda: ["google_translate"])
+
+    default_temp_path = settings_module.get_settings_data(flow.hass, flow._config_entry)[TEMP_PATH_KEY]
+    assert default_temp_path == "/config/media/sounds/temp/chime_tts/"
+
+    result = await flow.async_step_init(_options_input(default_temp_path))
+
+    assert result["type"] == "create_entry"
+    assert result["data"][TEMP_PATH_KEY] == default_temp_path
+    content_id = MediaPlayerHelper().get_media_content_id(flow.hass, f"{default_temp_path}tts.mp3")
+    assert content_id == "media-source://media_source/media/sounds/temp/chime_tts/tts.mp3"
+
+
+@pytest.mark.asyncio
+async def test_issue_306_unregistered_media_path_is_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A temp path outside every media dir has no media-source id, so it stays an error."""
+    flow = make_options_flow()
+    monkeypatch.setattr(config_flow_module.helpers, "get_installed_tts_platforms", lambda hass: ["google_translate"])
+    monkeypatch.setattr(flow, "get_installed_tts", lambda: ["google_translate"])
+
+    assert MediaPlayerHelper().get_media_content_id(flow.hass, f"{TEMP_PATH_DEFAULT}tts.mp3") is None
+    result = await flow.async_step_init(_options_input(TEMP_PATH_DEFAULT))
+
+    assert result["type"] == "form"
+    assert result["errors"][TEMP_PATH_KEY] == TEMP_PATH_KEY
+
+
+@pytest.mark.parametrize(
+    ("media_dirs", "expected"),
+    [
+        ({"local": "/media"}, TEMP_PATH_DEFAULT),
+        ({}, TEMP_PATH_DEFAULT),
+        ({"music": "/srv/music/", "local": "/media"}, TEMP_PATH_DEFAULT),
+        ({"music": "/srv/music/", "other": "/srv/other"}, "/srv/music/sounds/temp/chime_tts/"),
+    ],
+)
+def test_issue_306_default_temp_path(media_dirs: dict, expected: str) -> None:
+    """The shipped default is kept whenever /media is usable, else moved."""
+    hass = FakeHass()
+    hass.config.media_dirs = media_dirs
+
+    assert settings_module.get_default_temp_path(hass) == expected
+
+
+@pytest.mark.asyncio
+async def test_issue_306_media_root_sibling_still_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only paths inside a media dir qualify, not siblings or traversals."""
+    flow = make_options_flow()
+    flow.hass.config.media_dirs = {"local": "/media"}
+    monkeypatch.setattr(config_flow_module.helpers, "get_installed_tts_platforms", lambda hass: ["google_translate"])
+    monkeypatch.setattr(flow, "get_installed_tts", lambda: ["google_translate"])
+
+    assert (await flow.async_step_init(_options_input(TEMP_PATH_DEFAULT)))["type"] == "create_entry"
+    for temp_path in ("/media-other/chime_tts", "/media/../etc/chime_tts"):
+        result = await flow.async_step_init(_options_input(temp_path))
+
+        assert result["type"] == "form"
+        assert result["errors"][TEMP_PATH_KEY] == TEMP_PATH_KEY
 
 
 @pytest.mark.asyncio

@@ -32,7 +32,7 @@ from .helpers.services_helper import ChimeTTSServicesHelper
 from .helpers.tts_audio_helper import TTSAudioHelper
 from .queue_manager import ChimeTTSQueueManager
 from .config_flow import ChimeTTSOptionsFlowHandler
-from .settings import get_root_path
+from .settings import get_default_temp_path, get_root_path
 
 from homeassistant.const import CONF_ENTITY_ID, EVENT_HOMEASSISTANT_STARTED
 from homeassistant.config_entries import ConfigEntry
@@ -741,7 +741,11 @@ async def async_update_configuration(config_entry: ConfigEntry, hass: HomeAssist
         _data[ROOT_PATH_KEY] = filesystem_helper.make_folder_path_safe(get_root_path(hass))
 
     if DEFAULT_TEMP_PATH_KEY not in _data:
-        _data[DEFAULT_TEMP_PATH_KEY] = filesystem_helper.make_folder_path_safe(f"{_data[ROOT_PATH_KEY]}{TEMP_PATH_DEFAULT}")
+        default_temp_path = (
+            get_default_temp_path(hass) if hass is not None
+            else f"{_data[ROOT_PATH_KEY]}{TEMP_PATH_DEFAULT}"
+        )
+        _data[DEFAULT_TEMP_PATH_KEY] = filesystem_helper.make_folder_path_safe(default_temp_path)
 
     if DEFAULT_TEMP_CHIMES_PATH_KEY not in _data:
         _data[DEFAULT_TEMP_CHIMES_PATH_KEY] = filesystem_helper.make_folder_path_safe(f"{_data[ROOT_PATH_KEY]}{TEMP_CHIMES_PATH_DEFAULT}")
