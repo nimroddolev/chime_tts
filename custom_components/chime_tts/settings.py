@@ -1011,6 +1011,24 @@ def get_root_path(hass) -> str:
     return config_root
 
 
+def get_default_temp_path(hass) -> str:
+    """Return the default temp folder, placed inside a registered media dir."""
+    root_path = get_root_path(hass)
+    default_path = f"{root_path}{TEMP_PATH_DEFAULT}"
+    media_dirs = [
+        path for path in (getattr(getattr(hass, "config", None), "media_dirs", None) or {}).values()
+        if path
+    ]
+    if not media_dirs or any(
+        _is_subdirectory(media_dir, default_path) for media_dir in media_dirs
+    ):
+        return default_path
+    # /media is not served by media_source on this install (#306), so a temp
+    # file there could never be played. Use the same layout under the first
+    # registered media directory instead.
+    return f"{media_dirs[0].rstrip('/')}{TEMP_PATH_DEFAULT.removeprefix('/media')}"
+
+
 def get_tts_platforms(hass) -> list[str]:
     """Return installed TTS platforms in display order."""
     return sorted(helpers.get_installed_tts_platforms(hass))
@@ -1262,7 +1280,7 @@ def _field_default_value(field_key: str, hass) -> Any:
         REMOVE_TEMP_FILE_DELAY_KEY: "",
         CUSTOM_CHIMES_PATH_KEY: "",
         TEMP_CHIMES_PATH_KEY: f"{root_path}{TEMP_CHIMES_PATH_DEFAULT}",
-        TEMP_PATH_KEY: f"{root_path}{TEMP_PATH_DEFAULT}",
+        TEMP_PATH_KEY: get_default_temp_path(hass),
         WWW_PATH_KEY: f"{root_path}{WWW_PATH_DEFAULT}",
         ADD_COVER_ART_KEY: False,
     }
@@ -3201,12 +3219,13 @@ def validate_settings(
             normalized[field_key] = _normalize_string(user_input.get(field_key))
             errors[field_key] = str(error)
 
-    temp_folder_in_media_dir = False
-    media_dirs_dict = hass.config.media_dirs or {}
-    for media_dir in media_dirs_dict.values():
-        if _is_subdirectory(media_dir, normalized[TEMP_PATH_KEY]):
-            temp_folder_in_media_dir = True
-            break
+    root_path = get_root_path(hass)
+    # Local playback needs a media-source id, which only exists for files
+    # inside a registered media directory.
+    temp_folder_in_media_dir = any(
+        _is_subdirectory(media_dir, normalized[TEMP_PATH_KEY])
+        for media_dir in (hass.config.media_dirs or {}).values()
+    )
     if not temp_folder_in_media_dir and TEMP_PATH_KEY not in allow_invalid_paths:
         errors[TEMP_PATH_KEY] = TEMP_PATH_KEY
 
@@ -3217,7 +3236,6 @@ def validate_settings(
             external_folder_in_external_dirs = True
             break
 
-    root_path = get_root_path(hass)
     if not external_folder_in_external_dirs:
         www_path = normalized[WWW_PATH_KEY]
         if not (

@@ -313,7 +313,7 @@
             "tts_platform_select": "The TTS platform was not found. Please make sure it has been installed before selecting it.",
             "multiple": "Multiple issues detected",
             "invalid_chime_paths": "Invalid custom chime path detected",
-            "temp_path": "The temp folder must be a subfolder of a media directory",
+            "temp_path": "The temp folder must be a subfolder of a media directory listed under homeassistant: media_dirs in configuration.yaml",
             "www_path": "The chime_tts.say_url folder must be a subfolder of an external directory, eg: /config/www/chime_tts"
         }
     },
