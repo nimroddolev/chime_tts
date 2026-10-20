@@ -92,3 +92,29 @@ def test_fallback_expands_group_targets_without_target_selection():
     assert resolver.resolve_media_player_entity_ids(
         hass, {"entity_id": "group.downstairs"}
     ) == ["media_player.kitchen"]
+
+
+
+def test_fallback_handles_all_and_cyclic_groups_without_target_selection():
+    """The legacy fallback expands all targets and terminates cyclic groups."""
+    resolver = _resolver_module()
+    resolver.target_helper = SimpleNamespace()
+    states = {
+        "group.a": SimpleNamespace(attributes={"entity_id": ["group.b"]}),
+        "group.b": SimpleNamespace(attributes={"entity_id": ["group.a"]}),
+        "media_player.kitchen": SimpleNamespace(attributes={}),
+        "light.hall": SimpleNamespace(attributes={}),
+    }
+    hass = SimpleNamespace(
+        data={
+            "entity_registry": SimpleNamespace(entities={}),
+            "device_registry": SimpleNamespace(devices={}),
+            "area_registry": SimpleNamespace(areas={}),
+        },
+        states=SimpleNamespace(get=states.get, async_entity_ids=lambda: states),
+    )
+
+    assert resolver.resolve_media_player_entity_ids(hass, {"entity_id": "group.a"}) == []
+    assert resolver.resolve_media_player_entity_ids(hass, {"entity_id": "all"}) == [
+        "media_player.kitchen"
+    ]
