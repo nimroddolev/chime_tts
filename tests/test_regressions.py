@@ -1446,6 +1446,284 @@ def test_initial_delay_is_part_of_cache_key():
     ) != get_filename_hash_from_service_data({**base, "initial_delay": 200}, {})
 
 
+def _squeezebox_player(
+    entity_id, volume, platform="squeezebox", announce_supported=True, join_supported=False
+):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(
+        entity_id=entity_id,
+        platform=platform,
+        target_volume_level=volume,
+        initial_volume_level=0.2,
+        initially_playing=False,
+        announce_supported=announce_supported,
+        join_supported=join_supported,
+    )
+
+
+def _squeezebox_helper(
+    monkeypatch, players, announce=True, joined=None, members=(), join_players=False
+):
+    integration = importlib.import_module("custom_components.chime_tts")
+    helper = integration.media_player_helper
+    monkeypatch.setattr(helper, "media_players", players)
+    monkeypatch.setattr(helper, "announce", announce)
+    monkeypatch.setattr(helper, "fade_audio", False)
+    monkeypatch.setattr(helper, "join_players", join_players)
+    monkeypatch.setattr(helper, "joined_entity_id", joined, raising=False)
+    monkeypatch.setattr(helper, "joined_media_player_entity_ids", list(members))
+    return integration, helper
+
+
+def _squeezebox_service_data(announce=True):
+    return {
+        "entity_id": [],
+        "announce": announce,
+        "media_content_type": "music",
+        "media_content_id": "media-source://media_source/local/chime.mp3",
+    }
+
+
+async def test_issue_309_squeezebox_uniform_volume_uses_announce_volume(monkeypatch):
+    """Squeezebox players share one play_media call carrying `announce_volume`."""
+    players = [
+        _squeezebox_player("media_player.kitchen", 0.4),
+        _squeezebox_player("media_player.office", 0.4),
+    ]
+    integration, _ = _squeezebox_helper(monkeypatch, players)
+
+    calls = await integration.async_prepare_media_service_calls(
+        None,
+        [p.entity_id for p in players],
+        _squeezebox_service_data(),
+        {},
+        {"announce_timeout": 30},
+    )
+
+    assert len(calls) == 1
+    data = calls[0]["service_data"]
+    assert calls[0]["service"] == "play_media"
+    assert data["entity_id"] == ["media_player.kitchen", "media_player.office"]
+    assert data["extra"] == {"announce_timeout": 30, "announce_volume": 0.4}
+
+
+async def test_issue_309_squeezebox_split_volumes_and_invalid_levels(monkeypatch):
+    """Mixed volumes get one call each; 0 and unset levels omit `announce_volume`."""
+    players = [
+        _squeezebox_player("media_player.kitchen", 0.3),
+        _squeezebox_player("media_player.office", 0.6),
+        _squeezebox_player("media_player.garage", 0),
+        _squeezebox_player("media_player.porch", -1),
+    ]
+    integration, _ = _squeezebox_helper(monkeypatch, players)
+
+    calls = await integration.async_prepare_media_service_calls(
+        None, [p.entity_id for p in players], _squeezebox_service_data(), {}
+    )
+
+    by_entity = {c["service_data"]["entity_id"]: c["service_data"] for c in calls}
+    assert set(by_entity) == {p.entity_id for p in players}
+    assert by_entity["media_player.kitchen"]["extra"] == {"announce_volume": 0.3}
+    assert by_entity["media_player.office"]["extra"] == {"announce_volume": 0.6}
+    assert "extra" not in by_entity["media_player.garage"]
+    assert "extra" not in by_entity["media_player.porch"]
+
+
+async def test_issue_309_squeezebox_without_announce_skips_announce_volume(monkeypatch):
+    """Without announce the level goes through volume_set, not `announce_volume`."""
+    players = [_squeezebox_player("media_player.kitchen", 0.4)]
+    integration, helper = _squeezebox_helper(monkeypatch, players, announce=False)
+
+    calls = await integration.async_prepare_media_service_calls(
+        None, ["media_player.kitchen"], _squeezebox_service_data(announce=False), {}
+    )
+
+    assert len(calls) == 1
+    assert "extra" not in calls[0]["service_data"]
+    assert helper.get_set_volume_media_players() == players
+
+
+def test_issue_309_squeezebox_announce_skips_volume_set(monkeypatch):
+    """Announce-capable Squeezebox players are not volume_set or treated as standard."""
+    supported = _squeezebox_player("media_player.kitchen", 0.4)
+    legacy = _squeezebox_player("media_player.legacy", 0.4, announce_supported=False)
+    cast = _squeezebox_player("media_player.tv", 0.4, platform="cast")
+    _, helper = _squeezebox_helper(monkeypatch, [supported, legacy, cast])
+
+    assert helper.get_is_standard_media_player("media_player.kitchen") is False
+    assert helper.get_uses_announce_volume(supported) is True
+    assert helper.get_uses_announce_volume(legacy) is False
+    assert helper.get_uses_announce_volume(cast) is False
+    assert helper.get_set_volume_media_players() == [legacy, cast]
+
+
+async def test_issue_309_squeezebox_joined_group_plays_once_from_leader(monkeypatch):
+    """Joined Squeezebox members are de-duplicated and the leader plays once."""
+    players = [
+        _squeezebox_player("media_player.kitchen", 0.5),
+        _squeezebox_player("media_player.office", 0.5),
+        _squeezebox_player("media_player.garage", 0.7),
+    ]
+    integration, _ = _squeezebox_helper(
+        monkeypatch,
+        players,
+        joined="media_player.kitchen",
+        members=["media_player.office", "media_player.garage"],
+    )
+
+    calls = await integration.async_prepare_media_service_calls(
+        None, [p.entity_id for p in players], _squeezebox_service_data(), {}
+    )
+
+    assert [c["service_data"]["entity_id"] for c in calls] == [["media_player.kitchen"]]
+    assert calls[0]["service_data"]["extra"] == {"announce_volume": 0.5}
+
+
+async def test_issue_309_squeezebox_group_leader_routed_by_platform(monkeypatch):
+    """A leader missing from the target list is added to its platform's group."""
+    players = [
+        _squeezebox_player("media_player.kitchen", 0.5),
+        _squeezebox_player("media_player.office", 0.5),
+    ]
+    integration, helper = _squeezebox_helper(
+        monkeypatch,
+        players,
+        joined="media_player.kitchen",
+        members=["media_player.office"],
+    )
+    monkeypatch.setattr(
+        helper, "get_media_player_platform", lambda hass, entity_id: "squeezebox"
+    )
+
+    calls = await integration.async_prepare_media_service_calls(
+        None, ["media_player.office"], _squeezebox_service_data(), {}
+    )
+
+    assert [c["service_data"]["entity_id"] for c in calls] == [["media_player.kitchen"]]
+    assert calls[0]["service_data"]["extra"] == {"announce_volume": 0.5}
+
+    monkeypatch.setattr(
+        helper, "get_media_player_platform", lambda hass, entity_id: "cast"
+    )
+    calls = await integration.async_prepare_media_service_calls(
+        None, ["media_player.office"], _squeezebox_service_data(), {}
+    )
+
+    assert [c["service_data"]["entity_id"] for c in calls] == [["media_player.kitchen"]]
+    assert "extra" not in calls[0]["service_data"]
+
+
+def test_issue_309_squeezebox_zero_or_unset_target_keeps_volume_set(monkeypatch):
+    """Without a usable announce_volume the player stays on the volume_set path."""
+    zero = _squeezebox_player("media_player.garage", 0)
+    unset = _squeezebox_player("media_player.porch", -1)
+    usable = _squeezebox_player("media_player.kitchen", 0.4)
+    _, helper = _squeezebox_helper(monkeypatch, [zero, unset, usable])
+
+    assert helper.get_uses_announce_volume(zero) is False
+    assert helper.get_uses_announce_volume(unset) is False
+    assert helper.get_uses_announce_volume(usable) is True
+    # -1 means "leave the volume alone", so only the explicit 0 is set and restored
+    assert helper.get_set_volume_media_players() == [zero]
+
+
+async def test_issue_309_squeezebox_none_target_does_not_raise(monkeypatch):
+    """A None target is treated as unset rather than raising TypeError."""
+    from custom_components.chime_tts.helpers.media_player_helper import (
+        is_valid_announce_volume,
+    )
+
+    missing = _squeezebox_player("media_player.kitchen", None)
+    integration, helper = _squeezebox_helper(monkeypatch, [missing])
+
+    assert helper.get_uses_announce_volume(missing) is False
+    assert is_valid_announce_volume(None) is False
+    assert is_valid_announce_volume(True) is False
+    calls = await integration.async_prepare_media_service_calls(
+        None, ["media_player.kitchen"], _squeezebox_service_data(), {}
+    )
+    assert "extra" not in calls[0]["service_data"]
+
+
+async def test_issue_309_squeezebox_waits_for_announcement_to_finish(monkeypatch):
+    """Cleanup waits for Squeezebox playback to end so restore and unjoin do not race it."""
+    import pytest
+
+    integration, helper = _squeezebox_helper(
+        monkeypatch, [_squeezebox_player("media_player.kitchen", 0.4)]
+    )
+    waited = []
+
+    class _Stop(Exception):
+        pass
+
+    async def _fake_wait(hass, media_players, state):
+        waited.extend(media_players)
+        raise _Stop
+
+    class _Hass:
+        async def async_add_executor_job(self, func, *args):
+            return None
+
+    monkeypatch.setattr(helper, "async_wait_until_media_players_state_not", _fake_wait)
+    with pytest.raises(_Stop):
+        await integration.async_post_playback_actions(_Hass(), 0, 0, helper.media_players)
+
+    assert [p.entity_id for p in waited] == ["media_player.kitchen"]
+
+
+async def test_issue_309_squeezebox_unset_target_not_batched_with_explicit(monkeypatch):
+    """A player with no target never inherits another player's announce_volume."""
+    players = [
+        _squeezebox_player("media_player.kitchen", 0.4),
+        _squeezebox_player("media_player.porch", -1),
+    ]
+    integration, _ = _squeezebox_helper(monkeypatch, players)
+
+    calls = await integration.async_prepare_media_service_calls(
+        None, [p.entity_id for p in players], _squeezebox_service_data(), {}
+    )
+
+    by_entity = {c["service_data"]["entity_id"]: c["service_data"] for c in calls}
+    assert set(by_entity) == {"media_player.kitchen", "media_player.porch"}
+    assert by_entity["media_player.kitchen"]["extra"] == {"announce_volume": 0.4}
+    assert "extra" not in by_entity["media_player.porch"]
+
+
+def test_issue_309_squeezebox_joined_members_always_volume_set(monkeypatch):
+    """Only the leader gets play_media and LMS does not sync volume, so members are volume_set."""
+    leader = _squeezebox_player("media_player.kitchen", 0.5, join_supported=True)
+    same = _squeezebox_player("media_player.office", 0.5, join_supported=True)
+    differs = _squeezebox_player("media_player.garage", 0.7, join_supported=True)
+    solo = _squeezebox_player("media_player.porch", 0.7)
+    _, helper = _squeezebox_helper(
+        monkeypatch, [leader, same, differs, solo], join_players=True
+    )
+
+    assert helper.get_join_leader() is leader
+    assert helper.get_uses_announce_volume(leader) is True
+    assert helper.get_uses_announce_volume(same) is False
+    assert helper.get_uses_announce_volume(differs) is False
+    # Not joinable, so it plays on its own call with its own announce_volume
+    assert helper.get_uses_announce_volume(solo) is True
+    assert helper.get_set_volume_media_players() == [same, differs]
+
+
+def test_issue_309_squeezebox_members_volume_set_when_leader_sends_none(monkeypatch):
+    """Members fall back to volume_set when the leader carries no announce_volume."""
+    leader = _squeezebox_player("media_player.kitchen", -1, join_supported=True)
+    member = _squeezebox_player("media_player.office", 0.5, join_supported=True)
+    cast_leader = _squeezebox_player(
+        "media_player.tv", 0.5, platform="cast", join_supported=True
+    )
+    _, helper = _squeezebox_helper(monkeypatch, [leader, member], join_players=True)
+    assert helper.get_set_volume_media_players() == [member]
+
+    _, helper = _squeezebox_helper(monkeypatch, [cast_leader, member], join_players=True)
+    assert helper.get_uses_announce_volume(member) is False
+
+
 async def test_issue_310_runs_configured_script_before_after_tts():
     """Configured scripts accept an entity ID or YAML with script variables (#310)."""
     from custom_components.chime_tts import async_run_script

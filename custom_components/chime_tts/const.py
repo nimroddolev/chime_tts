@@ -47,6 +47,9 @@ ALEXA_MEDIA_PLAYER_PLATFORM = "alexa_media"
 CAST_PLATFORM = "cast"
 SONOS_PLATFORM = "sonos"
 SPOTIFY_PLATFORM = "spotify"
+SQUEEZEBOX_PLATFORM = "squeezebox"
+# `extra` key the Squeezebox integration reads for the announcement volume (0-1]
+SQUEEZEBOX_ATTR_ANNOUNCE_VOLUME = "announce_volume"
 
 # Some Sonos models drop a play_media that arrives in the same instant as the
 # preceding volume_set. Wait this long after the volume_set so the speaker settles.

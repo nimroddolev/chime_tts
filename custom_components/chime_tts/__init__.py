@@ -20,7 +20,7 @@ from homeassistant.components.media_player.const import (
 )
 
 from .helpers.helpers import ChimeTTSHelper
-from .helpers.media_player_helper import (MediaPlayerHelper, ChimeTTSMediaPlayer)
+from .helpers.media_player_helper import (MediaPlayerHelper, ChimeTTSMediaPlayer, is_valid_announce_volume)
 from .helpers.filesystem import FilesystemHelper
 from .helpers.panel import async_setup_panel
 from .helpers.panel_logs import (
@@ -89,6 +89,8 @@ from .const import (
     TTS_TIMEOUT_KEY,
     TTS_TIMEOUT_DEFAULT,
     SPOTIFY_PLATFORM,
+    SQUEEZEBOX_PLATFORM,
+    SQUEEZEBOX_ATTR_ANNOUNCE_VOLUME,
     TTS_PLATFORM_KEY,
     DEFAULT_LANGUAGE_KEY,
     DEFAULT_VOICE_KEY,
@@ -1701,6 +1703,56 @@ def _sonos_volume_set_call(entity_id, volume_percent: int):
         "delay_after": SONOS_VOLUME_SETTLE_MS,
     }
 
+def _squeezebox_extra(extra: dict | None, volume_level: float | None, announce: bool | None) -> dict:
+    """Build the Squeezebox play_media `extra`, adding the announcement volume.
+
+    Squeezebox rejects an `announce_volume` outside (0, 1], so 0, None and the
+    -1 "no target" sentinel leave it out.
+    """
+    squeezebox_extra = dict(extra) if extra else {}
+    if announce and is_valid_announce_volume(volume_level):
+        squeezebox_extra[SQUEEZEBOX_ATTR_ANNOUNCE_VOLUME] = volume_level
+    return squeezebox_extra
+
+def _squeezebox_service_calls(entity_ids: list[str], service_data: dict, extra: dict | None) -> list[dict]:
+    """Build the play_media calls for Squeezebox players, using `announce_volume` for the level."""
+    service_calls: list[dict] = []
+    squeezebox_service_data = service_data.copy()
+    if squeezebox_service_data[ATTR_MEDIA_CONTENT_ID] is None:
+        _LOGGER.warning("Error calling `media_player.play_media` service: No media content id found")
+    else:
+        _LOGGER.debug(
+            "   %s Squeezebox media player%s detected:",
+            len(entity_ids),
+            ("s" if len(entity_ids) != 1 else ""))
+        for entity_id in entity_ids:
+            _LOGGER.debug("     - %s", entity_id)
+        announce = squeezebox_service_data.get(ATTR_MEDIA_ANNOUNCE)
+
+        # Unset (-1) targets are kept distinct from explicit ones, so a player
+        # without a level never inherits another player's announce_volume.
+        extras: dict[str, dict] = {}
+        for entity_id in entity_ids:
+            target = media_player_helper.get_media_player_target_volume(entity_id)
+            extras[entity_id] = _squeezebox_extra(extra, -1 if target is None else target, announce)
+
+        # One shared call when every player gets the same extra, else one call each
+        shared = all(e == extras[entity_ids[0]] for e in extras.values())
+        groups = [entity_ids] if shared else [[entity_id] for entity_id in entity_ids]
+        for group in groups:
+            group_service_data = squeezebox_service_data.copy()
+            group_service_data[CONF_ENTITY_ID] = group if shared else group[0]
+            if extras[group[0]]:
+                group_service_data["extra"] = extras[group[0]]
+            service_calls.append({
+                "domain": "media_player",
+                "service": SERVICE_PLAY_MEDIA,
+                "service_data": group_service_data,
+                "blocking": True,
+                "result": True
+            })
+    return service_calls
+
 async def async_prepare_media_service_calls(
     hass: HomeAssistant, entity_ids, service_data, audio_dict, extra: dict | None = None
 ):
@@ -1713,22 +1765,24 @@ async def async_prepare_media_service_calls(
     standard_media_player_entity_ids: list[str] = [entity_id for entity_id in entity_ids if media_player_helper.get_is_standard_media_player(entity_id)]
     alexa_media_player_entity_ids: list[str] = media_player_helper.get_media_players_of_platform(entity_ids, ALEXA_MEDIA_PLAYER_PLATFORM)
     sonos_media_player_entity_ids: list[str] = media_player_helper.get_media_players_of_platform(entity_ids, SONOS_PLATFORM)
+    squeezebox_media_player_entity_ids: list[str] = media_player_helper.get_media_players_of_platform(entity_ids, SQUEEZEBOX_PLATFORM)
 
     # Remove speaker group media_players from the media_player lists
     if joined_media_player_entity_id and len(joined_media_player_entity_id) > 0:
         joined_media_player_entity_ids = media_player_helper.joined_media_player_entity_ids
-        for array in [standard_media_player_entity_ids, alexa_media_player_entity_ids, sonos_media_player_entity_ids]:
+        for array in [standard_media_player_entity_ids, alexa_media_player_entity_ids, sonos_media_player_entity_ids, squeezebox_media_player_entity_ids]:
             for media_player_n in joined_media_player_entity_ids:
                 while media_player_n in array:
                     array.remove(media_player_n)
         # Make sure the speaker group leader is in the appropriate media player list
-        if joined_media_player_entity_id not in (standard_media_player_entity_ids + alexa_media_player_entity_ids + sonos_media_player_entity_ids):
-            if media_player_helper.get_media_player_platform(hass, joined_media_player_entity_id) == ALEXA_MEDIA_PLAYER_PLATFORM:
-                alexa_media_player_entity_ids.append(joined_media_player_entity_id)
-            elif media_player_helper.get_media_player_platform(hass, joined_media_player_entity_id) == SONOS_PLATFORM:
-                sonos_media_player_entity_ids.append(joined_media_player_entity_id)
-            else:
-                standard_media_player_entity_ids.append(joined_media_player_entity_id)
+        if joined_media_player_entity_id not in (standard_media_player_entity_ids + alexa_media_player_entity_ids + sonos_media_player_entity_ids + squeezebox_media_player_entity_ids):
+            platform_entity_ids = {
+                ALEXA_MEDIA_PLAYER_PLATFORM: alexa_media_player_entity_ids,
+                SONOS_PLATFORM: sonos_media_player_entity_ids,
+                SQUEEZEBOX_PLATFORM: squeezebox_media_player_entity_ids,
+            }
+            leader_platform = media_player_helper.get_media_player_platform(hass, joined_media_player_entity_id)
+            platform_entity_ids.get(leader_platform, standard_media_player_entity_ids).append(joined_media_player_entity_id)
 
     # Standard media_players
     if len(standard_media_player_entity_ids) > 0:
@@ -1808,6 +1862,10 @@ async def async_prepare_media_service_calls(
                         "blocking": True,
                         "result": True
                     })
+
+    # Squeezebox media_players
+    if len(squeezebox_media_player_entity_ids) > 0:
+        service_calls.extend(_squeezebox_service_calls(squeezebox_media_player_entity_ids, service_data, extra))
 
     # Alexa media_players
     public_file = f"{audio_dict.get(PUBLIC_PATH_KEY, '')}"
