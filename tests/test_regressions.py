@@ -2473,3 +2473,46 @@ async def test_issue_318_segment_conversion_to_other_format_leaves_no_files(tmp_
     )
 
     assert list(tmp_path.iterdir()) == []
+
+
+async def test_failed_alexa_conversion_still_sends_the_file(monkeypatch):
+    """A failed Alexa FFmpeg conversion falls back to the original file instead of crashing."""
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+
+    integration = importlib.import_module("custom_components.chime_tts")
+    helper = integration.media_player_helper
+    alexa = SimpleNamespace(
+        entity_id="media_player.echo",
+        platform="alexa_media",
+        target_volume_level=0.4,
+        initial_volume_level=0.2,
+        initially_playing=False,
+        announce_supported=False,
+        join_supported=False,
+    )
+    monkeypatch.setattr(helper, "media_players", [alexa])
+    monkeypatch.setattr(helper, "announce", True)
+    monkeypatch.setattr(helper, "fade_audio", False)
+    monkeypatch.setattr(helper, "join_players", False)
+    monkeypatch.setattr(helper, "joined_entity_id", None, raising=False)
+    monkeypatch.setattr(helper, "joined_media_player_entity_ids", [], raising=False)
+    monkeypatch.setattr(
+        integration.filesystem_helper, "async_is_audio_alexa_compatible", AsyncMock(return_value=False)
+    )
+    monkeypatch.setattr(integration.helpers, "async_ffmpeg_convert_from_file", AsyncMock(return_value=False))
+
+    calls = await integration.async_prepare_media_service_calls(
+        None,
+        [alexa.entity_id],
+        {
+            "entity_id": [],
+            "announce": True,
+            "media_content_type": "music",
+            "media_content_id": "media-source://media_source/local/chime.mp3",
+        },
+        {"public_path": "https://ha.local/local/chime_tts/a.mp3"},
+    )
+
+    assert calls[-1]["service"] == "alexa_media"
+    assert "https://ha.local/local/chime_tts/a.mp3" in calls[-1]["service_data"]["message"]
