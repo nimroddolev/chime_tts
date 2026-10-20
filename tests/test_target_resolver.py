@@ -52,3 +52,20 @@ def test_resolves_entity_device_area_floor_and_label_sources():
         "media_player.direct", "media_player.area", "media_player.device", "media_player.floor",
         "media_player.label", "media_player.label_area", "media_player.label_device",
     ]
+
+
+def test_falls_back_to_registries_when_target_helper_lacks_target_selection():
+    """A helpers.target module without TargetSelection must use the registry fallback."""
+    resolver = _resolver_module()
+    resolver.target_helper = SimpleNamespace()
+    hass = SimpleNamespace(data={
+        "entity_registry": SimpleNamespace(entities={
+            "kitchen": SimpleNamespace(entity_id="media_player.kitchen", device_id="device_1", area_id=None, labels=[]),
+        }),
+        "device_registry": SimpleNamespace(devices={
+            "device_1": SimpleNamespace(id="device_1", area_id=None, labels=[]),
+        }),
+        "area_registry": SimpleNamespace(areas={}),
+    })
+
+    assert resolver.resolve_media_player_entity_ids(hass, {"device_id": "device_1"}) == ["media_player.kitchen"]

@@ -84,7 +84,8 @@ def resolve_media_player_entity_ids(hass, data: Mapping[str, Any]) -> list[str]:
     sources = target_sources(data)
     if not sources:
         return []
-    if target_helper is not None:
+    # Older releases ship helpers.target without TargetSelection.
+    if target_helper is not None and hasattr(target_helper, "TargetSelection"):
         selection = target_helper.TargetSelection(sources)
         selected = target_helper.async_extract_referenced_entity_ids(
             hass, selection, expand_group=True
