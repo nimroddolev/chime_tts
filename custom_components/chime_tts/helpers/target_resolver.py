@@ -89,18 +89,22 @@ def _fallback_referenced_entities(hass, sources: Mapping[str, list[str]]) -> set
         if getattr(area, "floor_id", None) in set(sources.get("floor_id", []))
         or labels.intersection(getattr(area, "labels", []) or [])
     )
-    device_ids = set(sources.get("device_id", []))
+    explicit_device_ids = set(sources.get("device_id", []))
+    labeled_device_ids = {
+        device.id for device in devices.values()
+        if labels.intersection(getattr(device, "labels", []) or [])
+    }
+    device_ids = explicit_device_ids | labeled_device_ids
     device_ids.update(
         device.id for device in devices.values()
         if getattr(device, "area_id", None) in area_ids
-        or labels.intersection(getattr(device, "labels", []) or [])
     )
     referenced = set(sources.get("entity_id", []))
     referenced.update(
         entry.entity_id for entry in entities
         if labels.intersection(getattr(entry, "labels", []) or [])
         or getattr(entry, "area_id", None) in area_ids
-        or getattr(entry, "device_id", None) in set(sources.get("device_id", []))
+        or getattr(entry, "device_id", None) in explicit_device_ids | labeled_device_ids
         or (
             not getattr(entry, "area_id", None)
             and getattr(entry, "device_id", None) in device_ids
