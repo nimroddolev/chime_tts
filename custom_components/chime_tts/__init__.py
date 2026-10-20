@@ -363,7 +363,7 @@ async def async_setup(hass: HomeAssistant, _config_entry: ConfigEntry) -> bool: 
             # dictionary from ``None`` (which makes the action fail in Developer
             # Tools before any audio has been generated).
             cached_dicts = _data.get(DATA_STORAGE_KEY) or {}
-            for key in cached_dicts:
+            for key in list(cached_dicts):
                 await async_remove_cached_audio_data(hass,
                                                      str(key),
                                                      clear_chimes_cache,
@@ -2011,11 +2011,18 @@ async def async_save_data(hass: HomeAssistant):
 
 async def async_delete_data(hass: HomeAssistant, key):
     """Delete a key/value from integration's stored data."""
-    store = storage.Store(hass, 1, DATA_STORAGE_KEY)
-    data = await store.async_load()
-    if key in data:
-        del data[key]
-    await store.async_save(data)
+    # Remove the key from the live in-memory copy and save that, like
+    # async_store_data does. Replacing the dict after an await would drop
+    # entries stored concurrently, and leaving it would let the next
+    # async_store_data call write the deleted entry back.
+    if not isinstance(_data.get(DATA_STORAGE_KEY), dict):
+        store = storage.Store(hass, 1, DATA_STORAGE_KEY)
+        # async_load returns None until the first entry has been saved
+        loaded = await store.async_load() or {}
+        if not isinstance(_data.get(DATA_STORAGE_KEY), dict):
+            _data[DATA_STORAGE_KEY] = loaded
+    _data[DATA_STORAGE_KEY].pop(key, None)
+    await async_save_data(hass)
 
 
 async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
@@ -2053,10 +2060,13 @@ async def async_get_cached_audio_data(hass: HomeAssistant, filepath_hash: str):
                             audio_dict[AUDIO_DURATION_KEY] = float(len(audio) / 1000.0)
                         else:
                             _LOGGER.warning("Could not load audio from file: %s", audio_dict.get(key, ""))
-                            audio.dict[key] = None
-        return audio_dict
+                            audio_dict[key] = None
+        # With no usable path left, fall through and drop the entry so the
+        # regenerated audio gets cached again.
+        if audio_dict.get(LOCAL_PATH_KEY) or audio_dict.get(PUBLIC_PATH_KEY):
+            return audio_dict
 
-    await async_remove_cached_audio_data(hass, filepath_hash, True, True)
+    await async_remove_cached_audio_data(hass, filepath_hash, True, True, True)
     return None
 
 
