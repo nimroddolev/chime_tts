@@ -14,6 +14,7 @@ from pydub import AudioSegment
 from custom_components.chime_tts.const import ALEXA_MEDIA_PLAYER_PLATFORM
 from custom_components.chime_tts.const import AUDIO_DURATION_KEY
 from custom_components.chime_tts.const import AUDIO_PATH_KEY
+from custom_components.chime_tts.const import DATA_STORAGE_KEY
 from custom_components.chime_tts.const import FALLBACK_TTS_CACHE_KEY
 from custom_components.chime_tts.const import FALLBACK_TTS_ISSUE_ID
 from custom_components.chime_tts.const import FALLBACK_TTS_NOTIFICATION_ID
@@ -132,6 +133,97 @@ async def test_async_get_cached_audio_data_removes_missing_entry(monkeypatch: py
 
     assert result is None
     remove_cached.assert_awaited_once_with(hass, "missing", True, True)
+
+
+@pytest.mark.asyncio
+async def test_async_get_cached_audio_data_drops_unloadable_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A cached file that exists but cannot be decoded should be cleared, not raise."""
+    monkeypatch.setattr(
+        integration_module,
+        "async_retrieve_data",
+        AsyncMock(return_value={LOCAL_PATH_KEY: "/media/temp/corrupt.mp3", PUBLIC_PATH_KEY: None}),
+    )
+    monkeypatch.setattr(integration_module.filesystem_helper, "path_exists", lambda path: True)
+    monkeypatch.setattr(integration_module, "async_get_audio_from_path", AsyncMock(return_value=None))
+    remove = AsyncMock()
+    monkeypatch.setattr(integration_module, "async_remove_cached_audio_data", remove)
+
+    result = await integration_module.async_get_cached_audio_data(FakeHass(), "corrupt")
+
+    # No usable path is left, so the entry is dropped and the caller regenerates
+    # and re-caches the audio.
+    assert result is None
+    remove.assert_awaited_once()
+
+
+class _MemoryStore:
+    """Storage stub backed by a shared dict, returning None when empty like HA's Store."""
+
+    contents: dict | None = None
+
+    def __init__(self, hass, version, key) -> None:
+        del hass, version, key
+
+    async def async_load(self):
+        return None if _MemoryStore.contents is None else dict(_MemoryStore.contents)
+
+    async def async_save(self, data):
+        _MemoryStore.contents = dict(data)
+
+
+@pytest.mark.asyncio
+async def test_async_delete_data_handles_empty_store(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Deleting from a store that has never been written should not raise."""
+    monkeypatch.setattr(integration_module.storage, "Store", _MemoryStore)
+    monkeypatch.setattr(_MemoryStore, "contents", None)
+    monkeypatch.setitem(integration_module._data, DATA_STORAGE_KEY, None)
+
+    await integration_module.async_delete_data(FakeHass(), "missing")
+
+    assert _MemoryStore.contents == {}
+    assert integration_module._data[DATA_STORAGE_KEY] == {}
+
+
+@pytest.mark.asyncio
+async def test_async_delete_data_is_not_restored_by_next_store(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A deleted entry must not be written back by a later save of the in-memory cache."""
+    entries = {"stale": {LOCAL_PATH_KEY: "/media/temp/stale.mp3"}, "keep": {LOCAL_PATH_KEY: "/media/temp/keep.mp3"}}
+    monkeypatch.setattr(integration_module.storage, "Store", _MemoryStore)
+    monkeypatch.setattr(_MemoryStore, "contents", dict(entries))
+    monkeypatch.setitem(integration_module._data, DATA_STORAGE_KEY, dict(entries))
+
+    await integration_module.async_delete_data(FakeHass(), "stale")
+    await integration_module.async_store_data(FakeHass(), "new", {LOCAL_PATH_KEY: "/media/temp/new.mp3"})
+
+    assert set(_MemoryStore.contents) == {"keep", "new"}
+
+
+@pytest.mark.asyncio
+async def test_async_delete_data_keeps_entries_stored_during_its_save(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An entry stored while the delete is awaiting its save must survive in memory and on disk."""
+    hass = FakeHass()
+    concurrent_store: list = []
+
+    class RacingStore(_MemoryStore):
+        """Run a concurrent async_store_data while the first save is in flight."""
+
+        async def async_save(self, data):
+            if concurrent_store:
+                await concurrent_store.pop()
+            _MemoryStore.contents = dict(data)
+
+    entries = {"stale": {LOCAL_PATH_KEY: "/media/temp/stale.mp3"}}
+    monkeypatch.setattr(integration_module.storage, "Store", RacingStore)
+    monkeypatch.setattr(_MemoryStore, "contents", dict(entries))
+    monkeypatch.setitem(integration_module._data, DATA_STORAGE_KEY, dict(entries))
+    concurrent_store.append(
+        integration_module.async_store_data(hass, "new", {LOCAL_PATH_KEY: "/media/temp/new.mp3"})
+    )
+
+    await integration_module.async_delete_data(hass, "stale")
+
+    assert set(integration_module._data[DATA_STORAGE_KEY]) == {"new"}
+    assert set(_MemoryStore.contents) == {"new"}
 
 
 @pytest.mark.asyncio

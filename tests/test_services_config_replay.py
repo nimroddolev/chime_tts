@@ -662,6 +662,29 @@ async def test_clear_cache_returns_a_response_when_cache_has_not_been_initialize
 
 
 @pytest.mark.asyncio
+async def test_clear_cache_survives_entries_removed_from_the_live_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Deleting entries from the in-memory cache must not break the clear_cache loop."""
+    hass = FakeHass()
+    live = {"a": {"local_path": None, "public_path": None}, "b": {"local_path": None, "public_path": None}}
+    monkeypatch.setitem(integration_module._data, DATA_STORAGE_KEY, live)
+
+    async def retrieve_without_refresh(hass, key):
+        return dict(integration_module._data[DATA_STORAGE_KEY].get(key) or {}) or None
+
+    monkeypatch.setattr(integration_module, "async_retrieve_data", retrieve_without_refresh)
+    monkeypatch.setattr(integration_module, "async_save_data", AsyncMock())
+
+    await integration_module.async_setup(hass, SimpleNamespace())
+    monkeypatch.setitem(integration_module._data, DATA_STORAGE_KEY, live)
+    clear_cache_handler = hass.services.registered[(DOMAIN, SERVICE_CLEAR_CACHE)][0]
+    await clear_cache_handler(SimpleNamespace(data={"clear_temp_tts_cache": True}))
+
+    assert live == {}
+
+
+@pytest.mark.asyncio
 async def test_replay_raises_before_first_say(monkeypatch: pytest.MonkeyPatch) -> None:
     """Replay should fail until a prior `say` request has been stored."""
     hass = FakeHass()
