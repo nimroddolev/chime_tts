@@ -638,6 +638,10 @@ class FilesystemHelper:
         else:
             _LOGGER.warning("No file at path %s - unable to delete", file_path)
 
+    async def async_delete_file(self, hass: HomeAssistant, file_path) -> None:
+        """Run delete_file in the executor."""
+        await hass.async_add_executor_job(self.delete_file, hass, file_path)
+
     def get_local_path(self, hass: HomeAssistant, file_path: str = ""):
         """Convert external URL to local public path."""
         file_path = f"{file_path}"

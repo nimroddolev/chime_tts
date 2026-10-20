@@ -709,6 +709,64 @@ def test_validate_path_field_suggests_media_directories_for_invalid_media_path(t
     assert str(paths["media_dir"]).rstrip("/") + "/" in result["suggestion_paths"]
 
 
+@pytest.mark.asyncio
+async def test_issue_318_websocket_validate_path_runs_off_event_loop(tmp_path: Path) -> None:
+    """Path validation stats the filesystem in the executor, not on the loop (#318)."""
+    import asyncio
+    import threading
+
+    hass, _config_entry, paths = make_hass(tmp_path)
+    loop_thread = threading.get_ident()
+    validate_threads: list[bool] = []
+    original_validate = settings_module.validate_path_field
+
+    def tracked_validate(*args):
+        validate_threads.append(threading.get_ident() != loop_thread)
+        return original_validate(*args)
+
+    async def threaded_executor(func, *args):
+        if func is original_validate:
+            func = tracked_validate
+        return await asyncio.get_running_loop().run_in_executor(None, func, *args)
+
+    hass.async_add_executor_job = threaded_executor
+    connection = FakeConnection()
+    msg = {
+        "id": 7,
+        "type": "chime_tts/validate_path",
+        "field_key": CUSTOM_CHIMES_PATH_KEY,
+        "path": str(paths["custom_chimes_dir"]),
+    }
+
+    await inspect.unwrap(panel_module.websocket_validate_path)(hass, connection, msg)
+
+    assert validate_threads == [True]
+    assert connection.errors == []
+    assert connection.results[-1][0] == 7
+    assert connection.results[-1][1]["tone"] == "success"
+
+
+def test_websocket_validate_path_still_requires_admin(tmp_path: Path) -> None:
+    """Non-admin users are rejected before any validation work is scheduled."""
+    from homeassistant.exceptions import Unauthorized
+
+    hass, _config_entry, paths = make_hass(tmp_path)
+    connection = FakeConnection(is_admin=False)
+
+    with pytest.raises(Unauthorized):
+        panel_module.websocket_validate_path(
+            hass,
+            connection,
+            {
+                "id": 8,
+                "type": "chime_tts/validate_path",
+                "field_key": CUSTOM_CHIMES_PATH_KEY,
+                "path": str(paths["custom_chimes_dir"]),
+            },
+        )
+    assert connection.results == []
+
+
 def test_build_directory_browser_payload_includes_previews_and_badges(tmp_path: Path) -> None:
     """Folder browsing should include child directories and a custom-chime preview."""
     hass, config_entry, paths = make_hass(tmp_path)

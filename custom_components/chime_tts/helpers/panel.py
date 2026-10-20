@@ -314,7 +314,8 @@ class ChimeTTSPanelOptionIconView(HomeAssistantView):
             raise web.HTTPNotFound()
 
         resolved_icon_path = self._icons_path / icon_path.name
-        if not resolved_icon_path.exists():
+        hass: HomeAssistant = request.app["hass"]
+        if not await hass.async_add_executor_job(resolved_icon_path.exists):
             raise web.HTTPNotFound()
 
         response = web.FileResponse(resolved_icon_path)
@@ -514,7 +515,7 @@ class ChimeTTSPanelChimePreviewView(HomeAssistantView):
             if not resolved_path:
                 public_path = audio_dict.get(PUBLIC_PATH_KEY)
                 if public_path:
-                    resolved_path = filesystem_helper.get_local_path(hass, public_path)
+                    resolved_path = await filesystem_helper.async_get_local_path(hass, public_path)
         elif isinstance(resolved_chime, str):
             resolved_path = resolved_chime
 
@@ -560,7 +561,7 @@ class ChimeTTSPanelChimeSetOffsetPreviewView(HomeAssistantView):
             resolved = await filesystem_helper.async_get_chime_path(chime_value, True, settings_data, hass)
             if isinstance(resolved, dict):
                 audio_dict = resolved.get("audio_dict", {})
-                chime_path = audio_dict.get(LOCAL_PATH_KEY) or filesystem_helper.get_local_path(hass, audio_dict.get(PUBLIC_PATH_KEY, ""))
+                chime_path = audio_dict.get(LOCAL_PATH_KEY) or await filesystem_helper.async_get_local_path(hass, audio_dict.get(PUBLIC_PATH_KEY, ""))
             else:
                 chime_path = resolved
             chime_path = await filesystem_helper.async_validate_path(hass, chime_path)
@@ -824,7 +825,8 @@ async def websocket_browse_path(
     }
 )
 @websocket_api.require_admin
-def websocket_validate_path(
+@websocket_api.async_response
+async def websocket_validate_path(
     hass: HomeAssistant,
     connection,
     msg: dict[str, Any],
@@ -839,15 +841,15 @@ def websocket_validate_path(
         )
         return
 
-    connection.send_result(
-        msg["id"],
-        validate_path_field(
-            hass,
-            config_entry,
-            msg["field_key"],
-            msg["path"],
-        ),
+    # validate_path_field stats the filesystem
+    result = await hass.async_add_executor_job(
+        validate_path_field,
+        hass,
+        config_entry,
+        msg["field_key"],
+        msg["path"],
     )
+    connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command(
