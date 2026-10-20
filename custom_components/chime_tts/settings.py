@@ -1742,6 +1742,7 @@ class ConfigurationYamlWriteError(HomeAssistantError):
 
 _READ_ONLY_ERRNOS = {errno.EACCES, errno.EPERM, errno.EROFS}
 _XATTR_UNSUPPORTED_ERRNOS = {errno.ENOTSUP, errno.EOPNOTSUPP}
+_XATTR_UNSET_ERRNOS = _XATTR_UNSUPPORTED_ERRNOS | {getattr(errno, "ENODATA", errno.ENOENT)}
 _DIRECTORY_FSYNC_UNSUPPORTED_ERRNOS = {errno.EINVAL, errno.ENOTSUP, errno.EOPNOTSUPP}
 
 
@@ -1785,8 +1786,10 @@ def _selinux_label(path: str) -> bytes | None:
         return None
     try:
         return os.getxattr(path, "security.selinux")
-    except OSError:
-        return None
+    except OSError as error:
+        if error.errno in _XATTR_UNSET_ERRNOS:
+            return None
+        raise
 
 
 def _match_owner(temp_path: str, current: os.stat_result) -> bool:
@@ -1809,8 +1812,12 @@ def _temp_matches_target(temp_path: str, target: str, current: os.stat_result) -
     if _has_posix_acl(temp_path):
         return False
     # Compare both ways, including None: an unlabeled file must not pick up the
-    # label new files get in that directory.
-    return _selinux_label(target) == _selinux_label(temp_path)
+    # label new files get in that directory. An unreadable label is unknown, so
+    # use the in-place path instead of risking a replacement with the wrong one.
+    try:
+        return _selinux_label(target) == _selinux_label(temp_path)
+    except OSError:
+        return False
 
 
 def _fsync_directory(directory: str) -> None:

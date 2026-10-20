@@ -2677,6 +2677,25 @@ def test_issue_352_selinux_label_unsupported(monkeypatch: pytest.MonkeyPatch) ->
     assert settings_module._selinux_label("/config/configuration.yaml") is None
 
 
+def test_issue_352_unreadable_selinux_label_writes_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An unreadable SELinux label must not permit a metadata-dropping rename."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+
+    def unreadable_label(path, name):
+        raise OSError(errno.EIO, "I/O error")
+
+    monkeypatch.setattr(settings_module.os, "getxattr", unreadable_label, raising=False)
+    _save_arrival_profile(hass)
+
+    assert config_file.stat().st_ino == inode
+    assert _saved_profile_names(config_file) == ["arrival"]
+
+
 @pytest.mark.parametrize("error_number", [errno.ENOSPC, errno.EDQUOT, errno.EIO])
 def test_issue_352_temp_file_error_does_not_truncate(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error_number: int
