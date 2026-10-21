@@ -2500,6 +2500,28 @@ def test_issue_352_temp_file_failure_writes_in_place(
     assert _saved_profile_names(config_file) == ["arrival"]
 
 
+def test_issue_352_unreadable_directory_writes_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A directory that cannot be read must not be replaced before its fsync."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+    real_open = os.open
+
+    def deny_directory_open(path, flags, *args, **kwargs):
+        if path == str(paths["config_dir"]):
+            raise PermissionError(errno.EACCES, "Permission denied")
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(settings_module.os, "open", deny_directory_open)
+    _save_arrival_profile(hass)
+
+    assert config_file.stat().st_ino == inode
+    assert _saved_profile_names(config_file) == ["arrival"]
+
+
 @pytest.mark.skipif(os.geteuid() == 0, reason="root ignores file permissions")
 def test_issue_352_writable_file_in_read_only_directory(tmp_path: Path) -> None:
     """A bind-mounted writable file in a read-only directory keeps working."""
@@ -2767,13 +2789,13 @@ def test_issue_352_replace_fsyncs_the_directory(tmp_path: Path, monkeypatch) -> 
     """After the rename, the directory entry is flushed too."""
     config_file = tmp_path / "configuration.yaml"
     config_file.write_text("old: 1\n", encoding="utf-8")
-    synced: list[str] = []
-    monkeypatch.setattr(settings_module, "_fsync_directory", synced.append)
+    synced: list[int] = []
+    monkeypatch.setattr(settings_module, "_fsync_directory_fd", synced.append)
 
     settings_module._write_text_atomically(str(config_file), "new: 2\n")
 
     assert config_file.read_text(encoding="utf-8") == "new: 2\n"
-    assert synced == [str(tmp_path)]
+    assert len(synced) == 1
 
 
 @pytest.mark.parametrize(("temp_label", "replaced"), [(b"config_t", False), (None, True)])

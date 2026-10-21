@@ -1820,16 +1820,21 @@ def _temp_matches_target(temp_path: str, target: str, current: os.stat_result) -
         return False
 
 
+def _fsync_directory_fd(dir_fd: int) -> None:
+    """Flush a directory descriptor so a completed rename survives a power loss."""
+    try:
+        os.fsync(dir_fd)
+    except OSError as error:
+        # Some filesystems do not support syncing directory descriptors.
+        if error.errno not in _DIRECTORY_FSYNC_UNSUPPORTED_ERRNOS:
+            raise
+
+
 def _fsync_directory(directory: str) -> None:
     """Flush a directory entry so a completed rename survives a power loss."""
     dir_fd = os.open(directory, os.O_RDONLY)
     try:
-        try:
-            os.fsync(dir_fd)
-        except OSError as error:
-            # Some filesystems do not support syncing directory descriptors.
-            if error.errno not in _DIRECTORY_FSYNC_UNSUPPORTED_ERRNOS:
-                raise
+        _fsync_directory_fd(dir_fd)
     finally:
         os.close(dir_fd)
 
@@ -1862,6 +1867,14 @@ def _write_text_atomically(path: str, content: str) -> None:
     if current.st_nlink > 1 or _has_extra_xattrs(target) or _has_posix_acl(
         directory, "system.posix_acl_default"
     ):
+        _write_text_in_place(target, content)
+        return
+
+    # Open the directory before replacing the target. A write-only directory
+    # can permit a rename but not an O_RDONLY open for the required final fsync.
+    try:
+        dir_fd = os.open(directory, os.O_RDONLY)
+    except OSError:
         _write_text_in_place(target, content)
         return
 
@@ -1905,7 +1918,7 @@ def _write_text_atomically(path: str, content: str) -> None:
             os.unlink(temp_path)
             _write_text_in_place(target, content)
             return
-        _fsync_directory(directory)
+        _fsync_directory_fd(dir_fd)
     except BaseException:
         with contextlib.suppress(FileNotFoundError):
             os.unlink(temp_path)
@@ -1914,6 +1927,7 @@ def _write_text_atomically(path: str, content: str) -> None:
         if fd is not None:
             with contextlib.suppress(OSError):
                 os.close(fd)
+        os.close(dir_fd)
 
 
 def _write_configuration_yaml(hass, loaded: dict[str, Any]) -> None:
