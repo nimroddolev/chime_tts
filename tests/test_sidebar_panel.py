@@ -2823,6 +2823,21 @@ def test_issue_352_hard_linked_configuration_is_written_in_place(tmp_path: Path)
     assert os.stat(alias).st_ino == os.stat(config_file).st_ino
 
 
+def test_issue_352_inode_flags_write_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Nondefault Linux inode flags must survive a notify-profile save."""
+    config_file = tmp_path / "configuration.yaml"
+    config_file.write_text("old: 1\n", encoding="utf-8")
+    inode = config_file.stat().st_ino
+    monkeypatch.setattr(settings_module, "_has_nondefault_inode_flags", lambda path: True)
+
+    settings_module._write_text_atomically(str(config_file), "new: 2\n")
+
+    assert config_file.stat().st_ino == inode
+    assert config_file.read_text(encoding="utf-8") == "new: 2\n"
+
+
 def test_issue_352_replace_fsyncs_the_directory(tmp_path: Path, monkeypatch) -> None:
     """After the rename, the directory entry is flushed too."""
     config_file = tmp_path / "configuration.yaml"

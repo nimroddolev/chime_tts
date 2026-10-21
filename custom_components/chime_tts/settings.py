@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import shutil
 import stat
+import sys
 import tempfile
 from typing import Any
 from urllib.parse import quote
@@ -1744,6 +1745,7 @@ _READ_ONLY_ERRNOS = {errno.EACCES, errno.EPERM, errno.EROFS}
 _XATTR_UNSUPPORTED_ERRNOS = {errno.ENOTSUP, errno.EOPNOTSUPP}
 _XATTR_UNSET_ERRNOS = _XATTR_UNSUPPORTED_ERRNOS | {getattr(errno, "ENODATA", errno.ENOENT)}
 _DIRECTORY_FSYNC_UNSUPPORTED_ERRNOS = {errno.EINVAL, errno.ENOTSUP, errno.EOPNOTSUPP}
+_LINUX_FS_IOC_GETFLAGS = 0x80086601
 
 
 def _write_text_in_place(path: str, content: str) -> None:
@@ -1778,6 +1780,21 @@ def _has_extra_xattrs(path: str) -> bool:
         # Avoid replacing a file when its metadata could not be inspected.
         return error.errno not in _XATTR_UNSUPPORTED_ERRNOS
     return any(name != "security.selinux" for name in names)
+
+
+def _has_nondefault_inode_flags(path: str) -> bool:
+    """Return whether Linux inode flags would be lost by replacing path."""
+    if not sys.platform.startswith("linux"):
+        return False
+    import fcntl
+
+    try:
+        with open(path, "rb") as target_file:
+            flags = fcntl.ioctl(target_file.fileno(), _LINUX_FS_IOC_GETFLAGS, b"\0" * 4)
+    except OSError as error:
+        # Unknown metadata must use the in-place path, which preserves it.
+        return error.errno not in _XATTR_UNSUPPORTED_ERRNOS
+    return int.from_bytes(flags, byteorder="little") != 0
 
 
 def _selinux_label(path: str) -> bytes | None:
@@ -1864,8 +1881,13 @@ def _write_text_atomically(path: str, content: str) -> None:
         raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), target)
     directory = os.path.dirname(target)
     # A rename would detach other hard links from the new content.
-    if current.st_nlink > 1 or _has_extra_xattrs(target) or _has_posix_acl(
+    if (
+        current.st_nlink > 1
+        or _has_extra_xattrs(target)
+        or _has_nondefault_inode_flags(target)
+        or _has_posix_acl(
         directory, "system.posix_acl_default"
+        )
     ):
         _write_text_in_place(target, content)
         return
