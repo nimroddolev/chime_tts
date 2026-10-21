@@ -1874,24 +1874,28 @@ def _write_text_atomically(path: str, content: str) -> None:
     # can permit a rename but not an O_RDONLY open for the required final fsync.
     try:
         dir_fd = os.open(directory, os.O_RDONLY)
-    except OSError:
-        _write_text_in_place(target, content)
-        return
-
-    try:
-        fd, temp_path = tempfile.mkstemp(
-            dir=directory,
-            prefix=f".{os.path.basename(target)}.",
-            suffix=".tmp",
-        )
     except OSError as error:
-        # A writable file bind-mounted into a read-only directory. Anything
-        # else (a full disk, quota) must not reach the truncating write.
         if error.errno not in _READ_ONLY_DIR_ERRNOS:
             raise
         _write_text_in_place(target, content)
         return
+
+    fd: int | None = None
+    temp_path: str | None = None
     try:
+        try:
+            fd, temp_path = tempfile.mkstemp(
+                dir=directory,
+                prefix=f".{os.path.basename(target)}.",
+                suffix=".tmp",
+            )
+        except OSError as error:
+            # A writable file bind-mounted into a read-only directory. Anything
+            # else (a full disk, quota) must not reach the truncating write.
+            if error.errno not in _READ_ONLY_DIR_ERRNOS:
+                raise
+            _write_text_in_place(target, content)
+            return
         with os.fdopen(fd, "w", encoding="utf-8", closefd=False) as temp_file:
             temp_file.write(content)
             temp_file.flush()
@@ -1920,8 +1924,9 @@ def _write_text_atomically(path: str, content: str) -> None:
             return
         _fsync_directory_fd(dir_fd)
     except BaseException:
-        with contextlib.suppress(FileNotFoundError):
-            os.unlink(temp_path)
+        if temp_path is not None:
+            with contextlib.suppress(FileNotFoundError):
+                os.unlink(temp_path)
         raise
     finally:
         if fd is not None:

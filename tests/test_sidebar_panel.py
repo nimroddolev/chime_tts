@@ -2488,16 +2488,33 @@ def test_issue_352_temp_file_failure_writes_in_place(
     config_file = paths["config_dir"].joinpath("configuration.yaml")
     _write_profile_config(config_file)
     inode = config_file.stat().st_ino
+    opened: list[int] = []
+    closed: list[int] = []
+    real_open = os.open
+    real_close = os.close
+
+    def record_directory_open(path, flags, *args, **kwargs):
+        file_descriptor = real_open(path, flags, *args, **kwargs)
+        if path == str(paths["config_dir"]):
+            opened.append(file_descriptor)
+        return file_descriptor
+
+    def record_close(file_descriptor):
+        closed.append(file_descriptor)
+        return real_close(file_descriptor)
 
     def denied_mkstemp(*args, **kwargs):
         raise PermissionError(errno.EACCES, "Permission denied")
 
+    monkeypatch.setattr(settings_module.os, "open", record_directory_open)
+    monkeypatch.setattr(settings_module.os, "close", record_close)
     monkeypatch.setattr(settings_module.tempfile, "mkstemp", denied_mkstemp)
 
     _save_arrival_profile(hass)
 
     assert config_file.stat().st_ino == inode
     assert _saved_profile_names(config_file) == ["arrival"]
+    assert opened == closed
 
 
 def test_issue_352_unreadable_directory_writes_in_place(
@@ -2520,6 +2537,27 @@ def test_issue_352_unreadable_directory_writes_in_place(
 
     assert config_file.stat().st_ino == inode
     assert _saved_profile_names(config_file) == ["arrival"]
+
+
+def test_issue_352_directory_open_error_does_not_truncate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Unexpected directory-open errors leave the existing file untouched."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    original = _write_profile_config(config_file)
+    real_open = os.open
+
+    def fail_directory_open(path, flags, *args, **kwargs):
+        if path == str(paths["config_dir"]):
+            raise OSError(errno.EIO, "I/O error")
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(settings_module.os, "open", fail_directory_open)
+    with pytest.raises(settings_module.ConfigurationYamlWriteError):
+        _save_arrival_profile(hass)
+
+    assert config_file.read_text(encoding="utf-8") == original
 
 
 @pytest.mark.skipif(os.geteuid() == 0, reason="root ignores file permissions")
