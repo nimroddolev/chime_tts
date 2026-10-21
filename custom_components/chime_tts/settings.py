@@ -1746,6 +1746,7 @@ _XATTR_UNSUPPORTED_ERRNOS = {errno.ENOTSUP, errno.EOPNOTSUPP}
 _XATTR_UNSET_ERRNOS = _XATTR_UNSUPPORTED_ERRNOS | {getattr(errno, "ENODATA", errno.ENOENT)}
 _DIRECTORY_FSYNC_UNSUPPORTED_ERRNOS = {errno.EINVAL, errno.ENOTSUP, errno.EOPNOTSUPP}
 _LINUX_FS_IOC_GETFLAGS = 0x80086601
+_LINUX_FS_MANAGED_FLAGS = 0x00080000  # FS_EXTENT_FL
 
 
 def _write_text_in_place(path: str, content: str) -> None:
@@ -1794,7 +1795,9 @@ def _has_nondefault_inode_flags(path: str) -> bool:
     except OSError as error:
         # Unknown metadata must use the in-place path, which preserves it.
         return error.errno not in _XATTR_UNSUPPORTED_ERRNOS
-    return int.from_bytes(flags, byteorder="little") != 0
+    # Extent allocation is managed by ext4 and overlayfs and is normally set
+    # on both the original and a replacement file in the same directory.
+    return bool(int.from_bytes(flags, byteorder="little") & ~_LINUX_FS_MANAGED_FLAGS)
 
 
 def _selinux_label(path: str) -> bytes | None:
