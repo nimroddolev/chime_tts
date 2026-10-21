@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import errno
 import inspect
 import importlib
 import logging
+import os
 from datetime import timedelta
 from datetime import timezone
 from pathlib import Path
+import stat
 import time
 from types import SimpleNamespace
 import yaml
@@ -2210,3 +2213,724 @@ async def test_websocket_repeat_log_action_replays_notification_with_none_data_p
     ]
     payload = connection.results[-1][1]
     assert payload["message_type"] == "success"
+
+
+def _write_profile_config(config_file: Path) -> str:
+    """Write a configuration.yaml holding one Chime TTS notify profile."""
+    original = (
+        "# operational note\n"
+        "notify:\n"
+        "  - platform: chime_tts\n"
+        "    name: doorbell\n"
+        "    entity_id: media_player.office\n"
+    )
+    config_file.write_text(original, encoding="utf-8")
+    return original
+
+
+def _new_profile_request(values: dict) -> dict:
+    """Return a save request that adds a new notify profile."""
+    return {
+        "id": 9,
+        "type": "chime_tts/save_settings",
+        "values": values,
+        "notify_profiles": [
+            {"name": "arrival", "entity_id": "media_player.kitchen"},
+        ],
+    }
+
+
+def _config_dir_files(config_dir: Path) -> list[str]:
+    """Return the names of regular files directly inside config_dir."""
+    return sorted(path.name for path in config_dir.iterdir() if path.is_file())
+
+
+@pytest.mark.asyncio
+async def test_issue_352_save_without_notify_profiles_key_keeps_profiles(
+    tmp_path: Path,
+) -> None:
+    """A save request that omits notify_profiles must not erase existing profiles."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    original = _write_profile_config(config_file)
+    connection = FakeConnection()
+
+    await save_settings_handler(
+        hass,
+        connection,
+        {
+            "id": 7,
+            "type": "chime_tts/save_settings",
+            "values": dict(config_entry.options),
+        },
+    )
+
+    assert connection.errors == []
+    payload = connection.results[-1][1]
+    assert payload["message_type"] == "success"
+    assert payload["restart_required"] is False
+    assert [profile["name"] for profile in payload["notify_profiles"]] == ["doorbell"]
+    assert config_file.read_text(encoding="utf-8") == original
+
+
+@pytest.mark.asyncio
+async def test_issue_352_failed_write_leaves_configuration_yaml_intact(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failure while replacing configuration.yaml must not truncate it."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    original = _write_profile_config(config_file)
+
+    def fail_replace(src, dst):
+        raise OSError(errno.EIO, "I/O error")
+
+    monkeypatch.setattr(settings_module.os, "replace", fail_replace)
+    connection = FakeConnection()
+
+    await save_settings_handler(
+        hass, connection, _new_profile_request(dict(config_entry.options))
+    )
+
+    assert connection.results[-1][1]["message_type"] == "error"
+    assert config_file.read_text(encoding="utf-8") == original
+    assert _config_dir_files(paths["config_dir"]) == ["configuration.yaml"]
+
+
+@pytest.mark.asyncio
+async def test_issue_352_write_preserves_mode_and_symlink(tmp_path: Path) -> None:
+    """The atomic write keeps the file mode and writes through a symlink."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    real_dir = tmp_path / "repo"
+    real_dir.mkdir()
+    real_file = real_dir / "configuration.yaml"
+    _write_profile_config(real_file)
+    real_file.chmod(0o640)
+    link = paths["config_dir"].joinpath("configuration.yaml")
+    link.symlink_to(real_file)
+    connection = FakeConnection()
+
+    await save_settings_handler(
+        hass, connection, _new_profile_request(dict(config_entry.options))
+    )
+
+    assert connection.results[-1][1]["message_type"] == "success"
+    assert link.is_symlink()
+    assert stat.S_IMODE(real_file.stat().st_mode) == 0o640
+    saved = yaml.safe_load(real_file.read_text(encoding="utf-8"))
+    assert [entry["name"] for entry in saved["notify"]] == ["arrival"]
+
+
+@pytest.mark.asyncio
+async def test_issue_352_write_falls_back_when_file_is_a_mount_point(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A bind-mounted configuration.yaml cannot be replaced, so write it in place."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+
+    def busy_replace(src, dst):
+        raise OSError(errno.EBUSY, "Device or resource busy")
+
+    monkeypatch.setattr(settings_module.os, "replace", busy_replace)
+    connection = FakeConnection()
+
+    await save_settings_handler(
+        hass, connection, _new_profile_request(dict(config_entry.options))
+    )
+
+    assert connection.results[-1][1]["message_type"] == "success"
+    saved = yaml.safe_load(config_file.read_text(encoding="utf-8"))
+    assert [entry["name"] for entry in saved["notify"]] == ["arrival"]
+    assert _config_dir_files(paths["config_dir"]) == ["configuration.yaml"]
+
+
+@pytest.mark.asyncio
+async def test_issue_353_read_only_configuration_yaml_reports_clear_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A read-only configuration.yaml keeps the options save and explains the failure."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    original = _write_profile_config(config_file)
+
+    def read_only(*args, **kwargs):
+        raise OSError(errno.EROFS, "Read-only file system")
+
+    # A read-only mount fails both the temp file and the in-place fallback.
+    monkeypatch.setattr(settings_module.tempfile, "mkstemp", read_only)
+    monkeypatch.setattr(settings_module, "_write_text_in_place", read_only)
+    values = dict(config_entry.options)
+    values[INITIAL_DELAY_KEY] = 250
+    connection = FakeConnection()
+
+    await save_settings_handler(hass, connection, _new_profile_request(values))
+
+    assert connection.errors == []
+    payload = connection.results[-1][1]
+    assert payload["message_type"] == "error"
+    assert "read-only" in payload["message"]
+    assert "notify" in payload["message"]
+    assert [profile["name"] for profile in payload["notify_profiles"]] == ["doorbell"]
+    assert config_entry.options[INITIAL_DELAY_KEY] == 250
+    assert config_file.read_text(encoding="utf-8") == original
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores file permissions")
+def test_issue_353_save_notify_profiles_raises_on_unwritable_directory(
+    tmp_path: Path,
+) -> None:
+    """An unwritable config directory raises the dedicated write error."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_dir = paths["config_dir"]
+    config_file = config_dir.joinpath("configuration.yaml")
+    original = _write_profile_config(config_file)
+    config_file.chmod(0o444)
+    config_dir.chmod(0o555)
+    try:
+        with pytest.raises(settings_module.ConfigurationYamlWriteError):
+            settings_module.save_notify_profiles(
+                hass, [{"name": "arrival", "entity_id": "media_player.kitchen"}]
+            )
+    finally:
+        config_dir.chmod(0o755)
+        config_file.chmod(0o644)
+    assert config_file.read_text(encoding="utf-8") == original
+
+
+def test_issue_353_read_only_file_mode_is_not_replaced(tmp_path: Path) -> None:
+    """A configuration.yaml marked read-only is left alone even in a writable dir."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    original = _write_profile_config(config_file)
+    config_file.chmod(0o444)
+    try:
+        with pytest.raises(settings_module.ConfigurationYamlWriteError, match="read-only"):
+            settings_module.save_notify_profiles(
+                hass, [{"name": "arrival", "entity_id": "media_player.kitchen"}]
+            )
+    finally:
+        config_file.chmod(0o644)
+    assert config_file.read_text(encoding="utf-8") == original
+    assert _config_dir_files(paths["config_dir"]) == ["configuration.yaml"]
+
+
+def _save_arrival_profile(hass) -> None:
+    """Save a single notify profile through the configuration.yaml writer."""
+    settings_module.save_notify_profiles(
+        hass, [{"name": "arrival", "entity_id": "media_player.kitchen"}]
+    )
+
+
+def _saved_profile_names(config_file: Path) -> list[str]:
+    """Return the notify profile names stored in config_file."""
+    saved = yaml.safe_load(config_file.read_text(encoding="utf-8"))
+    return [entry["name"] for entry in saved["notify"]]
+
+
+def test_issue_352_atomic_write_replaces_the_inode(tmp_path: Path) -> None:
+    """The normal path swaps in a new file rather than truncating the old one."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+
+    _save_arrival_profile(hass)
+
+    assert config_file.stat().st_ino != inode
+    assert _saved_profile_names(config_file) == ["arrival"]
+
+
+def test_issue_352_unmatched_owner_writes_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """If the temp file cannot take the original owner, keep the original file."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+    monkeypatch.setattr(settings_module, "_match_owner", lambda temp_path, current: False)
+
+    _save_arrival_profile(hass)
+
+    assert config_file.stat().st_ino == inode
+    assert _saved_profile_names(config_file) == ["arrival"]
+    assert _config_dir_files(paths["config_dir"]) == ["configuration.yaml"]
+
+
+def test_issue_352_match_owner_reports_chown_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A different owner that chown cannot set is reported, not ignored."""
+    temp_file = tmp_path / "temp"
+    temp_file.write_text("x", encoding="utf-8")
+    own = temp_file.stat()
+
+    def refuse_chown(path, uid, gid):
+        raise PermissionError(errno.EPERM, "Operation not permitted")
+
+    monkeypatch.setattr(settings_module.os, "chown", refuse_chown)
+
+    assert settings_module._match_owner(str(temp_file), own) is True
+    other = SimpleNamespace(st_uid=own.st_uid + 1, st_gid=own.st_gid)
+    assert settings_module._match_owner(str(temp_file), other) is False
+
+
+def test_issue_352_temp_file_failure_writes_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A writable file in a directory that refuses temp files is still saved."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+    opened: list[int] = []
+    closed: list[int] = []
+    real_open = os.open
+    real_close = os.close
+
+    def record_directory_open(path, flags, *args, **kwargs):
+        file_descriptor = real_open(path, flags, *args, **kwargs)
+        if path == str(paths["config_dir"]):
+            opened.append(file_descriptor)
+        return file_descriptor
+
+    def record_close(file_descriptor):
+        closed.append(file_descriptor)
+        return real_close(file_descriptor)
+
+    def denied_mkstemp(*args, **kwargs):
+        raise PermissionError(errno.EACCES, "Permission denied")
+
+    monkeypatch.setattr(settings_module.os, "open", record_directory_open)
+    monkeypatch.setattr(settings_module.os, "close", record_close)
+    monkeypatch.setattr(settings_module.tempfile, "mkstemp", denied_mkstemp)
+
+    _save_arrival_profile(hass)
+
+    assert config_file.stat().st_ino == inode
+    assert _saved_profile_names(config_file) == ["arrival"]
+    assert opened == closed
+
+
+def test_issue_352_unreadable_directory_writes_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A directory that cannot be read must not be replaced before its fsync."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+    real_open = os.open
+
+    def deny_directory_open(path, flags, *args, **kwargs):
+        if path == str(paths["config_dir"]):
+            raise PermissionError(errno.EACCES, "Permission denied")
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(settings_module.os, "open", deny_directory_open)
+    _save_arrival_profile(hass)
+
+    assert config_file.stat().st_ino == inode
+    assert _saved_profile_names(config_file) == ["arrival"]
+
+
+def test_issue_352_directory_open_error_does_not_truncate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Unexpected directory-open errors leave the existing file untouched."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    original = _write_profile_config(config_file)
+    real_open = os.open
+
+    def fail_directory_open(path, flags, *args, **kwargs):
+        if path == str(paths["config_dir"]):
+            raise OSError(errno.EIO, "I/O error")
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(settings_module.os, "open", fail_directory_open)
+    with pytest.raises(settings_module.ConfigurationYamlWriteError):
+        _save_arrival_profile(hass)
+
+    assert config_file.read_text(encoding="utf-8") == original
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores file permissions")
+def test_issue_352_writable_file_in_read_only_directory(tmp_path: Path) -> None:
+    """A bind-mounted writable file in a read-only directory keeps working."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_dir = paths["config_dir"]
+    config_file = config_dir.joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    config_dir.chmod(0o555)
+    try:
+        _save_arrival_profile(hass)
+    finally:
+        config_dir.chmod(0o755)
+    assert _saved_profile_names(config_file) == ["arrival"]
+
+
+def test_issue_352_new_configuration_yaml_respects_umask(tmp_path: Path) -> None:
+    """A newly created configuration.yaml gets the umask-derived mode."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    previous = os.umask(0o027)
+    try:
+        _save_arrival_profile(hass)
+    finally:
+        os.umask(previous)
+
+    assert stat.S_IMODE(config_file.stat().st_mode) == 0o640
+    assert _saved_profile_names(config_file) == ["arrival"]
+
+
+def test_issue_352_acl_file_writes_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file with a POSIX ACL is rewritten in place so the ACL survives."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+    monkeypatch.setattr(settings_module, "_has_posix_acl", lambda path, name="": True)
+
+    _save_arrival_profile(hass)
+
+    assert config_file.stat().st_ino == inode
+    assert _saved_profile_names(config_file) == ["arrival"]
+
+
+def test_issue_352_has_posix_acl_detection(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ACL detection reads the access ACL xattr and tolerates unsupported systems."""
+    monkeypatch.setattr(
+        settings_module.os,
+        "listxattr",
+        lambda path: ["user.note", "system.posix_acl_access"],
+        raising=False,
+    )
+    assert settings_module._has_posix_acl("/config/configuration.yaml") is True
+
+    monkeypatch.setattr(settings_module.os, "listxattr", lambda path: [], raising=False)
+    assert settings_module._has_posix_acl("/config/configuration.yaml") is False
+
+    def unsupported(path):
+        raise OSError(errno.ENOTSUP, "Operation not supported")
+
+    monkeypatch.setattr(settings_module.os, "listxattr", unsupported, raising=False)
+    assert settings_module._has_posix_acl("/config/configuration.yaml") is False
+
+    monkeypatch.delattr(settings_module.os, "listxattr", raising=False)
+    assert settings_module._has_posix_acl("/config/configuration.yaml") is False
+
+
+def _is_temp_file(path: str) -> bool:
+    """Return whether path is the writer's temp file."""
+    return os.path.basename(path).startswith(".configuration.yaml.")
+
+
+def test_issue_352_temp_file_stays_private_until_owner_matches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The original mode is applied only after ownership is settled."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    config_file.chmod(0o664)
+    modes_at_owner_check: list[int] = []
+    real_match_owner = settings_module._match_owner
+
+    def recording_match_owner(temp_path, current):
+        modes_at_owner_check.append(stat.S_IMODE(os.stat(temp_path).st_mode))
+        return real_match_owner(temp_path, current)
+
+    monkeypatch.setattr(settings_module, "_match_owner", recording_match_owner)
+
+    _save_arrival_profile(hass)
+
+    assert modes_at_owner_check == [0o600]
+    assert stat.S_IMODE(config_file.stat().st_mode) == 0o664
+
+
+def test_issue_352_failed_owner_match_never_widens_temp_mode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A temp file that cannot take the owner is discarded before any chmod."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    chmod_calls: list[str] = []
+    real_chmod = os.chmod
+
+    def recording_chmod(path, mode, *args, **kwargs):
+        chmod_calls.append(str(path))
+        return real_chmod(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(settings_module.os, "chmod", recording_chmod)
+    monkeypatch.setattr(settings_module, "_match_owner", lambda temp_path, current: False)
+
+    _save_arrival_profile(hass)
+
+    assert not [path for path in chmod_calls if _is_temp_file(path)]
+    assert _saved_profile_names(config_file) == ["arrival"]
+    assert _config_dir_files(paths["config_dir"]) == ["configuration.yaml"]
+
+
+@pytest.mark.parametrize("acl_on", ["temp", "directory"])
+def test_issue_352_inherited_acl_writes_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, acl_on: str
+) -> None:
+    """A default ACL on the directory, or one inherited by the temp file, keeps the file in place."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+
+    def fake_acl(path, name="system.posix_acl_access"):
+        if acl_on == "temp":
+            return _is_temp_file(path) and name == "system.posix_acl_access"
+        return name == "system.posix_acl_default"
+
+    monkeypatch.setattr(settings_module, "_has_posix_acl", fake_acl)
+
+    _save_arrival_profile(hass)
+
+    assert config_file.stat().st_ino == inode
+    assert _saved_profile_names(config_file) == ["arrival"]
+    assert _config_dir_files(paths["config_dir"]) == ["configuration.yaml"]
+
+
+@pytest.mark.parametrize(("temp_label", "replaced"), [(b"other_t", False), (b"config_t", True)])
+def test_issue_352_selinux_label_mismatch_writes_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, temp_label: bytes, replaced: bool
+) -> None:
+    """A temp file with a different SELinux label is not renamed over the original."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+    monkeypatch.setattr(
+        settings_module,
+        "_selinux_label",
+        lambda path: temp_label if _is_temp_file(path) else b"config_t",
+    )
+
+    _save_arrival_profile(hass)
+
+    assert (config_file.stat().st_ino != inode) is replaced
+    assert _saved_profile_names(config_file) == ["arrival"]
+
+
+def test_issue_352_selinux_label_unsupported(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Missing or unsupported xattrs read as no label."""
+
+    def unsupported(path, name):
+        raise OSError(errno.ENOTSUP, "Operation not supported")
+
+    monkeypatch.setattr(settings_module.os, "getxattr", unsupported, raising=False)
+    assert settings_module._selinux_label("/config/configuration.yaml") is None
+    monkeypatch.delattr(settings_module.os, "getxattr", raising=False)
+    assert settings_module._selinux_label("/config/configuration.yaml") is None
+
+
+def test_issue_352_unreadable_selinux_label_writes_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An unreadable SELinux label must not permit a metadata-dropping rename."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+
+    def unreadable_label(path, name):
+        raise OSError(errno.EIO, "I/O error")
+
+    monkeypatch.setattr(settings_module.os, "getxattr", unreadable_label, raising=False)
+    _save_arrival_profile(hass)
+
+    assert config_file.stat().st_ino == inode
+    assert _saved_profile_names(config_file) == ["arrival"]
+
+
+@pytest.mark.parametrize("error_number", [errno.ENOSPC, errno.EDQUOT, errno.EIO])
+def test_issue_352_temp_file_error_does_not_truncate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error_number: int
+) -> None:
+    """A full disk or other mkstemp failure raises without touching the file."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    original = _write_profile_config(config_file)
+
+    def failing_mkstemp(*args, **kwargs):
+        raise OSError(error_number, os.strerror(error_number))
+
+    monkeypatch.setattr(settings_module.tempfile, "mkstemp", failing_mkstemp)
+    monkeypatch.setattr(
+        settings_module,
+        "_write_text_in_place",
+        lambda path, content: pytest.fail("in-place write must not run"),
+    )
+
+    with pytest.raises(settings_module.ConfigurationYamlWriteError):
+        _save_arrival_profile(hass)
+    assert config_file.read_text(encoding="utf-8") == original
+
+
+@pytest.mark.asyncio
+async def test_issue_352_failed_save_reports_profiles_now_on_disk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """After a failed write the panel gets what is on disk, not the pre-save list."""
+    hass, config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+
+    def partial_save(hass, profiles):
+        config_file.write_text(
+            "notify:\n  - platform: chime_tts\n    name: half_written\n"
+            "    entity_id: media_player.office\n",
+            encoding="utf-8",
+        )
+        raise settings_module.ConfigurationYamlWriteError("disk went away")
+
+    monkeypatch.setattr(settings_module, "save_notify_profiles", partial_save)
+    connection = FakeConnection()
+
+    await save_settings_handler(
+        hass, connection, _new_profile_request(dict(config_entry.options))
+    )
+
+    payload = connection.results[-1][1]
+    assert payload["message_type"] == "error"
+    assert [profile["name"] for profile in payload["notify_profiles"]] == ["half_written"]
+    assert payload["restart_required"] is True
+
+
+def test_issue_352_hard_linked_configuration_is_written_in_place(tmp_path: Path) -> None:
+    """A hard-linked configuration.yaml keeps every link pointing at the new content."""
+    config_file = tmp_path / "configuration.yaml"
+    config_file.write_text("old: 1\n", encoding="utf-8")
+    alias = tmp_path / "alias.yaml"
+    os.link(config_file, alias)
+
+    settings_module._write_text_atomically(str(config_file), "new: 2\n")
+
+    assert alias.read_text(encoding="utf-8") == "new: 2\n"
+    assert os.stat(alias).st_ino == os.stat(config_file).st_ino
+
+
+def test_issue_352_inode_flags_write_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Nondefault Linux inode flags must survive a notify-profile save."""
+    config_file = tmp_path / "configuration.yaml"
+    config_file.write_text("old: 1\n", encoding="utf-8")
+    inode = config_file.stat().st_ino
+    monkeypatch.setattr(settings_module, "_has_nondefault_inode_flags", lambda path: True)
+
+    settings_module._write_text_atomically(str(config_file), "new: 2\n")
+
+    assert config_file.stat().st_ino == inode
+    assert config_file.read_text(encoding="utf-8") == "new: 2\n"
+
+
+def test_issue_352_replace_fsyncs_the_directory(tmp_path: Path, monkeypatch) -> None:
+    """After the rename, the directory entry is flushed too."""
+    config_file = tmp_path / "configuration.yaml"
+    config_file.write_text("old: 1\n", encoding="utf-8")
+    synced: list[int] = []
+    monkeypatch.setattr(settings_module, "_fsync_directory_fd", synced.append)
+
+    settings_module._write_text_atomically(str(config_file), "new: 2\n")
+
+    assert config_file.read_text(encoding="utf-8") == "new: 2\n"
+    assert len(synced) == 1
+
+
+@pytest.mark.parametrize(("temp_label", "replaced"), [(b"config_t", False), (None, True)])
+def test_issue_352_unlabeled_target_keeps_its_selinux_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, temp_label: bytes | None, replaced: bool
+) -> None:
+    """An unlabeled configuration.yaml is not swapped for a newly labeled temp file."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+    monkeypatch.setattr(
+        settings_module,
+        "_selinux_label",
+        lambda path: temp_label if _is_temp_file(path) else None,
+    )
+
+    _save_arrival_profile(hass)
+
+    assert (config_file.stat().st_ino != inode) is replaced
+    assert _saved_profile_names(config_file) == ["arrival"]
+
+
+def test_issue_352_file_with_other_xattrs_writes_in_place(tmp_path: Path) -> None:
+    """Extended attributes such as user.* tags survive a profile save."""
+    config_file = tmp_path / "configuration.yaml"
+    config_file.write_text("old: 1\n", encoding="utf-8")
+    try:
+        os.setxattr(config_file, "user.backup", b"keep")
+    except (AttributeError, OSError):
+        pytest.skip("user xattrs not supported here")
+    inode = config_file.stat().st_ino
+
+    settings_module._write_text_atomically(str(config_file), "new: 2\n")
+
+    assert config_file.stat().st_ino == inode
+    assert os.getxattr(config_file, "user.backup") == b"keep"
+    assert config_file.read_text(encoding="utf-8") == "new: 2\n"
+
+
+def test_issue_352_extra_xattr_detection_ignores_selinux(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Only attributes other than the separately compared SELinux label count."""
+    monkeypatch.setattr(
+        settings_module.os, "listxattr", lambda path: ["security.selinux"], raising=False
+    )
+    assert settings_module._has_extra_xattrs("/config/configuration.yaml") is False
+    monkeypatch.setattr(
+        settings_module.os,
+        "listxattr",
+        lambda path: ["security.selinux", "user.note"],
+        raising=False,
+    )
+    assert settings_module._has_extra_xattrs("/config/configuration.yaml") is True
+
+
+def test_issue_352_xattr_inspection_error_writes_in_place(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Unknown xattrs prevent a replace that could discard metadata."""
+    hass, _config_entry, paths = make_hass(tmp_path)
+    config_file = paths["config_dir"].joinpath("configuration.yaml")
+    _write_profile_config(config_file)
+    inode = config_file.stat().st_ino
+
+    def unreadable_xattrs(path):
+        raise OSError(errno.EIO, "I/O error")
+
+    monkeypatch.setattr(settings_module.os, "listxattr", unreadable_xattrs, raising=False)
+    _save_arrival_profile(hass)
+
+    assert config_file.stat().st_ino == inode
+    assert _saved_profile_names(config_file) == ["arrival"]
+
+
+def test_issue_352_directory_fsync_error_is_reported(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A real directory fsync error is not reported as a durable save."""
+    real_fsync = settings_module.os.fsync
+
+    def fail_directory_fsync(file_descriptor):
+        raise OSError(errno.EIO, "I/O error")
+
+    monkeypatch.setattr(settings_module.os, "fsync", fail_directory_fsync)
+    with pytest.raises(OSError, match="I/O error"):
+        settings_module._fsync_directory(str(tmp_path))
+    monkeypatch.setattr(settings_module.os, "fsync", real_fsync)

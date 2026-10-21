@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Mapping
+import contextlib
 from dataclasses import dataclass
 from datetime import datetime
+import errno
 import json
 import os
 from pathlib import Path
 import shutil
+import stat
+import sys
+import tempfile
 from typing import Any
 from urllib.parse import quote
 
@@ -1732,6 +1737,251 @@ def _serialize_notify_profile(profile: dict[str, Any]) -> dict[str, Any]:
     return serialized
 
 
+class ConfigurationYamlWriteError(HomeAssistantError):
+    """configuration.yaml could not be written."""
+
+
+_READ_ONLY_ERRNOS = {errno.EACCES, errno.EPERM, errno.EROFS}
+_XATTR_UNSUPPORTED_ERRNOS = {errno.ENOTSUP, errno.EOPNOTSUPP}
+_XATTR_UNSET_ERRNOS = _XATTR_UNSUPPORTED_ERRNOS | {getattr(errno, "ENODATA", errno.ENOENT)}
+_DIRECTORY_FSYNC_UNSUPPORTED_ERRNOS = {errno.EINVAL, errno.ENOTSUP, errno.EOPNOTSUPP}
+_LINUX_FS_IOC_GETFLAGS = 0x80086601
+
+
+def _write_text_in_place(path: str, content: str) -> None:
+    """Overwrite path directly, for files that cannot be replaced."""
+    with open(path, "w", encoding="utf-8") as target_file:
+        target_file.write(content)
+        target_file.flush()
+        os.fsync(target_file.fileno())
+
+
+def _has_posix_acl(path: str, name: str = "system.posix_acl_access") -> bool:
+    """Return whether path might carry an ACL xattr that a rename would drop."""
+    if not hasattr(os, "listxattr"):
+        return False
+    try:
+        return name in os.listxattr(path)
+    except OSError as error:
+        # Unknown metadata must use the in-place path, which preserves it.
+        return error.errno not in _XATTR_UNSUPPORTED_ERRNOS
+
+
+def _has_extra_xattrs(path: str) -> bool:
+    """Return whether path has extended attributes a rename would not carry over.
+
+    The SELinux label is compared separately, so it does not count here.
+    """
+    if not hasattr(os, "listxattr"):
+        return False
+    try:
+        names = os.listxattr(path)
+    except OSError as error:
+        # Avoid replacing a file when its metadata could not be inspected.
+        return error.errno not in _XATTR_UNSUPPORTED_ERRNOS
+    return any(name != "security.selinux" for name in names)
+
+
+def _has_nondefault_inode_flags(path: str) -> bool:
+    """Return whether Linux inode flags would be lost by replacing path."""
+    if not sys.platform.startswith("linux"):
+        return False
+    import fcntl
+
+    try:
+        with open(path, "rb") as target_file:
+            flags = fcntl.ioctl(target_file.fileno(), _LINUX_FS_IOC_GETFLAGS, b"\0" * 4)
+    except OSError as error:
+        # Unknown metadata must use the in-place path, which preserves it.
+        return error.errno not in _XATTR_UNSUPPORTED_ERRNOS
+    return int.from_bytes(flags, byteorder="little") != 0
+
+
+def _selinux_label(path: str) -> bytes | None:
+    """Return the SELinux label of path, or None if unset or unsupported."""
+    if not hasattr(os, "getxattr"):
+        return None
+    try:
+        return os.getxattr(path, "security.selinux")
+    except OSError as error:
+        if error.errno in _XATTR_UNSET_ERRNOS:
+            return None
+        raise
+
+
+def _match_owner(temp_path: str, current: os.stat_result) -> bool:
+    """Give temp_path the owner of current, returning False if that is not possible."""
+    temp = os.stat(temp_path)
+    if (temp.st_uid, temp.st_gid) == (current.st_uid, current.st_gid):
+        return True
+    try:
+        os.chown(temp_path, current.st_uid, current.st_gid)
+    except (AttributeError, OSError):
+        return False
+    return True
+
+
+def _temp_matches_target(temp_path: str, target: str, current: os.stat_result) -> bool:
+    """Return whether renaming temp_path over target would keep its owner, ACL and label."""
+    if not _match_owner(temp_path, current):
+        return False
+    # mkstemp can inherit a default ACL from the directory.
+    if _has_posix_acl(temp_path):
+        return False
+    # Compare both ways, including None: an unlabeled file must not pick up the
+    # label new files get in that directory. An unreadable label is unknown, so
+    # use the in-place path instead of risking a replacement with the wrong one.
+    try:
+        return _selinux_label(target) == _selinux_label(temp_path)
+    except OSError:
+        return False
+
+
+def _fsync_directory_fd(dir_fd: int) -> None:
+    """Flush a directory descriptor so a completed rename survives a power loss."""
+    try:
+        os.fsync(dir_fd)
+    except OSError as error:
+        # Some filesystems do not support syncing directory descriptors.
+        if error.errno not in _DIRECTORY_FSYNC_UNSUPPORTED_ERRNOS:
+            raise
+
+
+def _fsync_directory(directory: str) -> None:
+    """Flush a directory entry so a completed rename survives a power loss."""
+    dir_fd = os.open(directory, os.O_RDONLY)
+    try:
+        _fsync_directory_fd(dir_fd)
+    finally:
+        os.close(dir_fd)
+
+
+_READ_ONLY_DIR_ERRNOS = {errno.EACCES, errno.EPERM, errno.EROFS}
+
+
+def _write_text_atomically(path: str, content: str) -> None:
+    """Replace path with content so a crash never leaves it truncated.
+
+    Falls back to rewriting the file in place whenever a rename could not
+    reproduce it exactly: new files (so the umask applies), files or
+    directories with an ACL, files whose owner or SELinux label cannot be
+    matched, and directories that do not allow a temp file next to the target.
+    """
+    # Resolve symlinks so a linked configuration.yaml stays a link.
+    target = os.path.realpath(path)
+    try:
+        current = os.stat(target)
+    except FileNotFoundError:
+        _write_text_in_place(target, content)
+        return
+    # Replacing via rename would bypass a read-only mode on the file itself.
+    if not current.st_mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH) or not os.access(
+        target, os.W_OK
+    ):
+        raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), target)
+    directory = os.path.dirname(target)
+    # A rename would detach other hard links from the new content.
+    if (
+        current.st_nlink > 1
+        or _has_extra_xattrs(target)
+        or _has_nondefault_inode_flags(target)
+        or _has_posix_acl(
+        directory, "system.posix_acl_default"
+        )
+    ):
+        _write_text_in_place(target, content)
+        return
+
+    # Open the directory before replacing the target. A write-only directory
+    # can permit a rename but not an O_RDONLY open for the required final fsync.
+    try:
+        dir_fd = os.open(directory, os.O_RDONLY)
+    except OSError as error:
+        if error.errno not in _READ_ONLY_DIR_ERRNOS:
+            raise
+        _write_text_in_place(target, content)
+        return
+
+    fd: int | None = None
+    temp_path: str | None = None
+    try:
+        try:
+            fd, temp_path = tempfile.mkstemp(
+                dir=directory,
+                prefix=f".{os.path.basename(target)}.",
+                suffix=".tmp",
+            )
+        except OSError as error:
+            # A writable file bind-mounted into a read-only directory. Anything
+            # else (a full disk, quota) must not reach the truncating write.
+            if error.errno not in _READ_ONLY_DIR_ERRNOS:
+                raise
+            _write_text_in_place(target, content)
+            return
+        with os.fdopen(fd, "w", encoding="utf-8", closefd=False) as temp_file:
+            temp_file.write(content)
+            temp_file.flush()
+            os.fsync(temp_file.fileno())
+        # The temp file stays 0600 until its owner is right, so it is never
+        # readable by the wrong group.
+        if not _temp_matches_target(temp_path, target, current):
+            os.close(fd)
+            fd = None
+            os.unlink(temp_path)
+            _write_text_in_place(target, content)
+            return
+        os.chmod(temp_path, stat.S_IMODE(current.st_mode))
+        # chown and chmod change inode metadata after the content fsync.
+        os.fsync(fd)
+        os.close(fd)
+        fd = None
+        try:
+            os.replace(temp_path, target)
+        except OSError as error:
+            # A file bind-mounted into a container cannot be renamed over.
+            if error.errno not in (errno.EBUSY, errno.EXDEV):
+                raise
+            os.unlink(temp_path)
+            _write_text_in_place(target, content)
+            return
+        _fsync_directory_fd(dir_fd)
+    except BaseException:
+        if temp_path is not None:
+            with contextlib.suppress(FileNotFoundError):
+                os.unlink(temp_path)
+        raise
+    finally:
+        if fd is not None:
+            with contextlib.suppress(OSError):
+                os.close(fd)
+        os.close(dir_fd)
+
+
+def _write_configuration_yaml(hass, loaded: dict[str, Any]) -> None:
+    """Write configuration.yaml, raising ConfigurationYamlWriteError on failure."""
+    # Serialize first so a dump error cannot touch the file.
+    content = yaml.dump(
+        loaded,
+        Dumper=_ChimeTTSYamlDumper,
+        allow_unicode=False,
+        default_flow_style=False,
+        sort_keys=False,
+    )
+    config_path = _configuration_yaml_path(hass)
+    try:
+        _write_text_atomically(config_path, content)
+    except OSError as error:
+        if error.errno in _READ_ONLY_ERRNOS:
+            raise ConfigurationYamlWriteError(
+                f"{config_path} is read-only, so notification profiles were not "
+                "saved. Add them to the notify section of configuration.yaml "
+                "manually."
+            ) from error
+        raise ConfigurationYamlWriteError(
+            f"Could not write {config_path}: {error.strerror or error}"
+        ) from error
+
+
 def save_notify_profiles(hass, profiles: list[dict[str, Any]]) -> None:
     """Persist Chime TTS notify profiles into configuration.yaml."""
     loaded = _load_configuration_yaml(hass)
@@ -1753,16 +2003,7 @@ def save_notify_profiles(hass, profiles: list[dict[str, Any]]) -> None:
     else:
         loaded.pop("notify", None)
 
-    config_path = _configuration_yaml_path(hass)
-    with open(config_path, "w", encoding="utf-8") as config_file:
-        yaml.dump(
-            loaded,
-            config_file,
-            Dumper=_ChimeTTSYamlDumper,
-            allow_unicode=False,
-            default_flow_style=False,
-            sort_keys=False,
-        )
+    _write_configuration_yaml(hass, loaded)
 
 
 async def async_load_notify_profiles(
