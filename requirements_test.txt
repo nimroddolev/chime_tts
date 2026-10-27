@@ -8,7 +8,7 @@
 # The current pytest-homeassistant-custom-component release requires Python 3.14.
 # The Docker smoke job below therefore uses Python 3.14 as well.
 
-pytest-homeassistant-custom-component>=0.13.365
+pytest-homeassistant-custom-component>=0.13.373
 pydub
 aiofiles
 ruff==0.17.2
