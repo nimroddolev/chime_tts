@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import importlib
 from datetime import datetime
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import ANY, AsyncMock
 
@@ -35,6 +36,7 @@ from custom_components.chime_tts.const import TEMP_CHIMES_PATH_KEY
 from custom_components.chime_tts.const import TEMP_PATH_KEY
 from custom_components.chime_tts.const import TTS_PLATFORM_KEY
 from custom_components.chime_tts.const import TTS_TIMEOUT_KEY
+from custom_components.chime_tts.const import WWW_PATH_KEY
 from custom_components.chime_tts.helpers.tts_audio_helper import TTSAudioHelper
 from custom_components.chime_tts.queue_manager import ChimeTTSQueueManager
 from homeassistant.components.media_player.const import ATTR_MEDIA_ANNOUNCE
@@ -282,6 +284,91 @@ async def test_async_remove_cached_audio_data_deletes_storage_when_paths_removed
 
     assert delete_file_calls == ["/media/temp/generated.mp3", "/config/www/chime_tts/generated.mp3"]
     delete_data.assert_awaited_once_with(hass, "cache-key")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("all_flags", [False, True])
+async def test_clear_public_cache_removes_public_file_indexed_as_local(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, all_flags: bool
+) -> None:
+    """Public-cache cleanup also handles files indexed under local_path."""
+    hass = FakeHass()
+    hass.config.external_url = "https://ha.test"
+    public_dir = tmp_path / "www" / "custom-audio"
+    public_dir.mkdir(parents=True)
+    audio = public_dir / "generated.mp3"
+    audio.write_bytes(b"audio")
+    unindexed = public_dir / "unindexed.mp3"
+    unindexed.write_bytes(b"audio")
+    for key, folder in (
+        (TEMP_CHIMES_PATH_KEY, tmp_path / "chimes"),
+        (TEMP_PATH_KEY, tmp_path / "temp"),
+        (WWW_PATH_KEY, public_dir),
+    ):
+        folder.mkdir(exist_ok=True)
+        monkeypatch.setitem(integration_module._data, key, str(folder))
+    entry = {LOCAL_PATH_KEY: str(audio), PUBLIC_PATH_KEY: None}
+    monkeypatch.setattr(integration_module, "async_retrieve_data", AsyncMock(return_value=entry))
+    delete_data = AsyncMock()
+    monkeypatch.setattr(integration_module, "async_delete_data", delete_data)
+
+    await integration_module.async_remove_cached_audio_data(
+        hass, "cache-key", all_flags, all_flags, True
+    )
+
+    assert not audio.exists()
+    assert unindexed.exists()
+    assert entry[LOCAL_PATH_KEY] is None
+    delete_data.assert_awaited_once_with(hass, "cache-key")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("public_folder", "audio_folder", "clear_public"),
+    [
+        ("www/custom-audio", "www/custom-audio", False),
+        ("www/custom-audio", "www/custom-audio-other", True),
+        ("www/custom-audio", "unrelated", True),
+        (None, "www/custom-audio", True),
+        ("", "www/custom-audio", True),
+    ],
+)
+async def test_clear_public_cache_preserves_ineligible_local_files(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    public_folder: str | None,
+    audio_folder: str,
+    clear_public: bool,
+) -> None:
+    """Only enabled, configured public-cache paths qualify for deletion."""
+    hass = FakeHass()
+    audio_dir = tmp_path / audio_folder
+    audio_dir.mkdir(parents=True)
+    audio = audio_dir / "keep.mp3"
+    audio.write_bytes(b"audio")
+    if public_folder is None:
+        monkeypatch.delitem(integration_module._data, WWW_PATH_KEY, raising=False)
+    elif public_folder:
+        public_dir = tmp_path / public_folder
+        public_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setitem(integration_module._data, WWW_PATH_KEY, str(public_dir))
+    else:
+        monkeypatch.setitem(integration_module._data, WWW_PATH_KEY, "")
+    entry = {LOCAL_PATH_KEY: str(audio), PUBLIC_PATH_KEY: None}
+    monkeypatch.setattr(integration_module, "async_retrieve_data", AsyncMock(return_value=entry))
+    delete_data = AsyncMock()
+    monkeypatch.setattr(integration_module, "async_delete_data", delete_data)
+    delete_file = AsyncMock()
+    monkeypatch.setattr(integration_module.filesystem_helper, "async_delete_file", delete_file)
+
+    await integration_module.async_remove_cached_audio_data(
+        hass, "cache-key", clear_www_tts_cache=clear_public
+    )
+
+    assert audio.exists()
+    assert entry[LOCAL_PATH_KEY] == str(audio)
+    delete_file.assert_not_awaited()
+    delete_data.assert_not_awaited()
 
 
 @pytest.mark.asyncio

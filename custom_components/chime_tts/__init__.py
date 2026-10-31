@@ -2149,6 +2149,7 @@ async def async_remove_cached_audio_data(hass: HomeAssistant,
         return
     temp_chimes_path = _data.get(TEMP_CHIMES_PATH_KEY, None)
     temp_path = _data.get(TEMP_PATH_KEY, None)
+    www_path = _data.get(WWW_PATH_KEY, None)
 
     for key, value in audio_dict.items():
         if key == LOCAL_PATH_KEY and audio_dict.get(LOCAL_PATH_KEY, None) is not None:
@@ -2159,6 +2160,14 @@ async def async_remove_cached_audio_data(hass: HomeAssistant,
             elif clear_temp_tts_cache and await filesystem_helper.async_file_exists_in_directory(value, temp_path):
                 _LOGGER.debug("...removing TTS file %s", value)
                 await filesystem_helper.async_delete_file(hass, audio_dict.get(LOCAL_PATH_KEY, None))
+                audio_dict[LOCAL_PATH_KEY] = None
+            elif (
+                clear_www_tts_cache
+                and www_path
+                and await filesystem_helper.async_file_exists_in_directory(value, www_path)
+            ):
+                _LOGGER.debug("...removing public file %s", value)
+                await filesystem_helper.async_delete_file(hass, value)
                 audio_dict[LOCAL_PATH_KEY] = None
         elif key == PUBLIC_PATH_KEY and value is not None and clear_www_tts_cache:
             _LOGGER.debug("...removing public file %s", value)
