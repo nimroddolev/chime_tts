@@ -11,7 +11,7 @@
 pytest-homeassistant-custom-component>=0.13.373
 pydub
 aiofiles
-ruff==0.17.2
+ruff==0.17.3
 mypy
 
 # HA pulls these in as component-level requirements of the `tts` and ffmpeg
